@@ -7,7 +7,7 @@ export class DataController {
     username: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      const { error } = await supabase
+      const { error } = await supabaseAdmin
         .from("UserRatings")
         .delete()
         .eq("username", username);
@@ -39,7 +39,7 @@ export class DataController {
         count: rating.count,
       }));
 
-      const { error } = await supabase.from("UserRatings").insert(insertData);
+      const { error } = await supabaseAdmin.from("UserRatings").insert(insertData);
 
       if (error) {
         console.error("Database insert error:", error);
@@ -62,14 +62,32 @@ export class DataController {
     ratings: Array<{ rating: number; count: number }>
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      // First delete existing ratings for this user
-      const deleteResult = await this.deleteUserRatings(username);
-      if (!deleteResult.success) {
-        return deleteResult;
+      // Prepare data for upsert
+      const ratingsToUpsert = ratings.map(rating => ({
+        username,
+        rating: rating.rating,
+        count: rating.count,
+        updated_at: new Date().toISOString()
+      }));
+
+      // Use Supabase's upsert functionality with proper conflict resolution
+      const { error } = await supabaseAdmin
+        .from('UserRatings')
+        .upsert(ratingsToUpsert, { 
+          onConflict: 'username,rating',
+          ignoreDuplicates: false 
+        });
+
+      if (error) {
+        console.error("Database upsert error:", error);
+        return {
+          success: false,
+          error: error.message
+        };
       }
 
-      // Then insert new ratings
-      return await this.insertUserRatings(username, ratings);
+      console.log(`Successfully upserted ${ratings.length} ratings for user ${username}`);
+      return { success: true };
     } catch (error) {
       console.error("Database upsert error:", error);
       return {
@@ -80,13 +98,35 @@ export class DataController {
     }
   }
 
-  static async getUserRatings(username: string): Promise<{
+  static async getUserRatings(username: string, refreshData: boolean = false): Promise<{
     success: boolean;
     data?: any[];
     error?: string;
   }> {
     try {
-      const { data, error } = await supabase
+      // If refreshData is true, skip database lookup and scrape fresh data
+      if (refreshData) {
+        const { ScraperController } = await import('./scraperController');
+        
+        // Scrape fresh data
+        const scrapedRatings = await ScraperController.scrapeUserRatings(username);
+        
+        if (!scrapedRatings || scrapedRatings.length === 0) {
+          return { success: false, error: "No ratings data could be scraped" };
+        }
+
+        // Update database with scraped data using upsert
+        const upsertResult = await DataController.upsertUserRatings(username, scrapedRatings);
+        if (!upsertResult.success) {
+          return { success: false, error: upsertResult.error || "Failed to update ratings" };
+        }
+        
+        // Return the freshly scraped data
+        return { success: true, data: scrapedRatings };
+      }
+
+      // Default behavior: get data from database
+      const { data, error } = await supabaseAdmin
         .from("UserRatings")
         .select("*")
         .eq("username", username)
@@ -108,6 +148,7 @@ export class DataController {
     }
   }
 
+
   static async getAllUsernames(): Promise<{
     success: boolean;
     data?: Array<{ username: string; displayName?: string }>;
@@ -115,7 +156,7 @@ export class DataController {
   }> {
     try {
       // Get unique usernames from UserRatings table
-      const { data: ratingsData, error: ratingsError } = await supabase
+      const { data: ratingsData, error: ratingsError } = await supabaseAdmin
         .from("UserRatings")
         .select("username")
         .order("username", { ascending: true });
@@ -152,7 +193,7 @@ export class DataController {
       // Combine usernames with display names
       const usersWithDisplayNames = usernames.map((username) => ({
         username,
-        displayName: displayNameMap.get(username),
+        displayName: displayNameMap.get(username) || username,
       }));
 
       return { success: true, data: usersWithDisplayNames };
@@ -231,7 +272,7 @@ export class DataController {
   }> {
     try {
       // Get all user ratings data
-      const { data: ratingsData, error: ratingsError } = await supabase
+      const { data: ratingsData, error: ratingsError } = await supabaseAdmin
         .from("UserRatings")
         .select("*");
 

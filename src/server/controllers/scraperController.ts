@@ -36,8 +36,11 @@ const parseRatingFromTitle = (title: string | undefined): number => {
 
 const extractRatingCount = (title: string | undefined): number => {
   if (!title) return 0;
-  const match = title.match(/^(\d+)/);
-  return match && match[1] ? parseInt(match[1], 10) : 0;
+  const match = title.match(/^([\d,]+)/);
+  if (!match || !match[1]) return 0;
+  // Remove commas and parse as integer
+  const numberStr = match[1].replace(/,/g, "");
+  return parseInt(numberStr, 10) || 0;
 };
 
 export class ScraperController {
@@ -139,7 +142,6 @@ export class ScraperController {
 
     return page;
   }
-
 
   // scrapes data from url based on selectors
   private static async scrapePage(
@@ -659,7 +661,7 @@ export class ScraperController {
   }
 
   static async getUserRatings(req: Request, res: Response): Promise<void> {
-    const { username } = req.body;
+    const { username, refreshData } = req.body;
 
     if (!username) {
       res.status(400).json({ error: "Username is required" });
@@ -669,13 +671,21 @@ export class ScraperController {
     console.log(`Processing ratings request for user: ${username}`);
 
     try {
-      const dbResult = await ScraperController.getExistingRatingsFromDatabase(username);
-      if (dbResult) {
-        res.json(dbResult);
-        return;
+      // Only check database if refreshData is false
+      if (!refreshData) {
+        const dbResult = await ScraperController.getExistingRatingsFromDatabase(
+          username,
+          refreshData
+        );
+        if (dbResult) {
+          res.json(dbResult);
+          return;
+        }
       }
-
-      const scrapedRatings = await ScraperController.scrapeUserRatings(username);
+      console.log("----------", "SCRAPING DATA");
+      const scrapedRatings = await ScraperController.scrapeUserRatings(
+        username
+      );
       await ScraperController.saveRatingsToDatabase(username, scrapedRatings);
 
       res.json({
@@ -691,18 +701,25 @@ export class ScraperController {
     } catch (error) {
       console.error("Error in getUserRatings:", error);
       res.status(500).json({
-        error: `Failed to get user ratings: ${error instanceof Error ? error.message : "Unknown error"}`,
+        error: `Failed to get user ratings: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
       });
     }
   }
 
-  private static async getExistingRatingsFromDatabase(username: string) {
+  private static async getExistingRatingsFromDatabase(
+    username: string,
+    refreshData: boolean = false
+  ) {
     console.log(`Checking database for existing ratings for user: ${username}`);
-    const dbResult = await DataController.getUserRatings(username);
+    const dbResult = await DataController.getUserRatings(username, refreshData);
 
     if (dbResult.success && dbResult.data && dbResult.data.length > 0) {
-      console.log(`Found ${dbResult.data.length} existing ratings for ${username}`);
-      
+      console.log(
+        `Found ${dbResult.data.length} existing ratings for ${username}`
+      );
+
       const ratings = dbResult.data.map((item: any) => ({
         rating: item.rating,
         count: item.count,
@@ -723,16 +740,18 @@ export class ScraperController {
     return null;
   }
 
-  private static async scrapeUserRatings(username: string): Promise<Array<{ rating: number; count: number }>> {
+  static async scrapeUserRatings(
+    username: string
+  ): Promise<Array<{ rating: number; count: number }>> {
     console.log(`Scraping ratings for ${username} from Letterboxd...`);
-    
+
     const page = await ScraperController.createPage();
     const url = `https://letterboxd.com/${username}`;
 
     try {
       await ScraperController.loadPageWithRetry(page, url);
       await ScraperController.waitForPageContent(page);
-      
+
       const pageContent = await page.content();
       const $ = cheerio.load(pageContent);
 
@@ -745,21 +764,27 @@ export class ScraperController {
       }
 
       ratings.sort((a, b) => a.rating - b.rating);
-      console.log(`Extracted ${ratings.length} ratings:`, ratings);
-      
+      // console.log(`Extracted ${ratings.length} ratings:`, ratings);
+
       return ratings;
     } finally {
       await page.close();
     }
   }
 
-  private static async loadPageWithRetry(page: Page, url: string): Promise<void> {
+  private static async loadPageWithRetry(
+    page: Page,
+    url: string
+  ): Promise<void> {
     console.log(`Loading page: ${url}`);
-    
-    const strategies: Array<{waitUntil: "networkidle2" | "domcontentloaded" | "load", timeout: number}> = [
+
+    const strategies: Array<{
+      waitUntil: "networkidle2" | "domcontentloaded" | "load";
+      timeout: number;
+    }> = [
       { waitUntil: "networkidle2", timeout: 30000 },
       { waitUntil: "domcontentloaded", timeout: 30000 },
-      { waitUntil: "load", timeout: 45000 }
+      { waitUntil: "load", timeout: 45000 },
     ];
 
     for (const [index, strategy] of strategies.entries()) {
@@ -770,7 +795,9 @@ export class ScraperController {
       } catch (error) {
         console.warn(`Strategy ${index + 1} failed:`, error);
         if (index === strategies.length - 1) {
-          throw new Error(`Failed to load page after ${strategies.length} attempts: ${error}`);
+          throw new Error(
+            `Failed to load page after ${strategies.length} attempts: ${error}`
+          );
         }
       }
     }
@@ -779,25 +806,30 @@ export class ScraperController {
   private static async waitForPageContent(page: Page): Promise<void> {
     await Promise.race([
       page.waitForSelector("body", { timeout: 10000 }),
-      new Promise(resolve => setTimeout(resolve, 5000))
+      new Promise((resolve) => setTimeout(resolve, 5000)),
     ]);
   }
 
   private static validateUserProfile($: cheerio.Root, username: string): void {
     // Check for specific error indicators, excluding common UI elements like "errormessage" divs
-    const errorIndicators = $('.error-page, .not-found, [class="404"], [class="error-404"]');
+    const errorIndicators = $(
+      '.error-page, .not-found, [class="404"], [class="error-404"]'
+    );
     if (errorIndicators.length > 0) {
       throw new Error(`User profile not found: ${username}`);
     }
 
     // Check page title for obvious errors
     const pageTitle = $("title").text();
-    if (pageTitle && (
-      pageTitle.toLowerCase().includes("page not found") || 
-      pageTitle.includes("404") || 
-      pageTitle.toLowerCase().includes("error")
-    )) {
-      throw new Error(`Invalid page title indicates user not found: ${username}`);
+    if (
+      pageTitle &&
+      (pageTitle.toLowerCase().includes("page not found") ||
+        pageTitle.includes("404") ||
+        pageTitle.toLowerCase().includes("error"))
+    ) {
+      throw new Error(
+        `Invalid page title indicates user not found: ${username}`
+      );
     }
 
     // Check for basic page content
@@ -812,18 +844,18 @@ export class ScraperController {
   private static findRatingsSection($: cheerio.Root): cheerio.Cheerio {
     const selectors = [
       "section.ratings-histogram-chart",
-      ".ratings-histogram-chart", 
+      ".ratings-histogram-chart",
       "[class*='rating-stats']",
       "[class*='rating-distribution']",
       "section[class*='rating']",
       "div[class*='rating']",
-      "[class*='rating']"
+      "[class*='rating']",
     ];
 
     for (const selector of selectors) {
       const section = $(selector);
       if (section.length > 0) {
-        console.log(`Found ratings section with selector: ${selector}`);
+        // console.log(`Found ratings section with selector: ${selector}`);
         return section;
       }
     }
@@ -831,17 +863,20 @@ export class ScraperController {
     throw new Error("No ratings section found on page");
   }
 
-  private static extractRatingsData($: cheerio.Root, ratingsSection: cheerio.Cheerio): Array<{ rating: number; count: number }> {
+  private static extractRatingsData(
+    $: cheerio.Root,
+    ratingsSection: cheerio.Cheerio
+  ): Array<{ rating: number; count: number }> {
     const barSelectors = [
       "li.rating-histogram-bar",
       ".rating-histogram-bar",
-      "li[class*='rating'][class*='histogram']", 
+      "li[class*='rating'][class*='histogram']",
       ".rating-bar",
       "[class*='rating'][class*='bar']",
       "li[class*='histogram']",
       "a[class*='rating']",
       "li[class*='rating']",
-      "a[href*='rating']"
+      "a[href*='rating']",
     ];
 
     let ratingBars: cheerio.Cheerio | null = null;
@@ -849,7 +884,9 @@ export class ScraperController {
     for (const selector of barSelectors) {
       ratingBars = ratingsSection.find(selector);
       if (ratingBars.length > 0) {
-        console.log(`Found ${ratingBars.length} rating bars with selector: ${selector}`);
+        console.log(
+          `Found ${ratingBars.length} rating bars with selector: ${selector}`
+        );
         break;
       }
     }
@@ -863,14 +900,16 @@ export class ScraperController {
     ratingBars.each((index: number, element: cheerio.Element) => {
       const $element = $(element);
       const title = ScraperController.extractTitleFromElement($element);
-      
+
       if (title) {
         const rating = parseRatingFromTitle(title);
         const count = extractRatingCount(title);
-        
+
         if (rating > 0) {
           ratings.push({ rating, count });
-          console.log(`Extracted rating ${rating} with count ${count} from: ${title}`);
+          // console.log(
+          //   `Extracted rating ${rating} with count ${count} from: ${title}`
+          // );
         }
       }
     });
@@ -878,12 +917,10 @@ export class ScraperController {
     return ratings;
   }
 
-  private static extractTitleFromElement($element: cheerio.Cheerio): string | null {
-    const possibleAttributes = [
-      "data-original-title",
-      "title", 
-      "aria-label"
-    ];
+  private static extractTitleFromElement(
+    $element: cheerio.Cheerio
+  ): string | null {
+    const possibleAttributes = ["data-original-title", "title", "aria-label"];
 
     for (const attr of possibleAttributes) {
       const value = $element.attr(attr) || $element.find("a").attr(attr);
@@ -891,58 +928,108 @@ export class ScraperController {
     }
 
     const text = $element.text().trim();
-    if (text && (text.includes("★") || text.includes("star") || text.includes("rating"))) {
+    if (
+      text &&
+      (text.includes("★") || text.includes("star") || text.includes("rating"))
+    ) {
       return text;
     }
 
     return null;
   }
 
-  private static async saveRatingsToDatabase(username: string, ratings: Array<{ rating: number; count: number }>): Promise<void> {
-    const insertResult = await DataController.upsertUserRatings(username, ratings);
-    
+  private static async saveRatingsToDatabase(
+    username: string,
+    ratings: Array<{ rating: number; count: number }>
+  ): Promise<void> {
+    const insertResult = await DataController.upsertUserRatings(
+      username,
+      ratings
+    );
+
     if (!insertResult.success) {
       console.error("Database operation failed:", insertResult.error);
-      throw new Error(`Failed to save ratings to database: ${insertResult.error}`);
+      throw new Error(
+        `Failed to save ratings to database: ${insertResult.error}`
+      );
     }
-    
-    console.log(`Successfully saved ${ratings.length} ratings for user ${username}`);
+
+    console.log(
+      `Successfully saved ${ratings.length} ratings for user ${username}`
+    );
   }
 
   static async getUserProfile(req: Request, res: Response): Promise<void> {
-    const { username } = req.body;
+    const { username, refreshData } = req.body;
 
     if (!username) {
       res.status(400).json({ error: "Username is required" });
       return;
     }
 
-    console.log(`Processing profile request for user: ${username}`);
+    console.log(
+      `Processing profile request for user: ${username}, refreshData: ${refreshData}`
+    );
 
     try {
-      // First check if user profile exists in database
-      let profileData = await ScraperController.getExistingProfileFromDatabase(username);
+      let profileData;
 
-      // If no profile data in database, scrape it
-      if (!profileData) {
-        console.log(`No existing profile found for ${username}, scraping from Letterboxd...`);
+      // Only check database for profile if refreshData is false
+      if (!refreshData) {
+        profileData = await ScraperController.getExistingProfileFromDatabase(
+          username
+        );
+      }
+
+      // If no profile data in database or refreshData is true, scrape it
+      if (!profileData || refreshData) {
+        console.log(
+          `${
+            refreshData
+              ? "Refreshing profile data for"
+              : "No existing profile found for"
+          } ${username}, scraping from Letterboxd...`
+        );
         profileData = await ScraperController.scrapeUserProfileData(username);
         await ScraperController.saveProfileToDatabase(username, profileData);
       }
 
-      // Get ratings data (from database or scrape if needed)
-      const ratingsResult = await ScraperController.getExistingRatingsFromDatabase(username);
-      let ratingsData = ratingsResult?.data.ratings || [];
+      // Get ratings data - respect refreshData flag
+      let ratingsData;
+      if (!refreshData) {
+        const ratingsResult =
+          await ScraperController.getExistingRatingsFromDatabase(username);
+        ratingsData = ratingsResult?.data.ratings || [];
 
-      if (!ratingsResult) {
-        console.log(`No existing ratings found for ${username}, scraping ratings...`);
-        const scrapedRatings = await ScraperController.scrapeUserRatings(username);
+        if (!ratingsResult) {
+          console.log(
+            `No existing ratings found for ${username}, scraping ratings...`
+          );
+          const scrapedRatings = await ScraperController.scrapeUserRatings(
+            username
+          );
+          await ScraperController.saveRatingsToDatabase(
+            username,
+            scrapedRatings
+          );
+          ratingsData = scrapedRatings;
+        }
+      } else {
+        console.log(
+          `Refreshing ratings data for ${username}, scraping from Letterboxd...`
+        );
+        const scrapedRatings = await ScraperController.scrapeUserRatings(
+          username
+        );
         await ScraperController.saveRatingsToDatabase(username, scrapedRatings);
         ratingsData = scrapedRatings;
       }
 
       // Calculate total ratings
-      const totalRatings = ratingsData.reduce((sum: number, rating: any) => sum + rating.count, 0);
+      const totalRatings = ratingsData.reduce(
+        (sum: number, rating: any) => sum + rating.count,
+        0
+      );
 
       const response = {
         username,
@@ -961,17 +1048,21 @@ export class ScraperController {
     } catch (error) {
       console.error("Error in getUserProfile:", error);
       res.status(500).json({
-        error: `Failed to get user profile: ${error instanceof Error ? error.message : "Unknown error"}`,
+        error: `Failed to get user profile: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
       });
     }
   }
 
-  private static async getExistingProfileFromDatabase(username: string): Promise<UserProfileData | null> {
+  private static async getExistingProfileFromDatabase(
+    username: string
+  ): Promise<UserProfileData | null> {
     console.log(`Checking database for existing profile for user: ${username}`);
-    
+
     try {
       const result = await DataController.getUserProfile(username);
-      
+
       if (result.success && result.data) {
         console.log(`Found existing profile for ${username} in database`);
         return {
@@ -981,7 +1072,7 @@ export class ScraperController {
           numberOfLists: result.data.numberOfLists,
         };
       }
-      
+
       console.log(`No existing profile found for ${username} in database`);
       return null;
     } catch (error) {
@@ -990,38 +1081,46 @@ export class ScraperController {
     }
   }
 
-  private static async scrapeUserProfileData(username: string): Promise<UserProfileData> {
+  private static async scrapeUserProfileData(
+    username: string
+  ): Promise<UserProfileData> {
     console.log(`Scraping profile data for ${username} from Letterboxd...`);
-    
+
     const page = await ScraperController.createPage();
     const url = `https://letterboxd.com/${username}`;
 
     try {
       await ScraperController.loadPageWithRetry(page, url);
       await ScraperController.waitForPageContent(page);
-      
+
       const pageContent = await page.content();
       const $ = cheerio.load(pageContent);
 
       ScraperController.validateUserProfile($, username);
 
       // Extract followers count
-      const followersElement = $('a[href*="/followers/"] .value, a[href$="/followers/"] .value');
+      const followersElement = $(
+        'a[href*="/followers/"] .value, a[href$="/followers/"] .value'
+      );
       const followersText = followersElement.text().trim();
       const followers = ScraperController.parseNumberFromText(followersText);
 
       // Extract following count
-      const followingElement = $('a[href*="/following/"] .value, a[href$="/following/"] .value');
+      const followingElement = $(
+        'a[href*="/following/"] .value, a[href$="/following/"] .value'
+      );
       const followingText = followingElement.text().trim();
       const following = ScraperController.parseNumberFromText(followingText);
 
       // Extract number of lists
-      const listsElement = $('a[href*="/lists/"] .value, a[href$="/lists/"] .value');
+      const listsElement = $(
+        'a[href*="/lists/"] .value, a[href$="/lists/"] .value'
+      );
       const listsText = listsElement.text().trim();
       const numberOfLists = ScraperController.parseNumberFromText(listsText);
 
       // Extract display name from span with class "displayname"
-      const displayNameElement = $('span.displayname');
+      const displayNameElement = $("span.displayname");
       let displayName = displayNameElement.text().trim();
 
       // Fallback to username if no display name found
@@ -1029,7 +1128,9 @@ export class ScraperController {
         displayName = username;
       }
 
-      console.log(`Profile data extracted: displayName="${displayName}", followers=${followers}, following=${following}, numberOfLists=${numberOfLists}`);
+      console.log(
+        `Profile data extracted: displayName="${displayName}", followers=${followers}, following=${following}, numberOfLists=${numberOfLists}`
+      );
 
       return {
         displayName,
@@ -1042,17 +1143,26 @@ export class ScraperController {
     }
   }
 
-  private static async saveProfileToDatabase(username: string, profileData: UserProfileData): Promise<void> {
+  private static async saveProfileToDatabase(
+    username: string,
+    profileData: UserProfileData
+  ): Promise<void> {
     try {
-      console.log(`Saving profile data for ${username} to database:`, profileData);
-      
-      const result = await DataController.upsertUserProfile(username, profileData);
-      
+      console.log(
+        `Saving profile data for ${username} to database:`,
+        profileData
+      );
+
+      const result = await DataController.upsertUserProfile(
+        username,
+        profileData
+      );
+
       if (!result.success) {
         console.error("Database operation failed:", result.error);
         throw new Error(`Failed to save profile to database: ${result.error}`);
       }
-      
+
       console.log(`Successfully saved profile data for user ${username}`);
     } catch (error) {
       console.error("Error saving profile to database:", error);
@@ -1062,22 +1172,22 @@ export class ScraperController {
 
   private static parseNumberFromText(text: string): number {
     if (!text) return 0;
-    
+
     // Remove commas and convert to lowercase for easier parsing
-    const cleanText = text.replace(/,/g, '').toLowerCase();
-    
+    const cleanText = text.replace(/,/g, "").toLowerCase();
+
     // Handle "k" suffix (thousands)
-    if (cleanText.includes('k')) {
-      const number = parseFloat(cleanText.replace('k', ''));
+    if (cleanText.includes("k")) {
+      const number = parseFloat(cleanText.replace("k", ""));
       return Math.round(number * 1000);
     }
-    
+
     // Handle "m" suffix (millions)
-    if (cleanText.includes('m')) {
-      const number = parseFloat(cleanText.replace('m', ''));
+    if (cleanText.includes("m")) {
+      const number = parseFloat(cleanText.replace("m", ""));
       return Math.round(number * 1000000);
     }
-    
+
     // Regular number
     const number = parseInt(cleanText, 10);
     return isNaN(number) ? 0 : number;

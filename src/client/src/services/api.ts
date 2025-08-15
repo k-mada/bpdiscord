@@ -1,0 +1,167 @@
+import {
+  ApiResponse,
+  User,
+  AuthRequest,
+  SignupRequest,
+  AuthResponse,
+  ScraperRequest,
+  PasswordResetConfirmRequest,
+} from "../../../shared/types";
+
+const API_BASE_URL =
+  process.env.REACT_APP_API_URL || "http://localhost:3001/api";
+
+class ApiService {
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<ApiResponse<T>> {
+    const url = `${API_BASE_URL}${endpoint}`;
+    const config: RequestInit = {
+      headers: {
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+      ...options,
+    };
+
+    try {
+      const response = await fetch(url, config);
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error || `Request failed with status ${response.status}`
+        );
+      }
+
+      return data;
+    } catch (error) {
+      console.error("API request failed:", error);
+      throw error;
+    }
+  }
+
+  // Auth endpoints
+  async signup(userData: SignupRequest): Promise<ApiResponse<AuthResponse>> {
+    return this.request<AuthResponse>("/auth/signup", {
+      method: "POST",
+      body: JSON.stringify(userData),
+    });
+  }
+
+  async login(credentials: AuthRequest): Promise<ApiResponse<AuthResponse>> {
+    return this.request<AuthResponse>("/auth/login", {
+      method: "POST",
+      body: JSON.stringify(credentials),
+    });
+  }
+
+  async requestPasswordReset(email: string): Promise<ApiResponse> {
+    return this.request("/auth/forgot-password", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+    });
+  }
+
+  async confirmPasswordReset(
+    data: PasswordResetConfirmRequest
+  ): Promise<ApiResponse<AuthResponse>> {
+    return this.request<AuthResponse>("/auth/reset-password", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+  }
+
+  // User endpoints
+  async getUsers(token: string): Promise<ApiResponse<User[]>> {
+    return this.request<User[]>("/users", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  }
+
+  async getUserProfile(token: string): Promise<ApiResponse<User>> {
+    return this.request<User>("/users/profile", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  }
+
+  // Scraper endpoints
+  async scrapeData(
+    request: ScraperRequest,
+    token: string
+  ): Promise<ApiResponse<any>> {
+    return this.request<ApiResponse<any>>("/scraper/getData", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(request),
+    });
+  }
+
+  async getUserRatings(
+    username: string,
+    token: string
+  ): Promise<ApiResponse<any>> {
+    console.log("TOKEN", token);
+    return this.request<ApiResponse<any>>("/scraper/getUserRatings", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username }),
+    });
+  }
+
+  async getAllFilms(
+    username: string,
+    token: string
+  ): Promise<ApiResponse<any>> {
+    return this.request<ApiResponse<any>>("/scraper/getAllFilms", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username }),
+    });
+  }
+
+  // Health check
+  async healthCheck(): Promise<ApiResponse> {
+    return this.request<ApiResponse>("/health");
+  }
+
+  // Comparison endpoints (public - no auth required)
+  async getComparisonUsernames(): Promise<ApiResponse<Array<{ username: string; displayName?: string }>>> {
+    return this.request<Array<{ username: string; displayName?: string }>>("/comparison/usernames");
+  }
+
+  async getComparisonUserRatings(username: string): Promise<ApiResponse<any>> {
+    return this.request<ApiResponse<any>>("/comparison/user-ratings", {
+      method: "POST",
+      body: JSON.stringify({ username }),
+    });
+  }
+
+  async compareUsers(user1: string, user2: string): Promise<ApiResponse<any>> {
+    return this.request<ApiResponse<any>>("/comparison/compare", {
+      method: "POST",
+      body: JSON.stringify({ user1, user2 }),
+    });
+  }
+
+  // Hater rankings endpoint
+  async getHaterRankings(): Promise<ApiResponse<any>> {
+    return this.request<ApiResponse<any>>("/comparison/hater-rankings");
+  }
+}
+
+export const apiService = new ApiService();
+export default apiService;

@@ -109,3 +109,8 @@ src/client/dist/
 
 # Server build
 dist/
+
+# Local Netlify folder
+.netlify
+.claude
+settings.local.json

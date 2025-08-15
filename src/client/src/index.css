@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+
+@layer base {
+  body {
+    @apply bg-letterboxd-bg-primary text-letterboxd-text-primary font-sans;
+
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  code {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
+      monospace;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-letterboxd-accent hover:bg-letterboxd-accent-hover text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+
+  .btn-secondary {
+    @apply bg-letterboxd-bg-secondary hover:bg-letterboxd-bg-tertiary text-letterboxd-text-primary font-medium py-2 px-4 rounded-lg border border-letterboxd-border transition-colors duration-200;
+  }
+
+  .card {
+    @apply bg-letterboxd-bg-secondary rounded-xl p-6 shadow-letterboxd border border-letterboxd-border;
+  }
+
+  .input-field {
+    @apply bg-letterboxd-bg-secondary border border-letterboxd-border rounded-lg px-4 py-3 text-letterboxd-text-primary placeholder-letterboxd-text-muted focus:outline-none focus:ring-2 focus:ring-letterboxd-accent focus:border-transparent transition-all duration-200;
+  }
+
+  .section-title {
+    @apply text-xl font-semibold text-letterboxd-text-primary uppercase tracking-wide mb-4;
+  }
+
+  .pro-badge {
+    @apply bg-letterboxd-pro text-black text-xs font-bold px-2 py-1 rounded;
+  }
+}
