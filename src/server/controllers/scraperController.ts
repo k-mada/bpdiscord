@@ -58,9 +58,11 @@ export class ScraperController {
   // initializes puppeteer browser
   private static async initializeBrowser(): Promise<any> {
     if (!puppeteer) {
-      throw new Error("Puppeteer not available - scraping functionality disabled in production");
+      throw new Error(
+        "Puppeteer not available - scraping functionality disabled in production"
+      );
     }
-    
+
     if (!this.browser) {
       this.browser = await puppeteer.launch({
         headless: true,
@@ -710,7 +712,6 @@ export class ScraperController {
     }
   }
 
-
   static async scrapeUserRatings(
     username: string
   ): Promise<Array<{ rating: number; count: number }>> {
@@ -781,7 +782,7 @@ export class ScraperController {
     ]);
   }
 
-  private static validateUserProfile($: cheerio.Root, username: string): void {
+  private static validateUserProfile($: any, username: string): void {
     // Check for specific error indicators, excluding common UI elements like "errormessage" divs
     const errorIndicators = $(
       '.error-page, .not-found, [class="404"], [class="error-404"]'
@@ -812,7 +813,7 @@ export class ScraperController {
     console.log(`Profile validation passed for user: ${username}`);
   }
 
-  private static findRatingsSection($: cheerio.Root): cheerio.Cheerio {
+  private static findRatingsSection($: any): any {
     const selectors = [
       "section.ratings-histogram-chart",
       ".ratings-histogram-chart",
@@ -835,8 +836,8 @@ export class ScraperController {
   }
 
   private static extractRatingsData(
-    $: cheerio.Root,
-    ratingsSection: cheerio.Cheerio
+    $: any,
+    ratingsSection: any
   ): Array<{ rating: number; count: number }> {
     const barSelectors = [
       "li.rating-histogram-bar",
@@ -850,7 +851,7 @@ export class ScraperController {
       "a[href*='rating']",
     ];
 
-    let ratingBars: cheerio.Cheerio | null = null;
+    let ratingBars: any | null = null;
 
     for (const selector of barSelectors) {
       ratingBars = ratingsSection.find(selector);
@@ -868,7 +869,7 @@ export class ScraperController {
 
     const ratings: Array<{ rating: number; count: number }> = [];
 
-    ratingBars.each((index: number, element: cheerio.Element) => {
+    ratingBars.each((index: number, element: any) => {
       const $element = $(element);
       const title = ScraperController.extractTitleFromElement($element);
 
@@ -888,9 +889,7 @@ export class ScraperController {
     return ratings;
   }
 
-  private static extractTitleFromElement(
-    $element: cheerio.Cheerio
-  ): string | null {
+  private static extractTitleFromElement($element: any): string | null {
     const possibleAttributes = ["data-original-title", "title", "aria-label"];
 
     for (const attr of possibleAttributes) {
@@ -942,7 +941,9 @@ export class ScraperController {
 
     try {
       // Always scrape both profile and ratings - this is the scraper endpoint
-      const profileData = await ScraperController.scrapeUserProfileData(username);
+      const profileData = await ScraperController.scrapeUserProfileData(
+        username
+      );
       await ScraperController.saveProfileToDatabase(username, profileData);
 
       const ratingsData = await ScraperController.scrapeUserRatings(username);
@@ -979,7 +980,6 @@ export class ScraperController {
       });
     }
   }
-
 
   static async scrapeUserProfileData(
     username: string
