@@ -24,15 +24,65 @@ const PORT: number = parseInt(process.env.PORT || "3001", 10);
 
 // Security middleware
 app.use(helmet());
-app.use(
-  cors({
-    origin:
-      process.env.NODE_ENV === "production"
-        ? ["https://yourdomain.com"] // Replace with your frontend URL
-        : ["http://localhost:3000", "http://localhost:3001"],
-    credentials: true,
-  })
-);
+// CORS configuration with dynamic origin handling
+const corsOptions = {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    // Allow requests with no origin (like mobile apps or Postman)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    if (process.env.NODE_ENV === "production") {
+      // Build allowed origins list
+      const allowedOrigins = [];
+      
+      // Add custom frontend URL if set
+      if (process.env.FRONTEND_URL) {
+        allowedOrigins.push(process.env.FRONTEND_URL);
+      }
+      
+      // Add Vercel URL if available (Vercel automatically sets this)
+      if (process.env.VERCEL_URL) {
+        allowedOrigins.push(`https://${process.env.VERCEL_URL}`);
+      }
+      
+      // Regex patterns for Vercel domains
+      const allowedPatterns = [
+        /^https:\/\/.*\.vercel\.app$/,
+        /^https:\/\/bpdiscord.*\.vercel\.app$/,
+        /^https:\/\/.*-k-madas-projects\.vercel\.app$/,
+        // Add your custom domain when you get one:
+        // /^https:\/\/yourdomain\.com$/,
+      ];
+      
+      // Check exact matches first, then patterns
+      const exactMatch = allowedOrigins.includes(origin);
+      const patternMatch = allowedPatterns.some(pattern => pattern.test(origin));
+      const isAllowed = exactMatch || patternMatch;
+      
+      // Debug logging for CORS issues
+      if (!isAllowed) {
+        console.warn(`CORS blocked origin: ${origin}`);
+        console.warn(`Allowed origins:`, allowedOrigins);
+        console.warn(`VERCEL_URL:`, process.env.VERCEL_URL);
+      }
+      
+      return callback(null, isAllowed);
+    } else {
+      // Development: allow localhost
+      const allowedOrigins = [
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001"
+      ];
+      return callback(null, allowedOrigins.includes(origin));
+    }
+  },
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
 
 // Rate limiting
 const limiter = rateLimit({
@@ -65,14 +115,17 @@ app.use("/api/comparison", comparisonRoutes);
 app.use("/api/film-users", filmUserRoutes);
 
 // Only load scraper routes in development or when explicitly enabled
-if (process.env.NODE_ENV !== "production" || process.env.ENABLE_SCRAPER === "true") {
+if (
+  process.env.NODE_ENV !== "production" ||
+  process.env.ENABLE_SCRAPER === "true"
+) {
   app.use("/api/scraper", scraperRoutes);
 } else {
   // Return 503 for scraper endpoints in production
   app.use("/api/scraper", (req, res) => {
     res.status(503).json({
       error: "Scraping functionality disabled in production",
-      message: "Use the database-first endpoints at /api/film-users instead"
+      message: "Use the database-first endpoints at /api/film-users instead",
     });
   });
 }
