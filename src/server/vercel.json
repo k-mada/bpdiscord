@@ -2,20 +2,14 @@
   "version": 2,
   "builds": [
     {
-      "src": "server/server.ts",
+      "src": "*.ts",
       "use": "@vercel/node"
     }
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "//server/server.ts"
+      "src": "/(.*)",
+      "dest": "/"
     }
-  ],
-  "env": {
-    "NODE_ENV": "production",
-    "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD": "true"
-  },
-  "installCommand": "npm install",
-  "buildCommand": "npm run build"
+  ]
 }
