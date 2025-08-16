@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "builds": [
+    {
+      "src": "src/server/dist/server.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "https://letterboxd-kmada-2025-08-14-05-17-utc.vercel.app/$1"
+    }
+  ]
+}

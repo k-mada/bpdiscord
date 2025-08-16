@@ -4,13 +4,13 @@
   "description": "BPDiscord - A full-stack web application with TypeScript Express API and React frontend",
   "main": "dist/server.js",
   "scripts": {
-    "build": "cd ../.. && tsc",
-    "start": "node ../../dist/server/server.js",
-    "dev": "ts-node-dev --respawn --transpile-only server.ts",
+    "build": "tsc",
+    "start": "node dist/server/server.js",
+    "dev": "ts-node-dev --respawn --transpile-only src/server/server.ts",
     "watch": "tsc --watch",
     "clean": "rimraf dist",
-    "build:client": "cd src/client && npm run build",
-    "dev:client": "cd src/client && npm start"
+    "build:client": "cd ../client && npm run build",
+    "dev:client": "cd ../client && npm start"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.38.0",

@@ -6,7 +6,7 @@ import dotenv from "dotenv";
 
 import authRoutes from "./routes/authRoutes";
 import userRoutes from "./routes/userRoutes";
-import scraperRoutes from "./routes/scraperRoutes";
+// import scraperRoutes from "./routes/scraperRoutes"; // Disabled for Vercel deployment
 import comparisonRoutes from "./routes/comparisonRoutes";
 import filmUserRoutes from "./routes/filmUserRoutes";
 import { globalErrorHandler } from "./middleware/errorHandler";
