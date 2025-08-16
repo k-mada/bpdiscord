@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import PasswordReset from "./PasswordReset";
 import apiService from "../services/api";
-import { AuthRequest, SignupRequest } from "../../../shared/types";
+import { AuthRequest, SignupRequest } from "../types";
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();

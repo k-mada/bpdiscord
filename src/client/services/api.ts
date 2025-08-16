@@ -6,10 +6,10 @@ import {
   AuthResponse,
   ScraperRequest,
   PasswordResetConfirmRequest,
-} from "../../../shared/types";
+} from "../types";
 
 const API_BASE_URL =
-  process.env.REACT_APP_API_URL || "http://localhost:3001/api";
+  import.meta.env.VITE_API_URL || "/api";
 
 class ApiService {
   private async request<T>(

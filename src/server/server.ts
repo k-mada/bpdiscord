@@ -71,10 +71,14 @@ const corsOptions = {
     } else {
       // Development: allow localhost
       const allowedOrigins = [
-        "http://localhost:3000",
-        "http://localhost:3001",
+        "http://localhost:3000",  // Original CRA port
+        "http://localhost:3001",  // Server port
+        "http://localhost:5173",  // Vite dev server port
+        "http://localhost:5174",  // Vite dev server fallback port
         "http://127.0.0.1:3000",
-        "http://127.0.0.1:3001"
+        "http://127.0.0.1:3001",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:5174"
       ];
       return callback(null, allowedOrigins.includes(origin));
     }

@@ -23,6 +23,6 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true
   },
-  "include": ["src/server/**/*", "src/shared/**/*"],
+  "include": ["src/server/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts", "src/client/**/*"]
 }

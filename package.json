@@ -4,12 +4,15 @@
   "description": "BPDiscord - A full-stack web application with TypeScript Express API and React frontend",
   "private": true,
   "scripts": {
-    "build": "tsc && cd src/client && npm run build",
-    "start": "node dist/server/server.js",
-    "dev:server": "cd src/server && npm run dev",
-    "dev:client": "cd src/client && npm start",
-    "install:all": "npm install && cd src/server && npm install && cd ../client && npm install",
-    "clean": "rimraf dist && cd src/server && npm run clean"
+    "build": "cd src/server && tsc && cd ../client && yarn build",
+    "build:server": "cd src/server && tsc",
+    "build:client": "cd src/client && yarn build",
+    "start": "node src/server/dist/server.js",
+    "dev": "concurrently \"yarn dev:server\" \"yarn dev:client\"",
+    "dev:server": "cd src/server && yarn dev",
+    "dev:client": "cd src/client && yarn dev",
+    "install:all": "yarn install && cd src/server && yarn install && cd ../client && yarn install",
+    "clean": "rimraf src/server/dist && cd src/client && rimraf build"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.38.0",
@@ -32,6 +35,7 @@
     "@types/express": "^4.17.21",
     "@types/jsonwebtoken": "^9.0.5",
     "@types/node": "^20.10.0",
+    "concurrently": "^9.1.0",
     "rimraf": "^5.0.5",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.3.2"

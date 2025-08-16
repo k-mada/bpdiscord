@@ -7,7 +7,7 @@ import {
   ApiResponse,
   PasswordResetRequest,
   PasswordResetConfirmRequest,
-} from "../../shared/types";
+} from "../types";
 
 export class AuthController {
   static async signup(req: Request, res: Response): Promise<void> {
