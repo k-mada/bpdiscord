@@ -8,9 +8,7 @@
     "start": "node dist/server/server.js",
     "dev": "ts-node-dev --respawn --transpile-only src/server/server.ts",
     "watch": "tsc --watch",
-    "clean": "rimraf dist",
-    "build:client": "cd ../client && npm run build",
-    "dev:client": "cd ../client && npm start"
+    "clean": "rimraf dist"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.38.0",
