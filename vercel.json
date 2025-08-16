@@ -20,14 +20,20 @@
       "dest": "/src/server/server.ts"
     },
     {
+      "src": "/static/(.*)",
+      "dest": "/src/client/build/static/$1"
+    },
+    {
+      "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot))",
+      "dest": "/src/client/build/$1"
+    },
+    {
       "src": "/(.*)",
-      "dest": "/src/client/$1"
+      "dest": "/src/client/build/index.html"
     }
   ],
   "env": {
     "NODE_ENV": "production",
     "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD": "true"
-  },
-  "installCommand": "yarn install",
-  "buildCommand": "yarn build"
+  }
 }

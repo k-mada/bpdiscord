@@ -22,28 +22,38 @@ bpdiscord/
 │   │   ├── controllers/  # Business logic controllers
 │   │   │   ├── authController.ts
 │   │   │   ├── comparisonController.ts
-│   │   │   ├── dataController.ts
-│   │   │   ├── scraperController.ts
+│   │   │   ├── filmUserController.ts    # Database-first user operations
+│   │   │   ├── scraperController.ts     # Force-scraping operations
 │   │   │   └── userController.ts
 │   │   ├── middleware/   # Authentication, validation, error handling
 │   │   ├── routes/       # API route definitions
-│   │   ├── types/        # TypeScript type definitions
-│   │   └── server.ts     # Main server file
-│   ├── client/           # Frontend (React + TypeScript)
-│   │   ├── src/
-│   │   │   ├── components/  # React components
-│   │   │   │   ├── Dashboard.tsx
-│   │   │   │   ├── HaterRankings.tsx
-│   │   │   │   ├── UserComparison.tsx
-│   │   │   │   ├── PublicUserComparison.tsx
-│   │   │   │   ├── ScraperInterface.tsx
-│   │   │   │   └── UserProfile.tsx
-│   │   │   ├── services/    # API service layer
-│   │   │   └── App.tsx      # Main React app with routing
-│   │   └── package.json     # Client dependencies
-│   └── shared/           # Shared types between client/server
+│   │   │   ├── authRoutes.ts
+│   │   │   ├── comparisonRoutes.ts
+│   │   │   ├── filmUserRoutes.ts        # Database-first endpoints
+│   │   │   ├── scraperRoutes.ts         # Force-scraping endpoints
+│   │   │   └── userRoutes.ts
+│   │   ├── types.ts      # Server-specific TypeScript definitions
+│   │   ├── server.ts     # Main server file
+│   │   ├── package.json  # Server dependencies
+│   │   └── dist/         # Compiled TypeScript output
+│   ├── client/           # Frontend (Vite + React + TypeScript)
+│   │   ├── components/   # React components
+│   │   │   ├── Dashboard.tsx
+│   │   │   ├── HaterRankings.tsx
+│   │   │   ├── UserComparison.tsx
+│   │   │   ├── PublicUserComparison.tsx
+│   │   │   ├── ScraperInterface.tsx
+│   │   │   └── UserProfile.tsx
+│   │   ├── services/     # API service layer
+│   │   ├── types.ts      # Client-specific TypeScript definitions
+│   │   ├── index.tsx     # Main React app entry point
+│   │   ├── vite.config.js # Vite configuration
+│   │   ├── tailwind.config.js # Tailwind CSS configuration
+│   │   ├── package.json  # Client dependencies
+│   │   └── build/        # Vite build output
 ├── CLAUDE.md            # Comprehensive technical documentation
-├── package.json         # Server dependencies
+├── package.json         # Root orchestration + shared dependencies
+├── vercel.json          # Deployment configuration
 └── tsconfig.json       # TypeScript configuration
 ```
 
@@ -109,8 +119,8 @@ bpdiscord/
 
 ## Prerequisites
 
-- Node.js (v16 or higher)
-- npm or yarn
+- Node.js (v18 or higher)
+- Yarn package manager
 - Supabase account and project
 
 ## Environment Variables
@@ -132,7 +142,8 @@ NODE_ENV=development
 Create a `.env` file in `src/client/`:
 
 ```env
-REACT_APP_API_URL=http://localhost:3001/api
+# VITE_API_URL=/api  # Uses proxy in development, override for production
+VITE_HOT_RELOAD=true
 ```
 
 ### Security Notice
@@ -143,21 +154,34 @@ For production deployment, use environment variables. See [DEPLOYMENT.md](./DEPL
 
 ## Installation
 
-### 1. Install Server Dependencies
+### Quick Install (All Dependencies)
 
 ```bash
-npm install
+yarn install:all
 ```
 
-### 2. Install Client Dependencies
+### Manual Installation
 
+#### 1. Install Root Dependencies
 ```bash
-cd src/client
-npm install
+yarn install
+```
+
+#### 2. Install Server Dependencies
+```bash
+cd src/server
+yarn install
 cd ../..
 ```
 
-### 3. Database Setup
+#### 3. Install Client Dependencies
+```bash
+cd src/client
+yarn install
+cd ../..
+```
+
+### Database Setup
 
 1. Create a Supabase project
 2. Set up the required tables:
@@ -193,33 +217,52 @@ CREATE TABLE "UserRatings" (
 
 ### Development Mode
 
-#### Start the Server
+#### Option 1: Start Both (Concurrent - Recommended)
 ```bash
-npm run dev
+yarn dev
+```
+- Server runs on `http://localhost:3001`
+- Client runs on `http://localhost:5173` (or 5174 if 5173 is in use)
+
+#### Option 2: Start Individually
+
+**Start the Server**
+```bash
+yarn dev:server
 ```
 Server runs on `http://localhost:3001`
 
-#### Start the Client (new terminal)
+**Start the Client (new terminal)**
 ```bash
-npm run dev:client
+yarn dev:client  
 ```
-Client runs on `http://localhost:3000`
+Client runs on `http://localhost:5173`
 
 ### Production Mode
 
 #### Build and Start
 ```bash
 # Build both server and client
-npm run build
-npm run build:client
+yarn build
+
+# Or build individually
+yarn build:server
+yarn build:client
 
 # Start production server
-npm start
+yarn start
 ```
 
 ## API Endpoints
 
 ### Public Endpoints
+
+#### Film User API (`/api/film-users`) - Database-First
+- `GET /` - Get all users with display names
+- `GET /:username/ratings` - Get user's ratings (database only)
+- `GET /:username/profile` - Get user's profile (database only)  
+- `GET /:username/complete` - Get complete user data (database only)
+- Add `?fallback=scrape` to any endpoint to scrape if data missing
 
 #### Comparison API (`/api/comparison`)
 - `GET /usernames` - Get list of users with display names
@@ -235,11 +278,12 @@ npm start
 - `POST /logout` - Session termination
 - `POST /password-reset` - Password reset
 
-#### Scraper API (`/api/scraper`)
-- `POST /getUserRatings` - Scrape user's rating distribution
-- `POST /getUserProfile` - Scrape complete profile + ratings
-- `POST /getAllFilms` - Scrape user's film list
+#### Scraper API (`/api/scraper`) - Force-Scraping Only
+- `POST /getUserRatings` - Force scrape user's rating distribution
+- `POST /getUserProfile` - Force scrape complete profile + ratings
+- `POST /getAllFilms` - Force scrape user's film list
 - `POST /getData` - Generic scraping with custom selectors
+- **Note**: Disabled in production unless `ENABLE_SCRAPER=true`
 
 #### User Management (`/api/users`)
 - `GET /` - Get all users
@@ -254,13 +298,13 @@ npm start
 ## Usage
 
 ### Public Access
-1. Visit `http://localhost:3000/compare` for user comparison
-2. Visit `http://localhost:3000/hater-rankings` for rankings
+1. Visit `http://localhost:5173/compare` for user comparison
+2. Visit `http://localhost:5173/hater-rankings` for rankings
 3. No authentication required for public features
 
 ### Authenticated Access
 1. Start the application (see Running section)
-2. Navigate to `http://localhost:3000` (redirects to login)
+2. Navigate to `http://localhost:5173` (redirects to login)
 3. Sign up or log in to access dashboard
 4. Use the Data Fetcher to scrape Letterboxd profiles
 5. View comparisons and rankings with your data
@@ -289,16 +333,26 @@ npm start
 
 ### Available Scripts
 
-#### Server
-- `npm run dev` - Development server with hot reload
-- `npm run build` - Build TypeScript to JavaScript
-- `npm run start` - Start production server
-- `npm run watch` - Build in watch mode
-- `npm run clean` - Clean build directory
+#### Root Scripts
+- `yarn dev` - Start both server and client concurrently
+- `yarn build` - Build both server and client
+- `yarn build:server` - Build server only
+- `yarn build:client` - Build client only
+- `yarn start` - Start production server
+- `yarn install:all` - Install all dependencies
+- `yarn clean` - Clean build directories
 
-#### Client
-- `npm run dev:client` - Development server with hot reload
-- `npm run build:client` - Build for production
+#### Server Scripts (run from src/server/)
+- `yarn dev` - Development server with hot reload
+- `yarn build` - Build TypeScript to JavaScript
+- `yarn start` - Start production server
+- `yarn watch` - Build in watch mode
+- `yarn clean` - Clean build directory
+
+#### Client Scripts (run from src/client/)
+- `yarn dev` - Vite development server with hot reload
+- `yarn build` - Build for production with Vite
+- `yarn preview` - Preview production build locally
 
 ### Code Organization
 
@@ -322,6 +376,7 @@ npm start
 - **Express Rate Limit** - API rate limiting
 
 ### Frontend
+- **Vite** - Fast build tool and dev server
 - **React 18** - UI framework
 - **TypeScript** - Type safety
 - **Tailwind CSS** - Utility-first styling

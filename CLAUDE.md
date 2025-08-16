@@ -7,29 +7,41 @@ BPDiscord is a full-stack TypeScript web application that scrapes and analyzes L
 ## Architecture
 
 ### Technology Stack
-- **Frontend**: React 18 + TypeScript, Tailwind CSS
+- **Frontend**: Vite + React 18 + TypeScript, Tailwind CSS
 - **Backend**: Express.js + TypeScript, Puppeteer for web scraping
 - **Database**: Supabase (PostgreSQL)
 - **Authentication**: JWT tokens via Supabase Auth
 - **Web Scraping**: Puppeteer + Cheerio for HTML parsing
+- **Package Manager**: Yarn (consistent across all projects)
+- **Development**: Vite proxy for CORS-free development
 
 ### Project Structure
 ```
 bpdiscord/
 ├── src/
-│   ├── client/           # React frontend application
-│   │   ├── src/
-│   │   │   ├── components/   # React components
-│   │   │   └── services/     # API client services
-│   │   └── public/
+│   ├── client/           # Vite + React frontend application
+│   │   ├── components/   # React components
+│   │   ├── services/     # API client services
+│   │   ├── types.ts      # Client-specific TypeScript types
+│   │   ├── vite.config.js # Vite configuration with proxy
+│   │   ├── tailwind.config.js # Tailwind CSS configuration
+│   │   ├── package.json  # Client dependencies
+│   │   └── build/        # Vite build output
 │   ├── server/           # Express.js backend
 │   │   ├── config/       # Database and configuration
 │   │   ├── controllers/  # Business logic controllers
+│   │   │   ├── filmUserController.ts # Database-first operations
+│   │   │   └── scraperController.ts  # Force-scraping operations
 │   │   ├── middleware/   # Authentication, validation, error handling
 │   │   ├── routes/       # API route definitions
-│   │   └── types/        # TypeScript type definitions
-│   └── shared/           # Shared types between client/server
-└── dist/                 # Compiled TypeScript output
+│   │   │   ├── filmUserRoutes.ts     # Database-first endpoints
+│   │   │   └── scraperRoutes.ts      # Force-scraping endpoints
+│   │   ├── types.ts      # Server-specific TypeScript types
+│   │   ├── package.json  # Server dependencies
+│   │   └── dist/         # TypeScript compilation output
+├── package.json          # Root orchestration + shared dependencies
+├── vercel.json           # Deployment configuration
+└── yarn.lock             # Lockfile for consistent dependencies
 ```
 
 ## Data Flow Architecture
@@ -93,11 +105,19 @@ Raw Letterboxd Data → Validation → Transformation → Database Storage → A
 - `POST /logout` - Session termination
 - `POST /password-reset` - Password reset initiation
 
-### Scraper Routes (`/api/scraper`) - Protected
-- `POST /getUserRatings` - Scrape user's rating distribution
-- `POST /getUserProfile` - Scrape complete user profile + ratings
-- `POST /getAllFilms` - Scrape user's complete film list
+### Film User Routes (`/api/film-users`) - Public, Database-First
+- `GET /` - Get all users with display names
+- `GET /:username/ratings` - Get user's ratings (database only)
+- `GET /:username/profile` - Get user's profile (database only)  
+- `GET /:username/complete` - Get complete user data (database only)
+- **Fallback Parameter**: Add `?fallback=scrape` to any endpoint to scrape if data missing
+
+### Scraper Routes (`/api/scraper`) - Protected, Force-Scraping Only
+- `POST /getUserRatings` - Force scrape user's rating distribution
+- `POST /getUserProfile` - Force scrape complete user profile + ratings
+- `POST /getAllFilms` - Force scrape user's complete film list
 - `POST /getData` - Generic data scraping with custom selectors
+- **Production**: Disabled unless `ENABLE_SCRAPER=true` environment variable set
 
 ### Comparison Routes (`/api/comparison`) - Public
 - `GET /usernames` - Get list of available users with display names
@@ -165,23 +185,23 @@ Raw Letterboxd Data → Validation → Transformation → Database Storage → A
 - **Hater Rankings** (`/dashboard/hater-rankings`) - Private rankings view
 
 #### 4. Data Fetcher (`/dashboard/fetcher`)
-**Purpose**: Interface for scraping Letterboxd data
+**Purpose**: Interface for accessing and scraping Letterboxd data
 
-**Flow**:
+**Enhanced Interface**:
 1. User enters Letterboxd username
-2. Selects scraping operation:
-   - Get user ratings only
-   - Get complete user profile
-   - Get all films (paginated)
-3. System validates input and initiates scraping
-4. Real-time feedback during scraping process
-5. Results displayed with option to save to database
+2. Two operation modes available:
+   - **"Check Database"**: Uses database-first endpoints (`/api/film-users`)
+   - **"Force Scrape"**: Uses force-scraping endpoints (`/api/scraper`)
+3. Database operations show data source (database vs scraped vs fallback)
+4. Real-time feedback during all operations
+5. Results displayed with detailed metadata
 6. Error handling for invalid users or scraping failures
 
 **Technical Process**:
+- **Database-First**: Queries existing data, optional fallback to scraping
+- **Force-Scraping**: Always scrapes fresh data from Letterboxd
 - Validates Letterboxd username format
-- Launches Puppeteer browser instance
-- Navigates to user's Letterboxd profile
+- Launches Puppeteer browser instance (scraping mode only)
 - Extracts data using CSS selectors
 - Validates extracted data
 - Stores in database with upsert logic
@@ -255,6 +275,76 @@ const parseNumberFromText = (text: string): number => {
 };
 ```
 
+## Database-First Architecture
+
+### Design Philosophy
+BPDiscord implements a **database-first architecture** optimized for production deployment:
+
+1. **Primary Access**: Database queries for maximum performance and reliability
+2. **Fallback Scraping**: Optional scraping when data is missing
+3. **Force Scraping**: Explicit scraping for data updates
+4. **Production Optimization**: Scraping disabled by default in production
+
+### API Architecture Separation
+
+#### Database-First Endpoints (`/api/film-users`)
+- **Purpose**: Fast, reliable access to existing data
+- **Authentication**: Public (no authentication required)
+- **Performance**: Optimized database queries with indexes
+- **Fallback**: Optional `?fallback=scrape` parameter
+- **Use Case**: Public pages, user comparisons, rankings
+
+#### Force-Scraping Endpoints (`/api/scraper`)  
+- **Purpose**: Fresh data extraction from Letterboxd
+- **Authentication**: Protected (requires JWT token)
+- **Performance**: Slower due to browser automation
+- **Production**: Disabled unless `ENABLE_SCRAPER=true`
+- **Use Case**: Administrative data updates, new user addition
+
+### Data Flow Examples
+
+#### Public User Comparison
+```
+User Request → /api/film-users/:username/complete
+    ↓
+Database Query (fast)
+    ↓
+Return Cached Data
+```
+
+#### Admin Data Update
+```
+Admin Request → /api/scraper/getUserProfile + JWT
+    ↓
+Puppeteer Browser Launch
+    ↓
+Letterboxd Scraping
+    ↓
+Database Upsert
+    ↓
+Return Fresh Data
+```
+
+#### Fallback Pattern
+```
+User Request → /api/film-users/:username/complete?fallback=scrape
+    ↓
+Database Query → No Data Found
+    ↓
+Automatic Scraping
+    ↓
+Database Storage
+    ↓
+Return Scraped Data
+```
+
+### Production Benefits
+1. **Serverless Compatibility**: No memory-intensive scraping by default
+2. **Fast Response Times**: Database queries return in milliseconds
+3. **Cost Optimization**: Reduced compute usage and function timeouts
+4. **Reliability**: No dependency on external site stability
+5. **Scalability**: Database can handle high concurrent loads
+
 ## Security Features
 
 ### Authentication & Authorization
@@ -320,18 +410,21 @@ const parseNumberFromText = (text: string): number => {
 
 ### Development Setup
 ```bash
-# Install dependencies
-npm install
+# Install all dependencies
+yarn install:all
 
-# Start backend development server
-npm run dev
+# Start both server and client concurrently (recommended)
+yarn dev
 
-# Start frontend development server (separate terminal)
-npm run dev:client
+# Or start individually:
+# Backend development server
+yarn dev:server
+
+# Frontend development server (separate terminal) 
+yarn dev:client
 
 # Build for production
-npm run build
-npm run build:client
+yarn build
 ```
 
 ### Environment Variables
@@ -342,10 +435,19 @@ SUPABASE_ANON_KEY=your_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_key
 JWT_SECRET=your_jwt_secret
 NODE_ENV=development
+ENABLE_SCRAPER=true  # Enable scraping in production (optional)
 
 # Frontend (.env)
-REACT_APP_API_URL=http://localhost:3001/api
+# VITE_API_URL=/api  # Uses proxy in development, override for production
+VITE_HOT_RELOAD=true
 ```
+
+### Vite Development Benefits
+- **Fast HMR**: Hot module replacement for instant updates
+- **Proxy Configuration**: CORS-free API calls via `/api` proxy to `:3001`
+- **Environment Variables**: Use `VITE_` prefix instead of `REACT_APP_`
+- **Build Speed**: Significantly faster than Create React App
+- **Modern Tooling**: ESBuild for lightning-fast TypeScript compilation
 
 ### Database Setup
 1. Create Supabase project
@@ -377,7 +479,10 @@ REACT_APP_API_URL=http://localhost:3001/api
 1. **Scraping Failures**: Often due to Letterboxd changes or rate limiting
 2. **Authentication Errors**: Check token expiration and Supabase configuration
 3. **Database Connection Issues**: Verify Supabase credentials and network access
-4. **CORS Errors**: Ensure frontend URL is in allowed origins
+4. **CORS Errors**: Ensure frontend URL is in allowed origins (now includes :5173, :5174)
+5. **Vite Build Errors**: Check Tailwind content paths and environment variables
+6. **Process Not Defined**: Use `import.meta.env.VITE_*` instead of `process.env.REACT_APP_*`
+7. **Yarn Lock Conflicts**: Delete `package-lock.json` files if mixing npm/yarn
 
 ### Debug Information
 - Enable verbose logging in development
