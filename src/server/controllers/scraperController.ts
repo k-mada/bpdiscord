@@ -1,6 +1,15 @@
 /// <reference lib="dom" />
 import { Request, Response } from "express";
-import puppeteer, { Browser, Page } from "puppeteer";
+// Conditional import for Puppeteer (only available in development)
+let puppeteer: any;
+
+try {
+  const puppeteerModule = require("puppeteer");
+  puppeteer = puppeteerModule.default || puppeteerModule;
+} catch (error) {
+  // Puppeteer not available in production
+  console.warn("Puppeteer not available - scraping functionality disabled");
+}
 import * as cheerio from "cheerio";
 import { ApiResponse, ScraperSelector } from "../types";
 import { DataController } from "./dataController";
@@ -44,10 +53,14 @@ const extractRatingCount = (title: string | undefined): number => {
 };
 
 export class ScraperController {
-  private static browser: Browser | null = null;
+  private static browser: any | null = null;
 
   // initializes puppeteer browser
-  private static async initializeBrowser(): Promise<Browser> {
+  private static async initializeBrowser(): Promise<any> {
+    if (!puppeteer) {
+      throw new Error("Puppeteer not available - scraping functionality disabled in production");
+    }
+    
     if (!this.browser) {
       this.browser = await puppeteer.launch({
         headless: true,
@@ -82,7 +95,7 @@ export class ScraperController {
   }
 
   // returns browser page
-  private static async createPage(): Promise<Page> {
+  private static async createPage(): Promise<any> {
     const browser = await this.initializeBrowser();
     const page = await browser.newPage();
 
@@ -110,7 +123,7 @@ export class ScraperController {
 
     // Performance optimizations - but be more selective to avoid detection
     await page.setRequestInterception(true);
-    page.on("request", (req) => {
+    page.on("request", (req: any) => {
       // Only block images and fonts to avoid detection, allow CSS and scripts
       const resourceType = req.resourceType();
       if (["image", "font"].includes(resourceType)) {
@@ -560,7 +573,7 @@ export class ScraperController {
   }
 
   static async getAllFilms(req: Request, res: Response): Promise<void> {
-    let page: Page | null = null;
+    let page: any | null = null;
 
     try {
       const { username } = req.body;
@@ -731,7 +744,7 @@ export class ScraperController {
   }
 
   private static async loadPageWithRetry(
-    page: Page,
+    page: any,
     url: string
   ): Promise<void> {
     console.log(`Loading page: ${url}`);
@@ -761,7 +774,7 @@ export class ScraperController {
     }
   }
 
-  private static async waitForPageContent(page: Page): Promise<void> {
+  private static async waitForPageContent(page: any): Promise<void> {
     await Promise.race([
       page.waitForSelector("body", { timeout: 10000 }),
       new Promise((resolve) => setTimeout(resolve, 5000)),
