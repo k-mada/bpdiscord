@@ -161,6 +161,49 @@ class ApiService {
   async getHaterRankings(): Promise<ApiResponse<any>> {
     return this.request<ApiResponse<any>>("/comparison/hater-rankings");
   }
+
+  // New database-first film user endpoints (no auth required)
+  async getFilmUserRatings(username: string, fallback: boolean = false): Promise<ApiResponse<any>> {
+    const fallbackParam = fallback ? '?fallback=scrape' : '';
+    return this.request<ApiResponse<any>>(`/film-users/${username}/ratings${fallbackParam}`);
+  }
+
+  async getFilmUserProfile(username: string, fallback: boolean = false): Promise<ApiResponse<any>> {
+    const fallbackParam = fallback ? '?fallback=scrape' : '';
+    return this.request<ApiResponse<any>>(`/film-users/${username}/profile${fallbackParam}`);
+  }
+
+  async getFilmUserComplete(username: string, fallback: boolean = false): Promise<ApiResponse<any>> {
+    const fallbackParam = fallback ? '?fallback=scrape' : '';
+    return this.request<ApiResponse<any>>(`/film-users/${username}/complete${fallbackParam}`);
+  }
+
+  async getFilmUsers(): Promise<ApiResponse<Array<{ username: string; displayName?: string }>>> {
+    return this.request<Array<{ username: string; displayName?: string }>>("/film-users");
+  }
+
+  // Force scraping endpoints (auth required)
+  async forceScrapeUserRatings(username: string, token: string): Promise<ApiResponse<any>> {
+    return this.request<ApiResponse<any>>("/scraper/getUserRatings", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username }),
+    });
+  }
+
+  async forceScrapeUserProfile(username: string, token: string): Promise<ApiResponse<any>> {
+    return this.request<ApiResponse<any>>("/scraper/getUserProfile", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username }),
+    });
+  }
 }
 
 export const apiService = new ApiService();

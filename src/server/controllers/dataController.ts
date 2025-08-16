@@ -98,34 +98,13 @@ export class DataController {
     }
   }
 
-  static async getUserRatings(username: string, refreshData: boolean = false): Promise<{
+  static async getUserRatings(username: string): Promise<{
     success: boolean;
     data?: any[];
     error?: string;
   }> {
     try {
-      // If refreshData is true, skip database lookup and scrape fresh data
-      if (refreshData) {
-        const { ScraperController } = await import('./scraperController');
-        
-        // Scrape fresh data
-        const scrapedRatings = await ScraperController.scrapeUserRatings(username);
-        
-        if (!scrapedRatings || scrapedRatings.length === 0) {
-          return { success: false, error: "No ratings data could be scraped" };
-        }
-
-        // Update database with scraped data using upsert
-        const upsertResult = await DataController.upsertUserRatings(username, scrapedRatings);
-        if (!upsertResult.success) {
-          return { success: false, error: upsertResult.error || "Failed to update ratings" };
-        }
-        
-        // Return the freshly scraped data
-        return { success: true, data: scrapedRatings };
-      }
-
-      // Default behavior: get data from database
+      // Always get data from database - no scraping logic here
       const { data, error } = await supabaseAdmin
         .from("UserRatings")
         .select("*")

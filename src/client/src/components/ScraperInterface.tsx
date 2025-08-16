@@ -36,6 +36,41 @@ const ScraperInterface: React.FC<ScraperInterfaceProps> = ({ token }) => {
 
   const allRatings = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
 
+  const handleCheckExistingData = async () => {
+    if (!username.trim()) {
+      setError("Please enter a username");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    setSuccess(null);
+    setUserRatings(null);
+    setFilmCount(null);
+
+    try {
+      setFetchStatus("Checking database for existing data...");
+      const response = await apiService.getFilmUserComplete(username, false);
+
+      if (response.data) {
+        setUserRatings({
+          username: username,
+          ratings: response.data.ratings,
+        });
+        setSuccess("Data found in database!");
+      }
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("404")) {
+        setError("No data found in database. Use 'Force Scrape' to collect data.");
+      } else {
+        setError(err instanceof Error ? err.message : "Failed to check existing data");
+      }
+    } finally {
+      setFetchStatus("");
+      setLoading(false);
+    }
+  };
+
   const handleFetchAllData = async () => {
     if (!username.trim()) {
       setError("Please enter a username");
@@ -49,12 +84,12 @@ const ScraperInterface: React.FC<ScraperInterfaceProps> = ({ token }) => {
     setFilmCount(null);
 
     try {
-      // Fetch user ratings
-      setFetchStatus("Fetching user ratings...");
-      const ratingsResponse = await apiService.getUserRatings(username, token);
+      // Force scrape user profile and ratings
+      setFetchStatus("Force scraping user profile and ratings...");
+      const profileResponse = await apiService.forceScrapeUserProfile(username, token);
 
-      if (ratingsResponse.error) {
-        throw new Error(`User ratings fetch failed: ${ratingsResponse.error}`);
+      if (profileResponse.error) {
+        throw new Error(`User profile scraping failed: ${profileResponse.error}`);
       }
 
       // Fetch all films
@@ -66,10 +101,10 @@ const ScraperInterface: React.FC<ScraperInterfaceProps> = ({ token }) => {
       }
 
       // Process user ratings data
-      if (ratingsResponse.data && ratingsResponse.data.ratings) {
+      if (profileResponse.data && profileResponse.data.ratings) {
         setUserRatings({
           username: username,
-          ratings: ratingsResponse.data.ratings,
+          ratings: profileResponse.data.ratings,
         });
       }
 
@@ -98,7 +133,7 @@ const ScraperInterface: React.FC<ScraperInterfaceProps> = ({ token }) => {
           Letterboxd Data Fetcher
         </h2>
         <p className="text-letterboxd-text-secondary">
-          Fetch all user data and film information
+          Check database for existing data or force scrape fresh data from Letterboxd
         </p>
       </div>
 
@@ -124,11 +159,18 @@ const ScraperInterface: React.FC<ScraperInterfaceProps> = ({ token }) => {
 
           <div className="flex flex-col sm:flex-row gap-4">
             <button
+              onClick={handleCheckExistingData}
+              disabled={loading || !username.trim()}
+              className="btn-secondary flex-1"
+            >
+              {loading ? "Checking..." : "Check Database"}
+            </button>
+            <button
               onClick={handleFetchAllData}
               disabled={loading || !username.trim()}
               className="btn-primary flex-1"
             >
-              {loading ? "Fetching..." : "Fetch All User Data"}
+              {loading ? "Scraping..." : "Force Scrape Data"}
             </button>
           </div>
 

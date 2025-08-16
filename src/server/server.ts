@@ -8,6 +8,7 @@ import authRoutes from "./routes/authRoutes";
 import userRoutes from "./routes/userRoutes";
 import scraperRoutes from "./routes/scraperRoutes";
 import comparisonRoutes from "./routes/comparisonRoutes";
+import filmUserRoutes from "./routes/filmUserRoutes";
 import { globalErrorHandler } from "./middleware/errorHandler";
 import { ApiResponse } from "./types";
 
@@ -62,6 +63,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/scraper", scraperRoutes);
 app.use("/api/comparison", comparisonRoutes);
+app.use("/api/film-users", filmUserRoutes);
 
 // Error handling middleware
 app.use(globalErrorHandler);

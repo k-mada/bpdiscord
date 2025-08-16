@@ -38,7 +38,8 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await apiService.getComparisonUsernames();
+      // Use new database-first endpoint
+      const response = await apiService.getFilmUsers();
       if (response.data) {
         setUsernames(response.data);
       }
@@ -55,7 +56,8 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await apiService.getComparisonUserRatings(username);
+      // Use new database-first endpoint with fallback to scraping if needed
+      const response = await apiService.getFilmUserComplete(username, true);
 
       if (response.data) {
         const userData: UserData = {
@@ -64,7 +66,7 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
           followers: response.data.followers,
           following: response.data.following,
           numberOfLists: response.data.numberOfLists,
-          totalFilms: response.data.totalFilms,
+          totalFilms: response.data.totalRatings,
           ratings: response.data.ratings,
         };
 

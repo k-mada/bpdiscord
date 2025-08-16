@@ -1,0 +1,13 @@
+[build]
+  base = "src/client"
+  command = "npm install && npm run build"
+  publish = "build"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+# Redirect all routes to index.html for SPA routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

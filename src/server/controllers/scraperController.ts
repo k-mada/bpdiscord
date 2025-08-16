@@ -661,28 +661,17 @@ export class ScraperController {
   }
 
   static async getUserRatings(req: Request, res: Response): Promise<void> {
-    const { username, refreshData } = req.body;
+    const { username } = req.body;
 
     if (!username) {
       res.status(400).json({ error: "Username is required" });
       return;
     }
 
-    console.log(`Processing ratings request for user: ${username}`);
+    console.log(`Force scraping ratings for user: ${username}`);
 
     try {
-      // Only check database if refreshData is false
-      if (!refreshData) {
-        const dbResult = await ScraperController.getExistingRatingsFromDatabase(
-          username,
-          refreshData
-        );
-        if (dbResult) {
-          res.json(dbResult);
-          return;
-        }
-      }
-      console.log("----------", "SCRAPING DATA");
+      // Always scrape - this is the scraper endpoint
       const scrapedRatings = await ScraperController.scrapeUserRatings(
         username
       );
@@ -701,44 +690,13 @@ export class ScraperController {
     } catch (error) {
       console.error("Error in getUserRatings:", error);
       res.status(500).json({
-        error: `Failed to get user ratings: ${
+        error: `Failed to scrape user ratings: ${
           error instanceof Error ? error.message : "Unknown error"
         }`,
       });
     }
   }
 
-  private static async getExistingRatingsFromDatabase(
-    username: string,
-    refreshData: boolean = false
-  ) {
-    console.log(`Checking database for existing ratings for user: ${username}`);
-    const dbResult = await DataController.getUserRatings(username, refreshData);
-
-    if (dbResult.success && dbResult.data && dbResult.data.length > 0) {
-      console.log(
-        `Found ${dbResult.data.length} existing ratings for ${username}`
-      );
-
-      const ratings = dbResult.data.map((item: any) => ({
-        rating: item.rating,
-        count: item.count,
-      }));
-
-      return {
-        message: "User ratings retrieved from database",
-        data: {
-          username,
-          ratings,
-          timestamp: new Date().toISOString(),
-          source: "database",
-          success: true,
-        },
-      };
-    }
-
-    return null;
-  }
 
   static async scrapeUserRatings(
     username: string
@@ -960,70 +918,22 @@ export class ScraperController {
   }
 
   static async getUserProfile(req: Request, res: Response): Promise<void> {
-    const { username, refreshData } = req.body;
+    const { username } = req.body;
 
     if (!username) {
       res.status(400).json({ error: "Username is required" });
       return;
     }
 
-    console.log(
-      `Processing profile request for user: ${username}, refreshData: ${refreshData}`
-    );
+    console.log(`Force scraping profile and ratings for user: ${username}`);
 
     try {
-      let profileData;
+      // Always scrape both profile and ratings - this is the scraper endpoint
+      const profileData = await ScraperController.scrapeUserProfileData(username);
+      await ScraperController.saveProfileToDatabase(username, profileData);
 
-      // Only check database for profile if refreshData is false
-      if (!refreshData) {
-        profileData = await ScraperController.getExistingProfileFromDatabase(
-          username
-        );
-      }
-
-      // If no profile data in database or refreshData is true, scrape it
-      if (!profileData || refreshData) {
-        console.log(
-          `${
-            refreshData
-              ? "Refreshing profile data for"
-              : "No existing profile found for"
-          } ${username}, scraping from Letterboxd...`
-        );
-        profileData = await ScraperController.scrapeUserProfileData(username);
-        await ScraperController.saveProfileToDatabase(username, profileData);
-      }
-
-      // Get ratings data - respect refreshData flag
-      let ratingsData;
-      if (!refreshData) {
-        const ratingsResult =
-          await ScraperController.getExistingRatingsFromDatabase(username);
-        ratingsData = ratingsResult?.data.ratings || [];
-
-        if (!ratingsResult) {
-          console.log(
-            `No existing ratings found for ${username}, scraping ratings...`
-          );
-          const scrapedRatings = await ScraperController.scrapeUserRatings(
-            username
-          );
-          await ScraperController.saveRatingsToDatabase(
-            username,
-            scrapedRatings
-          );
-          ratingsData = scrapedRatings;
-        }
-      } else {
-        console.log(
-          `Refreshing ratings data for ${username}, scraping from Letterboxd...`
-        );
-        const scrapedRatings = await ScraperController.scrapeUserRatings(
-          username
-        );
-        await ScraperController.saveRatingsToDatabase(username, scrapedRatings);
-        ratingsData = scrapedRatings;
-      }
+      const ratingsData = await ScraperController.scrapeUserRatings(username);
+      await ScraperController.saveRatingsToDatabase(username, ratingsData);
 
       // Calculate total ratings
       const totalRatings = ratingsData.reduce(
@@ -1042,46 +952,23 @@ export class ScraperController {
       };
 
       res.json({
-        message: "User profile retrieved successfully",
+        message: "User profile and ratings scraped successfully",
         data: response,
+        source: "scraped",
+        timestamp: new Date().toISOString(),
       });
     } catch (error) {
       console.error("Error in getUserProfile:", error);
       res.status(500).json({
-        error: `Failed to get user profile: ${
+        error: `Failed to scrape user profile: ${
           error instanceof Error ? error.message : "Unknown error"
         }`,
       });
     }
   }
 
-  private static async getExistingProfileFromDatabase(
-    username: string
-  ): Promise<UserProfileData | null> {
-    console.log(`Checking database for existing profile for user: ${username}`);
 
-    try {
-      const result = await DataController.getUserProfile(username);
-
-      if (result.success && result.data) {
-        console.log(`Found existing profile for ${username} in database`);
-        return {
-          displayName: result.data.displayName,
-          followers: result.data.followers,
-          following: result.data.following,
-          numberOfLists: result.data.numberOfLists,
-        };
-      }
-
-      console.log(`No existing profile found for ${username} in database`);
-      return null;
-    } catch (error) {
-      console.error("Error checking existing profile:", error);
-      return null;
-    }
-  }
-
-  private static async scrapeUserProfileData(
+  static async scrapeUserProfileData(
     username: string
   ): Promise<UserProfileData> {
     console.log(`Scraping profile data for ${username} from Letterboxd...`);
