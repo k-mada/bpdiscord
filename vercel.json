@@ -1,15 +1,32 @@
 {
-  "version": 1,
+  "version": 2,
   "builds": [
     {
-      "src": "src/server/dist/server.js",
+      "src": "src/server/server.ts",
       "use": "@vercel/node"
+    },
+    {
+      "src": "src/client/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build"
+      }
     }
   ],
   "routes": [
     {
+      "src": "/api/(.*)",
+      "dest": "/src/server/server.ts"
+    },
+    {
       "src": "/(.*)",
-      "dest": "https://letterboxd-kmada-2025-08-14-05-17-utc.vercel.app/$1"
+      "dest": "/src/client/$1"
     }
-  ]
+  ],
+  "env": {
+    "NODE_ENV": "production",
+    "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD": "true"
+  },
+  "installCommand": "npm install",
+  "buildCommand": "npm run build"
 }

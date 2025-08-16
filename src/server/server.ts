@@ -6,7 +6,7 @@ import dotenv from "dotenv";
 
 import authRoutes from "./routes/authRoutes";
 import userRoutes from "./routes/userRoutes";
-// import scraperRoutes from "./routes/scraperRoutes"; // Disabled for Vercel deployment
+import scraperRoutes from "./routes/scraperRoutes";
 import comparisonRoutes from "./routes/comparisonRoutes";
 import filmUserRoutes from "./routes/filmUserRoutes";
 import { globalErrorHandler } from "./middleware/errorHandler";
@@ -61,9 +61,21 @@ app.get("/api/health", (req: Request, res: Response): void => {
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
-app.use("/api/scraper", scraperRoutes);
 app.use("/api/comparison", comparisonRoutes);
 app.use("/api/film-users", filmUserRoutes);
+
+// Only load scraper routes in development or when explicitly enabled
+if (process.env.NODE_ENV !== "production" || process.env.ENABLE_SCRAPER === "true") {
+  app.use("/api/scraper", scraperRoutes);
+} else {
+  // Return 503 for scraper endpoints in production
+  app.use("/api/scraper", (req, res) => {
+    res.status(503).json({
+      error: "Scraping functionality disabled in production",
+      message: "Use the database-first endpoints at /api/film-users instead"
+    });
+  });
+}
 
 // Error handling middleware
 app.use(globalErrorHandler);
