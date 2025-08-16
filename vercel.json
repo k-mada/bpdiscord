@@ -20,16 +20,16 @@
       "dest": "/src/server/server.ts"
     },
     {
-      "src": "/static/(.*)",
-      "dest": "/src/client/build/static/$1"
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
     },
     {
       "src": "/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot))",
-      "dest": "/src/client/build/$1"
+      "dest": "/$1"
     },
     {
       "src": "/(.*)",
-      "dest": "/src/client/build/index.html"
+      "dest": "/index.html"
     }
   ],
   "env": {
