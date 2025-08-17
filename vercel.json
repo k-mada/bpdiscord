@@ -1,12 +1,17 @@
 {
   "version": 2,
-  "installCommand": "yarn install:all",
-  "buildCommand": "yarn build",
-  "outputDirectory": "src/client/build",
   "builds": [
     {
       "src": "src/server/server.ts",
       "use": "@vercel/node"
+    },
+    {
+      "src": "src/client/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build",
+        "buildCommand": "yarn install && yarn build"
+      }
     }
   ],
   "routes": [
