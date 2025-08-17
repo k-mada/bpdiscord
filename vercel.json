@@ -19,6 +19,14 @@
       "dest": "/src/server/server.ts"
     },
     {
+      "src": "/assets/(.*)",
+      "dest": "/src/client/assets/$1"
+    },
+    {
+      "src": "/(favicon\\.ico|manifest\\.json|logo.*\\.png|robots\\.txt)",
+      "dest": "/src/client/$1"
+    },
+    {
       "src": "/(.*)",
       "dest": "/src/client/index.html"
     }
