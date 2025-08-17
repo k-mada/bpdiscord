@@ -10,7 +10,7 @@
       "use": "@vercel/static-build",
       "config": {
         "distDir": "build",
-        "buildCommand": "yarn build"
+        "buildCommand": "yarn build:client"
       }
     }
   ],
