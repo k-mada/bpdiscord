@@ -1,6 +1,7 @@
 {
   "version": 2,
-  "buildCommand": "yarn install:all && yarn build:server && yarn build:client",
+  "installCommand": "yarn install:all",
+  "buildCommand": "yarn build",
   "outputDirectory": "src/client/build",
   "builds": [
     {
