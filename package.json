@@ -4,7 +4,7 @@
   "description": "BPDiscord - A full-stack web application with TypeScript Express API and React frontend",
   "private": true,
   "scripts": {
-    "build": "cd src/server && tsc && cd ../client && yarn build",
+    "build": "cd src/server && tsc",
     "build:server": "cd src/server && tsc",
     "build:client": "cd src/client && yarn build",
     "start": "node src/server/dist/server.js",
