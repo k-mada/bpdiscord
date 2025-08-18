@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import apiService from "../services/api";
+import { ALL_RATINGS } from "../constants";
 
 interface UserComparisonProps {
-  onBackToProfile: () => void;
+  onBackToProfile?: () => void;
 }
 
 interface Rating {
@@ -21,7 +22,9 @@ interface UserData {
 }
 
 const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
-  const [usernames, setUsernames] = useState<Array<{ username: string; displayName?: string }>>([]);
+  const [usernames, setUsernames] = useState<
+    Array<{ username: string; displayName?: string }>
+  >([]);
   const [selectedUser1, setSelectedUser1] = useState<string>("");
   const [selectedUser2, setSelectedUser2] = useState<string>("");
   const [user1Data, setUser1Data] = useState<UserData | null>(null);
@@ -143,20 +146,20 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
             ★
           </span>
         ))}
-        
+
         {/* Half star */}
         {hasHalfStar && (
           <div key="half" className="relative inline-block text-lg">
             <span className="text-letterboxd-border">☆</span>
-            <span 
+            <span
               className="absolute inset-0 text-letterboxd-accent overflow-hidden"
-              style={{ width: '50%' }}
+              style={{ width: "50%" }}
             >
               ★
             </span>
           </div>
         )}
-        
+
         {/* Empty stars */}
         {Array.from({ length: emptyStars }, (_, i) => (
           <span key={`empty-${i}`} className="text-letterboxd-border text-lg">
@@ -167,29 +170,9 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
     );
   };
 
-  const allRatings = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
 
   return (
     <div className="min-h-screen bg-letterboxd-bg-primary">
-      <header className="bg-letterboxd-bg-secondary border-b border-letterboxd-border px-6 py-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-letterboxd-text-primary">
-            BPDiscord
-          </h1>
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={onBackToProfile}
-              className="text-letterboxd-text-secondary hover:text-letterboxd-text-primary transition-colors duration-200"
-            >
-              Profile
-            </button>
-            <button onClick={onBackToProfile} className="btn-secondary">
-              Back
-            </button>
-          </div>
-        </div>
-      </header>
-
       <main className="max-w-7xl mx-auto px-6 py-8">
         <div className="space-y-8">
           {/* Header */}
@@ -274,10 +257,14 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
                         Metric
                       </th>
                       <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
-                        {user1Data?.displayName || user1Data?.username || "User 1"}
+                        {user1Data?.displayName ||
+                          user1Data?.username ||
+                          "User 1"}
                       </th>
                       <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
-                        {user2Data?.displayName || user2Data?.username || "User 2"}
+                        {user2Data?.displayName ||
+                          user2Data?.username ||
+                          "User 2"}
                       </th>
                     </tr>
                   </thead>
@@ -286,14 +273,24 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
                       <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
                         Total Films Rated
                       </td>
-                      <td className={`py-3 px-4 text-letterboxd-text-primary ${
-                        (user1Data?.totalFilms || 0) > (user2Data?.totalFilms || 0) ? "bg-green-900/20" : ""
-                      }`}>
+                      <td
+                        className={`py-3 px-4 text-letterboxd-text-primary ${
+                          (user1Data?.totalFilms || 0) >
+                          (user2Data?.totalFilms || 0)
+                            ? "bg-green-900/20"
+                            : ""
+                        }`}
+                      >
                         {user1Data?.totalFilms || 0}
                       </td>
-                      <td className={`py-3 px-4 text-letterboxd-text-primary ${
-                        (user2Data?.totalFilms || 0) > (user1Data?.totalFilms || 0) ? "bg-green-900/20" : ""
-                      }`}>
+                      <td
+                        className={`py-3 px-4 text-letterboxd-text-primary ${
+                          (user2Data?.totalFilms || 0) >
+                          (user1Data?.totalFilms || 0)
+                            ? "bg-green-900/20"
+                            : ""
+                        }`}
+                      >
                         {user2Data?.totalFilms || 0}
                       </td>
                     </tr>
@@ -301,14 +298,24 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
                       <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
                         Followers
                       </td>
-                      <td className={`py-3 px-4 text-letterboxd-text-primary ${
-                        (user1Data?.followers || 0) > (user2Data?.followers || 0) ? "bg-green-900/20" : ""
-                      }`}>
+                      <td
+                        className={`py-3 px-4 text-letterboxd-text-primary ${
+                          (user1Data?.followers || 0) >
+                          (user2Data?.followers || 0)
+                            ? "bg-green-900/20"
+                            : ""
+                        }`}
+                      >
                         {user1Data?.followers?.toLocaleString() || 0}
                       </td>
-                      <td className={`py-3 px-4 text-letterboxd-text-primary ${
-                        (user2Data?.followers || 0) > (user1Data?.followers || 0) ? "bg-green-900/20" : ""
-                      }`}>
+                      <td
+                        className={`py-3 px-4 text-letterboxd-text-primary ${
+                          (user2Data?.followers || 0) >
+                          (user1Data?.followers || 0)
+                            ? "bg-green-900/20"
+                            : ""
+                        }`}
+                      >
                         {user2Data?.followers?.toLocaleString() || 0}
                       </td>
                     </tr>
@@ -316,14 +323,24 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
                       <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
                         Following
                       </td>
-                      <td className={`py-3 px-4 text-letterboxd-text-primary ${
-                        (user1Data?.following || 0) > (user2Data?.following || 0) ? "bg-green-900/20" : ""
-                      }`}>
+                      <td
+                        className={`py-3 px-4 text-letterboxd-text-primary ${
+                          (user1Data?.following || 0) >
+                          (user2Data?.following || 0)
+                            ? "bg-green-900/20"
+                            : ""
+                        }`}
+                      >
                         {user1Data?.following?.toLocaleString() || 0}
                       </td>
-                      <td className={`py-3 px-4 text-letterboxd-text-primary ${
-                        (user2Data?.following || 0) > (user1Data?.following || 0) ? "bg-green-900/20" : ""
-                      }`}>
+                      <td
+                        className={`py-3 px-4 text-letterboxd-text-primary ${
+                          (user2Data?.following || 0) >
+                          (user1Data?.following || 0)
+                            ? "bg-green-900/20"
+                            : ""
+                        }`}
+                      >
                         {user2Data?.following?.toLocaleString() || 0}
                       </td>
                     </tr>
@@ -331,14 +348,24 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
                       <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
                         Lists Created
                       </td>
-                      <td className={`py-3 px-4 text-letterboxd-text-primary ${
-                        (user1Data?.numberOfLists || 0) > (user2Data?.numberOfLists || 0) ? "bg-green-900/20" : ""
-                      }`}>
+                      <td
+                        className={`py-3 px-4 text-letterboxd-text-primary ${
+                          (user1Data?.numberOfLists || 0) >
+                          (user2Data?.numberOfLists || 0)
+                            ? "bg-green-900/20"
+                            : ""
+                        }`}
+                      >
                         {user1Data?.numberOfLists || 0}
                       </td>
-                      <td className={`py-3 px-4 text-letterboxd-text-primary ${
-                        (user2Data?.numberOfLists || 0) > (user1Data?.numberOfLists || 0) ? "bg-green-900/20" : ""
-                      }`}>
+                      <td
+                        className={`py-3 px-4 text-letterboxd-text-primary ${
+                          (user2Data?.numberOfLists || 0) >
+                          (user1Data?.numberOfLists || 0)
+                            ? "bg-green-900/20"
+                            : ""
+                        }`}
+                      >
                         {user2Data?.numberOfLists || 0}
                       </td>
                     </tr>
@@ -363,13 +390,17 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
                         Rating
                       </th>
                       <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
-                        {user1Data?.displayName || user1Data?.username || "User 1"}
+                        {user1Data?.displayName ||
+                          user1Data?.username ||
+                          "User 1"}
                         <div className="text-xs text-letterboxd-text-muted font-normal">
                           Movies Count
                         </div>
                       </th>
                       <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
-                        {user2Data?.displayName || user2Data?.username || "User 2"}
+                        {user2Data?.displayName ||
+                          user2Data?.username ||
+                          "User 2"}
                         <div className="text-xs text-letterboxd-text-muted font-normal">
                           Movies Count
                         </div>
@@ -377,11 +408,17 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
                     </tr>
                   </thead>
                   <tbody>
-                    {allRatings.map((rating) => {
+                    {ALL_RATINGS.map((rating) => {
                       const count1 = getRatingCount(user1Data, rating);
                       const count2 = getRatingCount(user2Data, rating);
-                      const percentage1 = getRatingPercentage(user1Data, rating);
-                      const percentage2 = getRatingPercentage(user2Data, rating);
+                      const percentage1 = getRatingPercentage(
+                        user1Data,
+                        rating
+                      );
+                      const percentage2 = getRatingPercentage(
+                        user2Data,
+                        rating
+                      );
                       const isUser1Higher = isHigherCount(count1, count2);
                       const isUser2Higher = isHigherCount(count2, count1);
 
@@ -440,9 +477,22 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
                         {user1Data.displayName || user1Data.username}
                       </h5>
                       <div className="space-y-1 text-sm text-letterboxd-text-muted">
-                        <p>Total films rated: {user1Data.totalFilms || user1Data.ratings.reduce((sum, r) => sum + r.count, 0)}</p>
-                        <p>Followers: {user1Data.followers?.toLocaleString() || 0}</p>
-                        <p>Following: {user1Data.following?.toLocaleString() || 0}</p>
+                        <p>
+                          Total films rated:{" "}
+                          {user1Data.totalFilms ||
+                            user1Data.ratings.reduce(
+                              (sum, r) => sum + r.count,
+                              0
+                            )}
+                        </p>
+                        <p>
+                          Followers:{" "}
+                          {user1Data.followers?.toLocaleString() || 0}
+                        </p>
+                        <p>
+                          Following:{" "}
+                          {user1Data.following?.toLocaleString() || 0}
+                        </p>
                         <p>Lists: {user1Data.numberOfLists || 0}</p>
                       </div>
                     </div>
@@ -451,9 +501,22 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
                         {user2Data.displayName || user2Data.username}
                       </h5>
                       <div className="space-y-1 text-sm text-letterboxd-text-muted">
-                        <p>Total films rated: {user2Data.totalFilms || user2Data.ratings.reduce((sum, r) => sum + r.count, 0)}</p>
-                        <p>Followers: {user2Data.followers?.toLocaleString() || 0}</p>
-                        <p>Following: {user2Data.following?.toLocaleString() || 0}</p>
+                        <p>
+                          Total films rated:{" "}
+                          {user2Data.totalFilms ||
+                            user2Data.ratings.reduce(
+                              (sum, r) => sum + r.count,
+                              0
+                            )}
+                        </p>
+                        <p>
+                          Followers:{" "}
+                          {user2Data.followers?.toLocaleString() || 0}
+                        </p>
+                        <p>
+                          Following:{" "}
+                          {user2Data.following?.toLocaleString() || 0}
+                        </p>
                         <p>Lists: {user2Data.numberOfLists || 0}</p>
                       </div>
                     </div>

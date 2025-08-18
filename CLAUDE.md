@@ -25,6 +25,7 @@ bpdiscord/
 │   │   ├── types.ts      # Client-specific TypeScript types
 │   │   ├── vite.config.js # Vite configuration with proxy
 │   │   ├── tailwind.config.js # Tailwind CSS configuration
+│   │   ├── tsconfig.json # Client-specific TypeScript configuration
 │   │   ├── package.json  # Client dependencies
 │   │   └── build/        # Vite build output
 │   ├── server/           # Express.js backend
@@ -37,9 +38,11 @@ bpdiscord/
 │   │   │   ├── filmUserRoutes.ts     # Database-first endpoints
 │   │   │   └── scraperRoutes.ts      # Force-scraping endpoints
 │   │   ├── types.ts      # Server-specific TypeScript types
+│   │   ├── tsconfig.json # Server-specific TypeScript configuration
 │   │   ├── package.json  # Server dependencies
 │   │   └── dist/         # TypeScript compilation output
 ├── package.json          # Root orchestration + shared dependencies
+├── tsconfig.json         # Root TypeScript configuration
 ├── vercel.json           # Deployment configuration
 └── yarn.lock             # Lockfile for consistent dependencies
 ```
@@ -455,6 +458,156 @@ VITE_HOT_RELOAD=true
 3. Configure service role for admin operations
 4. Set up proper indexes for performance
 
+## Production Deployment to Vercel
+
+### Full-Stack Deployment Architecture
+
+BPDiscord is configured for seamless Vercel deployment with both frontend and backend components. This setup enables true full-stack deployment from a single repository while maintaining proper separation and build processes.
+
+### Critical Configuration Requirements
+
+#### 1. Build Script Separation
+**Root `package.json` Build Script**
+```json
+{
+  "scripts": {
+    "build": "cd src/server && tsc"
+  }
+}
+```
+**Critical**: Root build script must ONLY build the server. Vercel handles client building separately via `@vercel/static-build`.
+
+#### 2. TypeScript Configuration Isolation
+**Server-Specific `tsconfig.json` (`src/server/tsconfig.json`)**
+```json
+{
+  "compilerOptions": {
+    "outDir": "./dist",
+    "rootDir": "./",
+    "target": "ES2020",
+    "module": "commonjs"
+  },
+  "include": ["./**/*"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+}
+```
+**Purpose**: Prevents server TypeScript compilation from interfering with client files and causing build artifacts.
+
+#### 3. Vercel Configuration
+**Complete `vercel.json` Setup**
+```json
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "src/server/server.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "src/client/package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "build"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/src/server/server.ts"
+    },
+    {
+      "src": "/assets/(.*)",
+      "dest": "/src/client/assets/$1"
+    },
+    {
+      "src": "/(favicon\\.ico|manifest\\.json|logo.*\\.png|robots\\.txt)",
+      "dest": "/src/client/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/src/client/index.html"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production",
+    "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD": "true"
+  }
+}
+```
+
+### Route Processing Order
+
+Routes are processed sequentially and must be ordered correctly:
+
+1. **API Routes** (`/api/(.*)`) → Route to server function
+2. **Asset Routes** (`/assets/(.*)`) → Serve static assets (CSS, JS, images)
+3. **Static Files** → Serve favicon, manifest, logos, robots.txt
+4. **Catch-All** (`/(.*)`) → Route to React app for SPA client-side routing
+
+### Deployment Process Flow
+
+```
+1. Root Build → TypeScript compiles server only (src/server/dist/)
+2. Client Build → Vercel runs @vercel/static-build (src/client/build/)
+3. Function Creation → Server becomes serverless function
+4. Static Deployment → Client files served from correct paths
+5. Route Configuration → Requests routed to appropriate destinations
+```
+
+### Common Deployment Issues and Solutions
+
+#### Problem: 404 Errors on All Routes
+**Cause**: Routes pointing to incorrect file locations
+**Solution**: Ensure routes match deployment structure (`/src/client/index.html`)
+
+#### Problem: Static Assets Return 401/404 Errors
+**Cause**: Asset requests routed to server instead of static files
+**Solution**: Add specific asset routes before catch-all route
+
+#### Problem: Build Conflicts and Mysterious Files
+**Cause**: Multiple build processes or conflicting configurations
+**Solutions**:
+- Remove any `vercel.json` files from subdirectories
+- Ensure server has dedicated `tsconfig.json`
+- Root build script handles server only
+- Let Vercel manage client build independently
+
+#### Problem: TypeScript Compilation Errors
+**Cause**: Root TypeScript config trying to compile client files
+**Solution**: Create isolated server `tsconfig.json` with proper `include`/`exclude`
+
+### Production Environment Variables
+
+Configure in Vercel dashboard:
+```bash
+SUPABASE_URL=your_production_supabase_url
+SUPABASE_ANON_KEY=your_production_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_production_service_key
+NODE_ENV=production
+ENABLE_SCRAPER=true  # Optional: Enable scraping in production
+```
+
+### Deployment Verification
+
+1. **Build Logs**: Clean compilation without conflicts
+2. **File Structure**: Static files in expected locations (`src/client/`)
+3. **Route Testing**: 
+   - API calls work (`/api/*`)
+   - Static assets load (`/assets/*`, `/favicon.ico`)
+   - SPA routing functional (`/*`)
+4. **No Build Artifacts**: Clean deployment without mysterious files
+
+### Performance Optimizations for Production
+
+- **Serverless Functions**: API routes become auto-scaling functions
+- **Edge CDN**: Static files served from global edge locations
+- **Build Caching**: Vercel caches builds for faster deployments
+- **Asset Optimization**: Automatic compression and optimization
+- **Database Connection Pooling**: Supabase handles connection management
+
+This deployment architecture provides production-ready scalability while maintaining development simplicity.
+
 ## Future Enhancements
 
 ### Planned Features
@@ -475,7 +628,7 @@ VITE_HOT_RELOAD=true
 
 ## Troubleshooting
 
-### Common Issues
+### Development Issues
 1. **Scraping Failures**: Often due to Letterboxd changes or rate limiting
 2. **Authentication Errors**: Check token expiration and Supabase configuration
 3. **Database Connection Issues**: Verify Supabase credentials and network access
@@ -484,11 +637,57 @@ VITE_HOT_RELOAD=true
 6. **Process Not Defined**: Use `import.meta.env.VITE_*` instead of `process.env.REACT_APP_*`
 7. **Yarn Lock Conflicts**: Delete `package-lock.json` files if mixing npm/yarn
 
+### Deployment Issues (Vercel)
+
+#### 404 Not Found on Deployment
+**Symptoms**: Site returns 404 for all routes after successful build
+**Causes**:
+- Routes in `vercel.json` pointing to wrong file locations
+- Incorrect build output structure
+**Solutions**:
+- Verify routes point to `/src/client/index.html`
+- Check deployment file structure matches route configuration
+- Ensure static build completes successfully
+
+#### Static Assets Return 401/404 Errors
+**Symptoms**: HTML loads but CSS, JS, images fail to load
+**Causes**:
+- Asset requests being routed to server function instead of static files
+- Missing or incorrect asset route configuration
+**Solutions**:
+- Add specific asset routes before catch-all route in `vercel.json`
+- Verify asset paths match actual build output structure
+- Test asset routes independently
+
+#### Build Conflicts and Mysterious Files
+**Symptoms**: Unexpected files in deployment output, build failures
+**Causes**:
+- Multiple `vercel.json` files creating conflicts
+- Root TypeScript config compiling client files
+- Root build script building both server and client
+**Solutions**:
+- Remove any `vercel.json` files from subdirectories
+- Create server-specific `tsconfig.json` in `src/server/`
+- Update root build script to only compile server
+- Let Vercel handle client build via `@vercel/static-build`
+
+#### TypeScript Compilation Errors
+**Symptoms**: Build fails with TypeScript errors from client files
+**Causes**:
+- Root `tsconfig.json` trying to compile entire `src/` directory
+- Missing isolation between server and client TypeScript configs
+**Solutions**:
+- Create dedicated `src/server/tsconfig.json`
+- Update server config to only include server files
+- Exclude client directory from server compilation
+
 ### Debug Information
 - Enable verbose logging in development
 - Check browser network tab for API call details
 - Verify database records after scraping operations
 - Monitor Supabase logs for authentication issues
+- Review Vercel build logs for deployment issues
+- Test routes individually using browser dev tools
 
 ---
 

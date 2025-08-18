@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { TrophyIcon } from "@heroicons/react/24/solid";
 import apiService from "../services/api";
+import { ALL_RATINGS } from "../constants";
 
 interface HaterRanking {
   username: string;
@@ -68,11 +69,10 @@ const HaterRankings: React.FC<HaterRankingsProps> = ({
     const distributionMap = new Map(
       distribution.map((d) => [d.rating, d.count])
     );
-    const allRatings = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
 
     return (
       <div className="flex items-end space-x-1 h-16 w-32">
-        {allRatings.map((rating) => {
+        {ALL_RATINGS.map((rating) => {
           const count = distributionMap.get(rating) || 0;
           const percentage = maxCount > 0 ? count / maxCount : 0;
           // Use a more pronounced height calculation - minimum 4px for any data, max 60px

@@ -7,7 +7,7 @@ import {
 } from "react-router-dom";
 import LoginPage from "./components/LoginPage";
 import Dashboard from "./components/Dashboard";
-import PublicUserComparison from "./components/PublicUserComparison";
+import UserComparison from "./components/UserComparison";
 import HaterRankings from "./components/HaterRankings";
 
 function App() {
@@ -15,7 +15,7 @@ function App() {
     <Router>
       <Routes>
         {/* Public routes */}
-        <Route path="/compare" element={<PublicUserComparison />} />
+        <Route path="/compare" element={<UserComparison />} />
         <Route
           path="/hater-rankings"
           element={<HaterRankings isPublic={true} />}

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import apiService from "../services/api";
+import { ALL_RATINGS } from "../constants";
 
 interface Rating {
   rating: number;
@@ -34,7 +35,6 @@ const ScraperInterface: React.FC<ScraperInterfaceProps> = ({ token }) => {
     );
   };
 
-  const allRatings = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
 
   const handleCheckExistingData = async () => {
     if (!username.trim()) {
@@ -218,7 +218,7 @@ const ScraperInterface: React.FC<ScraperInterfaceProps> = ({ token }) => {
                 </tr>
               </thead>
               <tbody>
-                {allRatings.map((rating) => {
+                {ALL_RATINGS.map((rating) => {
                   const ratingItem = userRatings.ratings.find(
                     (r) => r.rating === rating
                   );

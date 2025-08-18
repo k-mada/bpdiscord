@@ -40,25 +40,6 @@ const UserProfile: React.FC<UserProfileProps> = ({
 
   return (
     <div className="min-h-screen bg-letterboxd-bg-primary">
-      <header className="bg-letterboxd-bg-secondary border-b border-letterboxd-border px-6 py-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-letterboxd-text-primary">
-            BPDiscord
-          </h1>
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={onNavigateToScraper}
-              className="text-letterboxd-text-secondary hover:text-letterboxd-text-primary transition-colors duration-200"
-            >
-              Data Fetcher
-            </button>
-            <button onClick={onLogout} className="btn-secondary">
-              Logout
-            </button>
-          </div>
-        </div>
-      </header>
-
       <main className="max-w-4xl mx-auto px-6 py-8">
         <div className="space-y-8">
           {/* User Profile Section */}
