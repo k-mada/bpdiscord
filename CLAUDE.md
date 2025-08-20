@@ -7,6 +7,7 @@ BPDiscord is a full-stack TypeScript web application that scrapes and analyzes L
 ## Architecture
 
 ### Technology Stack
+
 - **Frontend**: Vite + React 18 + TypeScript, Tailwind CSS
 - **Backend**: Express.js + TypeScript, Puppeteer for web scraping
 - **Database**: Supabase (PostgreSQL)
@@ -16,6 +17,7 @@ BPDiscord is a full-stack TypeScript web application that scrapes and analyzes L
 - **Development**: Vite proxy for CORS-free development
 
 ### Project Structure
+
 ```
 bpdiscord/
 ├── src/
@@ -52,15 +54,18 @@ bpdiscord/
 ### Database Schema
 
 #### Core Tables
+
 1. **Users** - Letterboxd user profile data
+
    - `lbusername` (primary key) - Letterboxd username
    - `display_name` - User's display name
    - `followers` - Follower count
-   - `following` - Following count  
+   - `following` - Following count
    - `number_of_lists` - Number of lists created
    - `created_at`, `updated_at` - Timestamps
 
 2. **UserRatings** - Individual rating data points
+
    - `username` - Links to Users.lbusername
    - `rating` - Rating value (0.5-5.0)
    - `count` - Number of movies rated at this level
@@ -72,6 +77,7 @@ bpdiscord/
 ### Data Sources and Processing
 
 #### 1. Web Scraping Pipeline
+
 ```
 Letterboxd Profile URL
     ↓ (Puppeteer)
@@ -83,6 +89,7 @@ Database Storage
 ```
 
 **Scraping Process:**
+
 - Uses Puppeteer for automated browser interactions
 - Targets specific CSS selectors for rating histogram data
 - Extracts follower/following counts and user profile information
@@ -90,11 +97,13 @@ Database Storage
 - Validates scraped data before database insertion
 
 #### 2. Data Processing Flow
+
 ```
 Raw Letterboxd Data → Validation → Transformation → Database Storage → API Response
 ```
 
 **Key Processing Steps:**
+
 - **Profile Data Extraction**: Display name, followers, following, lists
 - **Rating Histogram Parsing**: Extracts count for each 0.5-5.0 rating level
 - **Data Normalization**: Converts various number formats (e.g., "1.2K" → 1200)
@@ -103,19 +112,22 @@ Raw Letterboxd Data → Validation → Transformation → Database Storage → A
 ## API Endpoints
 
 ### Authentication Routes (`/api/auth`)
+
 - `POST /signup` - User registration
-- `POST /login` - User authentication  
+- `POST /login` - User authentication
 - `POST /logout` - Session termination
 - `POST /password-reset` - Password reset initiation
 
 ### Film User Routes (`/api/film-users`) - Public, Database-First
+
 - `GET /` - Get all users with display names
 - `GET /:username/ratings` - Get user's ratings (database only)
-- `GET /:username/profile` - Get user's profile (database only)  
+- `GET /:username/profile` - Get user's profile (database only)
 - `GET /:username/complete` - Get complete user data (database only)
 - **Fallback Parameter**: Add `?fallback=scrape` to any endpoint to scrape if data missing
 
 ### Scraper Routes (`/api/scraper`) - Protected, Force-Scraping Only
+
 - `POST /getUserRatings` - Force scrape user's rating distribution
 - `POST /getUserProfile` - Force scrape complete user profile + ratings
 - `POST /getAllFilms` - Force scrape user's complete film list
@@ -123,12 +135,14 @@ Raw Letterboxd Data → Validation → Transformation → Database Storage → A
 - **Production**: Disabled unless `ENABLE_SCRAPER=true` environment variable set
 
 ### Comparison Routes (`/api/comparison`) - Public
+
 - `GET /usernames` - Get list of available users with display names
 - `POST /user-ratings` - Get specific user's ratings and profile data
 - `POST /compare` - Compare two users' rating data
 - `GET /hater-rankings` - Get all users ranked by average rating
 
 ### User Routes (`/api/users`) - Protected
+
 - `GET /` - Get all users
 - `GET /me` - Get current user profile
 - `GET /:id` - Get specific user
@@ -140,9 +154,11 @@ Raw Letterboxd Data → Validation → Transformation → Database Storage → A
 ### Public Routes (No Authentication Required)
 
 #### 1. User Comparison (`/compare`)
+
 **Purpose**: Compare rating statistics between any two Letterboxd users
 
 **Flow**:
+
 1. User visits public comparison page
 2. Two dropdown menus populated with available users (showing display names)
 3. User selects two different users to compare
@@ -153,14 +169,17 @@ Raw Letterboxd Data → Validation → Transformation → Database Storage → A
 6. Visual highlighting shows which user has higher counts for each metric
 7. Summary section shows aggregate statistics
 
-**Data Sources**: 
+**Data Sources**:
+
 - UserRatings table for rating data
 - Users table for profile information
 
 #### 2. Hater Rankings (`/hater-rankings`)
+
 **Purpose**: Rank all users by average rating (lowest = biggest "hater")
 
 **Flow**:
+
 1. User visits hater rankings page
 2. System calculates average ratings for all users
 3. Displays sortable table with:
@@ -173,24 +192,29 @@ Raw Letterboxd Data → Validation → Transformation → Database Storage → A
 5. Visual histogram shows distribution across 0.5-5.0 rating scale
 
 **Calculations**:
+
 - Average rating = Σ(rating × count) / Σ(count) for each user
 - Distribution bars scaled relative to maximum count
 
 ### Protected Routes (Authentication Required)
 
 #### 3. Dashboard (`/dashboard`)
+
 **Purpose**: Main authenticated user interface
 
 **Navigation Structure**:
+
 - **Profile** (`/dashboard/profile`) - User profile management
-- **Data Fetcher** (`/dashboard/fetcher`) - Scraping interface  
+- **Data Fetcher** (`/dashboard/fetcher`) - Scraping interface
 - **Compare** (`/dashboard/compare`) - Enhanced user comparison
 - **Hater Rankings** (`/dashboard/hater-rankings`) - Private rankings view
 
 #### 4. Data Fetcher (`/dashboard/fetcher`)
+
 **Purpose**: Interface for accessing and scraping Letterboxd data
 
 **Enhanced Interface**:
+
 1. User enters Letterboxd username
 2. Two operation modes available:
    - **"Check Database"**: Uses database-first endpoints (`/api/film-users`)
@@ -201,6 +225,7 @@ Raw Letterboxd Data → Validation → Transformation → Database Storage → A
 6. Error handling for invalid users or scraping failures
 
 **Technical Process**:
+
 - **Database-First**: Queries existing data, optional fallback to scraping
 - **Force-Scraping**: Always scrapes fresh data from Letterboxd
 - Validates Letterboxd username format
@@ -210,9 +235,11 @@ Raw Letterboxd Data → Validation → Transformation → Database Storage → A
 - Stores in database with upsert logic
 
 #### 5. User Profile (`/dashboard/profile`)
+
 **Purpose**: Manage user account and view personal statistics
 
 **Features**:
+
 - View account information
 - Update profile settings
 - View personal scraping history
@@ -221,6 +248,7 @@ Raw Letterboxd Data → Validation → Transformation → Database Storage → A
 ### Authentication Flow
 
 #### Login Process
+
 1. User enters email/password on login page
 2. Credentials sent to `/api/auth/login`
 3. Backend validates via Supabase Auth
@@ -229,6 +257,7 @@ Raw Letterboxd Data → Validation → Transformation → Database Storage → A
 6. All subsequent API calls include Authorization header
 
 #### Protected Route Access
+
 1. Component checks for token in localStorage
 2. If no token, redirects to login page
 3. Token included in API request headers
@@ -238,42 +267,45 @@ Raw Letterboxd Data → Validation → Transformation → Database Storage → A
 ## Data Processing Algorithms
 
 ### Rating Distribution Calculation
+
 ```typescript
 // Calculate average rating for user
-const averageRating = ratings.reduce((sum, item) => 
-  sum + (item.rating * item.count), 0
-) / ratings.reduce((sum, item) => sum + item.count, 0);
+const averageRating =
+  ratings.reduce((sum, item) => sum + item.rating * item.count, 0) /
+  ratings.reduce((sum, item) => sum + item.count, 0);
 
 // Calculate percentage distribution
 const percentage = (count / totalRatings) * 100;
 ```
 
 ### Hater Rankings Algorithm
+
 ```typescript
 // Sort users by average rating (ascending = biggest haters first)
 const rankings = users
-  .map(user => ({
+  .map((user) => ({
     username: user.username,
     displayName: user.displayName,
     averageRating: calculateAverage(user.ratings),
     totalRatings: calculateTotal(user.ratings),
-    ratingDistribution: user.ratings.sort((a, b) => a.rating - b.rating)
+    ratingDistribution: user.ratings.sort((a, b) => a.rating - b.rating),
   }))
   .sort((a, b) => a.averageRating - b.averageRating);
 ```
 
 ### Number Parsing (Handles K/M suffixes)
+
 ```typescript
 const parseNumberFromText = (text: string): number => {
-  const cleanText = text.replace(/,/g, '').toLowerCase();
-  
-  if (cleanText.includes('k')) {
-    return Math.round(parseFloat(cleanText.replace('k', '')) * 1000);
+  const cleanText = text.replace(/,/g, "").toLowerCase();
+
+  if (cleanText.includes("k")) {
+    return Math.round(parseFloat(cleanText.replace("k", "")) * 1000);
   }
-  if (cleanText.includes('m')) {
-    return Math.round(parseFloat(cleanText.replace('m', '')) * 1000000);
+  if (cleanText.includes("m")) {
+    return Math.round(parseFloat(cleanText.replace("m", "")) * 1000000);
   }
-  
+
   return parseInt(cleanText, 10) || 0;
 };
 ```
@@ -281,6 +313,7 @@ const parseNumberFromText = (text: string): number => {
 ## Database-First Architecture
 
 ### Design Philosophy
+
 BPDiscord implements a **database-first architecture** optimized for production deployment:
 
 1. **Primary Access**: Database queries for maximum performance and reliability
@@ -291,13 +324,15 @@ BPDiscord implements a **database-first architecture** optimized for production 
 ### API Architecture Separation
 
 #### Database-First Endpoints (`/api/film-users`)
+
 - **Purpose**: Fast, reliable access to existing data
 - **Authentication**: Public (no authentication required)
 - **Performance**: Optimized database queries with indexes
 - **Fallback**: Optional `?fallback=scrape` parameter
 - **Use Case**: Public pages, user comparisons, rankings
 
-#### Force-Scraping Endpoints (`/api/scraper`)  
+#### Force-Scraping Endpoints (`/api/scraper`)
+
 - **Purpose**: Fresh data extraction from Letterboxd
 - **Authentication**: Protected (requires JWT token)
 - **Performance**: Slower due to browser automation
@@ -307,6 +342,7 @@ BPDiscord implements a **database-first architecture** optimized for production 
 ### Data Flow Examples
 
 #### Public User Comparison
+
 ```
 User Request → /api/film-users/:username/complete
     ↓
@@ -316,6 +352,7 @@ Return Cached Data
 ```
 
 #### Admin Data Update
+
 ```
 Admin Request → /api/scraper/getUserProfile + JWT
     ↓
@@ -329,6 +366,7 @@ Return Fresh Data
 ```
 
 #### Fallback Pattern
+
 ```
 User Request → /api/film-users/:username/complete?fallback=scrape
     ↓
@@ -342,6 +380,7 @@ Return Scraped Data
 ```
 
 ### Production Benefits
+
 1. **Serverless Compatibility**: No memory-intensive scraping by default
 2. **Fast Response Times**: Database queries return in milliseconds
 3. **Cost Optimization**: Reduced compute usage and function timeouts
@@ -351,59 +390,45 @@ Return Scraped Data
 ## Security Features
 
 ### Authentication & Authorization
+
 - JWT token-based authentication via Supabase
 - Row Level Security (RLS) policies on database tables
 - Service role key for admin operations (bypasses RLS)
 - Protected routes require valid authentication
 
 ### Web Scraping Security
+
 - Puppeteer browser automation for data extraction
 - Rate limiting on scraping endpoints (20 requests per 15 minutes)
 - User agent rotation and realistic headers
 - Error handling for blocked requests
 
-### API Security  
+### API Security
+
 - Helmet.js for security headers
 - CORS configuration for frontend domains
 - Express rate limiting (100 requests per 15 minutes)
 - Input validation on all endpoints
 - SQL injection prevention via parameterized queries
 
-## Performance Optimizations
-
-### Database
-- Efficient indexes on primary keys and foreign keys
-- Upsert operations to handle duplicate data
-- Parallel queries for fetching related data
-- Connection pooling via Supabase
-
-### Frontend
-- Lazy loading of components
-- Efficient state management with React hooks
-- Memoization of expensive calculations
-- Optimized re-rendering with proper dependency arrays
-
-### Scraping
-- Page resource blocking (images, fonts) for faster loading
-- Multiple retry strategies for failed page loads
-- Concurrent scraping operations where possible
-- Browser instance reuse and cleanup
-
 ## Error Handling
 
 ### Frontend Error Boundaries
+
 - Global error handling for React components
 - User-friendly error messages
 - Fallback UI states for failed operations
 - Retry mechanisms for failed API calls
 
 ### Backend Error Handling
+
 - Global error middleware for Express
 - Structured error responses with consistent format
 - Detailed logging for debugging
 - Graceful degradation for external service failures
 
 ### Scraping Error Recovery
+
 - Multiple page load strategies (networkidle2, domcontentloaded, load)
 - Retry mechanisms for failed scraping attempts
 - Validation of scraped data before processing
@@ -412,6 +437,7 @@ Return Scraped Data
 ## Development & Deployment
 
 ### Development Setup
+
 ```bash
 # Install all dependencies
 yarn install:all
@@ -423,7 +449,7 @@ yarn dev
 # Backend development server
 yarn dev:server
 
-# Frontend development server (separate terminal) 
+# Frontend development server (separate terminal)
 yarn dev:client
 
 # Build for production
@@ -431,6 +457,7 @@ yarn build
 ```
 
 ### Environment Variables
+
 ```bash
 # Backend (.env)
 SUPABASE_URL=your_supabase_url
@@ -446,6 +473,7 @@ VITE_HOT_RELOAD=true
 ```
 
 ### Vite Development Benefits
+
 - **Fast HMR**: Hot module replacement for instant updates
 - **Proxy Configuration**: CORS-free API calls via `/api` proxy to `:3001`
 - **Environment Variables**: Use `VITE_` prefix instead of `REACT_APP_`
@@ -453,6 +481,7 @@ VITE_HOT_RELOAD=true
 - **Modern Tooling**: ESBuild for lightning-fast TypeScript compilation
 
 ### Database Setup
+
 1. Create Supabase project
 2. Set up tables with appropriate RLS policies
 3. Configure service role for admin operations
@@ -467,7 +496,9 @@ BPDiscord is configured for seamless Vercel deployment with both frontend and ba
 ### Critical Configuration Requirements
 
 #### 1. Build Script Separation
+
 **Root `package.json` Build Script**
+
 ```json
 {
   "scripts": {
@@ -475,10 +506,13 @@ BPDiscord is configured for seamless Vercel deployment with both frontend and ba
   }
 }
 ```
+
 **Critical**: Root build script must ONLY build the server. Vercel handles client building separately via `@vercel/static-build`.
 
 #### 2. TypeScript Configuration Isolation
+
 **Server-Specific `tsconfig.json` (`src/server/tsconfig.json`)**
+
 ```json
 {
   "compilerOptions": {
@@ -491,10 +525,13 @@ BPDiscord is configured for seamless Vercel deployment with both frontend and ba
   "exclude": ["node_modules", "dist", "**/*.test.ts"]
 }
 ```
+
 **Purpose**: Prevents server TypeScript compilation from interfering with client files and causing build artifacts.
 
 #### 3. Vercel Configuration
+
 **Complete `vercel.json` Setup**
+
 ```json
 {
   "version": 2,
@@ -558,28 +595,34 @@ Routes are processed sequentially and must be ordered correctly:
 ### Common Deployment Issues and Solutions
 
 #### Problem: 404 Errors on All Routes
+
 **Cause**: Routes pointing to incorrect file locations
 **Solution**: Ensure routes match deployment structure (`/src/client/index.html`)
 
 #### Problem: Static Assets Return 401/404 Errors
+
 **Cause**: Asset requests routed to server instead of static files
 **Solution**: Add specific asset routes before catch-all route
 
 #### Problem: Build Conflicts and Mysterious Files
+
 **Cause**: Multiple build processes or conflicting configurations
 **Solutions**:
+
 - Remove any `vercel.json` files from subdirectories
 - Ensure server has dedicated `tsconfig.json`
 - Root build script handles server only
 - Let Vercel manage client build independently
 
 #### Problem: TypeScript Compilation Errors
+
 **Cause**: Root TypeScript config trying to compile client files
 **Solution**: Create isolated server `tsconfig.json` with proper `include`/`exclude`
 
 ### Production Environment Variables
 
 Configure in Vercel dashboard:
+
 ```bash
 SUPABASE_URL=your_production_supabase_url
 SUPABASE_ANON_KEY=your_production_anon_key
@@ -592,7 +635,7 @@ ENABLE_SCRAPER=true  # Optional: Enable scraping in production
 
 1. **Build Logs**: Clean compilation without conflicts
 2. **File Structure**: Static files in expected locations (`src/client/`)
-3. **Route Testing**: 
+3. **Route Testing**:
    - API calls work (`/api/*`)
    - Static assets load (`/assets/*`, `/favicon.ico`)
    - SPA routing functional (`/*`)
@@ -611,6 +654,7 @@ This deployment architecture provides production-ready scalability while maintai
 ## Future Enhancements
 
 ### Planned Features
+
 - **Film-level Analysis**: Individual movie rating comparisons
 - **Trend Analysis**: Rating patterns over time
 - **Social Features**: Follow users, rating notifications
@@ -620,6 +664,7 @@ This deployment architecture provides production-ready scalability while maintai
 - **Real-time Updates**: WebSocket connections for live data
 
 ### Technical Improvements
+
 - **Microservices Architecture**: Separate scraping service
 - **Queue System**: Background job processing for scraping
 - **CDN Integration**: Static asset optimization
@@ -629,6 +674,7 @@ This deployment architecture provides production-ready scalability while maintai
 ## Troubleshooting
 
 ### Development Issues
+
 1. **Scraping Failures**: Often due to Letterboxd changes or rate limiting
 2. **Authentication Errors**: Check token expiration and Supabase configuration
 3. **Database Connection Issues**: Verify Supabase credentials and network access
@@ -640,48 +686,57 @@ This deployment architecture provides production-ready scalability while maintai
 ### Deployment Issues (Vercel)
 
 #### 404 Not Found on Deployment
+
 **Symptoms**: Site returns 404 for all routes after successful build
 **Causes**:
+
 - Routes in `vercel.json` pointing to wrong file locations
 - Incorrect build output structure
-**Solutions**:
+  **Solutions**:
 - Verify routes point to `/src/client/index.html`
 - Check deployment file structure matches route configuration
 - Ensure static build completes successfully
 
 #### Static Assets Return 401/404 Errors
+
 **Symptoms**: HTML loads but CSS, JS, images fail to load
 **Causes**:
+
 - Asset requests being routed to server function instead of static files
 - Missing or incorrect asset route configuration
-**Solutions**:
+  **Solutions**:
 - Add specific asset routes before catch-all route in `vercel.json`
 - Verify asset paths match actual build output structure
 - Test asset routes independently
 
 #### Build Conflicts and Mysterious Files
+
 **Symptoms**: Unexpected files in deployment output, build failures
 **Causes**:
+
 - Multiple `vercel.json` files creating conflicts
 - Root TypeScript config compiling client files
 - Root build script building both server and client
-**Solutions**:
+  **Solutions**:
 - Remove any `vercel.json` files from subdirectories
 - Create server-specific `tsconfig.json` in `src/server/`
 - Update root build script to only compile server
 - Let Vercel handle client build via `@vercel/static-build`
 
 #### TypeScript Compilation Errors
+
 **Symptoms**: Build fails with TypeScript errors from client files
 **Causes**:
+
 - Root `tsconfig.json` trying to compile entire `src/` directory
 - Missing isolation between server and client TypeScript configs
-**Solutions**:
+  **Solutions**:
 - Create dedicated `src/server/tsconfig.json`
 - Update server config to only include server files
 - Exclude client directory from server compilation
 
 ### Debug Information
+
 - Enable verbose logging in development
 - Check browser network tab for API call details
 - Verify database records after scraping operations

@@ -1,4 +1,5 @@
 import { supabase, supabaseAdmin } from "../config/database";
+import { UserFilm } from "../types";
 // import { ApiResponse } from '../types';
 
 export class DataController {
@@ -28,34 +29,6 @@ export class DataController {
     }
   }
 
-  static async insertUserRatings(
-    username: string,
-    ratings: Array<{ rating: number; count: number }>
-  ): Promise<{ success: boolean; error?: string }> {
-    try {
-      const insertData = ratings.map((rating) => ({
-        username,
-        rating: rating.rating,
-        count: rating.count,
-      }));
-
-      const { error } = await supabaseAdmin.from("UserRatings").insert(insertData);
-
-      if (error) {
-        console.error("Database insert error:", error);
-        return { success: false, error: error.message };
-      }
-
-      return { success: true };
-    } catch (error) {
-      console.error("Database operation error:", error);
-      return {
-        success: false,
-        error:
-          error instanceof Error ? error.message : "Unknown database error",
-      };
-    }
-  }
 
   static async upsertUserRatings(
     username: string,
@@ -402,9 +375,15 @@ export class DataController {
         followers: profileData.followers,
         following: profileData.following,
         number_of_lists: profileData.numberOfLists,
+        updated_at: new Date().toISOString(),
       };
 
-      const { error } = await supabaseAdmin.from("Users").upsert(insertData);
+      const { error } = await supabaseAdmin
+        .from("Users")
+        .upsert(insertData, { 
+          onConflict: 'lbusername',
+          ignoreDuplicates: false 
+        });
 
       if (error) {
         console.error("Database upsert error:", error);
@@ -418,6 +397,91 @@ export class DataController {
         success: false,
         error:
           error instanceof Error ? error.message : "Unknown database error",
+      };
+    }
+  }
+
+  // UserFilms Management Methods
+  static async getUserFilms(lbusername: string): Promise<{
+    success: boolean;
+    data?: (UserFilm & {
+      created_at: string;
+      updated_at: string;
+    })[];
+    error?: string;
+  }> {
+    try {
+      const { data, error } = await supabaseAdmin
+        .from('UserFilms')
+        .select('film_slug, title, rating, liked, created_at, updated_at')
+        .eq('lbusername', lbusername)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, data: data || [] };
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      };
+    }
+  }
+
+  static async upsertUserFilms(
+    lbusername: string,
+    films: UserFilm[]
+  ): Promise<{ success: boolean; error?: string }> {
+    try {
+      const filmsToUpsert = films.map(film => ({
+        lbusername,
+        film_slug: film.film_slug,
+        title: film.title,
+        rating: film.rating,
+        liked: film.liked || false,
+        updated_at: new Date().toISOString()
+      }));
+
+      const { error } = await supabaseAdmin
+        .from('UserFilms')
+        .upsert(filmsToUpsert, { 
+          onConflict: 'lbusername,film_slug',
+          ignoreDuplicates: false 
+        });
+
+      if (error) {
+        console.error("Database upsert error:", error);
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error("Database operation error:", error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown database error' 
+      };
+    }
+  }
+
+  static async deleteUserFilms(lbusername: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      const { error } = await supabaseAdmin
+        .from('UserFilms')
+        .delete()
+        .eq('lbusername', lbusername);
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown error' 
       };
     }
   }

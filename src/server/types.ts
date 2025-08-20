@@ -127,6 +127,13 @@ export interface UserRatingsData {
   ratings: RatingData[];
 }
 
+export interface UserFilm {
+  film_slug: string;
+  title: string;
+  rating: number;
+  liked: boolean;
+}
+
 // ===========================
 // Global Type Extensions
 // ===========================

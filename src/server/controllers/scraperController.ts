@@ -11,7 +11,7 @@ try {
   console.warn("Puppeteer not available - scraping functionality disabled");
 }
 import * as cheerio from "cheerio";
-import { ApiResponse, ScraperSelector } from "../types";
+import { ApiResponse, ScraperSelector, UserFilm } from "../types";
 import { DataController } from "./dataController";
 
 interface UserProfileData {
@@ -397,7 +397,6 @@ export class ScraperController {
       console.log("About to evaluate page with selectors:", selectors);
 
       page.on("console", (consoleMessageObject: any) => {
-        console.log("consoleMessageObject", consoleMessageObject);
         if (consoleMessageObject._type !== "warning") {
           console.debug(consoleMessageObject._text);
         }
@@ -574,105 +573,85 @@ export class ScraperController {
     }
   }
 
+  // Database-first films endpoint with consistent response formatting
   static async getAllFilms(req: Request, res: Response): Promise<void> {
-    let page: any | null = null;
+    const { username, forceRefresh = false } = req.body;
+
+    if (!username) {
+      res.status(400).json({ error: "Username is required" });
+      return;
+    }
+
+    console.log(`Getting films for user: ${username}, forceRefresh: ${forceRefresh}`);
 
     try {
-      const { username } = req.body;
-      console.log("username", username);
-
-      if (!username) {
-        const response: ApiResponse = { error: "Username is required" };
-        res.status(400).json(response);
-        return;
-      }
-
-      // Use the refactored browser infrastructure
-      page = await ScraperController.createPage();
-
-      // Navigate to the user's Letterboxd page
-      const url = `https://letterboxd.com/${username}/films`;
-      await page.goto(url, { waitUntil: "networkidle2" });
-
-      // Try to get pagination info
-      let pageCount = 1; // Default to 1 page
-
-      try {
-        await page.waitForSelector("div.paginate-pages", { timeout: 3000 });
-        const numberOfPages = await page.$eval(
-          "div.paginate-pages > ul > li:last-child > a",
-          (element: Element) => element.innerText
-        );
-        pageCount = Number(numberOfPages) || 1;
-      } catch (error) {
-        console.log("No pagination found, treating as single page");
-      }
-
-      let filmData: any[] = [];
-
-      // TODO: PUT BACK pageCount IN LOOP
-      for (let i = 1; i <= 2; i++) {
-        try {
-          const pageUrl =
-            i === 1
-              ? `https://letterboxd.com/${username}/films`
-              : `https://letterboxd.com/${username}/films/page/${i}`;
-          console.log("fetching data");
-          const film = await ScraperController.extractData(pageUrl, [
-            {
-              name: "film-name",
-              css: "li.poster-container > div",
-              attributes: ["data-film-name"],
-              multiple: true,
-            },
-            {
-              name: "film-slug",
-              css: "li.poster-container > div",
-              attributes: ["data-film-slug"],
-              multiple: true,
-            },
-            {
-              name: "film-rating",
-              css: "li.poster-container > p.poster-viewingdata > span.rating",
-              attributes: [],
-              multiple: true,
-            },
-          ]);
-          console.log(`Got ${film.length} films for page ${i}`);
-          filmData.push(...film);
-        } catch (error) {
-          console.error(`Error scraping page ${i}:`, error);
+      // Step 1: Try to fetch from database first (unless force refresh)
+      if (!forceRefresh) {
+        const dbResult = await DataController.getUserFilms(username);
+        
+        if (dbResult.success && dbResult.data && dbResult.data.length > 0) {
+          // Return cached data from database using common response formatter
+          res.json(ScraperController.formatFilmsResponse(
+            username,
+            dbResult.data,
+            "User films retrieved from database",
+            "database"
+          ));
+          return;
         }
+        
+        console.log(`No films in database for ${username}, proceeding to scrape`);
+      } else {
+        console.log(`Force refresh requested for ${username}, scraping fresh data`);
       }
 
-      const response: ApiResponse = {
-        message: "Films scraped successfully",
-        data: {
-          username,
-          filmData,
-          totalPages: pageCount,
-          totalFilms: filmData.length,
-        },
-      };
-      res.json(response);
+      // Step 2: Scrape fresh data using common scraping method
+      const scrapedFilms = await ScraperController.scrapeUserFilms(username);
+      
+      // Step 3: Save to database with upsert - COMMENTED OUT FOR TESTING
+      // const saveResult = await DataController.upsertUserFilms(username, scrapedFilms);
+      // if (!saveResult.success) {
+      //   console.warn("Failed to save scraped films to database:", saveResult.error);
+      // }
+      console.log("Database upsert is commented out for testing - not saving to database");
+
+      // Step 4: Return scraped data using common response formatter
+      const source = forceRefresh ? "scraped_force_refresh" : "scraped_fallback";
+      res.json(ScraperController.formatFilmsResponse(
+        username,
+        scrapedFilms,
+        "User films scraped successfully (not saved to database - testing mode)",
+        source
+      ));
+
     } catch (error) {
       console.error("Error in getAllFilms:", error);
-      const response: ApiResponse = {
-        error: `Failed to scrape films: ${
+      res.status(500).json({
+        error: `Failed to get user films: ${
           error instanceof Error ? error.message : "Unknown error"
-        }`,
-      };
-      res.status(500).json(response);
-    } finally {
-      // Clean up the page
-      if (page) {
-        try {
-          await page.close();
-        } catch (error) {
-          console.error("Error closing page:", error);
-        }
-      }
+        }`
+      });
     }
+  }
+
+  // Common response formatter for film data - extracted for consistency
+  private static formatFilmsResponse(
+    username: string,
+    films: UserFilm[],
+    message: string,
+    source: string
+  ): object {
+    return {
+      message,
+      data: {
+        username,
+        films,
+        totalFilms: films.length,
+        source,
+        success: true,
+        timestamp: new Date().toISOString()
+      }
+    };
   }
 
   static async getUserRatings(req: Request, res: Response): Promise<void> {
@@ -744,9 +723,11 @@ export class ScraperController {
     }
   }
 
+  // Enhanced page loading with retry strategies - works for all page types
   private static async loadPageWithRetry(
     page: any,
-    url: string
+    url: string,
+    waitUntil: "networkidle2" | "domcontentloaded" | "load" = "networkidle2"
   ): Promise<void> {
     console.log(`Loading page: ${url}`);
 
@@ -754,7 +735,7 @@ export class ScraperController {
       waitUntil: "networkidle2" | "domcontentloaded" | "load";
       timeout: number;
     }> = [
-      { waitUntil: "networkidle2", timeout: 30000 },
+      { waitUntil, timeout: 30000 },
       { waitUntil: "domcontentloaded", timeout: 30000 },
       { waitUntil: "load", timeout: 45000 },
     ];
@@ -1091,5 +1072,189 @@ export class ScraperController {
     // Regular number
     const number = parseInt(cleanText, 10);
     return isNaN(number) ? 0 : number;
+  }
+
+  // Common film scraping method - centralized logic
+  private static async scrapeUserFilms(
+    username: string
+  ): Promise<UserFilm[]> {
+    console.log(`Scraping films for ${username} from Letterboxd...`);
+    
+    const films: UserFilm[] = [];
+
+    // Get first page to determine total pages
+    const firstPageData = await ScraperController.scrapeFilmsPage(username, 1);
+    films.push(...firstPageData.films);
+    
+    // Scrape remaining pages if any
+    for (let page = 2; page <= firstPageData.totalPages; page++) {
+      console.log(`Scraping page ${page} of ${firstPageData.totalPages} for ${username}`);
+      const pageData = await ScraperController.scrapeFilmsPage(username, page);
+      films.push(...pageData.films);
+      
+      // Add delay between pages to be respectful
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    
+    console.log(`Scraped ${films.length} films for ${username} (${films.filter(f => f.liked).length} liked)`);
+    return films;
+  }
+
+  // Common star rating parser - extracted for reuse
+  private static parseStarRating(ratingText: string | undefined): number {
+    if (!ratingText) return 0;
+    
+    const text = ratingText.trim();
+    if (text.includes("★★★★★")) return 5;
+    else if (text.includes("★★★★½")) return 4.5;
+    else if (text.includes("★★★★")) return 4;
+    else if (text.includes("★★★½")) return 3.5;
+    else if (text.includes("★★★")) return 3;
+    else if (text.includes("★★½")) return 2.5;
+    else if (text.includes("★★")) return 2;
+    else if (text.includes("★½")) return 1.5;
+    else if (text.includes("★")) return 1;
+    else if (text.includes("½")) return 0.5;
+    return 0;
+  }
+
+  // Common liked detection logic - extracted for reuse
+  private static detectLikedStatus(container: Element, index: number): boolean {
+    let liked = false;
+    
+    // Strategy 1: Exact match for the provided structure
+    const exactLikedElement = container.querySelector("span.like.liked-micro.has-icon.icon-liked.icon-16");
+    if (exactLikedElement) {
+      liked = true;
+      console.log(`Film ${index}: Found liked via exact match`);
+    } else {
+      // Strategy 2: Check for presence of multiple class combinations
+      const likedElement = container.querySelector("span.like.liked-micro") || 
+                          container.querySelector("span.icon-liked") ||
+                          container.querySelector(".liked-micro.icon-liked");
+      
+      if (likedElement) {
+        // Verify it has the expected classes
+        const classList = likedElement.className;
+        if (classList.includes('liked-micro') && classList.includes('icon-liked')) {
+          liked = true;
+          console.log(`Film ${index}: Found liked via class combination`);
+        }
+      }
+      
+      // Strategy 3: Fallback - look for any element with liked-related classes
+      if (!liked) {
+        const fallbackLiked = container.querySelector("[class*='liked']");
+        if (fallbackLiked && fallbackLiked.className.includes('icon-liked')) {
+          liked = true;
+          console.log(`Film ${index}: Found liked via fallback`);
+        }
+      }
+    }
+    
+    return liked;
+  }
+
+  // Refactored film page scraping - uses extracted common logic
+  private static async scrapeFilmsPage(
+    username: string, 
+    pageNum: number
+  ): Promise<{
+    films: UserFilm[];
+    totalPages: number;
+  }> {
+    const page = await ScraperController.createPage();
+    
+    try {
+      const url = ScraperController.buildFilmsPageUrl(username, pageNum);
+      
+      console.log(`Loading page: ${url}`);
+      await ScraperController.loadPageWithRetry(page, url);
+      
+      // Get pagination info (only on first page)
+      let totalPages = 1;
+      if (pageNum === 1) {
+        totalPages = await ScraperController.extractTotalPages(page, username);
+      }
+      
+      // Extract film data using common parsing logic
+      const filmsData = await ScraperController.extractFilmsFromPage(page);
+      
+      console.log(`Scraped ${filmsData.length} films from page ${pageNum}, ${filmsData.filter(f => f.liked).length} liked`);
+      
+      return { films: filmsData, totalPages };
+      
+    } finally {
+      await page.close();
+    }
+  }
+
+  // Extracted URL building logic for consistency
+  private static buildFilmsPageUrl(username: string, pageNum: number): string {
+    return pageNum === 1 
+      ? `https://letterboxd.com/${username}/films`
+      : `https://letterboxd.com/${username}/films/page/${pageNum}`;
+  }
+
+  // Extracted film data extraction logic for reuse
+  private static async extractFilmsFromPage(page: any): Promise<UserFilm[]> {
+    return await page.evaluate((parseStarRatingStr: string, detectLikedStatusStr: string) => {
+      // Recreate the utility functions in page context
+      const parseStarRating = new Function('ratingText', parseStarRatingStr) as (ratingText: string | undefined) => number;
+      const detectLikedStatus = new Function('container', 'index', detectLikedStatusStr) as (container: Element, index: number) => boolean;
+      
+      const films: UserFilm[] = [];
+      
+      const filmContainers = document.querySelectorAll("li.poster-container");
+      console.log(`Found ${filmContainers.length} film containers on page`);
+      
+      filmContainers.forEach((container, index) => {
+        const filmDiv = container.querySelector("div[data-film-slug]");
+        const filmSlug = filmDiv?.getAttribute("data-film-slug");
+        const filmTitle = filmDiv?.getAttribute("data-film-name");
+        
+        if (filmSlug && filmTitle) {
+          // Extract user rating using common logic
+          const ratingElement = container.querySelector("p.poster-viewingdata span.rating");
+          const ratingText = ratingElement?.textContent?.trim();
+          const rating = parseStarRating(ratingText);
+          
+          // Extract liked status using common logic
+          const liked = detectLikedStatus(container, index);
+          
+          const film: UserFilm = {
+            film_slug: filmSlug,
+            title: filmTitle,
+            rating: rating,
+            liked: liked
+          };
+          
+          films.push(film);
+        }
+      });
+      
+      return films;
+    }, 
+    // Pass the function bodies as strings to be recreated in page context
+    ScraperController.parseStarRating.toString().match(/{([\s\S]*)}$/)?.[1] || '',
+    ScraperController.detectLikedStatus.toString().match(/{([\s\S]*)}$/)?.[1] || ''
+    );
+  }
+
+  // Extracted pagination logic for reuse
+  private static async extractTotalPages(page: any, username: string): Promise<number> {
+    try {
+      await page.waitForSelector("div.paginate-pages", { timeout: 3000 });
+      const numberOfPages = await page.$eval(
+        "div.paginate-pages > ul > li:last-child > a",
+        (element: Element) => element.textContent
+      );
+      const totalPages = Number(numberOfPages) || 1;
+      console.log(`Found ${totalPages} total pages for ${username}`);
+      return totalPages;
+    } catch (error) {
+      console.log("No pagination found, treating as single page");
+      return 1;
+    }
   }
 }
