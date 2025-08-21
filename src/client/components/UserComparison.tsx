@@ -42,15 +42,21 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
   const [selectedUser2, setSelectedUser2] = useState<string>("");
   const [user1Data, setUser1Data] = useState<UserData | null>(null);
   const [user2Data, setUser2Data] = useState<UserData | null>(null);
-  const [moviesInCommonData, setMoviesInCommonData] = useState<MoviesInCommonData | null>(null);
+  const [moviesInCommonData, setMoviesInCommonData] =
+    useState<MoviesInCommonData | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadingMovies, setLoadingMovies] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [filterNonRated, setFilterNonRated] = useState(false);
 
   // Load usernames on component mount
   useEffect(() => {
     loadUsernames();
   }, []);
+
+  const onFilterNonRatedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFilterNonRated(e.target.checked);
+  };
 
   // Load movies in common when both users are selected
   useEffect(() => {
@@ -83,12 +89,17 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
     try {
       setLoadingMovies(true);
       setError(null);
-      const response = await apiService.getMoviesInCommon(selectedUser1, selectedUser2);
+      const response = await apiService.getMoviesInCommon(
+        selectedUser1,
+        selectedUser2
+      );
       if (response.data) {
         setMoviesInCommonData(response.data);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load movies in common");
+      setError(
+        err instanceof Error ? err.message : "Failed to load movies in common"
+      );
     } finally {
       setLoadingMovies(false);
     }
@@ -218,7 +229,6 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
     );
   };
 
-
   return (
     <div className="min-h-screen bg-letterboxd-bg-primary">
       <main className="max-w-7xl mx-auto px-6 py-8">
@@ -279,6 +289,15 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
                   ))}
                 </select>
               </div>
+              <div className="flex items-center gap-2">
+                <input
+                  id="chkFilterNonRated"
+                  type="checkbox"
+                  checked={filterNonRated}
+                  onChange={() => setFilterNonRated(!filterNonRated)}
+                />
+                <label htmlFor="chkFilterNonRated">Hide non-rated movies</label>
+              </div>
             </div>
           </div>
 
@@ -296,7 +315,7 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
               <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-4">
                 Movies in Common
               </h3>
-              
+
               <div className="mb-4">
                 <p className="text-letterboxd-text-secondary">
                   <span className="text-letterboxd-accent font-semibold">
@@ -311,6 +330,14 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
                     {user2Data?.displayName || moviesInCommonData.user2}
                   </span>
                 </p>
+                {filterNonRated && (
+                  <p className="text-letterboxd-text-secondary">
+                    <span className="text-letterboxd-accent font-semibold">
+                      (Only displaying movies that have been rated by both
+                      users)
+                    </span>{" "}
+                  </p>
+                )}
               </div>
 
               {moviesInCommonData.count > 0 && (
@@ -330,30 +357,43 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
                       </tr>
                     </thead>
                     <tbody>
-                      {moviesInCommonData.moviesInCommon.map((movie, index) => (
-                        <tr
-                          key={`${movie.title}-${index}`}
-                          className="border-b border-letterboxd-border/50"
-                        >
-                          <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
-                            {movie.title}
-                          </td>
-                          <td className="py-3 px-4 text-letterboxd-text-primary">
-                            {movie.user1_rating > 0 ? (
-                              <StarRating rating={movie.user1_rating} />
-                            ) : (
-                              <span className="text-letterboxd-text-muted italic">not rated</span>
-                            )}
-                          </td>
-                          <td className="py-3 px-4 text-letterboxd-text-primary">
-                            {movie.user2_rating > 0 ? (
-                              <StarRating rating={movie.user2_rating} />
-                            ) : (
-                              <span className="text-letterboxd-text-muted italic">not rated</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
+                      {moviesInCommonData.moviesInCommon.map((movie, index) => {
+                        const filterOutRow =
+                          filterNonRated &&
+                          (movie.user1_rating === 0 ||
+                            movie.user2_rating === 0);
+
+                        return (
+                          !filterOutRow && (
+                            <tr
+                              key={`${movie.title}-${index}`}
+                              className="border-b border-letterboxd-border/50"
+                            >
+                              <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
+                                {movie.title}
+                              </td>
+                              <td className="py-3 px-4 text-letterboxd-text-primary">
+                                {movie.user1_rating > 0 ? (
+                                  <StarRating rating={movie.user1_rating} />
+                                ) : (
+                                  <span className="text-letterboxd-text-muted italic">
+                                    not rated
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-3 px-4 text-letterboxd-text-primary">
+                                {movie.user2_rating > 0 ? (
+                                  <StarRating rating={movie.user2_rating} />
+                                ) : (
+                                  <span className="text-letterboxd-text-muted italic">
+                                    not rated
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          )
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -602,7 +642,6 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
                   </tbody>
                 </table>
               </div>
-
             </div>
           )}
 
