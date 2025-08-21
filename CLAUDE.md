@@ -206,7 +206,7 @@ Raw Letterboxd Data → Validation → Transformation → Database Storage → A
 
 - **Profile** (`/dashboard/profile`) - User profile management
 - **Data Fetcher** (`/dashboard/fetcher`) - Scraping interface
-- **Compare** (`/dashboard/compare`) - Enhanced user comparison
+- **Compare** (`/compare`) - Enhanced user comparison
 - **Hater Rankings** (`/dashboard/hater-rankings`) - Private rankings view
 
 #### 4. Data Fetcher (`/dashboard/fetcher`)
