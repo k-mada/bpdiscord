@@ -66,6 +66,7 @@ export class ScraperController {
     if (!this.browser) {
       this.browser = await puppeteer.launch({
         headless: true,
+        timeout: 60000, // 60 seconds for browser launch
         args: [
           "--no-sandbox",
           "--disable-setuid-sandbox",
@@ -90,6 +91,7 @@ export class ScraperController {
           "--metrics-recording-only",
           "--no-default-browser-check",
           "--safebrowsing-disable-auto-update",
+          "--max-old-space-size=4096", // Increase memory limit
         ],
       });
     }
@@ -172,7 +174,7 @@ export class ScraperController {
 
       if (watchForSelector) {
         await page.waitForSelector(watchForSelector, {
-          timeout: 10000,
+          timeout: 60000,
         });
       } else {
         // Wait for a short time to ensure content is loaded
@@ -573,7 +575,7 @@ export class ScraperController {
     }
   }
 
-  // Database-first films endpoint with consistent response formatting
+  // Database-first films endpoint with extended timeout handling
   static async getAllFilms(req: Request, res: Response): Promise<void> {
     const { username, forceRefresh = false } = req.body;
 
@@ -582,55 +584,92 @@ export class ScraperController {
       return;
     }
 
-    console.log(`Getting films for user: ${username}, forceRefresh: ${forceRefresh}`);
+    console.log(
+      `Getting films for user: ${username}, forceRefresh: ${forceRefresh}`
+    );
+
+    // Set a longer timeout for this operation (10 minutes)
+    const timeoutId = setTimeout(() => {
+      if (!res.headersSent) {
+        console.error(`Operation timed out for user ${username} after 10 minutes`);
+        res.status(408).json({
+          error: "Request timeout - film scraping took too long",
+          message: "The operation exceeded the maximum allowed time. Please try again or contact support."
+        });
+      }
+    }, 10 * 60 * 1000); // 10 minutes
 
     try {
       // Step 1: Try to fetch from database first (unless force refresh)
       if (!forceRefresh) {
         const dbResult = await DataController.getUserFilms(username);
-        
+
         if (dbResult.success && dbResult.data && dbResult.data.length > 0) {
-          // Return cached data from database using common response formatter
-          res.json(ScraperController.formatFilmsResponse(
-            username,
-            dbResult.data,
-            "User films retrieved from database",
-            "database"
-          ));
+          // Clear timeout and return cached data from database
+          clearTimeout(timeoutId);
+          res.json(
+            ScraperController.formatFilmsResponse(
+              username,
+              dbResult.data,
+              "User films retrieved from database",
+              "database"
+            )
+          );
           return;
         }
-        
-        console.log(`No films in database for ${username}, proceeding to scrape`);
+
+        console.log(
+          `No films in database for ${username}, proceeding to scrape`
+        );
       } else {
-        console.log(`Force refresh requested for ${username}, scraping fresh data`);
+        console.log(
+          `Force refresh requested for ${username}, scraping fresh data`
+        );
       }
 
       // Step 2: Scrape fresh data using common scraping method
       const scrapedFilms = await ScraperController.scrapeUserFilms(username);
-      
-      // Step 3: Save to database with upsert - COMMENTED OUT FOR TESTING
-      // const saveResult = await DataController.upsertUserFilms(username, scrapedFilms);
-      // if (!saveResult.success) {
-      //   console.warn("Failed to save scraped films to database:", saveResult.error);
-      // }
-      console.log("Database upsert is commented out for testing - not saving to database");
 
-      // Step 4: Return scraped data using common response formatter
-      const source = forceRefresh ? "scraped_force_refresh" : "scraped_fallback";
-      res.json(ScraperController.formatFilmsResponse(
+      // Step 3: Save to database with upsert
+      console.log(`Saving ${scrapedFilms.length} films to database...`);
+      const saveResult = await DataController.upsertUserFilms(
         username,
-        scrapedFilms,
-        "User films scraped successfully (not saved to database - testing mode)",
-        source
-      ));
+        scrapedFilms
+      );
+      if (!saveResult.success) {
+        console.warn(
+          "Failed to save scraped films to database:",
+          saveResult.error
+        );
+      } else {
+        console.log(`Successfully saved ${scrapedFilms.length} films to database`);
+      }
 
+      // Step 4: Clear timeout and return scraped data using common response formatter
+      clearTimeout(timeoutId);
+      const source = forceRefresh
+        ? "scraped_force_refresh"
+        : "scraped_fallback";
+      res.json(
+        ScraperController.formatFilmsResponse(
+          username,
+          scrapedFilms,
+          "User films scraped successfully",
+          source
+        )
+      );
     } catch (error) {
+      // Clear timeout on error as well
+      clearTimeout(timeoutId);
       console.error("Error in getAllFilms:", error);
-      res.status(500).json({
-        error: `Failed to get user films: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      });
+      
+      if (!res.headersSent) {
+        res.status(500).json({
+          error: `Failed to get user films: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`,
+        });
+      }
     }
   }
 
@@ -649,8 +688,8 @@ export class ScraperController {
         totalFilms: films.length,
         source,
         success: true,
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      },
     };
   }
 
@@ -723,7 +762,7 @@ export class ScraperController {
     }
   }
 
-  // Enhanced page loading with retry strategies - works for all page types
+  // Enhanced page loading with retry strategies - extended timeouts for film scraping
   private static async loadPageWithRetry(
     page: any,
     url: string,
@@ -735,9 +774,9 @@ export class ScraperController {
       waitUntil: "networkidle2" | "domcontentloaded" | "load";
       timeout: number;
     }> = [
-      { waitUntil, timeout: 30000 },
-      { waitUntil: "domcontentloaded", timeout: 30000 },
-      { waitUntil: "load", timeout: 45000 },
+      { waitUntil, timeout: 60000 },
+      { waitUntil: "domcontentloaded", timeout: 45000 },
+      { waitUntil: "load", timeout: 90000 },
     ];
 
     for (const [index, strategy] of strategies.entries()) {
@@ -758,8 +797,8 @@ export class ScraperController {
 
   private static async waitForPageContent(page: any): Promise<void> {
     await Promise.race([
-      page.waitForSelector("body", { timeout: 10000 }),
-      new Promise((resolve) => setTimeout(resolve, 5000)),
+      page.waitForSelector("body", { timeout: 30000 }),
+      new Promise((resolve) => setTimeout(resolve, 10000)),
     ]);
   }
 
@@ -1074,36 +1113,57 @@ export class ScraperController {
     return isNaN(number) ? 0 : number;
   }
 
-  // Common film scraping method - centralized logic
-  private static async scrapeUserFilms(
-    username: string
-  ): Promise<UserFilm[]> {
-    console.log(`Scraping films for ${username} from Letterboxd...`);
-    
+  // Common film scraping method - centralized logic with progress tracking
+  private static async scrapeUserFilms(username: string): Promise<UserFilm[]> {
+    const startTime = Date.now();
+    console.log(`Starting film scraping for ${username} at ${new Date().toISOString()}`);
+
     const films: UserFilm[] = [];
 
-    // Get first page to determine total pages
-    const firstPageData = await ScraperController.scrapeFilmsPage(username, 1);
-    films.push(...firstPageData.films);
-    
-    // Scrape remaining pages if any
-    for (let page = 2; page <= firstPageData.totalPages; page++) {
-      console.log(`Scraping page ${page} of ${firstPageData.totalPages} for ${username}`);
-      const pageData = await ScraperController.scrapeFilmsPage(username, page);
-      films.push(...pageData.films);
+    try {
+      // Get first page to determine total pages
+      console.log(`Fetching first page to determine total pages...`);
+      const firstPageData = await ScraperController.scrapeFilmsPage(username, 1);
+      films.push(...firstPageData.films);
       
-      // Add delay between pages to be respectful
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      console.log(`Found ${firstPageData.totalPages} total pages to scrape`);
+
+      // Scrape remaining pages if any
+      for (let page = 2; page <= firstPageData.totalPages; page++) {
+        const pageStartTime = Date.now();
+        console.log(
+          `Scraping page ${page} of ${firstPageData.totalPages} for ${username} (${films.length} films collected so far)`
+        );
+        
+        const pageData = await ScraperController.scrapeFilmsPage(username, page);
+        films.push(...pageData.films);
+        
+        const pageTime = Date.now() - pageStartTime;
+        console.log(`Page ${page} completed in ${pageTime}ms, collected ${pageData.films.length} films`);
+
+        // Add delay between pages to be respectful (but reduce delay for faster completion)
+        await new Promise((resolve) => setTimeout(resolve, 750));
+      }
+
+      const totalTime = Date.now() - startTime;
+      console.log(
+        `Completed scraping ${films.length} films for ${username} in ${totalTime}ms (${
+          films.filter((f) => f.liked).length
+        } liked)`
+      );
+      
+      return films;
+    } catch (error) {
+      const totalTime = Date.now() - startTime;
+      console.error(`Film scraping failed for ${username} after ${totalTime}ms:`, error);
+      throw error;
     }
-    
-    console.log(`Scraped ${films.length} films for ${username} (${films.filter(f => f.liked).length} liked)`);
-    return films;
   }
 
   // Common star rating parser - extracted for reuse
   private static parseStarRating(ratingText: string | undefined): number {
     if (!ratingText) return 0;
-    
+
     const text = ratingText.trim();
     if (text.includes("★★★★★")) return 5;
     else if (text.includes("★★★★½")) return 4.5;
@@ -1121,69 +1181,76 @@ export class ScraperController {
   // Common liked detection logic - extracted for reuse
   private static detectLikedStatus(container: Element, index: number): boolean {
     let liked = false;
-    
+
     // Strategy 1: Exact match for the provided structure
-    const exactLikedElement = container.querySelector("span.like.liked-micro.has-icon.icon-liked.icon-16");
+    const exactLikedElement = container.querySelector(
+      "span.like.liked-micro.has-icon.icon-liked.icon-16"
+    );
     if (exactLikedElement) {
       liked = true;
       console.log(`Film ${index}: Found liked via exact match`);
     } else {
       // Strategy 2: Check for presence of multiple class combinations
-      const likedElement = container.querySelector("span.like.liked-micro") || 
-                          container.querySelector("span.icon-liked") ||
-                          container.querySelector(".liked-micro.icon-liked");
-      
+      const likedElement =
+        container.querySelector("span.like.liked-micro") ||
+        container.querySelector("span.icon-liked") ||
+        container.querySelector(".liked-micro.icon-liked");
+
       if (likedElement) {
         // Verify it has the expected classes
         const classList = likedElement.className;
-        if (classList.includes('liked-micro') && classList.includes('icon-liked')) {
+        if (
+          classList.includes("liked-micro") &&
+          classList.includes("icon-liked")
+        ) {
           liked = true;
           console.log(`Film ${index}: Found liked via class combination`);
         }
       }
-      
+
       // Strategy 3: Fallback - look for any element with liked-related classes
       if (!liked) {
         const fallbackLiked = container.querySelector("[class*='liked']");
-        if (fallbackLiked && fallbackLiked.className.includes('icon-liked')) {
+        if (fallbackLiked && fallbackLiked.className.includes("icon-liked")) {
           liked = true;
           console.log(`Film ${index}: Found liked via fallback`);
         }
       }
     }
-    
+
     return liked;
   }
 
   // Refactored film page scraping - uses extracted common logic
   private static async scrapeFilmsPage(
-    username: string, 
+    username: string,
     pageNum: number
   ): Promise<{
     films: UserFilm[];
     totalPages: number;
   }> {
     const page = await ScraperController.createPage();
-    
+
     try {
       const url = ScraperController.buildFilmsPageUrl(username, pageNum);
-      
-      console.log(`Loading page: ${url}`);
       await ScraperController.loadPageWithRetry(page, url);
-      
+
       // Get pagination info (only on first page)
       let totalPages = 1;
       if (pageNum === 1) {
         totalPages = await ScraperController.extractTotalPages(page, username);
       }
-      
+
       // Extract film data using common parsing logic
       const filmsData = await ScraperController.extractFilmsFromPage(page);
-      
-      console.log(`Scraped ${filmsData.length} films from page ${pageNum}, ${filmsData.filter(f => f.liked).length} liked`);
-      
+
+      console.log(
+        `Scraped ${filmsData.length} films from page ${pageNum}, ${
+          filmsData.filter((f) => f.liked).length
+        } liked`
+      );
+
       return { films: filmsData, totalPages };
-      
     } finally {
       await page.close();
     }
@@ -1191,60 +1258,76 @@ export class ScraperController {
 
   // Extracted URL building logic for consistency
   private static buildFilmsPageUrl(username: string, pageNum: number): string {
-    return pageNum === 1 
+    return pageNum === 1
       ? `https://letterboxd.com/${username}/films`
       : `https://letterboxd.com/${username}/films/page/${pageNum}`;
   }
 
   // Extracted film data extraction logic for reuse
   private static async extractFilmsFromPage(page: any): Promise<UserFilm[]> {
-    return await page.evaluate((parseStarRatingStr: string, detectLikedStatusStr: string) => {
-      // Recreate the utility functions in page context
-      const parseStarRating = new Function('ratingText', parseStarRatingStr) as (ratingText: string | undefined) => number;
-      const detectLikedStatus = new Function('container', 'index', detectLikedStatusStr) as (container: Element, index: number) => boolean;
-      
-      const films: UserFilm[] = [];
-      
-      const filmContainers = document.querySelectorAll("li.poster-container");
-      console.log(`Found ${filmContainers.length} film containers on page`);
-      
-      filmContainers.forEach((container, index) => {
-        const filmDiv = container.querySelector("div[data-film-slug]");
-        const filmSlug = filmDiv?.getAttribute("data-film-slug");
-        const filmTitle = filmDiv?.getAttribute("data-film-name");
-        
-        if (filmSlug && filmTitle) {
-          // Extract user rating using common logic
-          const ratingElement = container.querySelector("p.poster-viewingdata span.rating");
-          const ratingText = ratingElement?.textContent?.trim();
-          const rating = parseStarRating(ratingText);
-          
-          // Extract liked status using common logic
-          const liked = detectLikedStatus(container, index);
-          
-          const film: UserFilm = {
-            film_slug: filmSlug,
-            title: filmTitle,
-            rating: rating,
-            liked: liked
-          };
-          
-          films.push(film);
-        }
-      });
-      
-      return films;
-    }, 
-    // Pass the function bodies as strings to be recreated in page context
-    ScraperController.parseStarRating.toString().match(/{([\s\S]*)}$/)?.[1] || '',
-    ScraperController.detectLikedStatus.toString().match(/{([\s\S]*)}$/)?.[1] || ''
+    return await page.evaluate(
+      (parseStarRatingStr: string, detectLikedStatusStr: string) => {
+        // Recreate the utility functions in page context
+        const parseStarRating = new Function(
+          "ratingText",
+          parseStarRatingStr
+        ) as (ratingText: string | undefined) => number;
+        const detectLikedStatus = new Function(
+          "container",
+          "index",
+          detectLikedStatusStr
+        ) as (container: Element, index: number) => boolean;
+
+        const films: UserFilm[] = [];
+
+        const filmContainers = document.querySelectorAll("li.poster-container");
+        console.log(`Found ${filmContainers.length} film containers on page`);
+
+        filmContainers.forEach((container, index) => {
+          const filmDiv = container.querySelector("div[data-film-slug]");
+          const filmSlug = filmDiv?.getAttribute("data-film-slug");
+          const filmTitle = filmDiv?.getAttribute("data-film-name");
+
+          if (filmSlug && filmTitle) {
+            // Extract user rating using common logic
+            const ratingElement = container.querySelector(
+              "p.poster-viewingdata span.rating"
+            );
+            const ratingText = ratingElement?.textContent?.trim();
+            const rating = parseStarRating(ratingText);
+
+            // Extract liked status using common logic
+            const liked = detectLikedStatus(container, index);
+
+            const film: UserFilm = {
+              film_slug: filmSlug,
+              title: filmTitle,
+              rating: rating,
+              liked: liked,
+            };
+
+            films.push(film);
+          }
+        });
+
+        return films;
+      },
+      // Pass the function bodies as strings to be recreated in page context
+      ScraperController.parseStarRating.toString().match(/{([\s\S]*)}$/)?.[1] ||
+        "",
+      ScraperController.detectLikedStatus
+        .toString()
+        .match(/{([\s\S]*)}$/)?.[1] || ""
     );
   }
 
   // Extracted pagination logic for reuse
-  private static async extractTotalPages(page: any, username: string): Promise<number> {
+  private static async extractTotalPages(
+    page: any,
+    username: string
+  ): Promise<number> {
     try {
-      await page.waitForSelector("div.paginate-pages", { timeout: 3000 });
+      await page.waitForSelector("div.paginate-pages", { timeout: 10000 });
       const numberOfPages = await page.$eval(
         "div.paginate-pages > ul > li:last-child > a",
         (element: Element) => element.textContent

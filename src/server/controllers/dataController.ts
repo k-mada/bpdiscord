@@ -485,4 +485,78 @@ export class DataController {
       };
     }
   }
+
+  // Get movies in common between two users
+  static async getMoviesInCommon(user1: string, user2: string): Promise<{
+    success: boolean;
+    data?: Array<{
+      title: string;
+      user1_rating: number;
+      user2_rating: number;
+    }>;
+    count?: number;
+    error?: string;
+  }> {
+    try {
+      // Query to find movies in common between two users
+      // First get user1's films
+      const { data: user1Films, error: user1Error } = await supabaseAdmin
+        .from('UserFilms')
+        .select('title, rating')
+        .eq('lbusername', user1);
+
+      if (user1Error) {
+        console.error("Database query error for user1:", user1Error);
+        return { success: false, error: user1Error.message };
+      }
+
+      // Then get user2's films
+      const { data: user2Films, error: user2Error } = await supabaseAdmin
+        .from('UserFilms')
+        .select('title, rating')
+        .eq('lbusername', user2);
+
+      if (user2Error) {
+        console.error("Database query error for user2:", user2Error);
+        return { success: false, error: user2Error.message };
+      }
+
+      // Find common movies
+      const user1FilmsMap = new Map<string, number>();
+      user1Films?.forEach(film => {
+        user1FilmsMap.set(film.title, film.rating);
+      });
+
+      const commonMovies: Array<{
+        title: string;
+        user1_rating: number;
+        user2_rating: number;
+      }> = [];
+
+      user2Films?.forEach(film => {
+        if (user1FilmsMap.has(film.title)) {
+          commonMovies.push({
+            title: film.title,
+            user1_rating: user1FilmsMap.get(film.title)!,
+            user2_rating: film.rating
+          });
+        }
+      });
+
+      // Sort by title for consistent ordering
+      commonMovies.sort((a, b) => a.title.localeCompare(b.title));
+      
+      return { 
+        success: true, 
+        data: commonMovies,
+        count: commonMovies.length
+      };
+    } catch (error) {
+      console.error("Database operation error:", error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Unknown database error' 
+      };
+    }
+  }
 }

@@ -157,6 +157,13 @@ class ApiService {
     });
   }
 
+  async getMoviesInCommon(user1: string, user2: string): Promise<ApiResponse<any>> {
+    return this.request<ApiResponse<any>>("/comparison/movies-in-common", {
+      method: "POST",
+      body: JSON.stringify({ user1, user2 }),
+    });
+  }
+
   // Hater rankings endpoint
   async getHaterRankings(): Promise<ApiResponse<any>> {
     return this.request<ApiResponse<any>>("/comparison/hater-rankings");

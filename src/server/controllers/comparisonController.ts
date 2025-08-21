@@ -156,4 +156,56 @@ export class ComparisonController {
       res.status(500).json(response);
     }
   }
+
+  static async getMoviesInCommon(req: Request, res: Response): Promise<void> {
+    try {
+      const { user1, user2 } = req.body;
+
+      if (!user1 || !user2) {
+        const response: ApiResponse = {
+          error: "Both user1 and user2 are required",
+        };
+        res.status(400).json(response);
+        return;
+      }
+
+      if (user1 === user2) {
+        const response: ApiResponse = {
+          error: "Cannot compare user with themselves",
+        };
+        res.status(400).json(response);
+        return;
+      }
+
+      const result = await DataController.getMoviesInCommon(user1, user2);
+
+      if (!result.success) {
+        const response: ApiResponse = {
+          error: result.error || "Failed to get movies in common",
+        };
+        res.status(500).json(response);
+        return;
+      }
+
+      const response: ApiResponse = {
+        message: "Movies in common retrieved successfully",
+        data: {
+          user1,
+          user2,
+          moviesInCommon: result.data || [],
+          count: result.count || 0,
+        },
+      };
+
+      res.json(response);
+    } catch (error) {
+      console.error("Get movies in common error:", error);
+      const response: ApiResponse = {
+        error: `Failed to get movies in common: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+      };
+      res.status(500).json(response);
+    }
+  }
 }

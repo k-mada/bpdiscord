@@ -7,6 +7,7 @@ const router = Router();
 router.get("/usernames", ComparisonController.getAllUsernames);
 router.post("/user-ratings", ComparisonController.getUserRatings);
 router.post("/compare", ComparisonController.compareUsers);
+router.post("/movies-in-common", ComparisonController.getMoviesInCommon);
 
 // Public hater rankings endpoint
 router.get("/hater-rankings", async (req, res): Promise<void> => {

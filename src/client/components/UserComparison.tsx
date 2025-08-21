@@ -21,6 +21,19 @@ interface UserData {
   ratings: Rating[];
 }
 
+interface MovieInCommon {
+  title: string;
+  user1_rating: number;
+  user2_rating: number;
+}
+
+interface MoviesInCommonData {
+  user1: string;
+  user2: string;
+  moviesInCommon: MovieInCommon[];
+  count: number;
+}
+
 const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
   const [usernames, setUsernames] = useState<
     Array<{ username: string; displayName?: string }>
@@ -29,13 +42,24 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
   const [selectedUser2, setSelectedUser2] = useState<string>("");
   const [user1Data, setUser1Data] = useState<UserData | null>(null);
   const [user2Data, setUser2Data] = useState<UserData | null>(null);
+  const [moviesInCommonData, setMoviesInCommonData] = useState<MoviesInCommonData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadingMovies, setLoadingMovies] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Load usernames on component mount
   useEffect(() => {
     loadUsernames();
   }, []);
+
+  // Load movies in common when both users are selected
+  useEffect(() => {
+    if (selectedUser1 && selectedUser2 && selectedUser1 !== selectedUser2) {
+      loadMoviesInCommon();
+    } else {
+      setMoviesInCommonData(null);
+    }
+  }, [selectedUser1, selectedUser2]);
 
   const loadUsernames = async () => {
     try {
@@ -50,6 +74,23 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
       setError(err instanceof Error ? err.message : "Failed to load usernames");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMoviesInCommon = async () => {
+    if (!selectedUser1 || !selectedUser2) return;
+
+    try {
+      setLoadingMovies(true);
+      setError(null);
+      const response = await apiService.getMoviesInCommon(selectedUser1, selectedUser2);
+      if (response.data) {
+        setMoviesInCommonData(response.data);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load movies in common");
+    } finally {
+      setLoadingMovies(false);
     }
   };
 
@@ -90,21 +131,28 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
 
   const handleUser1Change = (username: string) => {
     setSelectedUser1(username);
-    if (username) {
-      loadUserRatings(username, true);
-    } else {
+    if (!username) {
       setUser1Data(null);
     }
   };
 
   const handleUser2Change = (username: string) => {
     setSelectedUser2(username);
-    if (username) {
-      loadUserRatings(username, false);
-    } else {
+    if (!username) {
       setUser2Data(null);
     }
   };
+
+  // Load user data for both users when both are selected
+  useEffect(() => {
+    if (selectedUser1 && selectedUser2 && selectedUser1 !== selectedUser2) {
+      loadUserRatings(selectedUser1, true);
+      loadUserRatings(selectedUser2, false);
+    } else {
+      if (!selectedUser1) setUser1Data(null);
+      if (!selectedUser2) setUser2Data(null);
+    }
+  }, [selectedUser1, selectedUser2]);
 
   const getRatingCount = (
     userData: UserData | null,
@@ -239,6 +287,96 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
             <div className="card border-red-500/30 bg-red-900/10">
               <h3 className="text-lg font-semibold text-red-400 mb-2">Error</h3>
               <p className="text-red-300">{error}</p>
+            </div>
+          )}
+
+          {/* Movies in Common */}
+          {moviesInCommonData && (
+            <div className="card">
+              <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-4">
+                Movies in Common
+              </h3>
+              
+              <div className="mb-4">
+                <p className="text-letterboxd-text-secondary">
+                  <span className="text-letterboxd-accent font-semibold">
+                    {moviesInCommonData.count}
+                  </span>{" "}
+                  movies watched by both{" "}
+                  <span className="text-letterboxd-text-primary font-medium">
+                    {user1Data?.displayName || moviesInCommonData.user1}
+                  </span>{" "}
+                  and{" "}
+                  <span className="text-letterboxd-text-primary font-medium">
+                    {user2Data?.displayName || moviesInCommonData.user2}
+                  </span>
+                </p>
+              </div>
+
+              {moviesInCommonData.count > 0 && (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-letterboxd-border">
+                        <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
+                          Movie Title
+                        </th>
+                        <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
+                          {user1Data?.displayName || moviesInCommonData.user1}
+                        </th>
+                        <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
+                          {user2Data?.displayName || moviesInCommonData.user2}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {moviesInCommonData.moviesInCommon.map((movie, index) => (
+                        <tr
+                          key={`${movie.title}-${index}`}
+                          className="border-b border-letterboxd-border/50"
+                        >
+                          <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
+                            {movie.title}
+                          </td>
+                          <td className="py-3 px-4 text-letterboxd-text-primary">
+                            {movie.user1_rating > 0 ? (
+                              <StarRating rating={movie.user1_rating} />
+                            ) : (
+                              <span className="text-letterboxd-text-muted italic">not rated</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-letterboxd-text-primary">
+                            {movie.user2_rating > 0 ? (
+                              <StarRating rating={movie.user2_rating} />
+                            ) : (
+                              <span className="text-letterboxd-text-muted italic">not rated</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {moviesInCommonData.count === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-letterboxd-text-muted">
+                    No movies in common found between these users.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Loading state for movies */}
+          {loadingMovies && (
+            <div className="card">
+              <div className="text-center py-8">
+                <p className="text-letterboxd-text-secondary">
+                  Loading movies in common...
+                </p>
+              </div>
             </div>
           )}
 
@@ -465,64 +603,6 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
                 </table>
               </div>
 
-              {/* Summary */}
-              {user1Data && user2Data && (
-                <div className="mt-6 p-4 bg-letterboxd-bg-primary rounded-lg">
-                  <h4 className="text-lg font-semibold text-letterboxd-text-primary mb-3">
-                    Summary
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <h5 className="font-medium text-letterboxd-text-secondary mb-2">
-                        {user1Data.displayName || user1Data.username}
-                      </h5>
-                      <div className="space-y-1 text-sm text-letterboxd-text-muted">
-                        <p>
-                          Total films rated:{" "}
-                          {user1Data.totalFilms ||
-                            user1Data.ratings.reduce(
-                              (sum, r) => sum + r.count,
-                              0
-                            )}
-                        </p>
-                        <p>
-                          Followers:{" "}
-                          {user1Data.followers?.toLocaleString() || 0}
-                        </p>
-                        <p>
-                          Following:{" "}
-                          {user1Data.following?.toLocaleString() || 0}
-                        </p>
-                        <p>Lists: {user1Data.numberOfLists || 0}</p>
-                      </div>
-                    </div>
-                    <div>
-                      <h5 className="font-medium text-letterboxd-text-secondary mb-2">
-                        {user2Data.displayName || user2Data.username}
-                      </h5>
-                      <div className="space-y-1 text-sm text-letterboxd-text-muted">
-                        <p>
-                          Total films rated:{" "}
-                          {user2Data.totalFilms ||
-                            user2Data.ratings.reduce(
-                              (sum, r) => sum + r.count,
-                              0
-                            )}
-                        </p>
-                        <p>
-                          Followers:{" "}
-                          {user2Data.followers?.toLocaleString() || 0}
-                        </p>
-                        <p>
-                          Following:{" "}
-                          {user2Data.following?.toLocaleString() || 0}
-                        </p>
-                        <p>Lists: {user2Data.numberOfLists || 0}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           )}
 

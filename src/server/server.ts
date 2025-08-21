@@ -100,6 +100,17 @@ const limiter = rateLimit({
 app.use("/api/", limiter);
 app.use(express.json({ limit: "10mb" }));
 
+// Custom timeout middleware for scraper routes
+const scraperTimeout = (req: Request, res: Response, next: any) => {
+  // Only apply extended timeout for scraper routes
+  if (req.path.startsWith('/api/scraper')) {
+    // Set 15 minute timeout for scraper operations
+    req.setTimeout(15 * 60 * 1000); // 15 minutes
+    res.setTimeout(15 * 60 * 1000); // 15 minutes
+  }
+  next();
+};
+
 // Health check endpoint
 app.get("/api/health", (req: Request, res: Response): void => {
   const response: ApiResponse = {
@@ -111,6 +122,9 @@ app.get("/api/health", (req: Request, res: Response): void => {
   };
   res.json(response);
 });
+
+// Apply timeout middleware before routes
+app.use(scraperTimeout);
 
 // Routes
 app.use("/api/auth", authRoutes);
