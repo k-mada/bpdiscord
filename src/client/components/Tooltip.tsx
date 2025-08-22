@@ -8,33 +8,16 @@ interface TooltipProps {
 
 const Tooltip: React.FC<TooltipProps> = ({ content, children, className = "" }) => {
   const [isVisible, setIsVisible] = useState(false);
-  const [isRendered, setIsRendered] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleMouseEnter = (e: React.MouseEvent) => {
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-    
-    setIsRendered(true);
-    // Small delay to ensure DOM is ready for positioning
-    setTimeout(() => {
-      setIsVisible(true);
-      updatePosition(e);
-    }, 10);
+    setIsVisible(true);
+    updatePosition(e);
   };
 
   const handleMouseLeave = () => {
     setIsVisible(false);
-    
-    // Remove from DOM after fade out completes
-    timeoutRef.current = setTimeout(() => {
-      setIsRendered(false);
-    }, 300);
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -67,18 +50,9 @@ const Tooltip: React.FC<TooltipProps> = ({ content, children, className = "" }) 
     setPosition({ x, y });
   };
 
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
 
   return (
     <div
-      ref={containerRef}
       className={`relative inline-block ${className}`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -86,17 +60,17 @@ const Tooltip: React.FC<TooltipProps> = ({ content, children, className = "" }) 
     >
       {children}
       
-      {isRendered && (
-        <div
-          ref={tooltipRef}
-          className={`fixed z-50 px-3 py-2 text-sm text-letterboxd-text-primary bg-letterboxd-bg-primary border border-letterboxd-border rounded-md shadow-letterboxd-lg pointer-events-none transition-opacity duration-300 ${
-            isVisible ? 'opacity-100' : 'opacity-0'
-          }`}
-          style={{
-            left: `${position.x}px`,
-            top: `${position.y}px`,
-          }}
-        >
+      <div
+        ref={tooltipRef}
+        className={`fixed z-50 px-3 py-2 text-sm text-letterboxd-text-primary bg-letterboxd-bg-primary border border-letterboxd-border rounded-md shadow-letterboxd-lg pointer-events-none transition-opacity duration-300 ${
+          isVisible ? 'opacity-100' : 'opacity-0'
+        }`}
+        style={{
+          left: `${position.x}px`,
+          top: `${position.y}px`,
+          visibility: isVisible ? 'visible' : 'hidden',
+        }}
+      >
           <div className="whitespace-nowrap">
             {content}
           </div>
@@ -110,7 +84,6 @@ const Tooltip: React.FC<TooltipProps> = ({ content, children, className = "" }) 
             }}
           />
         </div>
-      )}
     </div>
   );
 };
