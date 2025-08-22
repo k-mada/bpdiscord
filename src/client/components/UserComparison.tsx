@@ -301,15 +301,6 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
                   ))}
                 </select>
               </div>
-              <div className="flex items-center gap-2">
-                <input
-                  id="chkFilterNonRated"
-                  type="checkbox"
-                  checked={filterNonRated}
-                  onChange={() => setFilterNonRated(!filterNonRated)}
-                />
-                <label htmlFor="chkFilterNonRated">Hide non-rated movies</label>
-              </div>
             </div>
           </div>
 
@@ -548,6 +539,17 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
               </h3>
 
               <div className="mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <input
+                    id="chkFilterNonRated"
+                    type="checkbox"
+                    checked={filterNonRated}
+                    onChange={() => setFilterNonRated(!filterNonRated)}
+                  />
+                  <label htmlFor="chkFilterNonRated">
+                    Hide non-rated movies
+                  </label>
+                </div>
                 <p className="text-letterboxd-text-secondary">
                   <span className="text-letterboxd-accent font-semibold">
                     {moviesInCommonData.count}
