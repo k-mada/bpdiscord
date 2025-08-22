@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import apiService from "../services/api";
-import { ALL_RATINGS } from "../constants";
+import RatingDistributionHistogram from "./RatingDistributionHistogram";
 
 interface UserComparisonProps {
   onBackToProfile?: () => void;
@@ -168,6 +168,18 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
     return userData.ratings.reduce((sum, r) => sum + r.count, 0);
   };
 
+  const calculateAverageRating = (userData: UserData | null): number => {
+    if (!userData || userData.ratings.length === 0) return 0;
+
+    const totalWeightedRating = userData.ratings.reduce(
+      (sum, r) => sum + r.rating * r.count,
+      0
+    );
+    const totalCount = getTotalRatings(userData);
+
+    return totalCount > 0 ? totalWeightedRating / totalCount : 0;
+  };
+
   const getRatingPercentage = (
     userData: UserData | null,
     rating: number
@@ -290,6 +302,7 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
             </div>
           )}
 
+<<<<<<< Updated upstream
           {/* Movies in Common */}
           {moviesInCommonData && (
             <div className="card">
@@ -380,6 +393,8 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
             </div>
           )}
 
+=======
+>>>>>>> Stashed changes
           {/* Profile Comparison */}
           {(user1Data || user2Data) && (
             <div className="card">
@@ -513,7 +528,7 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
             </div>
           )}
 
-          {/* Rating Comparison */}
+          {/* Rating Distribution Comparison */}
           {(user1Data || user2Data) && (
             <div className="card">
               <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-4">
@@ -525,84 +540,181 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
                   <thead>
                     <tr className="border-b border-letterboxd-border">
                       <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
-                        Rating
+                        User
                       </th>
                       <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
-                        {user1Data?.displayName ||
-                          user1Data?.username ||
-                          "User 1"}
-                        <div className="text-xs text-letterboxd-text-muted font-normal">
-                          Movies Count
-                        </div>
+                        Number Movies Rated
                       </th>
                       <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
-                        {user2Data?.displayName ||
-                          user2Data?.username ||
-                          "User 2"}
-                        <div className="text-xs text-letterboxd-text-muted font-normal">
-                          Movies Count
-                        </div>
+                        Distribution
+                      </th>
+                      <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
+                        Average Rating
                       </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {ALL_RATINGS.map((rating) => {
-                      const count1 = getRatingCount(user1Data, rating);
-                      const count2 = getRatingCount(user2Data, rating);
-                      const percentage1 = getRatingPercentage(
-                        user1Data,
-                        rating
-                      );
-                      const percentage2 = getRatingPercentage(
-                        user2Data,
-                        rating
-                      );
-                      const isUser1Higher = isHigherCount(count1, count2);
-                      const isUser2Higher = isHigherCount(count2, count1);
-
-                      return (
-                        <tr
-                          key={rating}
-                          className="border-b border-letterboxd-border/50"
-                        >
-                          <td className="py-3 px-4 text-letterboxd-text-primary">
-                            <StarRating rating={rating} />
-                          </td>
-                          <td
-                            className={`py-3 px-4 text-letterboxd-text-primary ${
-                              isUser1Higher ? "bg-green-900/20" : ""
-                            }`}
-                          >
-                            <div>
-                              <span className="font-medium">{count1}</span>
-                              {count1 > 0 && (
-                                <span className="text-xs text-letterboxd-text-muted ml-2">
-                                  ({percentage1.toFixed(1)}%)
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td
-                            className={`py-3 px-4 text-letterboxd-text-primary ${
-                              isUser2Higher ? "bg-green-900/20" : ""
-                            }`}
-                          >
-                            <div>
-                              <span className="font-medium">{count2}</span>
-                              {count2 > 0 && (
-                                <span className="text-xs text-letterboxd-text-muted ml-2">
-                                  ({percentage2.toFixed(1)}%)
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                    {user1Data && (
+                      <tr className="border-b border-letterboxd-border/50">
+                        <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
+                          {user1Data.displayName || user1Data.username}
+                        </td>
+                        <td className="py-3 px-4 text-letterboxd-text-primary">
+                          {getTotalRatings(user1Data).toLocaleString()}
+                        </td>
+                        <td className="py-3 px-4">
+                          <RatingDistributionHistogram
+                            distribution={user1Data.ratings}
+                          />
+                        </td>
+                        <td className="py-3 px-4 text-letterboxd-text-primary">
+                          {calculateAverageRating(user1Data).toFixed(2)} / 5.0
+                        </td>
+                      </tr>
+                    )}
+                    {user2Data && (
+                      <tr className="border-b border-letterboxd-border/50">
+                        <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
+                          {user2Data.displayName || user2Data.username}
+                        </td>
+                        <td className="py-3 px-4 text-letterboxd-text-primary">
+                          {getTotalRatings(user2Data).toLocaleString()}
+                        </td>
+                        <td className="py-3 px-4">
+                          <RatingDistributionHistogram
+                            distribution={user2Data.ratings}
+                          />
+                        </td>
+                        <td className="py-3 px-4 text-letterboxd-text-primary">
+                          {calculateAverageRating(user2Data).toFixed(2)} / 5.0
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
 
+<<<<<<< Updated upstream
+=======
+              {/* Rating Legend */}
+              <div className="mt-4 text-center">
+                <p className="text-xs text-letterboxd-text-muted">
+                  Hover over distribution bars to see detailed rating
+                  information
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Movies in Common */}
+          {moviesInCommonData && (
+            <div className="card">
+              <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-4">
+                Movies in Common
+              </h3>
+
+              <div className="mb-4">
+                <p className="text-letterboxd-text-secondary">
+                  <span className="text-letterboxd-accent font-semibold">
+                    {moviesInCommonData.count}
+                  </span>{" "}
+                  movies watched by both{" "}
+                  <span className="text-letterboxd-text-primary font-medium">
+                    {user1Data?.displayName || moviesInCommonData.user1}
+                  </span>{" "}
+                  and{" "}
+                  <span className="text-letterboxd-text-primary font-medium">
+                    {user2Data?.displayName || moviesInCommonData.user2}
+                  </span>
+                </p>
+                {filterNonRated && (
+                  <p className="text-letterboxd-text-secondary">
+                    <span className="text-letterboxd-accent font-semibold">
+                      (Only displaying movies that have been rated by both
+                      users)
+                    </span>{" "}
+                  </p>
+                )}
+              </div>
+
+              {moviesInCommonData.count > 0 && (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-letterboxd-border">
+                        <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
+                          Movie Title
+                        </th>
+                        <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
+                          {user1Data?.displayName || moviesInCommonData.user1}
+                        </th>
+                        <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
+                          {user2Data?.displayName || moviesInCommonData.user2}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {moviesInCommonData.moviesInCommon.map((movie, index) => {
+                        const filterOutRow =
+                          filterNonRated &&
+                          (movie.user1_rating === 0 ||
+                            movie.user2_rating === 0);
+
+                        return (
+                          !filterOutRow && (
+                            <tr
+                              key={`${movie.title}-${index}`}
+                              className="border-b border-letterboxd-border/50"
+                            >
+                              <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
+                                {movie.title}
+                              </td>
+                              <td className="py-3 px-4 text-letterboxd-text-primary">
+                                {movie.user1_rating > 0 ? (
+                                  <StarRating rating={movie.user1_rating} />
+                                ) : (
+                                  <span className="text-letterboxd-text-muted italic">
+                                    not rated
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-3 px-4 text-letterboxd-text-primary">
+                                {movie.user2_rating > 0 ? (
+                                  <StarRating rating={movie.user2_rating} />
+                                ) : (
+                                  <span className="text-letterboxd-text-muted italic">
+                                    not rated
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          )
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {moviesInCommonData.count === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-letterboxd-text-muted">
+                    No movies in common found between these users.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Loading state for movies */}
+          {loadingMovies && (
+            <div className="card">
+              <div className="text-center py-8">
+                <p className="text-letterboxd-text-secondary">
+                  Loading movies in common...
+                </p>
+              </div>
+>>>>>>> Stashed changes
             </div>
           )}
 

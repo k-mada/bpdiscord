@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { TrophyIcon } from "@heroicons/react/24/solid";
 import apiService from "../services/api";
-import { ALL_RATINGS } from "../constants";
+import RatingDistributionHistogram from "./RatingDistributionHistogram";
 
 interface HaterRanking {
   username: string;
@@ -53,63 +53,6 @@ const HaterRankings: React.FC<HaterRankingsProps> = ({
     return rating.toFixed(2);
   };
 
-  const RatingDistributionHistogram: React.FC<{
-    distribution: Array<{ rating: number; count: number }>;
-  }> = ({ distribution }) => {
-    if (!distribution || distribution.length === 0) {
-      return (
-        <span className="text-letterboxd-text-secondary text-xs">No data</span>
-      );
-    }
-
-    const maxCount = Math.max(...distribution.map((d) => d.count));
-    const totalCount = distribution.reduce((sum, d) => sum + d.count, 0);
-
-    // Create a map for easy access and ensure we have all ratings from 0.5 to 5
-    const distributionMap = new Map(
-      distribution.map((d) => [d.rating, d.count])
-    );
-
-    return (
-      <div className="flex items-end space-x-1 h-16 w-32">
-        {ALL_RATINGS.map((rating) => {
-          const count = distributionMap.get(rating) || 0;
-          const percentage = maxCount > 0 ? count / maxCount : 0;
-          // Use a more pronounced height calculation - minimum 4px for any data, max 60px
-          const heightPx =
-            count > 0 ? Math.max(4, Math.round(percentage * 60)) : 2;
-          
-          // Check if this bar has the maximum count (tallest bar)
-          const isTallestBar = count > 0 && count === maxCount;
-
-          return (
-            <div
-              key={rating}
-              className="relative group"
-              style={{ width: "10px" }}
-            >
-              <div
-                className={`rounded-sm transition-all ${
-                  count === 0 
-                    ? "bg-green-800 opacity-30" 
-                    : isTallestBar
-                      ? "bg-letterboxd-accent hover:bg-letterboxd-accent-hover"
-                      : "bg-green-800 hover:bg-green-900"
-                }`}
-                style={{
-                  height: `${heightPx}px`,
-                  minHeight: "2px",
-                }}
-                title={`${rating}★: ${count} movies (${
-                  totalCount > 0 ? ((count / totalCount) * 100).toFixed(1) : 0
-                }%)`}
-              />
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
 
   if (loading) {
     return (
@@ -163,22 +106,20 @@ const HaterRankings: React.FC<HaterRankingsProps> = ({
             <table className="w-full">
               <thead className="bg-letterboxd-bg-primary border-b border-letterboxd-border">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-letterboxd-text-secondary uppercase tracking-wider">
-                    Rank
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-letterboxd-text-secondary uppercase tracking-wider">
-                    User
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-letterboxd-text-secondary uppercase tracking-wider">
-                    Total Movies Rated
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-letterboxd-text-secondary uppercase tracking-wider">
-                    Average Rating
-                  </th>
-
-                  <th className="px-6 py-3 text-left text-xs font-medium text-letterboxd-text-secondary uppercase tracking-wider">
-                    Rating Distribution
-                  </th>
+                  {[
+                    "Rank",
+                    "User", 
+                    "Total Movies Rated",
+                    "Average Rating",
+                    "Rating Distribution"
+                  ].map((header) => (
+                    <th 
+                      key={header}
+                      className="px-6 py-3 text-left text-xs font-medium text-letterboxd-text-secondary uppercase tracking-wider"
+                    >
+                      {header}
+                    </th>
+                  ))}
                 </tr>
               </thead>
               <tbody className="bg-letterboxd-bg-secondary divide-y divide-letterboxd-border">
