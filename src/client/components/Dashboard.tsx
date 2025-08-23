@@ -10,6 +10,7 @@ import ScraperInterface from "./ScraperInterface";
 import UserProfile from "./UserProfile";
 import UserComparison from "./UserComparison";
 import HaterRankings from "./HaterRankings";
+import Header from "./Header";
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -51,76 +52,16 @@ const Dashboard: React.FC = () => {
     navigate("/dashboard/profile");
   };
 
-  const handleNavigateToFetcher = () => {
-    navigate("/dashboard/fetcher");
-  };
-
-  const handleNavigateToComparison = () => {
-    navigate("/dashboard/compare");
-  };
-
-  const handleNavigateToHaterRankings = () => {
-    navigate("/dashboard/hater-rankings");
-  };
-
   if (!token) {
     return null; // Will redirect to login
   }
 
   return (
     <div className="min-h-screen bg-letterboxd-bg-primary">
-      <header className="bg-letterboxd-bg-secondary border-b border-letterboxd-border px-6 py-4">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-letterboxd-text-primary">
-            BPDiscord
-          </h1>
-          <div className="flex items-center space-x-4">
-            <button
-              onClick={handleNavigateToProfile}
-              className={`transition-colors duration-200 ${
-                location.pathname === "/dashboard/profile"
-                  ? "text-letterboxd-text-primary"
-                  : "text-letterboxd-text-secondary hover:text-letterboxd-text-primary"
-              }`}
-            >
-              Profile
-            </button>
-            <button
-              onClick={handleNavigateToFetcher}
-              className={`transition-colors duration-200 ${
-                location.pathname === "/dashboard/fetcher"
-                  ? "text-letterboxd-text-primary"
-                  : "text-letterboxd-text-secondary hover:text-letterboxd-text-primary"
-              }`}
-            >
-              Data Fetcher
-            </button>
-            <button
-              onClick={handleNavigateToComparison}
-              className={`transition-colors duration-200 ${
-                location.pathname === "/dashboard/compare"
-                  ? "text-letterboxd-text-primary"
-                  : "text-letterboxd-text-secondary hover:text-letterboxd-text-primary"
-              }`}
-            >
-              Compare
-            </button>
-            <button
-              onClick={handleNavigateToHaterRankings}
-              className={`transition-colors duration-200 ${
-                location.pathname === "/dashboard/hater-rankings"
-                  ? "text-letterboxd-text-primary"
-                  : "text-letterboxd-text-secondary hover:text-letterboxd-text-primary"
-              }`}
-            >
-              Hater Rankings
-            </button>
-            <button onClick={handleLogout} className="btn-secondary">
-              Logout
-            </button>
-          </div>
-        </div>
-      </header>
+      <Header 
+        isAuthenticated={true} 
+        onLogout={handleLogout} 
+      />
 
       <main className="max-w-7xl mx-auto px-6 py-8">
         <Routes>
@@ -130,8 +71,8 @@ const Dashboard: React.FC = () => {
               <UserProfile
                 user={user}
                 onLogout={handleLogout}
-                onNavigateToScraper={handleNavigateToFetcher}
-                onNavigateToComparison={handleNavigateToComparison}
+                onNavigateToScraper={() => navigate("/dashboard/fetcher")}
+                onNavigateToComparison={() => navigate("/compare")}
               />
             }
           />

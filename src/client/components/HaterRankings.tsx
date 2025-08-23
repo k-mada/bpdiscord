@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { TrophyIcon } from "@heroicons/react/24/solid";
 import apiService from "../services/api";
 import RatingDistributionHistogram from "./RatingDistributionHistogram";
+import Header from "./Header";
 
 interface HaterRanking {
   username: string;
@@ -35,15 +36,12 @@ const HaterRankings: React.FC<HaterRankingsProps> = ({
 
       const response = await apiService.getHaterRankings();
 
-      if (response.error) {
-        setError(response.error);
-      } else if (response.data) {
+      if (response.data) {
         setRankings(response.data);
       }
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to fetch hater rankings"
-      );
+      console.error("Error fetching hater rankings:", err);
+      setError("Failed to load hater rankings");
     } finally {
       setLoading(false);
     }
@@ -52,7 +50,6 @@ const HaterRankings: React.FC<HaterRankingsProps> = ({
   const formatRating = (rating: number): string => {
     return rating.toFixed(2);
   };
-
 
   if (loading) {
     return (
@@ -73,7 +70,7 @@ const HaterRankings: React.FC<HaterRankingsProps> = ({
     );
   }
 
-  return (
+  const RankingsContent = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-letterboxd-text-primary">
@@ -98,22 +95,15 @@ const HaterRankings: React.FC<HaterRankingsProps> = ({
 
         {rankings.length === 0 ? (
           <div className="px-6 py-8 text-center text-letterboxd-text-secondary">
-            No user ratings found. Users need to have their ratings scraped
-            first.
+            No user ratings found. Users need to have their ratings scraped first.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-letterboxd-bg-primary border-b border-letterboxd-border">
                 <tr>
-                  {[
-                    "Rank",
-                    "User", 
-                    "Total Movies Rated",
-                    "Average Rating",
-                    "Rating Distribution"
-                  ].map((header) => (
-                    <th 
+                  {["Rank", "User", "Total Movies Rated", "Average Rating", "Rating Distribution"].map((header) => (
+                    <th
                       key={header}
                       className="px-6 py-3 text-left text-xs font-medium text-letterboxd-text-secondary uppercase tracking-wider"
                     >
@@ -155,7 +145,6 @@ const HaterRankings: React.FC<HaterRankingsProps> = ({
                     <td className="px-6 py-1 whitespace-nowrap text-sm text-letterboxd-text-primary">
                       {formatRating(ranking.averageRating)} / 5.0
                     </td>
-
                     <td className="px-6 py-1 whitespace-nowrap">
                       <RatingDistributionHistogram
                         distribution={ranking.ratingDistribution || []}
@@ -172,13 +161,27 @@ const HaterRankings: React.FC<HaterRankingsProps> = ({
       {rankings.length > 0 && (
         <div className="text-center text-sm text-letterboxd-text-secondary">
           <p>
-            Showing {rankings.length} user{rankings.length !== 1 ? "s" : ""}{" "}
-            with ratings data
+            Showing {rankings.length} user{rankings.length !== 1 ? "s" : ""} with ratings data
           </p>
         </div>
       )}
     </div>
   );
+
+  // Public version with header and full page layout
+  if (isPublic) {
+    return (
+      <div className="min-h-screen bg-letterboxd-bg-primary">
+        <Header isAuthenticated={false} />
+        <main className="max-w-7xl mx-auto px-6 py-8">
+          <RankingsContent />
+        </main>
+      </div>
+    );
+  }
+
+  // Dashboard version (embedded within authenticated layout)
+  return <RankingsContent />;
 };
 
 export default HaterRankings;
