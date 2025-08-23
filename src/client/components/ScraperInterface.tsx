@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import apiService from "../services/api";
 import { ALL_RATINGS } from "../constants";
+import Header from "./Header";
 
 interface Rating {
   rating: number;
@@ -12,11 +14,24 @@ interface UserData {
   ratings: Rating[];
 }
 
-interface ScraperInterfaceProps {
-  token: string;
-}
+interface ScraperInterfaceProps {}
 
-const ScraperInterface: React.FC<ScraperInterfaceProps> = ({ token }) => {
+const ScraperInterface: React.FC<ScraperInterfaceProps> = () => {
+  const navigate = useNavigate();
+  const [token, setToken] = useState<string | null>(null);
+
+  useEffect(() => {
+    const storedToken = localStorage.getItem("token");
+    if (storedToken) {
+      setToken(storedToken);
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/login");
+  };
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
   const [fetchStatus, setFetchStatus] = useState<string>("");
@@ -127,7 +142,10 @@ const ScraperInterface: React.FC<ScraperInterfaceProps> = ({ token }) => {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="min-h-screen bg-letterboxd-bg-primary">
+      <Header />
+      <main className="max-w-7xl mx-auto px-6 py-8">
+        <div className="space-y-8">
       <div className="text-center">
         <h2 className="text-3xl font-bold text-letterboxd-text-primary mb-2">
           Letterboxd Data Fetcher
@@ -264,6 +282,8 @@ const ScraperInterface: React.FC<ScraperInterfaceProps> = ({ token }) => {
           </p>
         </div>
       )}
+        </div>
+      </main>
     </div>
   );
 };

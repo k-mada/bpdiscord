@@ -1,102 +1,98 @@
 import React, { useState, useEffect } from "react";
-import {
-  Routes,
-  Route,
-  useNavigate,
-  useLocation,
-  Navigate,
-} from "react-router-dom";
-import ScraperInterface from "./ScraperInterface";
-import UserProfile from "./UserProfile";
-import UserComparison from "./UserComparison";
-import HaterRankings from "./HaterRankings";
+import { useNavigate } from "react-router-dom";
 import Header from "./Header";
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
-  const location = useLocation();
-  const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    const storedToken = localStorage.getItem("token");
     const storedUser = localStorage.getItem("user");
-
-    console.log(
-      "Dashboard: Retrieved token from localStorage, length:",
-      storedToken?.length
-    );
-    console.log("Dashboard: Token starts with:", storedToken?.substring(0, 20));
-
-    if (!storedToken) {
-      console.log("Dashboard: No token found, redirecting to login");
-      navigate("/login");
-      return;
-    }
-
-    setToken(storedToken);
     if (storedUser) {
       setUser(JSON.parse(storedUser));
     }
-  }, [navigate]);
+  }, []);
 
   const handleLogout = () => {
-    setToken(null);
-    setUser(null);
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     navigate("/login");
   };
 
-  const handleNavigateToProfile = () => {
-    navigate("/dashboard/profile");
+  const getUserName = () => {
+    if (user?.user_metadata?.name) {
+      return user.user_metadata.name;
+    }
+    if (user?.email) {
+      return user.email.split("@")[0];
+    }
+    return "User";
   };
-
-  if (!token) {
-    return null; // Will redirect to login
-  }
 
   return (
     <div className="min-h-screen bg-letterboxd-bg-primary">
-      <Header 
-        isAuthenticated={true} 
-        onLogout={handleLogout} 
-      />
-
+      <Header />
+      
       <main className="max-w-7xl mx-auto px-6 py-8">
-        <Routes>
-          <Route
-            path="/profile"
-            element={
-              <UserProfile
-                user={user}
-                onLogout={handleLogout}
-                onNavigateToScraper={() => navigate("/dashboard/fetcher")}
-                onNavigateToComparison={() => navigate("/compare")}
-              />
-            }
-          />
-          <Route path="/fetcher" element={<ScraperInterface token={token} />} />
-          <Route
-            path="/compare"
-            element={
-              <UserComparison onBackToProfile={handleNavigateToProfile} />
-            }
-          />
-          <Route
-            path="/hater-rankings"
-            element={
-              <HaterRankings
-                onBackToProfile={handleNavigateToProfile}
-                isPublic={false}
-              />
-            }
-          />
-          <Route
-            path="/"
-            element={<Navigate to="/dashboard/profile" replace />}
-          />
-        </Routes>
+        <div className="space-y-8">
+          {/* Welcome Section */}
+          <div className="text-center">
+            <h1 className="text-4xl font-bold text-letterboxd-text-primary mb-4">
+              Welcome back, {getUserName()}!
+            </h1>
+            <p className="text-letterboxd-text-secondary text-lg">
+              Your Letterboxd data analysis dashboard
+            </p>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="card hover:bg-letterboxd-bg-tertiary transition-colors">
+              <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-2">
+                Profile
+              </h3>
+              <p className="text-letterboxd-text-secondary mb-4">
+                View and manage your account settings
+              </p>
+              <button 
+                onClick={() => navigate("/profile")}
+                className="btn-primary w-full"
+              >
+                Go to Profile
+              </button>
+            </div>
+
+            <div className="card hover:bg-letterboxd-bg-tertiary transition-colors">
+              <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-2">
+                Data Fetcher
+              </h3>
+              <p className="text-letterboxd-text-secondary mb-4">
+                Scrape and analyze Letterboxd rating data
+              </p>
+              <button 
+                onClick={() => navigate("/fetcher")}
+                className="btn-primary w-full"
+              >
+                Fetch Data
+              </button>
+            </div>
+
+            <div className="card hover:bg-letterboxd-bg-tertiary transition-colors">
+              <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-2">
+                Compare Users
+              </h3>
+              <p className="text-letterboxd-text-secondary mb-4">
+                Compare rating patterns between users
+              </p>
+              <button 
+                onClick={() => navigate("/compare")}
+                className="btn-primary w-full"
+              >
+                Compare
+              </button>
+            </div>
+          </div>
+        </div>
       </main>
     </div>
   );

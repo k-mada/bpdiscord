@@ -245,7 +245,7 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
 
   return (
     <div className="min-h-screen bg-letterboxd-bg-primary">
-      <Header isAuthenticated={false} />
+      <Header />
       <main className="max-w-7xl mx-auto px-6 py-8">
         <div className="space-y-8">
           {/* Header */}

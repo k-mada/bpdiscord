@@ -4,28 +4,43 @@ import { HEADINGS } from "../constants";
 import { Subheading } from "./Subheading";
 
 interface HeaderProps {
-  isAuthenticated?: boolean;
-  onLogout?: () => void;
+  // No props needed - will auto-detect authentication
 }
 
-const Header: React.FC<HeaderProps> = ({
-  isAuthenticated = false,
-  onLogout,
-}) => {
+const Header: React.FC<HeaderProps> = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [randomHeading, setRandomHeading] = useState<string>("");
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
   useEffect(() => {
     setRandomHeading(HEADINGS[Math.floor(Math.random() * HEADINGS.length)]);
   }, []);
 
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    setIsAuthenticated(!!token);
+  }, [location.pathname]); // Re-check on route changes
+
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    setIsAuthenticated(false);
+    navigate("/login");
+  };
+
   const handleNavigateToProfile = () => {
-    navigate("/dashboard/profile");
+    navigate("/profile");
   };
 
   const handleNavigateToFetcher = () => {
-    navigate("/dashboard/fetcher");
+    navigate("/fetcher");
   };
 
   const handleNavigateToComparison = () => {
@@ -44,13 +59,17 @@ const Header: React.FC<HeaderProps> = ({
     navigate("/login");
   };
 
+  const handleNavigateToDashboard = () => {
+    navigate("/dashboard");
+  };
+
   const isActivePath = (path: string): boolean => {
     return location.pathname === path || location.pathname.startsWith(path);
   };
 
   const getNavButtonClass = (path: string): string => {
     return `transition-colors duration-200 ${
-      isActivePath(path)
+      location.pathname === path
         ? "text-letterboxd-text-primary"
         : "text-letterboxd-text-secondary hover:text-letterboxd-text-primary"
     }`;
@@ -67,8 +86,8 @@ const Header: React.FC<HeaderProps> = ({
           <Subheading />
         </button>
 
-        <div className="flex items-center space-x-4">
-          {/* Public navigation items */}
+        {/* Desktop Navigation */}
+        <div className="hidden md:flex items-center space-x-4">
           <button
             onClick={handleNavigateToComparison}
             className={getNavButtonClass("/compare")}
@@ -81,33 +100,109 @@ const Header: React.FC<HeaderProps> = ({
           >
             Hater Rankings
           </button>
+          <button
+            onClick={handleNavigateToDashboard}
+            className={getNavButtonClass("/dashboard")}
+          >
+            Dashboard
+          </button>
+          <button
+            onClick={handleNavigateToProfile}
+            className={getNavButtonClass("/profile")}
+          >
+            Profile
+          </button>
+          <button
+            onClick={handleNavigateToFetcher}
+            className={getNavButtonClass("/fetcher")}
+          >
+            Data Fetcher
+          </button>
 
-          {/* Authenticated navigation items */}
           {isAuthenticated ? (
-            <>
-              <button
-                onClick={handleNavigateToProfile}
-                className={getNavButtonClass("/dashboard/profile")}
-              >
-                Profile
-              </button>
-              <button
-                onClick={handleNavigateToFetcher}
-                className={getNavButtonClass("/dashboard/fetcher")}
-              >
-                Data Fetcher
-              </button>
-              <button onClick={onLogout} className="btn-secondary">
-                Logout
-              </button>
-            </>
+            <button onClick={handleLogout} className="btn-secondary">
+              Logout
+            </button>
           ) : (
             <button onClick={handleNavigateToLogin} className="btn-primary">
               Login
             </button>
           )}
         </div>
+
+        {/* Mobile Hamburger Button */}
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="md:hidden flex flex-col items-center justify-center w-8 h-8 space-y-1"
+          aria-label="Toggle menu"
+        >
+          <span
+            className={`block w-6 h-0.5 bg-letterboxd-text-primary transition-all duration-300 ${
+              isMobileMenuOpen ? "rotate-45 translate-y-2" : ""
+            }`}
+          />
+          <span
+            className={`block w-6 h-0.5 bg-letterboxd-text-primary transition-all duration-300 ${
+              isMobileMenuOpen ? "opacity-0" : ""
+            }`}
+          />
+          <span
+            className={`block w-6 h-0.5 bg-letterboxd-text-primary transition-all duration-300 ${
+              isMobileMenuOpen ? "-rotate-45 -translate-y-2" : ""
+            }`}
+          />
+        </button>
       </div>
+
+      {/* Mobile Navigation Menu */}
+      {isMobileMenuOpen && (
+        <div className="md:hidden border-t border-letterboxd-border bg-letterboxd-bg-secondary">
+          <div className="px-6 py-4 space-y-4">
+            <button
+              onClick={handleNavigateToComparison}
+              className={`block w-full text-left py-2 ${getNavButtonClass("/compare")}`}
+            >
+              Compare
+            </button>
+            <button
+              onClick={handleNavigateToHaterRankings}
+              className={`block w-full text-left py-2 ${getNavButtonClass("/hater-rankings")}`}
+            >
+              Hater Rankings
+            </button>
+            <button
+              onClick={handleNavigateToDashboard}
+              className={`block w-full text-left py-2 ${getNavButtonClass("/dashboard")}`}
+            >
+              Dashboard
+            </button>
+            <button
+              onClick={handleNavigateToProfile}
+              className={`block w-full text-left py-2 ${getNavButtonClass("/profile")}`}
+            >
+              Profile
+            </button>
+            <button
+              onClick={handleNavigateToFetcher}
+              className={`block w-full text-left py-2 ${getNavButtonClass("/fetcher")}`}
+            >
+              Data Fetcher
+            </button>
+            
+            <div className="pt-2 border-t border-letterboxd-border">
+              {isAuthenticated ? (
+                <button onClick={handleLogout} className="btn-secondary w-full">
+                  Logout
+                </button>
+              ) : (
+                <button onClick={handleNavigateToLogin} className="btn-primary w-full">
+                  Login
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </header>
   );
 };
