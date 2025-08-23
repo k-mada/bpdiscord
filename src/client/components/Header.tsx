@@ -35,32 +35,8 @@ const Header: React.FC<HeaderProps> = () => {
     navigate("/login");
   };
 
-  const handleNavigateToProfile = () => {
-    navigate("/profile");
-  };
-
-  const handleNavigateToFetcher = () => {
-    navigate("/fetcher");
-  };
-
-  const handleNavigateToComparison = () => {
-    navigate("/compare");
-  };
-
-  const handleNavigateToHaterRankings = () => {
-    navigate("/hater-rankings");
-  };
-
-  const handleNavigateToHome = () => {
-    navigate("/");
-  };
-
-  const handleNavigateToLogin = () => {
-    navigate("/login");
-  };
-
-  const handleNavigateToDashboard = () => {
-    navigate("/dashboard");
+  const navigateTo = (path: string) => {
+    navigate(path);
   };
 
   const isActivePath = (path: string): boolean => {
@@ -79,7 +55,7 @@ const Header: React.FC<HeaderProps> = () => {
     <header className="bg-letterboxd-bg-secondary border-b border-letterboxd-border px-6 py-4">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         <button
-          onClick={handleNavigateToHome}
+          onClick={() => navigateTo("/")}
           className="text-2xl text-left font-bold text-letterboxd-text-primary hover:text-letterboxd-accent transition-colors duration-200"
         >
           <span>The Big Picture Discord</span>
@@ -89,31 +65,31 @@ const Header: React.FC<HeaderProps> = () => {
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-4">
           <button
-            onClick={handleNavigateToComparison}
+            onClick={() => navigateTo("/compare")}
             className={getNavButtonClass("/compare")}
           >
             Compare
           </button>
           <button
-            onClick={handleNavigateToHaterRankings}
+            onClick={() => navigateTo("/hater-rankings")}
             className={getNavButtonClass("/hater-rankings")}
           >
             Hater Rankings
           </button>
           <button
-            onClick={handleNavigateToDashboard}
+            onClick={() => navigateTo("/dashboard")}
             className={getNavButtonClass("/dashboard")}
           >
             Dashboard
           </button>
           <button
-            onClick={handleNavigateToProfile}
+            onClick={() => navigateTo("/profile")}
             className={getNavButtonClass("/profile")}
           >
             Profile
           </button>
           <button
-            onClick={handleNavigateToFetcher}
+            onClick={() => navigateTo("/fetcher")}
             className={getNavButtonClass("/fetcher")}
           >
             Data Fetcher
@@ -124,7 +100,7 @@ const Header: React.FC<HeaderProps> = () => {
               Logout
             </button>
           ) : (
-            <button onClick={handleNavigateToLogin} className="btn-primary">
+            <button onClick={() => navigateTo("/login")} className="btn-primary">
               Login
             </button>
           )}
@@ -159,31 +135,31 @@ const Header: React.FC<HeaderProps> = () => {
         <div className="md:hidden border-t border-letterboxd-border bg-letterboxd-bg-secondary">
           <div className="px-6 py-4 space-y-4">
             <button
-              onClick={handleNavigateToComparison}
+              onClick={() => navigateTo("/compare")}
               className={`block w-full text-left py-2 ${getNavButtonClass("/compare")}`}
             >
               Compare
             </button>
             <button
-              onClick={handleNavigateToHaterRankings}
+              onClick={() => navigateTo("/hater-rankings")}
               className={`block w-full text-left py-2 ${getNavButtonClass("/hater-rankings")}`}
             >
               Hater Rankings
             </button>
             <button
-              onClick={handleNavigateToDashboard}
+              onClick={() => navigateTo("/dashboard")}
               className={`block w-full text-left py-2 ${getNavButtonClass("/dashboard")}`}
             >
               Dashboard
             </button>
             <button
-              onClick={handleNavigateToProfile}
+              onClick={() => navigateTo("/profile")}
               className={`block w-full text-left py-2 ${getNavButtonClass("/profile")}`}
             >
               Profile
             </button>
             <button
-              onClick={handleNavigateToFetcher}
+              onClick={() => navigateTo("/fetcher")}
               className={`block w-full text-left py-2 ${getNavButtonClass("/fetcher")}`}
             >
               Data Fetcher
@@ -195,7 +171,7 @@ const Header: React.FC<HeaderProps> = () => {
                   Logout
                 </button>
               ) : (
-                <button onClick={handleNavigateToLogin} className="btn-primary w-full">
+                <button onClick={() => navigateTo("/login")} className="btn-primary w-full">
                   Login
                 </button>
               )}

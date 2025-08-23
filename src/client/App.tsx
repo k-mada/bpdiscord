@@ -19,16 +19,40 @@ function App() {
       <Routes>
         {/* Public routes */}
         <Route path="/compare" element={<UserComparison />} />
-        <Route path="/hater-rankings" element={<HaterRankings isPublic={true} />} />
+        <Route
+          path="/hater-rankings"
+          element={<HaterRankings isPublic={true} />}
+        />
         <Route path="/login" element={<LoginPage />} />
 
         {/* Protected routes */}
-        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-        <Route path="/profile" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
-        <Route path="/fetcher" element={<ProtectedRoute><ScraperInterface /></ProtectedRoute>} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <UserProfile />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/fetcher"
+          element={
+            <ProtectedRoute>
+              <ScraperInterface />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Default redirect */}
-        <Route path="/" element={<Navigate to="/compare" replace />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
       </Routes>
     </Router>
   );
