@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import PasswordReset from "./PasswordReset";
 import apiService from "../services/api";
 import { AuthRequest, SignupRequest } from "../types";
+import { Subheading } from "./Subheading";
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -75,11 +76,9 @@ const LoginPage: React.FC = () => {
       <div className="w-full max-w-md">
         <header className="text-center mb-8">
           <h1 className="text-4xl font-bold text-letterboxd-text-primary mb-2">
-            BPDiscord
+            The Big Picture Discord
           </h1>
-          <p className="text-letterboxd-text-secondary">
-            Letterboxd Data Fetcher
-          </p>
+          <Subheading />
         </header>
 
         <div className="card">

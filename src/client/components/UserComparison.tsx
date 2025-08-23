@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import apiService from "../services/api";
 import RatingDistributionHistogram from "./RatingDistributionHistogram";
+import TasteCompatibility from "./TasteCompatibility";
+import Header from "./Header";
 
 interface UserComparisonProps {
   onBackToProfile?: () => void;
@@ -243,6 +245,7 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
 
   return (
     <div className="min-h-screen bg-letterboxd-bg-primary">
+      <Header isAuthenticated={false} />
       <main className="max-w-7xl mx-auto px-6 py-8">
         <div className="space-y-8">
           {/* Header */}
@@ -534,9 +537,16 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
           {/* Movies in Common */}
           {moviesInCommonData && (
             <div className="card">
-              <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-4">
-                Movies in Common
-              </h3>
+              <div className="flex justify-between items-start mb-4">
+                <h3 className="text-xl font-semibold text-letterboxd-text-primary">
+                  Movies in Common
+                </h3>
+                {/* <TasteCompatibility
+                  user1Data={user1Data}
+                  user2Data={user2Data}
+                  moviesInCommon={moviesInCommonData.moviesInCommon}
+                /> */}
+              </div>
 
               <div className="mb-4">
                 <div className="flex items-center gap-2 mb-2">
@@ -591,13 +601,14 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
                     </thead>
                     <tbody>
                       {moviesInCommonData.moviesInCommon.map((movie, index) => {
-                        const filterOutRow =
-                          filterNonRated &&
-                          (movie.user1_rating === 0 ||
-                            movie.user2_rating === 0);
+                        const hasNonRating =
+                          movie.user1_rating === 0 || movie.user2_rating === 0;
+                        const shouldShow = filterNonRated
+                          ? !hasNonRating
+                          : true;
 
                         return (
-                          !filterOutRow && (
+                          shouldShow && (
                             <tr
                               key={`${movie.title}-${index}`}
                               className="border-b border-letterboxd-border/50"
