@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { HEADINGS } from "../constants";
 import { Subheading } from "./Subheading";
 
 interface HeaderProps {
@@ -10,13 +9,8 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [randomHeading, setRandomHeading] = useState<string>("");
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
-
-  useEffect(() => {
-    setRandomHeading(HEADINGS[Math.floor(Math.random() * HEADINGS.length)]);
-  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -100,7 +94,10 @@ const Header: React.FC<HeaderProps> = () => {
               Logout
             </button>
           ) : (
-            <button onClick={() => navigateTo("/login")} className="btn-primary">
+            <button
+              onClick={() => navigateTo("/login")}
+              className="btn-primary"
+            >
               Login
             </button>
           )}
@@ -136,42 +133,55 @@ const Header: React.FC<HeaderProps> = () => {
           <div className="px-6 py-4 space-y-4">
             <button
               onClick={() => navigateTo("/compare")}
-              className={`block w-full text-left py-2 ${getNavButtonClass("/compare")}`}
+              className={`block w-full text-left py-2 ${getNavButtonClass(
+                "/compare"
+              )}`}
             >
               Compare
             </button>
             <button
               onClick={() => navigateTo("/hater-rankings")}
-              className={`block w-full text-left py-2 ${getNavButtonClass("/hater-rankings")}`}
+              className={`block w-full text-left py-2 ${getNavButtonClass(
+                "/hater-rankings"
+              )}`}
             >
               Hater Rankings
             </button>
             <button
               onClick={() => navigateTo("/dashboard")}
-              className={`block w-full text-left py-2 ${getNavButtonClass("/dashboard")}`}
+              className={`block w-full text-left py-2 ${getNavButtonClass(
+                "/dashboard"
+              )}`}
             >
               Dashboard
             </button>
             <button
               onClick={() => navigateTo("/profile")}
-              className={`block w-full text-left py-2 ${getNavButtonClass("/profile")}`}
+              className={`block w-full text-left py-2 ${getNavButtonClass(
+                "/profile"
+              )}`}
             >
               Profile
             </button>
             <button
               onClick={() => navigateTo("/fetcher")}
-              className={`block w-full text-left py-2 ${getNavButtonClass("/fetcher")}`}
+              className={`block w-full text-left py-2 ${getNavButtonClass(
+                "/fetcher"
+              )}`}
             >
               Data Fetcher
             </button>
-            
+
             <div className="pt-2 border-t border-letterboxd-border">
               {isAuthenticated ? (
                 <button onClick={handleLogout} className="btn-secondary w-full">
                   Logout
                 </button>
               ) : (
-                <button onClick={() => navigateTo("/login")} className="btn-primary w-full">
+                <button
+                  onClick={() => navigateTo("/login")}
+                  className="btn-primary w-full"
+                >
                   Login
                 </button>
               )}
