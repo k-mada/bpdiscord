@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { HEADINGS } from "../constants";
+import { SUBHEADINGS } from "../constants";
 
 export const Subheading: React.FC = () => {
   const [randomHeading, setRandomHeading] = useState<string>("");
 
   useEffect(() => {
-    setRandomHeading(HEADINGS[Math.floor(Math.random() * HEADINGS.length)]);
+    setRandomHeading(
+      SUBHEADINGS[Math.floor(Math.random() * SUBHEADINGS.length)]
+    );
   }, []);
 
   return (
