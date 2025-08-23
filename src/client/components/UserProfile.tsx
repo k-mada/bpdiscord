@@ -1,18 +1,35 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import Header from "./Header";
 
 interface UserProfileProps {
-  user: any;
-  onLogout: () => void;
-  onNavigateToScraper: () => void;
-  onNavigateToComparison: () => void;
+  // No props needed - will get data from localStorage
 }
 
-const UserProfile: React.FC<UserProfileProps> = ({
-  user,
-  onLogout,
-  onNavigateToScraper,
-  onNavigateToComparison,
-}) => {
+const UserProfile: React.FC<UserProfileProps> = () => {
+  const navigate = useNavigate();
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    navigate("/login");
+  };
+
+  const handleNavigateToScraper = () => {
+    navigate("/fetcher");
+  };
+
+  const handleNavigateToComparison = () => {
+    navigate("/compare");
+  };
   const getUserName = () => {
     if (user?.user_metadata?.name) {
       return user.user_metadata.name;
@@ -40,6 +57,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
 
   return (
     <div className="min-h-screen bg-letterboxd-bg-primary">
+      <Header />
       <main className="max-w-4xl mx-auto px-6 py-8">
         <div className="space-y-8">
           {/* User Profile Section */}
@@ -101,35 +119,6 @@ const UserProfile: React.FC<UserProfileProps> = ({
               <p className="text-letterboxd-text-secondary">
                 No recent activity. Start by scraping some Letterboxd data!
               </p>
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="card">
-            <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-4">
-              Quick Actions
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button
-                onClick={onNavigateToScraper}
-                className="btn-primary w-full py-4"
-              >
-                <div className="text-lg font-semibold mb-1">
-                  Fetch User Ratings
-                </div>
-                <div className="text-sm opacity-90">
-                  Get detailed ratings from a Letterboxd user
-                </div>
-              </button>
-              <button
-                onClick={onNavigateToComparison}
-                className="btn-primary w-full py-4"
-              >
-                <div className="text-lg font-semibold mb-1">Compare Users</div>
-                <div className="text-sm opacity-90">
-                  Compare rating statistics between users
-                </div>
-              </button>
             </div>
           </div>
         </div>

@@ -16,6 +16,12 @@ const LoginPage: React.FC = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [loginRequired, setLoginRequired] = useState<boolean>(false);
+
+  useEffect(() => {
+    const redirectPath = localStorage.getItem("redirectAfterLogin");
+    setLoginRequired(!!redirectPath);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,8 +49,10 @@ const LoginPage: React.FC = () => {
         if (response.data.user) {
           localStorage.setItem("user", JSON.stringify(response.data.user));
         }
-        // Redirect to dashboard after successful login
-        navigate("/dashboard");
+        // Redirect to the page the user was trying to access, or dashboard if none
+        const redirectPath = localStorage.getItem("redirectAfterLogin") || "/dashboard";
+        localStorage.removeItem("redirectAfterLogin");
+        navigate(redirectPath);
       } else {
         console.error("No access token in response:", response);
       }
@@ -85,6 +93,14 @@ const LoginPage: React.FC = () => {
           <h2 className="text-2xl font-semibold text-letterboxd-text-primary mb-6 text-center">
             {isLogin ? "Login" : "Sign Up"}
           </h2>
+          
+          {loginRequired && (
+            <div className="mb-4 p-3 bg-yellow-900/20 border border-yellow-600/30 rounded-md">
+              <p className="text-yellow-200 text-sm text-center">
+                Please login to access that page.
+              </p>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {!isLogin && (
