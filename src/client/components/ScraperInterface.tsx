@@ -14,9 +14,7 @@ interface UserData {
   ratings: Rating[];
 }
 
-interface ScraperInterfaceProps {}
-
-const ScraperInterface: React.FC<ScraperInterfaceProps> = () => {
+const ScraperInterface = () => {
   const navigate = useNavigate();
   const [token, setToken] = useState<string | null>(null);
 

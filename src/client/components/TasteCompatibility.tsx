@@ -23,11 +23,11 @@ interface TasteCompatibilityProps {
   moviesInCommon: MovieInCommon[];
 }
 
-const TasteCompatibility: React.FC<TasteCompatibilityProps> = ({
+const TasteCompatibility = ({
   user1Data,
   user2Data,
   moviesInCommon,
-}) => {
+}: TasteCompatibilityProps) => {
   const calculateCosineSimilarity = (movies: MovieInCommon[]): { similarity: number; ratedMoviesCount: number } => {
     // Filter to only movies that both users have rated (rating > 0)
     const ratedByBoth = movies.filter(

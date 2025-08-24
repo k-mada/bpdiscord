@@ -5,7 +5,7 @@ import apiService from "../services/api";
 import { AuthRequest, SignupRequest } from "../types";
 import { Subheading } from "./Subheading";
 
-const LoginPage: React.FC = () => {
+const LoginPage = () => {
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [showPasswordReset, setShowPasswordReset] = useState(false);

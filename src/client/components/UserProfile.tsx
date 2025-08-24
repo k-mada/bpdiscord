@@ -2,11 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "./Header";
 
-interface UserProfileProps {
-  // No props needed - will get data from localStorage
-}
-
-const UserProfile: React.FC<UserProfileProps> = () => {
+const UserProfile = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
 
