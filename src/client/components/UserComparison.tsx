@@ -530,19 +530,21 @@ const UserComparison = () => {
             </div>
           )}
 
+          {/* Taste Compatibility */}
+          {moviesInCommonData && user1Data && user2Data && (
+            <TasteCompatibility
+              user1Data={user1Data}
+              user2Data={user2Data}
+              moviesInCommon={moviesInCommonData.moviesInCommon}
+            />
+          )}
+
           {/* Movies in Common */}
           {moviesInCommonData && (
             <div className="card">
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-xl font-semibold text-letterboxd-text-primary">
-                  Movies in Common
-                </h3>
-                <TasteCompatibility
-                  user1Data={user1Data}
-                  user2Data={user2Data}
-                  moviesInCommon={moviesInCommonData.moviesInCommon}
-                />
-              </div>
+              <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-4">
+                Movies in Common
+              </h3>
 
               <div className="mb-4">
                 <div className="flex items-center gap-2 mb-2">
