@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { SUBHEADINGS } from "../constants";
 
-export const Subheading: React.FC = () => {
+export const Subheading = () => {
   const [randomHeading, setRandomHeading] = useState<string>("");
 
   useEffect(() => {

@@ -2,11 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Subheading } from "./Subheading";
 
-interface HeaderProps {
-  // No props needed - will auto-detect authentication
-}
-
-const Header: React.FC<HeaderProps> = () => {
+const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);

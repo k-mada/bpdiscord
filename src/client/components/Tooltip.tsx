@@ -6,11 +6,11 @@ interface TooltipProps {
   className?: string;
 }
 
-const Tooltip: React.FC<TooltipProps> = ({
+const Tooltip = ({
   content,
   children,
   className = "",
-}) => {
+}: TooltipProps) => {
   const [isVisible, setIsVisible] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const tooltipRef = useRef<HTMLDivElement>(null);

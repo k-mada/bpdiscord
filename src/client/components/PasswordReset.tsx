@@ -5,7 +5,7 @@ interface PasswordResetProps {
   onBackToLogin: () => void;
 }
 
-const PasswordReset: React.FC<PasswordResetProps> = ({ onBackToLogin }) => {
+const PasswordReset = ({ onBackToLogin }: PasswordResetProps) => {
   const [isRequestMode, setIsRequestMode] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

@@ -4,10 +4,6 @@ import RatingDistributionHistogram from "./RatingDistributionHistogram";
 import TasteCompatibility from "./TasteCompatibility";
 import Header from "./Header";
 
-interface UserComparisonProps {
-  onBackToProfile?: () => void;
-}
-
 interface Rating {
   rating: number;
   count: number;
@@ -36,7 +32,7 @@ interface MoviesInCommonData {
   count: number;
 }
 
-const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
+const UserComparison = () => {
   const [usernames, setUsernames] = useState<
     Array<{ username: string; displayName?: string }>
   >([]);
@@ -206,7 +202,7 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
     return count1 > count2;
   };
 
-  const StarRating: React.FC<{ rating: number }> = ({ rating }) => {
+  const StarRating = ({ rating }: { rating: number }) => {
     const fullStars = Math.floor(rating);
     const hasHalfStar = rating % 1 !== 0;
     const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
@@ -534,19 +530,21 @@ const UserComparison: React.FC<UserComparisonProps> = ({ onBackToProfile }) => {
             </div>
           )}
 
+          {/* Taste Compatibility */}
+          {moviesInCommonData && user1Data && user2Data && (
+            <TasteCompatibility
+              user1Data={user1Data}
+              user2Data={user2Data}
+              moviesInCommon={moviesInCommonData.moviesInCommon}
+            />
+          )}
+
           {/* Movies in Common */}
           {moviesInCommonData && (
             <div className="card">
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-xl font-semibold text-letterboxd-text-primary">
-                  Movies in Common
-                </h3>
-                {/* <TasteCompatibility
-                  user1Data={user1Data}
-                  user2Data={user2Data}
-                  moviesInCommon={moviesInCommonData.moviesInCommon}
-                /> */}
-              </div>
+              <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-4">
+                Movies in Common
+              </h3>
 
               <div className="mb-4">
                 <div className="flex items-center gap-2 mb-2">

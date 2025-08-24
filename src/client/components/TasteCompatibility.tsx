@@ -23,11 +23,11 @@ interface TasteCompatibilityProps {
   moviesInCommon: MovieInCommon[];
 }
 
-const TasteCompatibility: React.FC<TasteCompatibilityProps> = ({
+const TasteCompatibility = ({
   user1Data,
   user2Data,
   moviesInCommon,
-}) => {
+}: TasteCompatibilityProps) => {
   const calculateCosineSimilarity = (movies: MovieInCommon[]): { similarity: number; ratedMoviesCount: number } => {
     // Filter to only movies that both users have rated (rating > 0)
     const ratedByBoth = movies.filter(
@@ -78,37 +78,41 @@ const TasteCompatibility: React.FC<TasteCompatibilityProps> = ({
   const similarityLabel = getSimilarityLabel(similarity);
 
   return (
-    <div className="bg-letterboxd-bg-secondary border border-letterboxd-border rounded-lg p-4 min-w-[300px]">
-      <div className="text-center">
-        <h4 className="text-lg font-semibold text-letterboxd-text-primary mb-2 flex items-center justify-center gap-2">
-          🎯 Taste Compatibility
-        </h4>
-        
-        <div className="text-sm text-letterboxd-text-secondary mb-3">
-          {user1Data.displayName || user1Data.username} vs {user2Data.displayName || user2Data.username}
-        </div>
-
-        {/* Similarity Bar */}
-        <div className="mb-3">
-          <div className="flex items-center gap-3">
-            <div className="flex-1 bg-letterboxd-bg-primary rounded-full h-3 overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-letterboxd-accent to-green-400 transition-all duration-500"
-                style={{ width: `${similarityPercentage}%` }}
-              />
-            </div>
-            <span className="text-lg font-bold text-letterboxd-text-primary min-w-[45px]">
-              {similarityPercentage}%
-            </span>
+    <div className="card">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex-1">
+          <h4 className="text-xl font-semibold text-letterboxd-text-primary mb-2 flex items-center gap-2">
+            🎯 Taste Compatibility
+          </h4>
+          <div className="text-sm text-letterboxd-text-secondary">
+            {user1Data.displayName || user1Data.username} vs {user2Data.displayName || user2Data.username}
           </div>
         </div>
-
-        <div className="text-sm font-medium text-letterboxd-accent mb-2">
-          "{similarityLabel}"
-        </div>
         
-        <div className="text-xs text-letterboxd-text-muted">
-          Based on {ratedMoviesCount} movies rated by both users
+        <div className="flex-1 max-w-md">
+          {/* Similarity Bar */}
+          <div className="mb-2">
+            <div className="flex items-center gap-3">
+              <div className="flex-1 bg-letterboxd-bg-primary rounded-full h-3 overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-letterboxd-accent to-green-400 transition-all duration-500"
+                  style={{ width: `${similarityPercentage}%` }}
+                />
+              </div>
+              <span className="text-lg font-bold text-letterboxd-text-primary min-w-[45px]">
+                {similarityPercentage}%
+              </span>
+            </div>
+          </div>
+
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+            <div className="text-sm font-medium text-letterboxd-accent">
+              "{similarityLabel}"
+            </div>
+            <div className="text-xs text-letterboxd-text-muted">
+              Based on {ratedMoviesCount} movies rated by both
+            </div>
+          </div>
         </div>
       </div>
     </div>

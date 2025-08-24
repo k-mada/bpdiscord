@@ -7,10 +7,10 @@ interface RatingDistributionHistogramProps {
   className?: string;
 }
 
-const RatingDistributionHistogram: React.FC<RatingDistributionHistogramProps> = ({ 
+const RatingDistributionHistogram = ({ 
   distribution, 
   className = "" 
-}) => {
+}: RatingDistributionHistogramProps) => {
   if (!distribution || distribution.length === 0) {
     return (
       <span className="text-letterboxd-text-secondary text-xs">No data</span>

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "./Header";
 
-const Dashboard: React.FC = () => {
+const Dashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
 
