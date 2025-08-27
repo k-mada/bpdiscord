@@ -34,10 +34,10 @@ const Header = () => {
   };
 
   const getNavButtonClass = (path: string): string => {
-    return `transition-colors duration-200 ${
+    return `btn-ghost ${
       location.pathname === path
-        ? "text-letterboxd-text-primary"
-        : "text-letterboxd-text-secondary hover:text-letterboxd-text-primary"
+        ? "text-letterboxd-text-primary bg-letterboxd-bg-secondary"
+        : ""
     }`;
   };
 

@@ -40,14 +40,14 @@ const Dashboard = () => {
             <h1 className="text-4xl font-bold text-letterboxd-text-primary mb-4">
               Welcome back, {getUserName()}!
             </h1>
-            <p className="text-letterboxd-text-secondary text-lg">
+            <p className="page-subtitle text-lg">
               Your Letterboxd data analysis dashboard
             </p>
           </div>
 
           {/* Quick Actions */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div className="card hover:bg-letterboxd-bg-tertiary transition-colors">
+            <div className="card-hover">
               <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-2">
                 Profile
               </h3>
@@ -62,7 +62,7 @@ const Dashboard = () => {
               </button>
             </div>
 
-            <div className="card hover:bg-letterboxd-bg-tertiary transition-colors">
+            <div className="card-hover">
               <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-2">
                 Data Fetcher
               </h3>
@@ -77,7 +77,7 @@ const Dashboard = () => {
               </button>
             </div>
 
-            <div className="card hover:bg-letterboxd-bg-tertiary transition-colors">
+            <div className="card-hover">
               <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-2">
                 Compare Users
               </h3>

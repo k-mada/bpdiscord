@@ -246,17 +246,17 @@ const UserComparison = () => {
         <div className="space-y-8">
           {/* Header */}
           <div className="text-center">
-            <h2 className="text-3xl font-bold text-letterboxd-text-primary mb-2">
+            <h2 className="page-title">
               User Comparison
             </h2>
-            <p className="text-letterboxd-text-secondary">
+            <p className="page-subtitle">
               Compare rating statistics between two Letterboxd users
             </p>
           </div>
 
           {/* User Selection */}
           <div className="card">
-            <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-4">
+            <h3 className="section-title">
               Select Users to Compare
             </h3>
 
@@ -332,15 +332,15 @@ const UserComparison = () => {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b border-letterboxd-border">
-                      <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
+                      <th className="table-header">
                         Metric
                       </th>
-                      <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
+                      <th className="table-header">
                         {user1Data?.displayName ||
                           user1Data?.username ||
                           "User 1"}
                       </th>
-                      <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
+                      <th className="table-header">
                         {user2Data?.displayName ||
                           user2Data?.username ||
                           "User 2"}
@@ -349,11 +349,11 @@ const UserComparison = () => {
                   </thead>
                   <tbody>
                     <tr className="border-b border-letterboxd-border/50">
-                      <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
+                      <td className="table-cell-primary font-medium">
                         Total Films Rated
                       </td>
                       <td
-                        className={`py-3 px-4 text-letterboxd-text-primary ${
+                        className={`table-cell-primary ${
                           (user1Data?.totalFilms || 0) >
                           (user2Data?.totalFilms || 0)
                             ? "bg-green-900/20"
@@ -363,7 +363,7 @@ const UserComparison = () => {
                         {user1Data?.totalFilms || 0}
                       </td>
                       <td
-                        className={`py-3 px-4 text-letterboxd-text-primary ${
+                        className={`table-cell-primary ${
                           (user2Data?.totalFilms || 0) >
                           (user1Data?.totalFilms || 0)
                             ? "bg-green-900/20"
@@ -374,11 +374,11 @@ const UserComparison = () => {
                       </td>
                     </tr>
                     <tr className="border-b border-letterboxd-border/50">
-                      <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
+                      <td className="table-cell-primary font-medium">
                         Followers
                       </td>
                       <td
-                        className={`py-3 px-4 text-letterboxd-text-primary ${
+                        className={`table-cell-primary ${
                           (user1Data?.followers || 0) >
                           (user2Data?.followers || 0)
                             ? "bg-green-900/20"
@@ -388,7 +388,7 @@ const UserComparison = () => {
                         {user1Data?.followers?.toLocaleString() || 0}
                       </td>
                       <td
-                        className={`py-3 px-4 text-letterboxd-text-primary ${
+                        className={`table-cell-primary ${
                           (user2Data?.followers || 0) >
                           (user1Data?.followers || 0)
                             ? "bg-green-900/20"
@@ -399,11 +399,11 @@ const UserComparison = () => {
                       </td>
                     </tr>
                     <tr className="border-b border-letterboxd-border/50">
-                      <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
+                      <td className="table-cell-primary font-medium">
                         Following
                       </td>
                       <td
-                        className={`py-3 px-4 text-letterboxd-text-primary ${
+                        className={`table-cell-primary ${
                           (user1Data?.following || 0) >
                           (user2Data?.following || 0)
                             ? "bg-green-900/20"
@@ -413,7 +413,7 @@ const UserComparison = () => {
                         {user1Data?.following?.toLocaleString() || 0}
                       </td>
                       <td
-                        className={`py-3 px-4 text-letterboxd-text-primary ${
+                        className={`table-cell-primary ${
                           (user2Data?.following || 0) >
                           (user1Data?.following || 0)
                             ? "bg-green-900/20"
@@ -424,11 +424,11 @@ const UserComparison = () => {
                       </td>
                     </tr>
                     <tr className="border-b border-letterboxd-border/50">
-                      <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
+                      <td className="table-cell-primary font-medium">
                         Lists Created
                       </td>
                       <td
-                        className={`py-3 px-4 text-letterboxd-text-primary ${
+                        className={`table-cell-primary ${
                           (user1Data?.numberOfLists || 0) >
                           (user2Data?.numberOfLists || 0)
                             ? "bg-green-900/20"
@@ -438,7 +438,7 @@ const UserComparison = () => {
                         {user1Data?.numberOfLists || 0}
                       </td>
                       <td
-                        className={`py-3 px-4 text-letterboxd-text-primary ${
+                        className={`table-cell-primary ${
                           (user2Data?.numberOfLists || 0) >
                           (user1Data?.numberOfLists || 0)
                             ? "bg-green-900/20"
@@ -482,7 +482,7 @@ const UserComparison = () => {
                   <tbody>
                     {user1Data && (
                       <tr className="border-b border-letterboxd-border/50">
-                        <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
+                        <td className="table-cell-primary font-medium">
                           {user1Data.displayName || user1Data.username}
                         </td>
                         <td className="py-3 px-4 text-letterboxd-text-primary">
@@ -500,7 +500,7 @@ const UserComparison = () => {
                     )}
                     {user2Data && (
                       <tr className="border-b border-letterboxd-border/50">
-                        <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
+                        <td className="table-cell-primary font-medium">
                           {user2Data.displayName || user2Data.username}
                         </td>
                         <td className="py-3 px-4 text-letterboxd-text-primary">
@@ -611,7 +611,7 @@ const UserComparison = () => {
                               key={`${movie.title}-${index}`}
                               className="border-b border-letterboxd-border/50"
                             >
-                              <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
+                              <td className="table-cell-primary font-medium">
                                 {movie.title}
                               </td>
                               <td className="py-3 px-4 text-letterboxd-text-primary">

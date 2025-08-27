@@ -59,13 +59,13 @@ const RatingDistributionHistogram = ({
               style={{ width: "10px" }}
             >
               <div
-                className={`rounded-sm transition-all cursor-pointer ${
+                className={
                   count === 0 
-                    ? "bg-green-800 opacity-30" 
+                    ? "rating-bar-empty" 
                     : isTallestBar
-                      ? "bg-letterboxd-accent hover:bg-letterboxd-accent-hover"
-                      : "bg-green-800 hover:bg-green-900"
-                }`}
+                      ? "rating-bar-max"
+                      : "rating-bar-active"
+                }
                 style={{
                   height: `${heightPx}px`,
                   minHeight: "2px",

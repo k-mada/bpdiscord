@@ -14,6 +14,28 @@ export default defineConfig({
   build: {
     outDir: "build",
     sourcemap: true,
+    cssCodeSplit: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          router: ['react-router-dom'],
+        },
+      },
+    },
+  },
+  css: {
+    postcss: {
+      plugins: [
+        require('tailwindcss'),
+        require('autoprefixer'),
+        ...(process.env.NODE_ENV === 'production' ? [
+          require('cssnano')({
+            preset: 'default'
+          })
+        ] : [])
+      ]
+    }
   },
   server: {
     port: 5173,

@@ -19,27 +19,155 @@
 }
 
 @layer components {
+  /* Base Button Component */
+  .btn {
+    @apply font-medium py-2 px-4 rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* Button Variants */
   .btn-primary {
-    @apply bg-letterboxd-accent hover:bg-letterboxd-accent-hover text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+    @apply btn bg-letterboxd-accent hover:bg-letterboxd-accent-hover text-white focus:ring-letterboxd-accent/50;
   }
 
   .btn-secondary {
-    @apply bg-letterboxd-bg-secondary hover:bg-letterboxd-bg-tertiary text-letterboxd-text-primary font-medium py-2 px-4 rounded-lg border border-letterboxd-border transition-colors duration-200;
+    @apply btn bg-letterboxd-bg-secondary hover:bg-letterboxd-bg-tertiary text-letterboxd-text-primary border border-letterboxd-border focus:ring-letterboxd-accent/50;
   }
 
+  .btn-danger {
+    @apply btn bg-red-600 hover:bg-red-700 text-white focus:ring-red-500/50;
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent hover:bg-letterboxd-bg-secondary text-letterboxd-text-secondary hover:text-letterboxd-text-primary focus:ring-letterboxd-accent/50;
+  }
+
+  /* Card Components */
   .card {
     @apply bg-letterboxd-bg-secondary rounded-xl p-6 shadow-letterboxd border border-letterboxd-border;
   }
 
+  .card-hover {
+    @apply card hover:bg-letterboxd-bg-tertiary transition-colors cursor-pointer;
+  }
+
+  /* Form Components */
   .input-field {
     @apply bg-letterboxd-bg-secondary border border-letterboxd-border rounded-lg px-4 py-3 text-letterboxd-text-primary placeholder-letterboxd-text-muted focus:outline-none focus:ring-2 focus:ring-letterboxd-accent focus:border-transparent transition-all duration-200;
   }
 
+  .input-field-error {
+    @apply input-field border-red-500 focus:ring-red-500/50;
+  }
+
+  /* Typography Components */
   .section-title {
     @apply text-xl font-semibold text-letterboxd-text-primary uppercase tracking-wide mb-4;
   }
 
+  .page-title {
+    @apply text-3xl font-bold text-letterboxd-text-primary mb-2;
+  }
+
+  .page-subtitle {
+    @apply text-letterboxd-text-secondary mb-8;
+  }
+
+  /* Badge Components */
   .pro-badge {
     @apply bg-letterboxd-pro text-black text-xs font-bold px-2 py-1 rounded;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-success {
+    @apply badge bg-green-100 text-green-800;
+  }
+
+  .badge-error {
+    @apply badge bg-red-100 text-red-800;
+  }
+
+  .badge-warning {
+    @apply badge bg-yellow-100 text-yellow-800;
+  }
+
+  /* Table Components */
+  .table-header {
+    @apply px-6 py-3 text-left text-xs font-medium text-letterboxd-text-secondary uppercase tracking-wider;
+  }
+
+  .table-cell {
+    @apply px-6 py-1 whitespace-nowrap text-sm;
+  }
+
+  .table-cell-primary {
+    @apply table-cell text-letterboxd-text-primary;
+  }
+
+  .table-cell-secondary {
+    @apply table-cell text-letterboxd-text-secondary;
+  }
+
+  .table-row-hover {
+    @apply hover:bg-letterboxd-bg-primary transition-colors duration-200;
+  }
+
+  .table-row-winner {
+    @apply bg-green-900/20;
+  }
+
+  /* Loading Components */
+  .loading-spinner {
+    @apply animate-spin rounded-full border-b-2 border-letterboxd-accent;
+  }
+
+  .loading-container {
+    @apply flex justify-center items-center min-h-64;
+  }
+
+  /* Animation Classes */
+  .fade-in {
+    @apply animate-fade-in;
+  }
+
+  .slide-up {
+    @apply animate-slide-up;
+  }
+
+  /* Utility Classes */
+  .focus-visible {
+    @apply focus:ring-2 focus:ring-letterboxd-accent focus:ring-offset-2 focus:ring-offset-letterboxd-bg-primary;
+  }
+
+  .sr-only {
+    @apply absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Rating Components */
+  .rating-bar {
+    @apply rounded-sm transition-all cursor-pointer w-2.5 min-h-0.5;
+  }
+
+  .rating-bar-empty {
+    @apply rating-bar bg-green-800 opacity-30;
+  }
+
+  .rating-bar-active {
+    @apply rating-bar bg-green-800 hover:bg-green-900;
+  }
+
+  .rating-bar-max {
+    @apply rating-bar bg-letterboxd-accent hover:bg-letterboxd-accent-hover;
   }
 }

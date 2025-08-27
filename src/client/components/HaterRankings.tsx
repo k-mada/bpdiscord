@@ -53,8 +53,8 @@ const HaterRankings = ({
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-letterboxd-accent"></div>
+      <div className="loading-container">
+        <div className="loading-spinner h-12 w-12"></div>
       </div>
     );
   }
@@ -73,7 +73,7 @@ const HaterRankings = ({
   const RankingsContent = () => (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-letterboxd-text-primary">
+        <h1 className="page-title mb-0">
           Hater Rankings
         </h1>
         {onBackToProfile && (
@@ -105,7 +105,7 @@ const HaterRankings = ({
                   {["Rank", "User", "Total Movies Rated", "Average Rating", "Rating Distribution"].map((header) => (
                     <th
                       key={header}
-                      className="px-6 py-3 text-left text-xs font-medium text-letterboxd-text-secondary uppercase tracking-wider"
+                      className="table-header"
                     >
                       {header}
                     </th>
@@ -116,14 +116,14 @@ const HaterRankings = ({
                 {rankings.map((ranking, index) => (
                   <tr
                     key={ranking.username}
-                    className={`hover:bg-letterboxd-bg-primary transition-colors duration-200 ${
+                    className={`table-row-hover ${
                       index === 0 ? "bg-yellow-50 dark:bg-yellow-900/20" : ""
                     }`}
                   >
-                    <td className="px-6 py-1 whitespace-nowrap text-sm font-medium text-letterboxd-text-primary">
+                    <td className="table-cell-primary font-medium">
                       #{index + 1}
                     </td>
-                    <td className="px-6 py-1 whitespace-nowrap">
+                    <td className="table-cell">
                       <div className="flex items-center space-x-2">
                         {index === 0 && (
                           <TrophyIcon className="h-5 w-5 text-yellow-500" />
@@ -139,13 +139,13 @@ const HaterRankings = ({
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-1 whitespace-nowrap text-sm text-letterboxd-text-secondary">
+                    <td className="table-cell-secondary">
                       {ranking.totalRatings}
                     </td>
-                    <td className="px-6 py-1 whitespace-nowrap text-sm text-letterboxd-text-primary">
+                    <td className="table-cell-primary">
                       {formatRating(ranking.averageRating)} / 5.0
                     </td>
-                    <td className="px-6 py-1 whitespace-nowrap">
+                    <td className="table-cell">
                       <RatingDistributionHistogram
                         distribution={ranking.ratingDistribution || []}
                       />
