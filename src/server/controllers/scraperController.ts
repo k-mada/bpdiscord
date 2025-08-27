@@ -591,10 +591,13 @@ export class ScraperController {
     // Set a longer timeout for this operation (10 minutes)
     const timeoutId = setTimeout(() => {
       if (!res.headersSent) {
-        console.error(`Operation timed out for user ${username} after 10 minutes`);
+        console.error(
+          `Operation timed out for user ${username} after 10 minutes`
+        );
         res.status(408).json({
           error: "Request timeout - film scraping took too long",
-          message: "The operation exceeded the maximum allowed time. Please try again or contact support."
+          message:
+            "The operation exceeded the maximum allowed time. Please try again or contact support.",
         });
       }
     }, 10 * 60 * 1000); // 10 minutes
@@ -642,7 +645,9 @@ export class ScraperController {
           saveResult.error
         );
       } else {
-        console.log(`Successfully saved ${scrapedFilms.length} films to database`);
+        console.log(
+          `Successfully saved ${scrapedFilms.length} films to database`
+        );
       }
 
       // Step 4: Clear timeout and return scraped data using common response formatter
@@ -662,7 +667,7 @@ export class ScraperController {
       // Clear timeout on error as well
       clearTimeout(timeoutId);
       console.error("Error in getAllFilms:", error);
-      
+
       if (!res.headersSent) {
         res.status(500).json({
           error: `Failed to get user films: ${
@@ -1116,16 +1121,21 @@ export class ScraperController {
   // Common film scraping method - centralized logic with progress tracking
   private static async scrapeUserFilms(username: string): Promise<UserFilm[]> {
     const startTime = Date.now();
-    console.log(`Starting film scraping for ${username} at ${new Date().toISOString()}`);
+    console.log(
+      `Starting film scraping for ${username} at ${new Date().toISOString()}`
+    );
 
     const films: UserFilm[] = [];
 
     try {
       // Get first page to determine total pages
       console.log(`Fetching first page to determine total pages...`);
-      const firstPageData = await ScraperController.scrapeFilmsPage(username, 1);
+      const firstPageData = await ScraperController.scrapeFilmsPage(
+        username,
+        1
+      );
       films.push(...firstPageData.films);
-      
+
       console.log(`Found ${firstPageData.totalPages} total pages to scrape`);
 
       // Scrape remaining pages if any
@@ -1134,12 +1144,17 @@ export class ScraperController {
         console.log(
           `Scraping page ${page} of ${firstPageData.totalPages} for ${username} (${films.length} films collected so far)`
         );
-        
-        const pageData = await ScraperController.scrapeFilmsPage(username, page);
+
+        const pageData = await ScraperController.scrapeFilmsPage(
+          username,
+          page
+        );
         films.push(...pageData.films);
-        
+
         const pageTime = Date.now() - pageStartTime;
-        console.log(`Page ${page} completed in ${pageTime}ms, collected ${pageData.films.length} films`);
+        console.log(
+          `Page ${page} completed in ${pageTime}ms, collected ${pageData.films.length} films`
+        );
 
         // Add delay between pages to be respectful (but reduce delay for faster completion)
         await new Promise((resolve) => setTimeout(resolve, 750));
@@ -1147,15 +1162,20 @@ export class ScraperController {
 
       const totalTime = Date.now() - startTime;
       console.log(
-        `Completed scraping ${films.length} films for ${username} in ${totalTime}ms (${
+        `Completed scraping ${
+          films.length
+        } films for ${username} in ${totalTime}ms (${
           films.filter((f) => f.liked).length
         } liked)`
       );
-      
+
       return films;
     } catch (error) {
       const totalTime = Date.now() - startTime;
-      console.error(`Film scraping failed for ${username} after ${totalTime}ms:`, error);
+      console.error(
+        `Film scraping failed for ${username} after ${totalTime}ms:`,
+        error
+      );
       throw error;
     }
   }
@@ -1274,19 +1294,19 @@ export class ScraperController {
         ) as (ratingText: string | undefined) => number;
         const detectLikedStatus = new Function(
           "container",
-          "index",
+
           detectLikedStatusStr
         ) as (container: Element, index: number) => boolean;
 
         const films: UserFilm[] = [];
 
-        const filmContainers = document.querySelectorAll("li.poster-container");
+        const filmContainers = document.querySelectorAll("li.griditem");
         console.log(`Found ${filmContainers.length} film containers on page`);
 
         filmContainers.forEach((container, index) => {
-          const filmDiv = container.querySelector("div[data-film-slug]");
-          const filmSlug = filmDiv?.getAttribute("data-film-slug");
-          const filmTitle = filmDiv?.getAttribute("data-film-name");
+          const filmDiv = container.querySelector("div[data-item-slug]");
+          const filmSlug = filmDiv?.getAttribute("data-item-slug");
+          const filmTitle = filmDiv?.getAttribute("data-item-name");
 
           if (filmSlug && filmTitle) {
             // Extract user rating using common logic

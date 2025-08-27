@@ -1,3 +1,14 @@
+# Other md files
+
+.claude/unit-tests.md
+.claude/react.md
+.claude/tailwind.md
+
+# Code style
+
+- Use ES modules (import/export) syntax, not commonJS (require)
+- Destructure imports when possible (e.g. import { foo } from 'bar')
+
 # BPDiscord Application Documentation
 
 ## Overview
