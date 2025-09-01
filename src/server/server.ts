@@ -26,7 +26,10 @@ const PORT: number = parseInt(process.env.PORT || "3001", 10);
 app.use(helmet());
 // CORS configuration with dynamic origin handling
 const corsOptions = {
-  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+  origin: (
+    origin: string | undefined,
+    callback: (err: Error | null, allow?: boolean) => void
+  ) => {
     // Allow requests with no origin (like mobile apps or Postman)
     if (!origin) {
       return callback(null, true);
@@ -35,17 +38,17 @@ const corsOptions = {
     if (process.env.NODE_ENV === "production") {
       // Build allowed origins list
       const allowedOrigins = [];
-      
+
       // Add custom frontend URL if set
       if (process.env.FRONTEND_URL) {
         allowedOrigins.push(process.env.FRONTEND_URL);
       }
-      
+
       // Add Vercel URL if available (Vercel automatically sets this)
       if (process.env.VERCEL_URL) {
         allowedOrigins.push(`https://${process.env.VERCEL_URL}`);
       }
-      
+
       // Regex patterns for Vercel domains
       const allowedPatterns = [
         /^https:\/\/.*\.vercel\.app$/,
@@ -54,31 +57,33 @@ const corsOptions = {
         // Add your custom domain when you get one:
         // /^https:\/\/yourdomain\.com$/,
       ];
-      
+
       // Check exact matches first, then patterns
       const exactMatch = allowedOrigins.includes(origin);
-      const patternMatch = allowedPatterns.some(pattern => pattern.test(origin));
+      const patternMatch = allowedPatterns.some((pattern) =>
+        pattern.test(origin)
+      );
       const isAllowed = exactMatch || patternMatch;
-      
+
       // Debug logging for CORS issues
       if (!isAllowed) {
         console.warn(`CORS blocked origin: ${origin}`);
         console.warn(`Allowed origins:`, allowedOrigins);
         console.warn(`VERCEL_URL:`, process.env.VERCEL_URL);
       }
-      
+
       return callback(null, isAllowed);
     } else {
       // Development: allow localhost
       const allowedOrigins = [
-        "http://localhost:3000",  // Original CRA port
-        "http://localhost:3001",  // Server port
-        "http://localhost:5173",  // Vite dev server port
-        "http://localhost:5174",  // Vite dev server fallback port
+        "http://localhost:3000", // Original CRA port
+        "http://localhost:3001", // Server port
+        "http://localhost:5173", // Vite dev server port
+        "http://localhost:5174", // Vite dev server fallback port
         "http://127.0.0.1:3000",
         "http://127.0.0.1:3001",
         "http://127.0.0.1:5173",
-        "http://127.0.0.1:5174"
+        "http://127.0.0.1:5174",
       ];
       return callback(null, allowedOrigins.includes(origin));
     }
@@ -103,7 +108,7 @@ app.use(express.json({ limit: "10mb" }));
 // Custom timeout middleware for scraper routes
 const scraperTimeout = (req: Request, res: Response, next: any) => {
   // Only apply extended timeout for scraper routes
-  if (req.path.startsWith('/api/scraper')) {
+  if (req.path.startsWith("/api/scraper")) {
     // Set 15 minute timeout for scraper operations
     req.setTimeout(15 * 60 * 1000); // 15 minutes
     res.setTimeout(15 * 60 * 1000); // 15 minutes
@@ -134,7 +139,7 @@ app.use("/api/film-users", filmUserRoutes);
 
 // Only load scraper routes in development or when explicitly enabled
 if (
-  process.env.NODE_ENV !== "production" ||
+  // process.env.NODE_ENV !== "production" ||
   process.env.ENABLE_SCRAPER === "true"
 ) {
   app.use("/api/scraper", scraperRoutes);

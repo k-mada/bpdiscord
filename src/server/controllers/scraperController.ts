@@ -1,15 +1,9 @@
 /// <reference lib="dom" />
 import { Request, Response } from "express";
-// Conditional import for Puppeteer (only available in development)
-let puppeteer: any;
+import chromium from 'chrome-aws-lambda';
 
-try {
-  const puppeteerModule = require("puppeteer");
-  puppeteer = puppeteerModule.default || puppeteerModule;
-} catch (error) {
-  // Puppeteer not available in production
-  console.warn("Puppeteer not available - scraping functionality disabled");
-}
+// Use chrome-aws-lambda exclusively for all environments
+const puppeteer = chromium.puppeteer;
 import * as cheerio from "cheerio";
 import { ApiResponse, ScraperSelector, UserFilm } from "../types";
 import { DataController } from "./dataController";
@@ -55,45 +49,65 @@ const extractRatingCount = (title: string | undefined): number => {
 export class ScraperController {
   private static browser: any | null = null;
 
-  // initializes puppeteer browser
+  // Initialize browser using chrome-aws-lambda with fallback
   private static async initializeBrowser(): Promise<any> {
     if (!puppeteer) {
       throw new Error(
-        "Puppeteer not available - scraping functionality disabled in production"
+        "chrome-aws-lambda not available - browser automation disabled"
       );
     }
 
     if (!this.browser) {
-      this.browser = await puppeteer.launch({
-        headless: true,
-        timeout: 60000, // 60 seconds for browser launch
-        args: [
-          "--no-sandbox",
-          "--disable-setuid-sandbox",
-          "--disable-dev-shm-usage",
-          "--disable-accelerated-2d-canvas",
-          "--no-first-run",
-          "--no-zygote",
-          "--disable-gpu",
-          "--disable-web-security",
-          "--disable-features=VizDisplayCompositor",
-          "--disable-background-timer-throttling",
-          "--disable-backgrounding-occluded-windows",
-          "--disable-renderer-backgrounding",
-          "--disable-ipc-flooding-protection",
-          "--memory-pressure-off",
-          "--disable-extensions",
-          "--disable-plugins",
-          "--disable-default-apps",
-          "--disable-sync",
-          "--disable-translate",
-          "--disable-background-networking",
-          "--metrics-recording-only",
-          "--no-default-browser-check",
-          "--safebrowsing-disable-auto-update",
-          "--max-old-space-size=4096", // Increase memory limit
-        ],
-      });
+      try {
+        // Try chrome-aws-lambda first
+        const executablePath = await chromium.executablePath;
+        
+        const launchOptions = {
+          args: chromium.args,
+          defaultViewport: chromium.defaultViewport,
+          headless: chromium.headless,
+          ignoreHTTPSErrors: true,
+          timeout: 60000,
+        };
+
+        if (executablePath) {
+          (launchOptions as any).executablePath = executablePath;
+          console.log('Using chrome-aws-lambda with binary:', executablePath);
+        } else {
+          console.log('chrome-aws-lambda binary not found, trying fallback...');
+          // Fallback to regular puppeteer for local development
+          const regularPuppeteer = require('puppeteer');
+          this.browser = await regularPuppeteer.launch({
+            headless: true,
+            args: chromium.args, // Still use optimized args
+            defaultViewport: chromium.defaultViewport,
+            ignoreHTTPSErrors: true,
+            timeout: 60000,
+          });
+          console.log('Using regular puppeteer fallback with chrome-aws-lambda args');
+          return this.browser;
+        }
+        
+        this.browser = await puppeteer.launch(launchOptions);
+        
+      } catch (error) {
+        console.error('chrome-aws-lambda failed, trying regular puppeteer fallback:', (error as Error).message);
+        
+        // Final fallback to regular puppeteer
+        try {
+          const regularPuppeteer = require('puppeteer');
+          this.browser = await regularPuppeteer.launch({
+            headless: true,
+            args: chromium.args, // Keep the optimized args
+            defaultViewport: chromium.defaultViewport,
+            ignoreHTTPSErrors: true,
+            timeout: 60000,
+          });
+          console.log('Successfully fell back to regular puppeteer');
+        } catch (fallbackError) {
+          throw new Error(`Both chrome-aws-lambda and puppeteer failed: ${(fallbackError as Error).message}`);
+        }
+      }
     }
     return this.browser;
   }
