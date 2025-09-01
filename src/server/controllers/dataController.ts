@@ -29,37 +29,38 @@ export class DataController {
     }
   }
 
-
   static async upsertUserRatings(
     username: string,
     ratings: Array<{ rating: number; count: number }>
   ): Promise<{ success: boolean; error?: string }> {
     try {
       // Prepare data for upsert
-      const ratingsToUpsert = ratings.map(rating => ({
+      const ratingsToUpsert = ratings.map((rating) => ({
         username,
         rating: rating.rating,
         count: rating.count,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       }));
 
       // Use Supabase's upsert functionality with proper conflict resolution
       const { error } = await supabaseAdmin
-        .from('UserRatings')
-        .upsert(ratingsToUpsert, { 
-          onConflict: 'username,rating',
-          ignoreDuplicates: false 
+        .from("UserRatings")
+        .upsert(ratingsToUpsert, {
+          onConflict: "username,rating",
+          ignoreDuplicates: false,
         });
 
       if (error) {
         console.error("Database upsert error:", error);
         return {
           success: false,
-          error: error.message
+          error: error.message,
         };
       }
 
-      console.log(`Successfully upserted ${ratings.length} ratings for user ${username}`);
+      console.log(
+        `Successfully upserted ${ratings.length} ratings for user ${username}`
+      );
       return { success: true };
     } catch (error) {
       console.error("Database upsert error:", error);
@@ -99,7 +100,6 @@ export class DataController {
       };
     }
   }
-
 
   static async getAllUsernames(): Promise<{
     success: boolean;
@@ -378,12 +378,10 @@ export class DataController {
         updated_at: new Date().toISOString(),
       };
 
-      const { error } = await supabaseAdmin
-        .from("Users")
-        .upsert(insertData, { 
-          onConflict: 'lbusername',
-          ignoreDuplicates: false 
-        });
+      const { error } = await supabaseAdmin.from("Users").upsert(insertData, {
+        onConflict: "lbusername",
+        ignoreDuplicates: false,
+      });
 
       if (error) {
         console.error("Database upsert error:", error);
@@ -412,10 +410,10 @@ export class DataController {
   }> {
     try {
       const { data, error } = await supabaseAdmin
-        .from('UserFilms')
-        .select('film_slug, title, rating, liked, created_at, updated_at')
-        .eq('lbusername', lbusername)
-        .order('created_at', { ascending: false });
+        .from("UserFilms")
+        .select("film_slug, title, rating, liked, created_at, updated_at")
+        .eq("lbusername", lbusername)
+        .order("created_at", { ascending: false });
 
       if (error) {
         return { success: false, error: error.message };
@@ -423,9 +421,9 @@ export class DataController {
 
       return { success: true, data: data || [] };
     } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
@@ -435,20 +433,20 @@ export class DataController {
     films: UserFilm[]
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      const filmsToUpsert = films.map(film => ({
+      const filmsToUpsert = films.map((film) => ({
         lbusername,
         film_slug: film.film_slug,
         title: film.title,
         rating: film.rating,
         liked: film.liked || false,
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       }));
 
       const { error } = await supabaseAdmin
-        .from('UserFilms')
-        .upsert(filmsToUpsert, { 
-          onConflict: 'lbusername,film_slug',
-          ignoreDuplicates: false 
+        .from("UserFilms")
+        .upsert(filmsToUpsert, {
+          onConflict: "lbusername,film_slug",
+          ignoreDuplicates: false,
         });
 
       if (error) {
@@ -459,19 +457,22 @@ export class DataController {
       return { success: true };
     } catch (error) {
       console.error("Database operation error:", error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown database error' 
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Unknown database error",
       };
     }
   }
 
-  static async deleteUserFilms(lbusername: string): Promise<{ success: boolean; error?: string }> {
+  static async deleteUserFilms(
+    lbusername: string
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       const { error } = await supabaseAdmin
-        .from('UserFilms')
+        .from("UserFilms")
         .delete()
-        .eq('lbusername', lbusername);
+        .eq("lbusername", lbusername);
 
       if (error) {
         return { success: false, error: error.message };
@@ -479,15 +480,18 @@ export class DataController {
 
       return { success: true };
     } catch (error) {
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
       };
     }
   }
 
   // Get movies in common between two users
-  static async getMoviesInCommon(user1: string, user2: string): Promise<{
+  static async getMoviesInCommon(
+    user1: string,
+    user2: string
+  ): Promise<{
     success: boolean;
     data?: Array<{
       title: string;
@@ -498,12 +502,13 @@ export class DataController {
     error?: string;
   }> {
     try {
+      console.log("getting movies in common between", user1, "and", user2);
       // Query to find movies in common between two users
       // First get user1's films
       const { data: user1Films, error: user1Error } = await supabaseAdmin
-        .from('UserFilms')
-        .select('title, rating')
-        .eq('lbusername', user1);
+        .from("UserFilms")
+        .select("title, rating")
+        .eq("lbusername", user1);
 
       if (user1Error) {
         console.error("Database query error for user1:", user1Error);
@@ -512,9 +517,9 @@ export class DataController {
 
       // Then get user2's films
       const { data: user2Films, error: user2Error } = await supabaseAdmin
-        .from('UserFilms')
-        .select('title, rating')
-        .eq('lbusername', user2);
+        .from("UserFilms")
+        .select("title, rating")
+        .eq("lbusername", user2);
 
       if (user2Error) {
         console.error("Database query error for user2:", user2Error);
@@ -523,7 +528,7 @@ export class DataController {
 
       // Find common movies
       const user1FilmsMap = new Map<string, number>();
-      user1Films?.forEach(film => {
+      user1Films?.forEach((film) => {
         user1FilmsMap.set(film.title, film.rating);
       });
 
@@ -533,29 +538,30 @@ export class DataController {
         user2_rating: number;
       }> = [];
 
-      user2Films?.forEach(film => {
+      user2Films?.forEach((film) => {
         if (user1FilmsMap.has(film.title)) {
           commonMovies.push({
             title: film.title,
             user1_rating: user1FilmsMap.get(film.title)!,
-            user2_rating: film.rating
+            user2_rating: film.rating,
           });
         }
       });
 
       // Sort by title for consistent ordering
       commonMovies.sort((a, b) => a.title.localeCompare(b.title));
-      
-      return { 
-        success: true, 
+
+      return {
+        success: true,
         data: commonMovies,
-        count: commonMovies.length
+        count: commonMovies.length,
       };
     } catch (error) {
       console.error("Database operation error:", error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown database error' 
+      return {
+        success: false,
+        error:
+          error instanceof Error ? error.message : "Unknown database error",
       };
     }
   }
