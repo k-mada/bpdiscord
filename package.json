@@ -15,11 +15,11 @@
     "clean": "rimraf src/server/dist && cd src/client && rimraf build"
   },
   "dependencies": {
+    "@sparticuz/chromium": "^138.0.2",
     "@supabase/supabase-js": "^2.38.0",
     "@types/cheerio": "^0.22.35",
     "axios": "^1.11.0",
     "cheerio": "^1.1.2",
-    "chrome-aws-lambda": "~10.1.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
@@ -27,7 +27,6 @@
     "express-validator": "^7.0.1",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
-    "puppeteer": "^10.4.0",
     "puppeteer-core": "^10.1.0"
   },
   "devDependencies": {
