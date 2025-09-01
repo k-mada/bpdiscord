@@ -1294,7 +1294,7 @@ export class ScraperController {
         ) as (ratingText: string | undefined) => number;
         const detectLikedStatus = new Function(
           "container",
-
+          "index",
           detectLikedStatusStr
         ) as (container: Element, index: number) => boolean;
 
