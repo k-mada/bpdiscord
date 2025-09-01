@@ -9,8 +9,13 @@ export const authenticateToken = async (
 ): Promise<void> => {
   try {
     const authHeader = req.headers["authorization"];
-    const token = authHeader?.split(" ")[1]; // Bearer TOKEN
-    console.log("HEADERS", req.headers);
+    let token = authHeader?.split(" ")[1]; // Bearer TOKEN
+
+    // fallback to check x_authorization
+    if (!token) {
+      token = req.headers["x_authorization"]?.toString().split(" ")[1];
+    }
+
     if (!token) {
       res.status(401).json({ error: "Access token required" });
       return;
