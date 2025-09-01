@@ -7,11 +7,11 @@ let puppeteer: any;
 
 // Use @sparticuz/chromium for browser automation
 try {
-  chromium = require('@sparticuz/chromium');
-  puppeteer = require('puppeteer-core');
-  console.log('Using @sparticuz/chromium for browser automation');
+  chromium = require("@sparticuz/chromium");
+  puppeteer = require("puppeteer-core");
+  console.log("Using @sparticuz/chromium for browser automation");
 } catch (error) {
-  console.error('@sparticuz/chromium not available:', (error as Error).message);
+  console.error("@sparticuz/chromium not available:", (error as Error).message);
   chromium = null;
   puppeteer = null;
 }
@@ -70,72 +70,88 @@ export class ScraperController {
 
     if (!this.browser) {
       // Check if we're in a serverless/production environment
-      const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NODE_ENV === 'production';
-      
+      const isServerless =
+        process.env.VERCEL ||
+        process.env.AWS_LAMBDA_FUNCTION_NAME ||
+        process.env.NODE_ENV === "production";
+
       try {
         let launchOptions: any = {};
 
         // Use @sparticuz/chromium for serverless browser automation
         if (chromium && isServerless) {
           // In serverless environments, use @sparticuz/chromium binary
-          const executablePath = await chromium.executablePath();
+          // const executablePath = await chromium.executablePath();
+          const executablePath = await chromium.executablePath(
+            `https://github.com/Sparticuz/chromium/releases/download/v116.0.0/chromium-v116.0.0-pack.tar`
+          );
           launchOptions = {
             args: chromium.args,
             defaultViewport: chromium.defaultViewport,
             executablePath: executablePath,
             headless: chromium.headless,
-            ignoreDefaultArgs: ['--disable-extensions'],
+            ignoreDefaultArgs: ["--disable-extensions"],
             ignoreHTTPSErrors: true,
             timeout: 60000,
           };
-          console.log('Using @sparticuz/chromium for serverless environment');
+          console.log("Using @sparticuz/chromium for serverless environment");
         } else if (chromium && !isServerless) {
           // In local development, use chromium args but not the executable path
           launchOptions = {
             args: chromium.args,
             defaultViewport: chromium.defaultViewport,
             headless: chromium.headless,
-            ignoreDefaultArgs: ['--disable-extensions'],
+            ignoreDefaultArgs: ["--disable-extensions"],
             ignoreHTTPSErrors: true,
             timeout: 60000,
           };
-          console.log('Using @sparticuz/chromium args with system Chrome for local development');
+          console.log(
+            "Using @sparticuz/chromium args with system Chrome for local development"
+          );
         } else {
           // No chromium package available
           if (isServerless) {
-            throw new Error('@sparticuz/chromium not available in serverless environment');
+            throw new Error(
+              "@sparticuz/chromium not available in serverless environment"
+            );
           }
           launchOptions = {
             headless: true,
             ignoreHTTPSErrors: true,
             timeout: 60000,
           };
-          console.log('No @sparticuz/chromium available, using default puppeteer configuration');
+          console.log(
+            "No @sparticuz/chromium available, using default puppeteer configuration"
+          );
         }
 
         // For local development, try regular puppeteer first if no executable path is set
         if (!launchOptions.executablePath && !isServerless) {
-          console.log('Local development: trying regular puppeteer first...');
+          console.log("Local development: trying regular puppeteer first...");
           try {
-            const regularPuppeteer = require('puppeteer');
+            const regularPuppeteer = require("puppeteer");
             this.browser = await regularPuppeteer.launch(launchOptions);
-            console.log('Using regular puppeteer for local development');
+            console.log("Using regular puppeteer for local development");
             return this.browser;
           } catch (puppeteerError) {
-            console.warn('Regular puppeteer failed:', (puppeteerError as Error).message);
-            console.log('Falling back to puppeteer-core with system Chrome');
+            console.warn(
+              "Regular puppeteer failed:",
+              (puppeteerError as Error).message
+            );
+            console.log("Falling back to puppeteer-core with system Chrome");
           }
         }
-        
+
         this.browser = await puppeteer.launch(launchOptions);
-        console.log('Browser launched successfully');
-        
+        console.log("Browser launched successfully");
       } catch (error) {
         const errorMessage = (error as Error).message;
-        console.error('Browser initialization failed:', errorMessage);
-        
+        console.error("Browser initialization failed:", errorMessage);
+
         if (isServerless) {
-          throw new Error(`Browser initialization failed in serverless environment: ${errorMessage}. Ensure proper chromium configuration for your platform.`);
+          throw new Error(
+            `Browser initialization failed in serverless environment: ${errorMessage}. Ensure proper chromium configuration for your platform.`
+          );
         } else {
           throw new Error(`Browser initialization failed: ${errorMessage}`);
         }
