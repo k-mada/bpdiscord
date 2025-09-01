@@ -34,5 +34,10 @@
   "env": {
     "NODE_ENV": "production",
     "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD": "true"
+  },
+  "functions": {
+    "src/server/server.ts": {
+      "maxDuration": 30
+    }
   }
 }
