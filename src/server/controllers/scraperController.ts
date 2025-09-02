@@ -66,8 +66,8 @@ export class ScraperController {
         executablePath: await chromium.executablePath(),
       };
     } else {
-      console.log("Not serverless, importing puppeteer");
-      puppeteer = await import("puppeteer");
+      console.log("Not serverless, importing puppeteer-core");
+      puppeteer = (await import("puppeteer-core")).default;
     }
     let browser = null;
 
