@@ -1,20 +1,6 @@
 /// <reference lib="dom" />
 import { Request, Response } from "express";
 
-// Modern chromium for serverless environments
-// let chromium: any;
-// let puppeteer: any;
-
-// Use @sparticuz/chromium for browser automation
-// try {
-//   chromium = require("@sparticuz/chromium");
-//   puppeteer = require("puppeteer-core");
-//   console.log("Using @sparticuz/chromium for browser automation");
-// } catch (error) {
-//   console.error("@sparticuz/chromium not available:", (error as Error).message);
-//   chromium = null;
-//   puppeteer = null;
-// }
 import * as cheerio from "cheerio";
 import { ApiResponse, ScraperSelector, UserFilm } from "../types";
 import { DataController } from "./dataController";
