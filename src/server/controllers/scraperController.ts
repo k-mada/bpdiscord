@@ -69,6 +69,9 @@ export class ScraperController {
         headless: true,
       };
     if (process.env.VERCEL) {
+      console.log(
+        "is vercel/serverless, importing @sparticuz/chromium and puppeteer-core"
+      );
       const chromium = (await import("@sparticuz/chromium")).default;
       puppeteer = (await import("puppeteer-core")).default;
       launchOptions = {
@@ -77,6 +80,7 @@ export class ScraperController {
         executablePath: await chromium.executablePath(),
       };
     } else {
+      console.log("Not serverless, importing puppeteer");
       puppeteer = await import("puppeteer");
     }
     let browser = null;
