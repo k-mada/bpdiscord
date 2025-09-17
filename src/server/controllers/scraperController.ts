@@ -66,8 +66,23 @@ export class ScraperController {
         executablePath: await chromium.executablePath(),
       };
     } else {
-      console.log("Not serverless, importing puppeteer-core");
-      puppeteer = (await import("puppeteer-core")).default;
+      console.log("Not serverless, using full puppeteer for local development");
+      try {
+        // Use full puppeteer for local development (includes Chromium)
+        puppeteer = (await import("puppeteer")).default;
+      } catch (error) {
+        console.log("Full puppeteer not available, falling back to puppeteer-core with system Chrome");
+        puppeteer = (await import("puppeteer-core")).default;
+        
+        // Use optimized args from @sparticuz/chromium
+        const chromium = (await import("@sparticuz/chromium")).default;
+        launchOptions = {
+          ...launchOptions,
+          args: chromium.args,
+          // Let puppeteer-core find system Chrome automatically
+          // This will use the PUPPETEER_EXECUTABLE_PATH env var if set
+        };
+      }
     }
     let browser = null;
 
