@@ -25,6 +25,27 @@ const ScraperInterface = () => {
     }
   }, []);
 
+  // Load available users on component mount
+  useEffect(() => {
+    const loadAvailableUsers = async () => {
+      try {
+        setLoadingUsers(true);
+        const response = await apiService.getFilmUsers();
+        if (response.data) {
+          setAvailableUsers(response.data);
+        }
+      } catch (err) {
+        console.error("Failed to load available users:", err);
+        // Fallback to empty array if loading fails
+        setAvailableUsers([]);
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+
+    loadAvailableUsers();
+  }, []);
+
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -38,6 +59,17 @@ const ScraperInterface = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
+  // SSE streaming states
+  const [streaming, setStreaming] = useState(false);
+  const [streamProgress, setStreamProgress] = useState<any[]>([]);
+  const [currentPage, setCurrentPage] = useState<number>(0);
+  const [totalPages, setTotalPages] = useState<number>(0);
+  const [totalFilmsCollected, setTotalFilmsCollected] = useState<number>(0);
+
+  // Available users for dropdown
+  const [availableUsers, setAvailableUsers] = useState<Array<{ username: string; displayName?: string }>>([]);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+
   const renderStars = (rating: number): string => {
     const fullStars = Math.floor(rating);
     const hasHalfStar = rating % 1 !== 0;
@@ -47,7 +79,6 @@ const ScraperInterface = () => {
       "★".repeat(fullStars) + (hasHalfStar ? "½" : "") + "☆".repeat(emptyStars)
     );
   };
-
 
   const handleCheckExistingData = async () => {
     if (!username.trim()) {
@@ -74,9 +105,13 @@ const ScraperInterface = () => {
       }
     } catch (err) {
       if (err instanceof Error && err.message.includes("404")) {
-        setError("No data found in database. Use 'Force Scrape' to collect data.");
+        setError(
+          "No data found in database. Use 'Force Scrape' to collect data."
+        );
       } else {
-        setError(err instanceof Error ? err.message : "Failed to check existing data");
+        setError(
+          err instanceof Error ? err.message : "Failed to check existing data"
+        );
       }
     } finally {
       setFetchStatus("");
@@ -99,10 +134,15 @@ const ScraperInterface = () => {
     try {
       // Force scrape user profile and ratings
       setFetchStatus("Force scraping user profile and ratings...");
-      const profileResponse = await apiService.forceScrapeUserProfile(username, token);
+      const profileResponse = await apiService.forceScrapeUserProfile(
+        username,
+        token
+      );
 
       if (profileResponse.error) {
-        throw new Error(`User profile scraping failed: ${profileResponse.error}`);
+        throw new Error(
+          `User profile scraping failed: ${profileResponse.error}`
+        );
       }
 
       // Fetch all films
@@ -139,147 +179,349 @@ const ScraperInterface = () => {
     }
   };
 
+  const handleStreamScraping = async () => {
+    if (!username.trim()) {
+      setError("Please enter a username");
+      return;
+    }
+
+    setStreaming(true);
+    setError(null);
+    setSuccess(null);
+    setUserRatings(null);
+    setFilmCount(null);
+    setStreamProgress([]);
+    setCurrentPage(0);
+    setTotalPages(0);
+    setTotalFilmsCollected(0);
+
+    try {
+      const eventSource = new EventSource(
+        `/api/scraper/stream-films/${encodeURIComponent(username)}`,
+        {
+          withCredentials: false,
+        }
+      );
+
+      eventSource.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+
+          // Add to progress log
+          setStreamProgress((prev) => [...prev, data]);
+
+          switch (data.type) {
+            case "start":
+            case "init":
+              setFetchStatus(data.message);
+              break;
+
+            case "fetching_first_page":
+              setFetchStatus(data.message);
+              break;
+
+            case "pages_found":
+              setTotalPages(data.totalPages);
+              setFetchStatus(`Found ${data.totalPages} pages to scrape`);
+              break;
+
+            case "page_start":
+              setCurrentPage(data.currentPage);
+              setFetchStatus(
+                `Scraping page ${data.currentPage} of ${data.totalPages}...`
+              );
+              break;
+
+            case "page_scraped":
+              setFetchStatus(
+                `Scraped ${data.filmsFromPage} films from page ${data.page}`
+              );
+              break;
+
+            case "page_complete":
+              setTotalFilmsCollected(data.totalFilmsCollected);
+              setFetchStatus(
+                `Page ${data.currentPage} complete - ${data.totalFilmsCollected} total films`
+              );
+              break;
+
+            case "scraping_complete":
+              setFetchStatus(
+                `Scraping complete! ${data.totalFilms} films collected`
+              );
+              break;
+
+            case "saving":
+              setFetchStatus(data.message);
+              break;
+
+            case "complete":
+              setFilmCount(data.data.totalFilms);
+              setSuccess(`Successfully scraped ${data.data.totalFilms} films!`);
+              setFetchStatus("");
+              eventSource.close();
+              setStreaming(false);
+              break;
+
+            case "error":
+              setError(data.message);
+              setFetchStatus("");
+              eventSource.close();
+              setStreaming(false);
+              break;
+          }
+        } catch (parseError) {
+          console.error("Error parsing SSE data:", parseError);
+        }
+      };
+
+      eventSource.onerror = (event) => {
+        console.error("SSE Error:", event);
+        setError("Connection error during streaming");
+        setFetchStatus("");
+        eventSource.close();
+        setStreaming(false);
+      };
+
+      // Cleanup function
+      return () => {
+        eventSource.close();
+        setStreaming(false);
+      };
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : "An error occurred";
+      setError(errorMessage);
+      setFetchStatus("");
+      setStreaming(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-letterboxd-bg-primary">
       <Header />
       <main className="max-w-7xl mx-auto px-6 py-8">
         <div className="space-y-8">
-      <div className="text-center">
-        <h2 className="text-3xl font-bold text-letterboxd-text-primary mb-2">
-          Letterboxd Data Fetcher
-        </h2>
-        <p className="text-letterboxd-text-secondary">
-          Check database for existing data or force scrape fresh data from Letterboxd
-        </p>
-      </div>
-
-      <div className="card">
-        <div className="space-y-4">
-          <div>
-            <label
-              htmlFor="username"
-              className="block text-sm font-medium text-letterboxd-text-secondary mb-2"
-            >
-              Letterboxd Username
-            </label>
-            <input
-              id="username"
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter Letterboxd username"
-              disabled={loading}
-              className="input-field w-full"
-            />
+          <div className="text-center">
+            <h2 className="text-3xl font-bold text-letterboxd-text-primary mb-2">
+              Letterboxd Data Fetcher
+            </h2>
+            <p className="text-letterboxd-text-secondary">
+              Check database for existing data or force scrape fresh data from
+              Letterboxd
+            </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4">
-            <button
-              onClick={handleCheckExistingData}
-              disabled={loading || !username.trim()}
-              className="btn-secondary flex-1"
-            >
-              {loading ? "Checking..." : "Check Database"}
-            </button>
-            <button
+          <div className="card">
+            <div className="space-y-4">
+              <div>
+                <label
+                  htmlFor="username"
+                  className="block text-sm font-medium text-letterboxd-text-secondary mb-2"
+                >
+                  Letterboxd Username
+                </label>
+                {loadingUsers ? (
+                  <div className="input-field w-full flex items-center justify-center">
+                    <span className="text-letterboxd-text-muted">Loading users...</span>
+                  </div>
+                ) : (
+                  <select
+                    id="username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    disabled={loading || streaming}
+                    className="input-field w-full"
+                  >
+                    <option value="">
+                      {availableUsers.length > 0 ? "Select a user..." : "No users available"}
+                    </option>
+                    {availableUsers.map((user) => (
+                      <option key={user.username} value={user.username}>
+                        {user.displayName || user.username} ({user.username})
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4">
+                <button
+                  onClick={handleCheckExistingData}
+                  disabled={loading || streaming || !username.trim()}
+                  className="btn-secondary flex-1"
+                >
+                  {loading ? "Checking..." : "Check current ratings data"}
+                </button>
+                {/* <button
               onClick={handleFetchAllData}
-              disabled={loading || !username.trim()}
+              disabled={loading || streaming || !username.trim()}
               className="btn-primary flex-1"
             >
               {loading ? "Scraping..." : "Force Scrape Data"}
-            </button>
+            </button> */}
+                <button
+                  onClick={handleStreamScraping}
+                  disabled={loading || streaming || !username.trim()}
+                  className="btn-primary flex-1"
+                >
+                  {streaming ? "Streaming..." : "Update films"}
+                </button>
+              </div>
+
+              {fetchStatus && (
+                <div className="mt-4 p-3 bg-letterboxd-bg-primary rounded-lg border border-letterboxd-border">
+                  <p className="text-letterboxd-text-secondary text-sm">
+                    {fetchStatus}
+                  </p>
+                </div>
+              )}
+
+              {/* Progress Bar for Streaming */}
+              {streaming && totalPages > 0 && (
+                <div className="mt-4 p-4 bg-letterboxd-bg-secondary rounded-lg border border-letterboxd-border">
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-sm text-letterboxd-text-secondary">
+                      <span>Page Progress</span>
+                      <span>
+                        {currentPage} / {totalPages}
+                      </span>
+                    </div>
+                    <div className="w-full bg-letterboxd-bg-primary rounded-full h-2">
+                      <div
+                        className="bg-letterboxd-accent h-2 rounded-full transition-all duration-300"
+                        style={{
+                          width: `${(currentPage / totalPages) * 100}%`,
+                        }}
+                      />
+                    </div>
+                    <div className="flex justify-between text-xs text-letterboxd-text-muted">
+                      <span>Films collected: {totalFilmsCollected}</span>
+                      <span>
+                        {Math.round((currentPage / totalPages) * 100)}% complete
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Live Progress Log */}
+              {streaming && streamProgress.length > 0 && (
+                <div className="mt-4 p-4 bg-letterboxd-bg-secondary rounded-lg border border-letterboxd-border">
+                  <h4 className="text-sm font-semibold text-letterboxd-text-secondary mb-3">
+                    Live Progress Log
+                  </h4>
+                  <div className="max-h-40 overflow-y-auto space-y-1">
+                    {streamProgress.slice(-10).map((progress, index) => (
+                      <div
+                        key={index}
+                        className="text-xs text-letterboxd-text-muted p-2 bg-letterboxd-bg-primary rounded"
+                      >
+                        <span className="text-letterboxd-text-secondary font-mono">
+                          {new Date(progress.timestamp).toLocaleTimeString()}
+                        </span>
+                        {" - "}
+                        <span
+                          className={`${
+                            progress.type === "error"
+                              ? "text-red-400"
+                              : progress.type === "complete"
+                              ? "text-green-400"
+                              : "text-letterboxd-text-muted"
+                          }`}
+                        >
+                          {progress.message}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
-          {fetchStatus && (
-            <div className="mt-4 p-3 bg-letterboxd-bg-primary rounded-lg border border-letterboxd-border">
-              <p className="text-letterboxd-text-secondary text-sm">
-                {fetchStatus}
+          {error && (
+            <div className="card border-red-500/30 bg-red-900/10">
+              <h3 className="text-lg font-semibold text-red-400 mb-2">Error</h3>
+              <p className="text-red-300">{error}</p>
+            </div>
+          )}
+
+          {success && (
+            <div className="card border-green-500/30 bg-green-900/10">
+              <h3 className="text-lg font-semibold text-green-400 mb-2">
+                Success
+              </h3>
+              <p className="text-green-300">{success}</p>
+            </div>
+          )}
+
+          {/* User Ratings Table */}
+          {userRatings && (
+            <div className="card">
+              <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-4">
+                User Ratings for {userRatings.username}
+              </h3>
+
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-letterboxd-border">
+                      <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
+                        Rating
+                      </th>
+                      <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
+                        Count
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ALL_RATINGS.map((rating) => {
+                      const ratingItem = userRatings.ratings.find(
+                        (r) => r.rating === rating
+                      );
+                      const count = ratingItem ? ratingItem.count : 0;
+
+                      return (
+                        <tr
+                          key={rating}
+                          className="border-b border-letterboxd-border/50"
+                        >
+                          <td className="py-3 px-4 text-letterboxd-text-primary">
+                            <span className="text-letterboxd-accent">
+                              {renderStars(rating)}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-letterboxd-text-primary">
+                            {count}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="mt-4 p-4 bg-letterboxd-bg-primary rounded-lg">
+                <p className="text-sm text-letterboxd-text-muted">
+                  Total films rated:{" "}
+                  {userRatings.ratings.reduce((sum, r) => sum + r.count, 0)}
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Films Count */}
+          {filmCount !== null && (
+            <div className="card">
+              <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-4">
+                Films Data
+              </h3>
+              <p className="text-letterboxd-text-primary">
+                {filmCount} films fetched
               </p>
             </div>
           )}
-        </div>
-      </div>
-
-      {error && (
-        <div className="card border-red-500/30 bg-red-900/10">
-          <h3 className="text-lg font-semibold text-red-400 mb-2">Error</h3>
-          <p className="text-red-300">{error}</p>
-        </div>
-      )}
-
-      {success && (
-        <div className="card border-green-500/30 bg-green-900/10">
-          <h3 className="text-lg font-semibold text-green-400 mb-2">Success</h3>
-          <p className="text-green-300">{success}</p>
-        </div>
-      )}
-
-      {/* User Ratings Table */}
-      {userRatings && (
-        <div className="card">
-          <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-4">
-            User Ratings for {userRatings.username}
-          </h3>
-
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-letterboxd-border">
-                  <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
-                    Rating
-                  </th>
-                  <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
-                    Count
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {ALL_RATINGS.map((rating) => {
-                  const ratingItem = userRatings.ratings.find(
-                    (r) => r.rating === rating
-                  );
-                  const count = ratingItem ? ratingItem.count : 0;
-
-                  return (
-                    <tr
-                      key={rating}
-                      className="border-b border-letterboxd-border/50"
-                    >
-                      <td className="py-3 px-4 text-letterboxd-text-primary">
-                        <span className="text-letterboxd-accent">
-                          {renderStars(rating)}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-letterboxd-text-primary">
-                        {count}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="mt-4 p-4 bg-letterboxd-bg-primary rounded-lg">
-            <p className="text-sm text-letterboxd-text-muted">
-              Total films rated:{" "}
-              {userRatings.ratings.reduce((sum, r) => sum + r.count, 0)}
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Films Count */}
-      {filmCount !== null && (
-        <div className="card">
-          <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-4">
-            Films Data
-          </h3>
-          <p className="text-letterboxd-text-primary">
-            {filmCount} films fetched
-          </p>
-        </div>
-      )}
         </div>
       </main>
     </div>
