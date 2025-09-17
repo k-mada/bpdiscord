@@ -45,9 +45,9 @@ function App() {
         <Route
           path="/fetcher"
           element={
-            <ProtectedRoute>
-              <ScraperInterface />
-            </ProtectedRoute>
+            // <ProtectedRoute>
+            <ScraperInterface />
+            // </ProtectedRoute>
           }
         />
 
