@@ -1,5 +1,6 @@
 /// <reference lib="dom" />
 import { Request, Response } from "express";
+import { EventEmitter } from "events";
 
 import * as cheerio from "cheerio";
 import { ApiResponse, ScraperSelector, UserFilm } from "../types";
@@ -1329,6 +1330,230 @@ export class ScraperController {
     } catch (error) {
       console.log("No pagination found, treating as single page");
       return 1;
+    }
+  }
+
+  // Progress-enabled version of scrapeUserFilms for SSE streaming
+  private static async scrapeUserFilmsWithProgress(
+    username: string,
+    progressEmitter: EventEmitter
+  ): Promise<UserFilm[]> {
+    const startTime = Date.now();
+    progressEmitter.emit('progress', {
+      type: 'init',
+      message: `Starting film scraping for ${username}`,
+      timestamp: new Date().toISOString()
+    });
+
+    const films: UserFilm[] = [];
+
+    try {
+      // Get first page to determine total pages
+      progressEmitter.emit('progress', {
+        type: 'fetching_first_page',
+        message: 'Fetching first page to determine total pages...',
+        timestamp: new Date().toISOString()
+      });
+
+      const firstPageData = await ScraperController.scrapeFilmsPageWithProgress(
+        username,
+        1,
+        progressEmitter
+      );
+      films.push(...firstPageData.films);
+
+      progressEmitter.emit('progress', {
+        type: 'pages_found',
+        message: `Found ${firstPageData.totalPages} total pages to scrape`,
+        totalPages: firstPageData.totalPages,
+        filmsFromFirstPage: firstPageData.films.length,
+        timestamp: new Date().toISOString()
+      });
+
+      // Scrape remaining pages if any
+      for (let page = 2; page <= firstPageData.totalPages; page++) {
+        const pageStartTime = Date.now();
+
+        progressEmitter.emit('progress', {
+          type: 'page_start',
+          message: `Scraping page ${page} of ${firstPageData.totalPages}`,
+          currentPage: page,
+          totalPages: firstPageData.totalPages,
+          filmsCollectedSoFar: films.length,
+          timestamp: new Date().toISOString()
+        });
+
+        const pageData = await ScraperController.scrapeFilmsPageWithProgress(
+          username,
+          page,
+          progressEmitter
+        );
+        films.push(...pageData.films);
+
+        const pageTime = Date.now() - pageStartTime;
+        progressEmitter.emit('progress', {
+          type: 'page_complete',
+          message: `Page ${page} completed in ${pageTime}ms`,
+          currentPage: page,
+          totalPages: firstPageData.totalPages,
+          filmsFromPage: pageData.films.length,
+          totalFilmsCollected: films.length,
+          pageTimeMs: pageTime,
+          timestamp: new Date().toISOString()
+        });
+
+        // Add delay between pages to be respectful
+        await new Promise((resolve) => setTimeout(resolve, 750));
+      }
+
+      const totalTime = Date.now() - startTime;
+      progressEmitter.emit('progress', {
+        type: 'scraping_complete',
+        message: `Film scraping completed in ${totalTime}ms`,
+        totalFilms: films.length,
+        totalTimeMs: totalTime,
+        timestamp: new Date().toISOString()
+      });
+
+      return films;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      progressEmitter.emit('progress', {
+        type: 'error',
+        message: `Error during film scraping: ${errorMessage}`,
+        error: errorMessage,
+        timestamp: new Date().toISOString()
+      });
+      throw error;
+    }
+  }
+
+  // Progress-enabled version of scrapeFilmsPage for SSE streaming
+  private static async scrapeFilmsPageWithProgress(
+    username: string,
+    pageNum: number,
+    progressEmitter: EventEmitter
+  ): Promise<{ films: UserFilm[]; totalPages: number }> {
+    const page = await ScraperController.createPage();
+
+    try {
+      const url = ScraperController.buildFilmsPageUrl(username, pageNum);
+      await ScraperController.loadPageWithRetry(page, url);
+
+      // Get pagination info (only on first page)
+      let totalPages = 1;
+      if (pageNum === 1) {
+        totalPages = await ScraperController.extractTotalPages(page, username);
+      }
+
+      // Extract film data using common parsing logic
+      const filmsData = await ScraperController.extractFilmsFromPage(page);
+
+      // Emit progress instead of console.log
+      progressEmitter.emit('progress', {
+        type: 'page_scraped',
+        message: `Scraped ${filmsData.length} films from page ${pageNum}, ${
+          filmsData.filter((f) => f.liked).length
+        } liked`,
+        page: pageNum,
+        filmsFromPage: filmsData.length,
+        likedFromPage: filmsData.filter((f) => f.liked).length,
+        timestamp: new Date().toISOString()
+      });
+
+      return { films: filmsData, totalPages };
+    } finally {
+      await page.close();
+    }
+  }
+
+  // SSE endpoint for streaming film scraping progress
+  static async streamFilmScraping(req: Request, res: Response): Promise<void> {
+    const { username } = req.params;
+
+    if (!username) {
+      res.status(400).json({ error: "Username is required" });
+      return;
+    }
+
+    console.log(`Starting SSE stream for film scraping: ${username}`);
+
+    // Set up SSE headers
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Headers': 'Cache-Control'
+    });
+
+    // Create event emitter for progress updates
+    const progressEmitter = new EventEmitter();
+
+    // Set up progress listeners
+    progressEmitter.on('progress', (data) => {
+      res.write(`data: ${JSON.stringify(data)}\n\n`);
+    });
+
+    progressEmitter.on('error', (error) => {
+      res.write(`data: ${JSON.stringify({
+        type: 'error',
+        message: error.message,
+        timestamp: new Date().toISOString()
+      })}\n\n`);
+    });
+
+    progressEmitter.on('complete', (data) => {
+      res.write(`data: ${JSON.stringify({
+        type: 'complete',
+        data,
+        timestamp: new Date().toISOString()
+      })}\n\n`);
+      res.end();
+    });
+
+    // Handle client disconnect
+    req.on('close', () => {
+      console.log(`SSE connection closed for ${username}`);
+      progressEmitter.removeAllListeners();
+    });
+
+    try {
+      // Send initial status
+      progressEmitter.emit('progress', {
+        type: 'start',
+        message: `Starting film scraping for ${username}`,
+        timestamp: new Date().toISOString()
+      });
+
+      // Start the film scraping with progress updates
+      const films = await ScraperController.scrapeUserFilmsWithProgress(username, progressEmitter);
+
+      // Save to database
+      progressEmitter.emit('progress', {
+        type: 'saving',
+        message: 'Saving films to database...',
+        timestamp: new Date().toISOString()
+      });
+
+      await DataController.upsertUserFilms(username, films);
+
+      // Send completion
+      progressEmitter.emit('complete', {
+        username,
+        totalFilms: films.length,
+        films,
+        source: 'scraped',
+        message: `Successfully scraped ${films.length} films for ${username}`
+      });
+
+    } catch (error) {
+      console.error(`Error in streamFilmScraping for ${username}:`, error);
+      progressEmitter.emit('error', {
+        message: error instanceof Error ? error.message : 'Unknown error occurred',
+        username
+      });
+      res.end();
     }
   }
 }

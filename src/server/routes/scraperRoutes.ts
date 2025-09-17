@@ -13,10 +13,17 @@ const scraperLimiter = rateLimit({
   message: { error: "Too many scraping requests, please try again later." },
 });
 
-// Apply authentication to all scraper routes
+// SSE endpoint for streaming film scraping updates (PUBLIC - no auth required)
+router.get(
+  "/stream-films/:username",
+  [scraperLimiter, handleValidationErrors],
+  ScraperController.streamFilmScraping
+);
+
+// Apply authentication to remaining scraper routes
 router.use(authenticateToken);
 
-// Scraper routes
+// Protected scraper routes
 router.post(
   "/getData",
   [scraperLimiter, ...validateScraperRequest, handleValidationErrors],
