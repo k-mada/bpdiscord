@@ -220,6 +220,7 @@ export class ScraperController {
     return page;
   }
 
+<<<<<<< Updated upstream
   // Clean up browser resources (call when process is ending)
   private static async closeBrowser(): Promise<void> {
     if (this.browser) {
@@ -241,6 +242,104 @@ export class ScraperController {
       }
     } catch (error) {
       console.error("Error closing page:", error);
+=======
+  // Enhanced page creation for film scraping (no request interception to avoid conflicts)
+  private static async createPageForFilmScraping(): Promise<any> {
+    let puppeteer: any = null,
+      launchOptions: any = {
+        headless: true,
+      };
+
+    if (process.env.VERCEL) {
+      console.log(
+        "is vercel/serverless, importing @sparticuz/chromium and puppeteer-core for film scraping"
+      );
+      const chromium = (await import("@sparticuz/chromium")).default;
+      puppeteer = (await import("puppeteer-core")).default;
+      launchOptions = {
+        ...launchOptions,
+        args: [
+          ...chromium.args,
+          '--disable-dev-shm-usage',
+          '--disable-extensions',
+          '--disable-plugins',
+          '--disable-images', // Block images for faster loading
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--single-process',
+          '--no-zygote',
+          '--disable-background-timer-throttling',
+          '--disable-backgrounding-occluded-windows',
+          '--disable-renderer-backgrounding',
+          '--disable-features=TranslateUI',
+          '--disable-ipc-flooding-protection',
+          '--max_old_space_size=4096'
+        ],
+        executablePath: await chromium.executablePath(),
+        defaultViewport: { width: 1280, height: 720 },
+        timeout: 30000
+      };
+    } else {
+      console.log("Not serverless, using full puppeteer for local development");
+      try {
+        puppeteer = (await import("puppeteer")).default;
+      } catch (error) {
+        console.log("Full puppeteer not available, falling back to puppeteer-core with system Chrome");
+        puppeteer = (await import("puppeteer-core")).default;
+
+        const chromium = (await import("@sparticuz/chromium")).default;
+        launchOptions = {
+          ...launchOptions,
+          args: chromium.args,
+        };
+      }
+    }
+
+    const browser = await puppeteer.launch(launchOptions);
+    const page = await browser.newPage();
+
+    // Set a more realistic user agent
+    await page.setUserAgent(
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    );
+
+    // Set optimized viewport for film scraping
+    await page.setViewport({
+      width: process.env.VERCEL ? 1280 : 1920,
+      height: process.env.VERCEL ? 720 : 1080
+    });
+
+    // NO REQUEST INTERCEPTION for film scraping to avoid "Request already handled" errors
+    // This sacrifices some performance for reliability in long operations
+
+    // Set additional headers
+    await page.setExtraHTTPHeaders({
+      "Accept-Language": "en-US,en;q=0.9",
+      "Accept-Encoding": "gzip, deflate, br",
+      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+      "Cache-Control": "no-cache",
+      Pragma: "no-cache",
+    });
+
+    // Store browser reference for cleanup
+    (page as any)._browser = browser;
+
+    return page;
+  }
+
+  // Enhanced page cleanup for film scraping
+  private static async closePageAndBrowser(page: any): Promise<void> {
+    try {
+      if (page && !page.isClosed()) {
+        const browser = (page as any)._browser;
+        await page.close();
+        if (browser) {
+          await browser.close();
+        }
+      }
+    } catch (error) {
+      console.error("Error closing page and browser:", error);
+>>>>>>> Stashed changes
     }
   }
 
@@ -1333,7 +1432,7 @@ export class ScraperController {
     films: UserFilm[];
     totalPages: number;
   }> {
-    const page = await ScraperController.createPage();
+    const page = await ScraperController.createPageForFilmScraping();
 
     try {
       const url = ScraperController.buildFilmsPageUrl(username, pageNum);
@@ -1356,7 +1455,11 @@ export class ScraperController {
 
       return { films: filmsData, totalPages };
     } finally {
+<<<<<<< Updated upstream
       await ScraperController.closePage(page);
+=======
+      await ScraperController.closePageAndBrowser(page);
+>>>>>>> Stashed changes
     }
   }
 
@@ -1445,8 +1548,13 @@ export class ScraperController {
     }
   }
 
+<<<<<<< Updated upstream
   // Progress-enabled version of scrapeUserFilms with timeout handling for production
   private static async scrapeUserFilmsWithProgressAndTimeout(
+=======
+  // Progress-enabled version of scrapeUserFilms for SSE streaming with browser reuse optimization
+  private static async scrapeUserFilmsWithProgress(
+>>>>>>> Stashed changes
     username: string,
     progressEmitter: EventEmitter
   ): Promise<UserFilm[]> {
@@ -1458,8 +1566,10 @@ export class ScraperController {
     });
 
     const films: UserFilm[] = [];
+    let sharedPage: any = null;
 
     try {
+<<<<<<< Updated upstream
       // Get first page to determine total pages with timeout protection
       progressEmitter.emit("progress", {
         type: "fetching_first_page",
@@ -1471,6 +1581,58 @@ export class ScraperController {
         await ScraperController.scrapeFilmsPageWithProgressAndTimeout(
           username,
           1,
+=======
+      // Create a single browser instance for this entire operation
+      progressEmitter.emit('progress', {
+        type: 'browser_launch',
+        message: 'Launching browser for film scraping session...',
+        timestamp: new Date().toISOString()
+      });
+
+      // Create single page/browser for the entire operation to avoid "Request already handled" errors
+      sharedPage = await ScraperController.createPageForFilmScraping();
+
+      // Get first page to determine total pages
+      progressEmitter.emit('progress', {
+        type: 'fetching_first_page',
+        message: 'Fetching first page to determine total pages...',
+        timestamp: new Date().toISOString()
+      });
+
+      const firstPageData = await ScraperController.scrapeFilmsPageWithSharedPage(
+        username,
+        1,
+        sharedPage,
+        progressEmitter
+      );
+      films.push(...firstPageData.films);
+
+      progressEmitter.emit('progress', {
+        type: 'pages_found',
+        message: `Found ${firstPageData.totalPages} total pages to scrape`,
+        totalPages: firstPageData.totalPages,
+        filmsFromFirstPage: firstPageData.films.length,
+        timestamp: new Date().toISOString()
+      });
+
+      // Scrape remaining pages if any using the same browser/page
+      for (let page = 2; page <= firstPageData.totalPages; page++) {
+        const pageStartTime = Date.now();
+
+        progressEmitter.emit('progress', {
+          type: 'page_start',
+          message: `Scraping page ${page} of ${firstPageData.totalPages}`,
+          currentPage: page,
+          totalPages: firstPageData.totalPages,
+          filmsCollectedSoFar: films.length,
+          timestamp: new Date().toISOString()
+        });
+
+        const pageData = await ScraperController.scrapeFilmsPageWithSharedPage(
+          username,
+          page,
+          sharedPage,
+>>>>>>> Stashed changes
           progressEmitter
         );
       films.push(...firstPageData.films);
@@ -1497,6 +1659,7 @@ export class ScraperController {
           timestamp: new Date().toISOString(),
         });
 
+<<<<<<< Updated upstream
         try {
           const pageData =
             await ScraperController.scrapeFilmsPageWithProgressAndTimeout(
@@ -1538,6 +1701,10 @@ export class ScraperController {
           // Don't break the entire operation for a single page error
           continue;
         }
+=======
+        // Reduced delay for better performance
+        await new Promise((resolve) => setTimeout(resolve, 500));
+>>>>>>> Stashed changes
       }
 
       const totalTime = Date.now() - startTime;
@@ -1560,17 +1727,26 @@ export class ScraperController {
         timestamp: new Date().toISOString(),
       });
       throw error;
+    } finally {
+      // Clean up the shared browser/page
+      if (sharedPage) {
+        await ScraperController.closePageAndBrowser(sharedPage);
+      }
     }
   }
 
+<<<<<<< Updated upstream
   // Production-optimized version with timeout handling
   private static async scrapeFilmsPageWithProgressAndTimeout(
+=======
+  // Optimized page scraping using shared page instance to avoid request conflicts
+  private static async scrapeFilmsPageWithSharedPage(
+>>>>>>> Stashed changes
     username: string,
     pageNum: number,
+    page: any,
     progressEmitter: EventEmitter
   ): Promise<{ films: UserFilm[]; totalPages: number }> {
-    const page = await ScraperController.createPage();
-
     try {
       const url = ScraperController.buildFilmsPageUrl(username, pageNum);
 
@@ -1590,10 +1766,17 @@ export class ScraperController {
       // Extract film data using common parsing logic
       const filmsData = await ScraperController.extractFilmsFromPage(page);
 
+<<<<<<< Updated upstream
       // Emit progress instead of console.log
       progressEmitter.emit("progress", {
         type: "page_scraped",
         message: `Fetched ${filmsData.length} films from page ${pageNum}, ${
+=======
+      // Emit progress
+      progressEmitter.emit('progress', {
+        type: 'page_scraped',
+        message: `Scraped ${filmsData.length} films from page ${pageNum}, ${
+>>>>>>> Stashed changes
           filmsData.filter((f) => f.liked).length
         } liked`,
         page: pageNum,
@@ -1603,6 +1786,7 @@ export class ScraperController {
       });
 
       return { films: filmsData, totalPages };
+<<<<<<< Updated upstream
     } finally {
       await ScraperController.closePage(page);
     }
@@ -1681,8 +1865,19 @@ export class ScraperController {
           setTimeout(resolve, (attempt + 1) * 1000)
         );
       }
+=======
+    } catch (error) {
+      progressEmitter.emit('progress', {
+        type: 'page_error',
+        message: `Error scraping page ${pageNum}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        page: pageNum,
+        timestamp: new Date().toISOString()
+      });
+      throw error;
+>>>>>>> Stashed changes
     }
   }
+
 
   // SSE endpoint for streaming film scraping progress
   static async fetchFilms(req: Request, res: Response): Promise<void> {

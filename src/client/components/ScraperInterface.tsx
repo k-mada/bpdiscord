@@ -220,6 +220,10 @@ const ScraperInterface = () => {
               setFetchStatus(data.message);
               break;
 
+            case "browser_launch":
+              setFetchStatus(data.message);
+              break;
+
             case "fetching_first_page":
               setFetchStatus(data.message);
               break;
