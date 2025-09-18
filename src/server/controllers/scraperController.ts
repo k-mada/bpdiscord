@@ -1871,7 +1871,7 @@ export class ScraperController {
 
       if (isCompleted) return; // Check if already completed/errored
 
-      // Save to database
+      // Save films to database
       progressEmitter.emit("progress", {
         type: "saving",
         message: "Saving films to database...",
@@ -1880,7 +1880,43 @@ export class ScraperController {
 
       await DataController.upsertUserFilms(username, films);
 
-      if (isCompleted) return; // Check again after database operation
+      if (isCompleted) return; // Check if already completed/errored
+
+      // Also scrape and update user ratings
+      progressEmitter.emit("progress", {
+        type: "scraping_ratings",
+        message: "Scraping user ratings...",
+        timestamp: new Date().toISOString(),
+      });
+
+      try {
+        const scrapedRatings = await ScraperController.scrapeUserRatings(username);
+
+        progressEmitter.emit("progress", {
+          type: "saving_ratings",
+          message: "Saving ratings to database...",
+          timestamp: new Date().toISOString(),
+        });
+
+        await ScraperController.saveRatingsToDatabase(username, scrapedRatings);
+
+        progressEmitter.emit("progress", {
+          type: "ratings_complete",
+          message: `Updated ${scrapedRatings.length} rating categories`,
+          ratingsCount: scrapedRatings.length,
+          timestamp: new Date().toISOString(),
+        });
+      } catch (ratingsError) {
+        // Don't fail the entire operation if ratings fail
+        console.warn("Failed to update ratings:", ratingsError);
+        progressEmitter.emit("progress", {
+          type: "ratings_warning",
+          message: "Warning: Could not update ratings data",
+          timestamp: new Date().toISOString(),
+        });
+      }
+
+      if (isCompleted) return; // Check again after ratings operation
 
       // Send completion
       clearTimeout(productionTimeout);

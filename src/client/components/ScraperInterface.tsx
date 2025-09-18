@@ -277,10 +277,26 @@ const ScraperInterface = () => {
               setFetchStatus(data.message);
               break;
 
+            case "scraping_ratings":
+              setFetchStatus(data.message);
+              break;
+
+            case "saving_ratings":
+              setFetchStatus(data.message);
+              break;
+
+            case "ratings_complete":
+              setFetchStatus(data.message);
+              break;
+
+            case "ratings_warning":
+              setFetchStatus(data.message);
+              break;
+
             case "complete":
               setFilmCount(data.data.totalFilms);
-              setSuccess(`Successfully fetched ${data.data.totalFilms} films!`);
-              setFetchStatus(`Operation completed! ${data.data.totalFilms} films collected`);
+              setSuccess(`Successfully updated ${data.data.totalFilms} films and user ratings!`);
+              setFetchStatus(`Operation completed! ${data.data.totalFilms} films and ratings updated`);
               eventSource.close();
               setStreaming(false);
               break;
@@ -456,8 +472,8 @@ const ScraperInterface = () => {
                   <h4 className="text-sm font-semibold text-letterboxd-text-secondary mb-3">
                     {streaming ? "Live Progress Log" : "Operation Log"}
                   </h4>
-                  <div className="max-h-40 overflow-y-auto space-y-1">
-                    {streamProgress.slice(-10).map((progress, index) => (
+                  <div className="max-h-80 overflow-y-auto space-y-1">
+                    {streamProgress.slice().reverse().map((progress, index) => (
                       <div
                         key={index}
                         className="text-xs text-letterboxd-text-muted p-2 bg-letterboxd-bg-primary rounded"
