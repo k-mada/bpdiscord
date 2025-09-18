@@ -17,7 +17,7 @@ const scraperLimiter = rateLimit({
 router.get(
   "/stream-films/:username",
   [scraperLimiter, handleValidationErrors],
-  ScraperController.streamFilmScraping
+  ScraperController.fetchFilms
 );
 
 // Apply authentication to remaining scraper routes

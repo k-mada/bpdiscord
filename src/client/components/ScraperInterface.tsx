@@ -67,7 +67,9 @@ const ScraperInterface = () => {
   const [totalFilmsCollected, setTotalFilmsCollected] = useState<number>(0);
 
   // Available users for dropdown
-  const [availableUsers, setAvailableUsers] = useState<Array<{ username: string; displayName?: string }>>([]);
+  const [availableUsers, setAvailableUsers] = useState<
+    Array<{ username: string; displayName?: string }>
+  >([]);
   const [loadingUsers, setLoadingUsers] = useState(true);
 
   const renderStars = (rating: number): string => {
@@ -206,13 +208,19 @@ const ScraperInterface = () => {
       eventSource.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-
-          // Add to progress log
-          setStreamProgress((prev) => [...prev, data]);
+          console.log(data);
+          // Add to progress log (excluding heartbeat events)
+          if (data.type !== "heartbeat") {
+            setStreamProgress((prev) => [...prev, data]);
+          }
 
           switch (data.type) {
             case "start":
             case "init":
+              setFetchStatus(data.message);
+              break;
+
+            case "browser_launch":
               setFetchStatus(data.message);
               break;
 
@@ -222,32 +230,46 @@ const ScraperInterface = () => {
 
             case "pages_found":
               setTotalPages(data.totalPages);
-              setFetchStatus(`Found ${data.totalPages} pages to scrape`);
+              setFetchStatus(`Found ${data.totalPages} pages to fetch`);
+              break;
+
+            case "production_limit":
+              setFetchStatus(data.message);
+              break;
+
+            case "page_loading":
+            case "page_loaded":
+            case "page_retry":
+              setFetchStatus(data.message);
               break;
 
             case "page_start":
               setCurrentPage(data.currentPage);
               setFetchStatus(
-                `Scraping page ${data.currentPage} of ${data.totalPages}...`
+                `Fetching page ${data.currentPage} of ${data.totalPages}...`
               );
               break;
 
             case "page_scraped":
               setFetchStatus(
-                `Scraped ${data.filmsFromPage} films from page ${data.page}`
+                `Fetched ${data.filmsFromPage} films from page ${data.page}`
               );
               break;
 
             case "page_complete":
-              setTotalFilmsCollected(data.totalFilmsCollected);
+              setTotalFilmsCollected(data.filmsCollectedSoFar);
               setFetchStatus(
-                `Page ${data.currentPage} complete - ${data.totalFilmsCollected} total films`
+                `Page ${data.currentPage} complete - ${data.filmsCollectedSoFar} total films`
               );
+              break;
+
+            case "page_error":
+              setFetchStatus(data.message);
               break;
 
             case "scraping_complete":
               setFetchStatus(
-                `Scraping complete! ${data.totalFilms} films collected`
+                `Fetching complete! ${data.totalFilms} films collected`
               );
               break;
 
@@ -257,17 +279,36 @@ const ScraperInterface = () => {
 
             case "complete":
               setFilmCount(data.data.totalFilms);
-              setSuccess(`Successfully scraped ${data.data.totalFilms} films!`);
-              setFetchStatus("");
+              setSuccess(`Successfully fetched ${data.data.totalFilms} films!`);
+              setFetchStatus(`Operation completed! ${data.data.totalFilms} films collected`);
               eventSource.close();
               setStreaming(false);
               break;
 
             case "error":
-              setError(data.message);
+              // Handle specific error codes
+              if (data.code === "NAVIGATION_TIMEOUT") {
+                setError(
+                  `${data.message} This is usually temporary - please try again in a few minutes.`
+                );
+              } else if (data.code === "PRODUCTION_TIMEOUT") {
+                setError(
+                  `${data.message} The operation was automatically stopped to prevent server overload.`
+                );
+              } else {
+                setError(data.message);
+              }
               setFetchStatus("");
               eventSource.close();
               setStreaming(false);
+              break;
+
+            case "heartbeat":
+              // Keep connection alive, don't update UI
+              break;
+
+            default:
+              console.log("Unknown SSE event type:", data.type, data);
               break;
           }
         } catch (parseError) {
@@ -307,7 +348,7 @@ const ScraperInterface = () => {
               Letterboxd Data Fetcher
             </h2>
             <p className="text-letterboxd-text-secondary">
-              Check database for existing data or force scrape fresh data from
+              Check database for existing data or fetch latest data from
               Letterboxd
             </p>
           </div>
@@ -323,7 +364,9 @@ const ScraperInterface = () => {
                 </label>
                 {loadingUsers ? (
                   <div className="input-field w-full flex items-center justify-center">
-                    <span className="text-letterboxd-text-muted">Loading users...</span>
+                    <span className="text-letterboxd-text-muted">
+                      Loading users...
+                    </span>
                   </div>
                 ) : (
                   <select
@@ -334,7 +377,9 @@ const ScraperInterface = () => {
                     className="input-field w-full"
                   >
                     <option value="">
-                      {availableUsers.length > 0 ? "Select a user..." : "No users available"}
+                      {availableUsers.length > 0
+                        ? "Select a user..."
+                        : "No users available"}
                     </option>
                     {availableUsers.map((user) => (
                       <option key={user.username} value={user.username}>
@@ -365,7 +410,7 @@ const ScraperInterface = () => {
                   disabled={loading || streaming || !username.trim()}
                   className="btn-primary flex-1"
                 >
-                  {streaming ? "Streaming..." : "Update films"}
+                  {streaming ? "Getting films..." : "Update films"}
                 </button>
               </div>
 
@@ -406,10 +451,10 @@ const ScraperInterface = () => {
               )}
 
               {/* Live Progress Log */}
-              {streaming && streamProgress.length > 0 && (
+              {streamProgress.length > 0 && (
                 <div className="mt-4 p-4 bg-letterboxd-bg-secondary rounded-lg border border-letterboxd-border">
                   <h4 className="text-sm font-semibold text-letterboxd-text-secondary mb-3">
-                    Live Progress Log
+                    {streaming ? "Live Progress Log" : "Operation Log"}
                   </h4>
                   <div className="max-h-40 overflow-y-auto space-y-1">
                     {streamProgress.slice(-10).map((progress, index) => (
