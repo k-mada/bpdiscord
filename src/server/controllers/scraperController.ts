@@ -99,9 +99,14 @@ export class ScraperController {
           "--disable-features=TranslateUI",
           "--disable-ipc-flooding-protection",
           "--max_old_space_size=4096", // Increase memory limit
+          "--memory-pressure-off", // Disable memory pressure
+          "--disable-background-networking", // Disable background networking
+          "--disable-default-apps", // Disable default apps
+          "--disable-sync", // Disable sync
+          "--aggressive-cache-discard", // Aggressively discard cache to save memory
         ],
         executablePath: await chromium.executablePath(),
-        defaultViewport: { width: 1280, height: 720 }, // Smaller viewport for performance
+        defaultViewport: { width: 800, height: 600 }, // Minimal viewport for memory efficiency
         timeout: 30000, // Set launch timeout
       };
     } else {
@@ -1533,18 +1538,17 @@ export class ScraperController {
     });
 
     const films: UserFilm[] = [];
-    let sharedPage: any = null;
+    let sharedBrowser: any = null;
 
     try {
-      // Create a single browser instance for this entire operation
+      // Create a single browser instance for memory efficiency
       progressEmitter.emit('progress', {
         type: 'browser_launch',
         message: 'Launching browser for film scraping session...',
         timestamp: new Date().toISOString()
       });
 
-      // Create single page/browser for the entire operation to avoid "Request already handled" errors
-      sharedPage = await ScraperController.createPageForFilmScraping();
+      sharedBrowser = await ScraperController.createBrowser();
 
       // Get first page to determine total pages
       progressEmitter.emit('progress', {
@@ -1553,10 +1557,10 @@ export class ScraperController {
         timestamp: new Date().toISOString()
       });
 
-      const firstPageData = await ScraperController.scrapeFilmsPageWithSharedPage(
+      const firstPageData = await ScraperController.scrapeFilmsPageWithMemoryCleanup(
         username,
         1,
-        sharedPage,
+        sharedBrowser,
         progressEmitter
       );
       films.push(...firstPageData.films);
@@ -1569,7 +1573,7 @@ export class ScraperController {
         timestamp: new Date().toISOString()
       });
 
-      // Scrape remaining pages if any using the same browser/page
+      // Scrape remaining pages with fresh pages and aggressive cleanup
       for (let page = 2; page <= firstPageData.totalPages; page++) {
         progressEmitter.emit('progress', {
           type: 'page_start',
@@ -1580,10 +1584,10 @@ export class ScraperController {
           timestamp: new Date().toISOString()
         });
 
-        const pageData = await ScraperController.scrapeFilmsPageWithSharedPage(
+        const pageData = await ScraperController.scrapeFilmsPageWithMemoryCleanup(
           username,
           page,
-          sharedPage,
+          sharedBrowser,
           progressEmitter
         );
 
@@ -1599,8 +1603,18 @@ export class ScraperController {
           timestamp: new Date().toISOString()
         });
 
-        // Reduced delay for better performance
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        // Memory cleanup delay
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        // Force garbage collection every 5 pages
+        if (page % 5 === 0 && global.gc) {
+          global.gc();
+          progressEmitter.emit('progress', {
+            type: 'memory_cleanup',
+            message: `Memory cleanup after page ${page}`,
+            timestamp: new Date().toISOString()
+          });
+        }
       }
 
       const totalTime = Date.now() - startTime;
@@ -1624,24 +1638,52 @@ export class ScraperController {
       });
       throw error;
     } finally {
-      // Clean up the shared browser/page
-      if (sharedPage) {
-        await ScraperController.closePageAndBrowser(sharedPage);
+      // Clean up the shared browser
+      if (sharedBrowser) {
+        try {
+          await sharedBrowser.close();
+          progressEmitter.emit('progress', {
+            type: 'cleanup',
+            message: 'Browser cleanup completed',
+            timestamp: new Date().toISOString()
+          });
+        } catch (cleanupError) {
+          console.error("Browser cleanup error:", cleanupError);
+        }
       }
     }
   }
 
-  // Optimized page scraping using shared page instance to avoid request conflicts
-  private static async scrapeFilmsPageWithSharedPage(
+
+  // Memory-efficient page scraping that creates fresh pages and cleans up aggressively
+  private static async scrapeFilmsPageWithMemoryCleanup(
     username: string,
     pageNum: number,
-    page: any,
+    browser: any,
     progressEmitter: EventEmitter
   ): Promise<{ films: UserFilm[]; totalPages: number }> {
+    let page: any = null;
+
     try {
+      // Create fresh page for this request to avoid memory buildup
+      page = await browser.newPage();
+
+      // Remove aggressive timeouts to allow for longer operations
+
+      // Block unnecessary resources to save memory
+      await page.setRequestInterception(true);
+      page.on('request', (req: any) => {
+        const resourceType = req.resourceType();
+        if (['image', 'stylesheet', 'font', 'media'].includes(resourceType)) {
+          req.abort();
+        } else {
+          req.continue();
+        }
+      });
+
       const url = ScraperController.buildFilmsPageUrl(username, pageNum);
 
-      // Use more aggressive timeout settings for production
+      // Load page with retry
       await ScraperController.loadPageWithRetry(
         page,
         url,
@@ -1654,33 +1696,39 @@ export class ScraperController {
         totalPages = await ScraperController.extractTotalPages(page, username);
       }
 
-      // Extract film data using common parsing logic
-      const filmsData = await ScraperController.extractFilmsFromPage(page);
+      // Extract films from current page
+      const films = await ScraperController.extractFilmsFromPage(page);
 
-      // Emit progress
       progressEmitter.emit('progress', {
-        type: 'page_scraped',
-        message: `Scraped ${filmsData.length} films from page ${pageNum}, ${
-          filmsData.filter((f) => f.liked).length
-        } liked`,
-        page: pageNum,
-        filmsFromPage: filmsData.length,
-        likedFromPage: filmsData.filter((f) => f.liked).length,
-        timestamp: new Date().toISOString(),
+        type: 'page_extracted',
+        message: `Extracted ${films.length} films from page ${pageNum}`,
+        currentPage: pageNum,
+        filmsFromPage: films.length,
+        timestamp: new Date().toISOString()
       });
 
-      return { films: filmsData, totalPages };
+      return { films, totalPages };
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       progressEmitter.emit('progress', {
         type: 'page_error',
-        message: `Error scraping page ${pageNum}: ${error instanceof Error ? error.message : 'Unknown error'}`,
-        page: pageNum,
+        message: `Error on page ${pageNum}: ${errorMessage}`,
+        currentPage: pageNum,
+        error: errorMessage,
         timestamp: new Date().toISOString()
       });
       throw error;
+    } finally {
+      // Aggressive cleanup - close page immediately
+      if (page) {
+        try {
+          await page.close();
+        } catch (cleanupError) {
+          console.error(`Page cleanup error for page ${pageNum}:`, cleanupError);
+        }
+      }
     }
   }
-
 
   // SSE endpoint for streaming film scraping progress
   static async fetchFilms(req: Request, res: Response): Promise<void> {
