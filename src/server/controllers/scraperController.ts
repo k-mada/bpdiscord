@@ -220,29 +220,6 @@ export class ScraperController {
     return page;
   }
 
-<<<<<<< Updated upstream
-  // Clean up browser resources (call when process is ending)
-  private static async closeBrowser(): Promise<void> {
-    if (this.browser) {
-      try {
-        await this.browser.close();
-        this.browser = null;
-        console.log("Browser closed successfully");
-      } catch (error) {
-        console.error("Error closing browser:", error);
-      }
-    }
-  }
-
-  // Enhanced page cleanup - close page but keep browser alive
-  private static async closePage(page: any): Promise<void> {
-    try {
-      if (!page.isClosed()) {
-        await page.close();
-      }
-    } catch (error) {
-      console.error("Error closing page:", error);
-=======
   // Enhanced page creation for film scraping (no request interception to avoid conflicts)
   private static async createPageForFilmScraping(): Promise<any> {
     let puppeteer: any = null,
@@ -339,7 +316,6 @@ export class ScraperController {
       }
     } catch (error) {
       console.error("Error closing page and browser:", error);
->>>>>>> Stashed changes
     }
   }
 
@@ -559,7 +535,7 @@ export class ScraperController {
 
       return collatedData;
     } finally {
-      await ScraperController.closePage(page);
+      await ScraperController.closePageAndBrowser(page);
     }
   }
 
@@ -672,7 +648,7 @@ export class ScraperController {
 
       return extractedData;
     } finally {
-      await ScraperController.closePage(page);
+      await ScraperController.closePageAndBrowser(page);
     }
   }
 
@@ -946,7 +922,7 @@ export class ScraperController {
 
       return ratings;
     } finally {
-      await ScraperController.closePage(page);
+      await ScraperController.closePageAndBrowser(page);
     }
   }
 
@@ -1247,7 +1223,7 @@ export class ScraperController {
         numberOfLists,
       };
     } finally {
-      await ScraperController.closePage(page);
+      await ScraperController.closePageAndBrowser(page);
     }
   }
 
@@ -1455,11 +1431,7 @@ export class ScraperController {
 
       return { films: filmsData, totalPages };
     } finally {
-<<<<<<< Updated upstream
-      await ScraperController.closePage(page);
-=======
       await ScraperController.closePageAndBrowser(page);
->>>>>>> Stashed changes
     }
   }
 
@@ -1548,13 +1520,8 @@ export class ScraperController {
     }
   }
 
-<<<<<<< Updated upstream
-  // Progress-enabled version of scrapeUserFilms with timeout handling for production
-  private static async scrapeUserFilmsWithProgressAndTimeout(
-=======
   // Progress-enabled version of scrapeUserFilms for SSE streaming with browser reuse optimization
   private static async scrapeUserFilmsWithProgress(
->>>>>>> Stashed changes
     username: string,
     progressEmitter: EventEmitter
   ): Promise<UserFilm[]> {
@@ -1569,19 +1536,6 @@ export class ScraperController {
     let sharedPage: any = null;
 
     try {
-<<<<<<< Updated upstream
-      // Get first page to determine total pages with timeout protection
-      progressEmitter.emit("progress", {
-        type: "fetching_first_page",
-        message: "Fetching first page to determine total pages...",
-        timestamp: new Date().toISOString(),
-      });
-
-      const firstPageData =
-        await ScraperController.scrapeFilmsPageWithProgressAndTimeout(
-          username,
-          1,
-=======
       // Create a single browser instance for this entire operation
       progressEmitter.emit('progress', {
         type: 'browser_launch',
@@ -1617,8 +1571,6 @@ export class ScraperController {
 
       // Scrape remaining pages if any using the same browser/page
       for (let page = 2; page <= firstPageData.totalPages; page++) {
-        const pageStartTime = Date.now();
-
         progressEmitter.emit('progress', {
           type: 'page_start',
           message: `Scraping page ${page} of ${firstPageData.totalPages}`,
@@ -1632,79 +1584,23 @@ export class ScraperController {
           username,
           page,
           sharedPage,
->>>>>>> Stashed changes
           progressEmitter
         );
-      films.push(...firstPageData.films);
 
-      progressEmitter.emit("progress", {
-        type: "pages_found",
-        message: `Found ${firstPageData.totalPages} total pages to fetch`,
-        totalPages: firstPageData.totalPages,
-        filmsFromFirstPage: firstPageData.films.length,
-        timestamp: new Date().toISOString(),
-      });
+        films.push(...pageData.films);
 
-      const totalPagesToScrape = firstPageData.totalPages;
-
-      for (let page = 2; page <= totalPagesToScrape; page++) {
-        const pageStartTime = Date.now();
-
-        progressEmitter.emit("progress", {
-          type: "page_start",
-          message: `Scraping page ${page} of ${totalPagesToScrape}`,
+        progressEmitter.emit('progress', {
+          type: 'page_complete',
+          message: `Completed page ${page} of ${firstPageData.totalPages}`,
           currentPage: page,
-          totalPages: totalPagesToScrape,
+          totalPages: firstPageData.totalPages,
+          filmsFromThisPage: pageData.films.length,
           filmsCollectedSoFar: films.length,
-          timestamp: new Date().toISOString(),
+          timestamp: new Date().toISOString()
         });
 
-<<<<<<< Updated upstream
-        try {
-          const pageData =
-            await ScraperController.scrapeFilmsPageWithProgressAndTimeout(
-              username,
-              page,
-              progressEmitter
-            );
-          films.push(...pageData.films);
-
-          const pageTime = Date.now() - pageStartTime;
-          progressEmitter.emit("progress", {
-            type: "page_complete",
-            message: `Page ${page} completed in ${pageTime}ms`,
-            currentPage: page,
-            totalPages: totalPagesToScrape,
-            filmsFromPage: pageData.films.length,
-            totalFilmsCollected: films.length,
-            pageTimeMs: pageTime,
-            timestamp: new Date().toISOString(),
-          });
-
-          // Reduced delay for production efficiency
-          await new Promise((resolve) => setTimeout(resolve, 500));
-        } catch (pageError) {
-          const errorMessage =
-            pageError instanceof Error
-              ? pageError.message
-              : "Unknown page error";
-
-          // Log the error but continue with other pages
-          progressEmitter.emit("progress", {
-            type: "page_error",
-            message: `Error on page ${page}: ${errorMessage}. Continuing with next page...`,
-            currentPage: page,
-            totalPages: totalPagesToScrape,
-            timestamp: new Date().toISOString(),
-          });
-
-          // Don't break the entire operation for a single page error
-          continue;
-        }
-=======
         // Reduced delay for better performance
         await new Promise((resolve) => setTimeout(resolve, 500));
->>>>>>> Stashed changes
       }
 
       const totalTime = Date.now() - startTime;
@@ -1735,13 +1631,8 @@ export class ScraperController {
     }
   }
 
-<<<<<<< Updated upstream
-  // Production-optimized version with timeout handling
-  private static async scrapeFilmsPageWithProgressAndTimeout(
-=======
   // Optimized page scraping using shared page instance to avoid request conflicts
   private static async scrapeFilmsPageWithSharedPage(
->>>>>>> Stashed changes
     username: string,
     pageNum: number,
     page: any,
@@ -1751,10 +1642,10 @@ export class ScraperController {
       const url = ScraperController.buildFilmsPageUrl(username, pageNum);
 
       // Use more aggressive timeout settings for production
-      await ScraperController.loadPageWithRetryAndTimeout(
+      await ScraperController.loadPageWithRetry(
         page,
         url,
-        progressEmitter
+        "domcontentloaded"
       );
 
       // Get pagination info (only on first page)
@@ -1766,17 +1657,10 @@ export class ScraperController {
       // Extract film data using common parsing logic
       const filmsData = await ScraperController.extractFilmsFromPage(page);
 
-<<<<<<< Updated upstream
-      // Emit progress instead of console.log
-      progressEmitter.emit("progress", {
-        type: "page_scraped",
-        message: `Fetched ${filmsData.length} films from page ${pageNum}, ${
-=======
       // Emit progress
       progressEmitter.emit('progress', {
         type: 'page_scraped',
         message: `Scraped ${filmsData.length} films from page ${pageNum}, ${
->>>>>>> Stashed changes
           filmsData.filter((f) => f.liked).length
         } liked`,
         page: pageNum,
@@ -1786,86 +1670,6 @@ export class ScraperController {
       });
 
       return { films: filmsData, totalPages };
-<<<<<<< Updated upstream
-    } finally {
-      await ScraperController.closePage(page);
-    }
-  }
-
-  // Enhanced loadPageWithRetry for production environments
-  private static async loadPageWithRetryAndTimeout(
-    page: any,
-    url: string,
-    progressEmitter?: EventEmitter
-  ): Promise<void> {
-    const maxRetries = 3;
-    const timeouts = [30000, 20000, 15000]; // Decreasing timeouts for retries
-
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-      try {
-        progressEmitter?.emit("progress", {
-          type: "page_loading",
-          message: `Loading page (attempt ${attempt + 1}/${maxRetries})...`,
-          timestamp: new Date().toISOString(),
-        });
-
-        // Set timeout for this specific attempt
-        page.setDefaultTimeout(timeouts[attempt]);
-
-        // Try multiple loading strategies
-        if (attempt === 0) {
-          // First attempt: wait for network idle
-          await page.goto(url, {
-            waitUntil: "networkidle2",
-            timeout: timeouts[attempt],
-          });
-        } else if (attempt === 1) {
-          // Second attempt: wait for DOM content
-          await page.goto(url, {
-            waitUntil: "domcontentloaded",
-            timeout: timeouts[attempt],
-          });
-        } else {
-          // Final attempt: just wait for load
-          await page.goto(url, {
-            waitUntil: "load",
-            timeout: timeouts[attempt],
-          });
-        }
-
-        // If we get here, the page loaded successfully
-        progressEmitter?.emit("progress", {
-          type: "page_loaded",
-          message: `Page loaded successfully on attempt ${attempt + 1}`,
-          timestamp: new Date().toISOString(),
-        });
-        return;
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : "Unknown error";
-        console.log(`Attempt ${attempt + 1} failed for ${url}:`, errorMessage);
-
-        progressEmitter?.emit("progress", {
-          type: "page_retry",
-          message: `Attempt ${attempt + 1} failed: ${errorMessage}. ${
-            attempt < maxRetries - 1 ? "Retrying..." : "Final attempt failed."
-          }`,
-          timestamp: new Date().toISOString(),
-        });
-
-        if (attempt === maxRetries - 1) {
-          // Last attempt failed, throw the error
-          throw new Error(
-            `Failed to load page after ${maxRetries} attempts. Last error: ${errorMessage}`
-          );
-        }
-
-        // Wait before retrying (exponential backoff)
-        await new Promise((resolve) =>
-          setTimeout(resolve, (attempt + 1) * 1000)
-        );
-      }
-=======
     } catch (error) {
       progressEmitter.emit('progress', {
         type: 'page_error',
@@ -1874,7 +1678,6 @@ export class ScraperController {
         timestamp: new Date().toISOString()
       });
       throw error;
->>>>>>> Stashed changes
     }
   }
 
@@ -1974,7 +1777,7 @@ export class ScraperController {
 
     // Handle process termination (cleanup browser on exit)
     process.on("exit", () => {
-      ScraperController.closeBrowser();
+      // Browser cleanup handled elsewhere
     });
 
     // Production timeout protection (8 minutes for Vercel limit)
@@ -2013,7 +1816,7 @@ export class ScraperController {
 
       // Start the film scraping with progress updates and timeout handling
       const films =
-        await ScraperController.scrapeUserFilmsWithProgressAndTimeout(
+        await ScraperController.scrapeUserFilmsWithProgress(
           username,
           progressEmitter
         );
