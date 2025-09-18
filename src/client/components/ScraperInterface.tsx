@@ -208,7 +208,7 @@ const ScraperInterface = () => {
       eventSource.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-
+          console.log(data);
           // Add to progress log (excluding heartbeat events)
           if (data.type !== "heartbeat") {
             setStreamProgress((prev) => [...prev, data]);
@@ -257,9 +257,9 @@ const ScraperInterface = () => {
               break;
 
             case "page_complete":
-              setTotalFilmsCollected(data.totalFilmsCollected);
+              setTotalFilmsCollected(data.filmsCollectedSoFar);
               setFetchStatus(
-                `Page ${data.currentPage} complete - ${data.totalFilmsCollected} total films`
+                `Page ${data.currentPage} complete - ${data.filmsCollectedSoFar} total films`
               );
               break;
 
@@ -280,7 +280,7 @@ const ScraperInterface = () => {
             case "complete":
               setFilmCount(data.data.totalFilms);
               setSuccess(`Successfully fetched ${data.data.totalFilms} films!`);
-              setFetchStatus("");
+              setFetchStatus(`Operation completed! ${data.data.totalFilms} films collected`);
               eventSource.close();
               setStreaming(false);
               break;
@@ -451,10 +451,10 @@ const ScraperInterface = () => {
               )}
 
               {/* Live Progress Log */}
-              {streaming && streamProgress.length > 0 && (
+              {streamProgress.length > 0 && (
                 <div className="mt-4 p-4 bg-letterboxd-bg-secondary rounded-lg border border-letterboxd-border">
                   <h4 className="text-sm font-semibold text-letterboxd-text-secondary mb-3">
-                    Live Progress Log
+                    {streaming ? "Live Progress Log" : "Operation Log"}
                   </h4>
                   <div className="max-h-40 overflow-y-auto space-y-1">
                     {streamProgress.slice(-10).map((progress, index) => (
