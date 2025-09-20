@@ -10,4 +10,5 @@ export const SUBHEADINGS = [
   "See you at the movies!",
   "Support women",
   "Nicole Kidman AMC ad",
+  "Slutty little glasses",
 ];
