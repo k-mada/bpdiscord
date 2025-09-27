@@ -3,7 +3,7 @@ import apiService from "../services/api";
 import RatingDistributionHistogram from "./RatingDistributionHistogram";
 import TasteCompatibility from "./TasteCompatibility";
 import Header from "./Header";
-
+import { MoviesInCommonData } from "../types";
 interface Rating {
   rating: number;
   count: number;
@@ -17,19 +17,6 @@ interface UserData {
   numberOfLists?: number;
   totalFilms?: number;
   ratings: Rating[];
-}
-
-interface MovieInCommon {
-  title: string;
-  user1_rating: number;
-  user2_rating: number;
-}
-
-interface MoviesInCommonData {
-  user1: string;
-  user2: string;
-  moviesInCommon: MovieInCommon[];
-  count: number;
 }
 
 const UserComparison = () => {
@@ -259,46 +246,43 @@ const UserComparison = () => {
             <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-4">
               Select Users to Compare
             </h3>
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* User 1 Selection */}
-              <div>
-                <label className="block text-sm font-medium text-letterboxd-text-secondary mb-2">
-                  User 1
-                </label>
-                <select
-                  value={selectedUser1}
-                  onChange={(e) => handleUser1Change(e.target.value)}
-                  disabled={loading}
-                  className="input-field w-full"
-                >
-                  <option value="">Select a user</option>
-                  {usernames.map((user) => (
-                    <option key={user.username} value={user.username}>
-                      {user.displayName || user.username}
-                    </option>
-                  ))}
-                </select>
+              <div className="relative">
+                <div className="select-wrapper">
+                  <select
+                    value={selectedUser1}
+                    onChange={(e) => handleUser1Change(e.target.value)}
+                    disabled={loading}
+                    className="input-field w-full"
+                  >
+                    <option value="">Select User 1</option>
+                    {usernames.map((user) => (
+                      <option key={user.username} value={user.username}>
+                        {user.displayName || user.username}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               {/* User 2 Selection */}
               <div>
-                <label className="block text-sm font-medium text-letterboxd-text-secondary mb-2">
-                  User 2
-                </label>
-                <select
-                  value={selectedUser2}
-                  onChange={(e) => handleUser2Change(e.target.value)}
-                  disabled={loading}
-                  className="input-field w-full"
-                >
-                  <option value="">Select a user</option>
-                  {usernames.map((user) => (
-                    <option key={user.username} value={user.username}>
-                      {user.displayName || user.username}
-                    </option>
-                  ))}
-                </select>
+                <div className="select-wrapper">
+                  <select
+                    value={selectedUser2}
+                    onChange={(e) => handleUser2Change(e.target.value)}
+                    disabled={loading}
+                    className="input-field w-full"
+                  >
+                    <option value="">Select User 2</option>
+                    {usernames.map((user) => (
+                      <option key={user.username} value={user.username}>
+                        {user.displayName || user.username}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
           </div>
@@ -312,145 +296,145 @@ const UserComparison = () => {
           )}
 
           {/* Loading state for movies */}
-          {loadingMovies && (
-            <div className="card">
-              <div className="text-center py-8">
-                <p className="text-letterboxd-text-secondary">
-                  Loading movies in common...
-                </p>
-              </div>
-            </div>
-          )}
+
           {/* Profile Comparison */}
           {(user1Data || user2Data) && (
             <div className="card">
               <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-4">
                 Profile Comparison
               </h3>
-
-              <div className="overflow-x-auto mb-8">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-letterboxd-border">
-                      <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
-                        Metric
-                      </th>
-                      <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
-                        {user1Data?.displayName ||
-                          user1Data?.username ||
-                          "User 1"}
-                      </th>
-                      <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
-                        {user2Data?.displayName ||
-                          user2Data?.username ||
-                          "User 2"}
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr className="border-b border-letterboxd-border/50">
-                      <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
-                        Total Films Rated
-                      </td>
-                      <td
-                        className={`py-3 px-4 text-letterboxd-text-primary ${
-                          (user1Data?.totalFilms || 0) >
-                          (user2Data?.totalFilms || 0)
-                            ? "bg-green-900/20"
-                            : ""
-                        }`}
-                      >
-                        {user1Data?.totalFilms || 0}
-                      </td>
-                      <td
-                        className={`py-3 px-4 text-letterboxd-text-primary ${
-                          (user2Data?.totalFilms || 0) >
-                          (user1Data?.totalFilms || 0)
-                            ? "bg-green-900/20"
-                            : ""
-                        }`}
-                      >
-                        {user2Data?.totalFilms || 0}
-                      </td>
-                    </tr>
-                    <tr className="border-b border-letterboxd-border/50">
-                      <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
-                        Followers
-                      </td>
-                      <td
-                        className={`py-3 px-4 text-letterboxd-text-primary ${
-                          (user1Data?.followers || 0) >
-                          (user2Data?.followers || 0)
-                            ? "bg-green-900/20"
-                            : ""
-                        }`}
-                      >
-                        {user1Data?.followers?.toLocaleString() || 0}
-                      </td>
-                      <td
-                        className={`py-3 px-4 text-letterboxd-text-primary ${
-                          (user2Data?.followers || 0) >
-                          (user1Data?.followers || 0)
-                            ? "bg-green-900/20"
-                            : ""
-                        }`}
-                      >
-                        {user2Data?.followers?.toLocaleString() || 0}
-                      </td>
-                    </tr>
-                    <tr className="border-b border-letterboxd-border/50">
-                      <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
-                        Following
-                      </td>
-                      <td
-                        className={`py-3 px-4 text-letterboxd-text-primary ${
-                          (user1Data?.following || 0) >
-                          (user2Data?.following || 0)
-                            ? "bg-green-900/20"
-                            : ""
-                        }`}
-                      >
-                        {user1Data?.following?.toLocaleString() || 0}
-                      </td>
-                      <td
-                        className={`py-3 px-4 text-letterboxd-text-primary ${
-                          (user2Data?.following || 0) >
-                          (user1Data?.following || 0)
-                            ? "bg-green-900/20"
-                            : ""
-                        }`}
-                      >
-                        {user2Data?.following?.toLocaleString() || 0}
-                      </td>
-                    </tr>
-                    <tr className="border-b border-letterboxd-border/50">
-                      <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
-                        Lists Created
-                      </td>
-                      <td
-                        className={`py-3 px-4 text-letterboxd-text-primary ${
-                          (user1Data?.numberOfLists || 0) >
-                          (user2Data?.numberOfLists || 0)
-                            ? "bg-green-900/20"
-                            : ""
-                        }`}
-                      >
-                        {user1Data?.numberOfLists || 0}
-                      </td>
-                      <td
-                        className={`py-3 px-4 text-letterboxd-text-primary ${
-                          (user2Data?.numberOfLists || 0) >
-                          (user1Data?.numberOfLists || 0)
-                            ? "bg-green-900/20"
-                            : ""
-                        }`}
-                      >
-                        {user2Data?.numberOfLists || 0}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
+              {loadingMovies && (
+                <div className="text-center py-8">
+                  <p className="text-letterboxd-text-secondary">
+                    Loading movies in common...
+                  </p>
+                </div>
+              )}
+              {!loadingMovies && (
+                <div className="overflow-x-auto mb-8">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-letterboxd-border">
+                        <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
+                          Metric
+                        </th>
+                        <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
+                          {user1Data?.displayName ||
+                            user1Data?.username ||
+                            "User 1"}
+                        </th>
+                        <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
+                          {user2Data?.displayName ||
+                            user2Data?.username ||
+                            "User 2"}
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-letterboxd-border/50">
+                        <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
+                          Total Films Rated
+                        </td>
+                        <td
+                          className={`py-3 px-4 text-letterboxd-text-primary ${
+                            (user1Data?.totalFilms || 0) >
+                            (user2Data?.totalFilms || 0)
+                              ? "bg-green-900/20"
+                              : ""
+                          }`}
+                        >
+                          {user1Data?.totalFilms || 0}
+                        </td>
+                        <td
+                          className={`py-3 px-4 text-letterboxd-text-primary ${
+                            (user2Data?.totalFilms || 0) >
+                            (user1Data?.totalFilms || 0)
+                              ? "bg-green-900/20"
+                              : ""
+                          }`}
+                        >
+                          {user2Data?.totalFilms || 0}
+                        </td>
+                      </tr>
+                      <tr className="border-b border-letterboxd-border/50">
+                        <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
+                          Followers
+                        </td>
+                        <td
+                          className={`py-3 px-4 text-letterboxd-text-primary ${
+                            (user1Data?.followers || 0) >
+                            (user2Data?.followers || 0)
+                              ? "bg-green-900/20"
+                              : ""
+                          }`}
+                        >
+                          {user1Data?.followers?.toLocaleString() || 0}
+                        </td>
+                        <td
+                          className={`py-3 px-4 text-letterboxd-text-primary ${
+                            (user2Data?.followers || 0) >
+                            (user1Data?.followers || 0)
+                              ? "bg-green-900/20"
+                              : ""
+                          }`}
+                        >
+                          {user2Data?.followers?.toLocaleString() || 0}
+                        </td>
+                      </tr>
+                      <tr className="border-b border-letterboxd-border/50">
+                        <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
+                          Following
+                        </td>
+                        <td
+                          className={`py-3 px-4 text-letterboxd-text-primary ${
+                            (user1Data?.following || 0) >
+                            (user2Data?.following || 0)
+                              ? "bg-green-900/20"
+                              : ""
+                          }`}
+                        >
+                          {user1Data?.following?.toLocaleString() || 0}
+                        </td>
+                        <td
+                          className={`py-3 px-4 text-letterboxd-text-primary ${
+                            (user2Data?.following || 0) >
+                            (user1Data?.following || 0)
+                              ? "bg-green-900/20"
+                              : ""
+                          }`}
+                        >
+                          {user2Data?.following?.toLocaleString() || 0}
+                        </td>
+                      </tr>
+                      <tr className="border-b border-letterboxd-border/50">
+                        <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
+                          Lists Created
+                        </td>
+                        <td
+                          className={`py-3 px-4 text-letterboxd-text-primary ${
+                            (user1Data?.numberOfLists || 0) >
+                            (user2Data?.numberOfLists || 0)
+                              ? "bg-green-900/20"
+                              : ""
+                          }`}
+                        >
+                          {user1Data?.numberOfLists || 0}
+                        </td>
+                        <td
+                          className={`py-3 px-4 text-letterboxd-text-primary ${
+                            (user2Data?.numberOfLists || 0) >
+                            (user1Data?.numberOfLists || 0)
+                              ? "bg-green-900/20"
+                              : ""
+                          }`}
+                        >
+                          {user2Data?.numberOfLists || 0}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           )}
 
@@ -582,17 +566,17 @@ const UserComparison = () => {
               </div>
 
               {moviesInCommonData.count > 0 && (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto max-h-50vh">
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-letterboxd-border">
-                        <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
+                        <th className="sticky top-0 text-left py-3 px-4 text-letterboxd-text-secondary font-medium z-1 bg-letterboxd-bg-secondary">
                           Movie Title
                         </th>
-                        <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
+                        <th className="sticky top-0 text-left py-3 px-4 text-letterboxd-text-secondary font-medium z-1 bg-letterboxd-bg-secondary">
                           {user1Data?.displayName || moviesInCommonData.user1}
                         </th>
-                        <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
+                        <th className="sticky top-0 text-left py-3 px-4 text-letterboxd-text-secondary font-medium z-1 bg-letterboxd-bg-secondary">
                           {user2Data?.displayName || moviesInCommonData.user2}
                         </th>
                       </tr>
@@ -612,7 +596,13 @@ const UserComparison = () => {
                               className="border-b border-letterboxd-border/50"
                             >
                               <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
-                                {movie.title}
+                                <a
+                                  className="hover:underline"
+                                  href={`https://letterboxd.com/film/${movie.film_slug}`}
+                                  target="_blank"
+                                >
+                                  {movie.title}
+                                </a>
                               </td>
                               <td className="py-3 px-4 text-letterboxd-text-primary">
                                 {movie.user1_rating > 0 ? (
@@ -648,32 +638,6 @@ const UserComparison = () => {
                   </p>
                 </div>
               )}
-            </div>
-          )}
-
-          {/* Loading state for movies */}
-          {loadingMovies && (
-            <div className="card">
-              <div className="text-center py-8">
-                <p className="text-letterboxd-text-secondary">
-                  Loading movies in common...
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Instructions */}
-          {!user1Data && !user2Data && (
-            <div className="card">
-              <div className="text-center py-8">
-                <p className="text-letterboxd-text-secondary">
-                  Select two users from the dropdowns above to compare their
-                  rating statistics.
-                </p>
-                <p className="text-sm text-letterboxd-text-muted mt-2">
-                  Higher counts will be highlighted in green.
-                </p>
-              </div>
             </div>
           )}
         </div>

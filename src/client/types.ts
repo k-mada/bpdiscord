@@ -122,12 +122,12 @@ export interface StoredUser extends AuthenticatedUser {
 // Type guard for user validation
 export const isValidStoredUser = (obj: unknown): obj is StoredUser => {
   return (
-    typeof obj === 'object' &&
+    typeof obj === "object" &&
     obj !== null &&
-    'id' in obj &&
-    'email' in obj &&
-    typeof (obj as StoredUser).id === 'string' &&
-    typeof (obj as StoredUser).email === 'string'
+    "id" in obj &&
+    "email" in obj &&
+    typeof (obj as StoredUser).id === "string" &&
+    typeof (obj as StoredUser).email === "string"
   );
 };
 
@@ -137,6 +137,7 @@ export const isValidStoredUser = (obj: unknown): obj is StoredUser => {
 
 export interface MovieInCommon {
   title: string;
+  film_slug: string;
   user1_rating: number;
   user2_rating: number;
   year?: number;
@@ -171,7 +172,7 @@ export interface FilmUserApiResponse {
   numberOfLists?: number;
   totalRatings?: number;
   ratings: Rating[];
-  source: 'database' | 'scraped' | 'scraped_fallback' | 'mixed_fallback';
+  source: "database" | "scraped" | "scraped_fallback" | "mixed_fallback";
   success: boolean;
 }
 
@@ -216,7 +217,7 @@ export interface TasteCompatibilityProps {
 export interface TooltipProps {
   content: string;
   children: React.ReactNode;
-  position?: 'top' | 'bottom' | 'left' | 'right';
+  position?: "top" | "bottom" | "left" | "right";
 }
 
 export interface ProtectedRouteProps {
@@ -300,17 +301,17 @@ export interface SignupFormData extends LoginFormData {
 // ===========================
 
 export const RATING_VALUES = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5] as const;
-export type RatingValue = typeof RATING_VALUES[number];
+export type RatingValue = (typeof RATING_VALUES)[number];
 
 export enum LoadingState {
-  IDLE = 'idle',
-  LOADING = 'loading',
-  SUCCESS = 'success',
-  ERROR = 'error'
+  IDLE = "idle",
+  LOADING = "loading",
+  SUCCESS = "success",
+  ERROR = "error",
 }
 
 export enum AuthStatus {
-  AUTHENTICATED = 'authenticated',
-  UNAUTHENTICATED = 'unauthenticated',
-  LOADING = 'loading'
+  AUTHENTICATED = "authenticated",
+  UNAUTHENTICATED = "unauthenticated",
+  LOADING = "loading",
 }

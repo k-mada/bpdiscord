@@ -3,12 +3,15 @@ module.exports = {
   content: [
     "./index.html",
     "./*.{js,jsx,ts,tsx}",
-    "./components/**/*.{js,jsx,ts,tsx}", 
+    "./components/**/*.{js,jsx,ts,tsx}",
     "./services/**/*.{js,jsx,ts,tsx}",
-    "!./node_modules/**/*"
+    "!./node_modules/**/*",
   ],
   theme: {
     extend: {
+      zIndex: {
+        1: "1",
+      },
       colors: {
         // Letterboxd-inspired color palette
         letterboxd: {

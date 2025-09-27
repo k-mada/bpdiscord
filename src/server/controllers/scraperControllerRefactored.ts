@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import { EventEmitter } from "events";
 
 import { ApiResponse, ScraperSelector } from "../types";
-import { DataController } from "./dataController";
+import { getUserFilms, upsertUserFilms } from "./dataController";
 import { BROWSER_CONFIG, CONTAINER_TYPES } from "../constants";
 import { parseRatingFromTitle, formatFilmsResponse, delay } from "../utilities";
 import {
@@ -426,7 +426,7 @@ export const getAllFilms = async (
 
   try {
     if (!forceRefresh) {
-      const dbResult = await DataController.getUserFilms(username);
+      const dbResult = await getUserFilms(username);
 
       if (dbResult.success && dbResult.data && dbResult.data.length > 0) {
         clearTimeout(timeoutId);
@@ -451,7 +451,7 @@ export const getAllFilms = async (
     const scrapedFilms = await scrapeUserFilms(username);
 
     console.log(`Saving ${scrapedFilms.length} films to database...`);
-    const saveResult = await DataController.upsertUserFilms(
+    const saveResult = await upsertUserFilms(
       username,
       scrapedFilms
     );
@@ -722,7 +722,7 @@ export const fetchFilms = async (
       timestamp: new Date().toISOString(),
     });
 
-    await DataController.upsertUserFilms(username, films);
+    await upsertUserFilms(username, films);
 
     if (isCompleted) return;
 

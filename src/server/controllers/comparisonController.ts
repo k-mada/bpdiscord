@@ -1,11 +1,11 @@
 import { Request, Response } from "express";
 import { ApiResponse } from "../types";
-import { DataController } from "./dataController";
+import { getAllUsernames, getUserRatings, getUserProfile, getMoviesInCommon } from "./dataController";
 
 export class ComparisonController {
   static async getAllUsernames(req: Request, res: Response): Promise<void> {
     try {
-      const result = await DataController.getAllUsernames();
+      const result = await getAllUsernames();
 
       if (!result.success) {
         const response: ApiResponse = {
@@ -45,8 +45,8 @@ export class ComparisonController {
 
       // Get both ratings and profile data
       const [ratingsResult, profileResult] = await Promise.all([
-        DataController.getUserRatings(username),
-        DataController.getUserProfile(username),
+        getUserRatings(username),
+        getUserProfile(username),
       ]);
 
       if (!ratingsResult.success) {
@@ -106,8 +106,8 @@ export class ComparisonController {
 
       // Get ratings for both users
       const [result1, result2] = await Promise.all([
-        DataController.getUserRatings(user1),
-        DataController.getUserRatings(user2),
+        getUserRatings(user1),
+        getUserRatings(user2),
       ]);
 
       if (!result1.success || !result2.success) {
@@ -177,7 +177,7 @@ export class ComparisonController {
         return;
       }
 
-      const result = await DataController.getMoviesInCommon(user1, user2);
+      const result = await getMoviesInCommon(user1, user2);
 
       if (!result.success) {
         const response: ApiResponse = {
