@@ -16,6 +16,22 @@
     font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
       monospace;
   }
+
+  select {
+    appearance: none;
+  }
+
+  .select-wrapper {
+    position: relative;
+  }
+
+  .select-wrapper::after {
+    content: "\25BC";
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
 }
 
 @layer components {
@@ -28,7 +44,7 @@
   }
 
   .card {
-    @apply bg-letterboxd-bg-secondary rounded-xl p-6 shadow-letterboxd border border-letterboxd-border;
+    @apply bg-letterboxd-bg-secondary rounded-xl p-4 shadow-letterboxd border border-letterboxd-border;
   }
 
   .input-field {

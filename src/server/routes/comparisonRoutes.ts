@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { ComparisonController } from "../controllers/comparisonController";
-import { DataController } from "../controllers/dataController";
+import { getHaterRankings } from "../controllers/dataController";
 
 const router = Router();
 
@@ -12,7 +12,7 @@ router.post("/movies-in-common", ComparisonController.getMoviesInCommon);
 // Public hater rankings endpoint
 router.get("/hater-rankings", async (req, res): Promise<void> => {
   try {
-    const result = await DataController.getHaterRankings();
+    const result = await getHaterRankings();
 
     if (!result.success) {
       res

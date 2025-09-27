@@ -1,7 +1,7 @@
 /// <reference lib="dom" />
 import { EventEmitter } from "events";
 import * as cheerio from "cheerio";
-import { DataController } from "./controllers/dataController";
+import { upsertUserRatings, upsertUserProfile } from "./controllers/dataController";
 import {
   BROWSER_CONFIG,
   CHROME_ARGS,
@@ -340,7 +340,7 @@ export const saveRatingsToDatabase = async (
   username: string,
   ratings: Array<{ rating: number; count: number }>
 ): Promise<void> => {
-  const insertResult = await DataController.upsertUserRatings(
+  const insertResult = await upsertUserRatings(
     username,
     ratings
   );
@@ -425,7 +425,7 @@ export const saveProfileToDatabase = async (
       profileData
     );
 
-    const result = await DataController.upsertUserProfile(
+    const result = await upsertUserProfile(
       username,
       profileData
     );

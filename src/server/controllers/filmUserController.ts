@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { DataController } from "./dataController";
+import { getUserRatings, upsertUserRatings, getUserProfile, upsertUserProfile, getAllUsernames } from "./dataController";
 
 export class FilmUserController {
   // Get user ratings from database only
@@ -15,7 +15,7 @@ export class FilmUserController {
     console.log(`Retrieving ratings from database for user: ${username}`);
 
     try {
-      const dbResult = await DataController.getUserRatings(username);
+      const dbResult = await getUserRatings(username);
 
       if (dbResult.success && dbResult.data && dbResult.data.length > 0) {
         const ratings = dbResult.data.map((item: any) => ({
@@ -47,7 +47,7 @@ export class FilmUserController {
           const scrapedRatings = await ScraperController.scrapeUserRatings(username);
           
           // Save to database
-          const insertResult = await DataController.upsertUserRatings(username, scrapedRatings);
+          const insertResult = await upsertUserRatings(username, scrapedRatings);
           if (!insertResult.success) {
             console.warn("Failed to save scraped ratings to database:", insertResult.error);
           }
@@ -102,7 +102,7 @@ export class FilmUserController {
     console.log(`Retrieving profile from database for user: ${username}`);
 
     try {
-      const profileResult = await DataController.getUserProfile(username);
+      const profileResult = await getUserProfile(username);
 
       if (profileResult.success && profileResult.data) {
         res.json({
@@ -132,7 +132,7 @@ export class FilmUserController {
           const scrapedProfile = await ScraperController.scrapeUserProfileData(username);
           
           // Save to database
-          const insertResult = await DataController.upsertUserProfile(username, scrapedProfile);
+          const insertResult = await upsertUserProfile(username, scrapedProfile);
           if (!insertResult.success) {
             console.warn("Failed to save scraped profile to database:", insertResult.error);
           }
@@ -190,10 +190,10 @@ export class FilmUserController {
 
     try {
       // Get profile data
-      const profileResult = await DataController.getUserProfile(username);
+      const profileResult = await getUserProfile(username);
       
       // Get ratings data
-      const ratingsResult = await DataController.getUserRatings(username);
+      const ratingsResult = await getUserRatings(username);
 
       const hasProfile = profileResult.success && profileResult.data;
       const hasRatings = ratingsResult.success && ratingsResult.data && ratingsResult.data.length > 0;
@@ -241,7 +241,7 @@ export class FilmUserController {
           // Scrape profile if missing
           if (!hasProfile) {
             const scrapedProfile = await ScraperController.scrapeUserProfileData(username);
-            const insertResult = await DataController.upsertUserProfile(username, scrapedProfile);
+            const insertResult = await upsertUserProfile(username, scrapedProfile);
             if (!insertResult.success) {
               console.warn("Failed to save scraped profile to database:", insertResult.error);
             }
@@ -257,7 +257,7 @@ export class FilmUserController {
           // Scrape ratings if missing
           if (!hasRatings) {
             const scrapedRatings = await ScraperController.scrapeUserRatings(username);
-            const insertResult = await DataController.upsertUserRatings(username, scrapedRatings);
+            const insertResult = await upsertUserRatings(username, scrapedRatings);
             if (!insertResult.success) {
               console.warn("Failed to save scraped ratings to database:", insertResult.error);
             }
@@ -317,7 +317,7 @@ export class FilmUserController {
     console.log("Retrieving all users from database");
 
     try {
-      const result = await DataController.getAllUsernames();
+      const result = await getAllUsernames();
 
       if (result.success && result.data) {
         res.json({

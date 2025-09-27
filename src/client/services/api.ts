@@ -8,8 +8,7 @@ import {
   PasswordResetConfirmRequest,
 } from "../types";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_URL || "/api";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
 
 class ApiService {
   private async request<T>(
@@ -139,8 +138,12 @@ class ApiService {
   }
 
   // Comparison endpoints (public - no auth required)
-  async getComparisonUsernames(): Promise<ApiResponse<Array<{ username: string; displayName?: string }>>> {
-    return this.request<Array<{ username: string; displayName?: string }>>("/comparison/usernames");
+  async getComparisonUsernames(): Promise<
+    ApiResponse<Array<{ username: string; displayName?: string }>>
+  > {
+    return this.request<Array<{ username: string; displayName?: string }>>(
+      "/comparison/usernames"
+    );
   }
 
   async getComparisonUserRatings(username: string): Promise<ApiResponse<any>> {
@@ -157,7 +160,10 @@ class ApiService {
     });
   }
 
-  async getMoviesInCommon(user1: string, user2: string): Promise<ApiResponse<any>> {
+  async getMoviesInCommon(
+    user1: string,
+    user2: string
+  ): Promise<ApiResponse<any>> {
     return this.request<ApiResponse<any>>("/comparison/movies-in-common", {
       method: "POST",
       body: JSON.stringify({ user1, user2 }),
@@ -170,27 +176,49 @@ class ApiService {
   }
 
   // New database-first film user endpoints (no auth required)
-  async getFilmUserRatings(username: string, fallback: boolean = false): Promise<ApiResponse<any>> {
-    const fallbackParam = fallback ? '?fallback=scrape' : '';
-    return this.request<ApiResponse<any>>(`/film-users/${username}/ratings${fallbackParam}`);
+  async getFilmUserRatings(
+    username: string,
+    fallback: boolean = false
+  ): Promise<ApiResponse<any>> {
+    const fallbackParam = fallback ? "?fallback=scrape" : "";
+    return this.request<ApiResponse<any>>(
+      `/film-users/${username}/ratings${fallbackParam}`
+    );
   }
 
-  async getFilmUserProfile(username: string, fallback: boolean = false): Promise<ApiResponse<any>> {
-    const fallbackParam = fallback ? '?fallback=scrape' : '';
-    return this.request<ApiResponse<any>>(`/film-users/${username}/profile${fallbackParam}`);
+  async getFilmUserProfile(
+    username: string,
+    fallback: boolean = false
+  ): Promise<ApiResponse<any>> {
+    const fallbackParam = fallback ? "?fallback=scrape" : "";
+    return this.request<ApiResponse<any>>(
+      `/film-users/${username}/profile${fallbackParam}`
+    );
   }
 
-  async getFilmUserComplete(username: string, fallback: boolean = false): Promise<ApiResponse<any>> {
-    const fallbackParam = fallback ? '?fallback=scrape' : '';
-    return this.request<ApiResponse<any>>(`/film-users/${username}/complete${fallbackParam}`);
+  async getFilmUserComplete(
+    username: string,
+    fallback: boolean = false
+  ): Promise<ApiResponse<any>> {
+    const fallbackParam = fallback ? "?fallback=scrape" : "";
+    return this.request<ApiResponse<any>>(
+      `/film-users/${username}/complete${fallbackParam}`
+    );
   }
 
-  async getFilmUsers(): Promise<ApiResponse<Array<{ username: string; displayName?: string }>>> {
-    return this.request<Array<{ username: string; displayName?: string }>>("/film-users");
+  async getFilmUsers(): Promise<
+    ApiResponse<Array<{ username: string; displayName?: string }>>
+  > {
+    return this.request<Array<{ username: string; displayName?: string }>>(
+      "/film-users"
+    );
   }
 
   // Force scraping endpoints (auth required)
-  async forceScrapeUserRatings(username: string, token: string): Promise<ApiResponse<any>> {
+  async forceScrapeUserRatings(
+    username: string,
+    token: string
+  ): Promise<ApiResponse<any>> {
     return this.request<ApiResponse<any>>("/scraper/getUserRatings", {
       method: "POST",
       headers: {
@@ -201,7 +229,10 @@ class ApiService {
     });
   }
 
-  async forceScrapeUserProfile(username: string, token: string): Promise<ApiResponse<any>> {
+  async forceScrapeUserProfile(
+    username: string,
+    token: string
+  ): Promise<ApiResponse<any>> {
     return this.request<ApiResponse<any>>("/scraper/getUserProfile", {
       method: "POST",
       headers: {
