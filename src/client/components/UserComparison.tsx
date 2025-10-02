@@ -4,6 +4,8 @@ import RatingDistributionHistogram from "./RatingDistributionHistogram";
 import TasteCompatibility from "./TasteCompatibility";
 import Header from "./Header";
 import { MoviesInCommonData } from "../types";
+import Spinner from "./Spinner";
+
 interface Rating {
   rating: number;
   count: number;
@@ -38,10 +40,6 @@ const UserComparison = () => {
   useEffect(() => {
     loadUsernames();
   }, []);
-
-  const onFilterNonRatedChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFilterNonRated(e.target.checked);
-  };
 
   // Load movies in common when both users are selected
   useEffect(() => {
@@ -229,7 +227,7 @@ const UserComparison = () => {
   return (
     <div className="min-h-screen bg-letterboxd-bg-primary">
       <Header />
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="main-content">
         <div className="space-y-8">
           {/* Header */}
           <div className="text-center">
@@ -243,9 +241,7 @@ const UserComparison = () => {
 
           {/* User Selection */}
           <div className="card">
-            <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-4">
-              Select Users to Compare
-            </h3>
+            <h3 className="subheading">Select Users to Compare</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* User 1 Selection */}
               <div className="relative">
@@ -300,21 +296,17 @@ const UserComparison = () => {
           {/* Profile Comparison */}
           {(user1Data || user2Data) && (
             <div className="card">
-              <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-4">
-                Profile Comparison
-              </h3>
+              <h3 className="subheading">Profile Comparison</h3>
               {loadingMovies && (
                 <div className="text-center py-8">
-                  <p className="text-letterboxd-text-secondary">
-                    Loading movies in common...
-                  </p>
+                  <Spinner />
                 </div>
               )}
               {!loadingMovies && (
-                <div className="overflow-x-auto mb-8">
-                  <table className="w-full">
+                <div className="overflow-x-auto mb-8 data-table">
+                  <table className="data-table">
                     <thead>
-                      <tr className="border-b border-letterboxd-border">
+                      <tr>
                         <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
                           Metric
                         </th>
@@ -331,7 +323,7 @@ const UserComparison = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      <tr className="border-b border-letterboxd-border/50">
+                      <tr>
                         <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
                           Total Films Rated
                         </td>
@@ -356,7 +348,7 @@ const UserComparison = () => {
                           {user2Data?.totalFilms || 0}
                         </td>
                       </tr>
-                      <tr className="border-b border-letterboxd-border/50">
+                      <tr>
                         <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
                           Followers
                         </td>
@@ -381,7 +373,7 @@ const UserComparison = () => {
                           {user2Data?.followers?.toLocaleString() || 0}
                         </td>
                       </tr>
-                      <tr className="border-b border-letterboxd-border/50">
+                      <tr>
                         <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
                           Following
                         </td>
@@ -406,7 +398,7 @@ const UserComparison = () => {
                           {user2Data?.following?.toLocaleString() || 0}
                         </td>
                       </tr>
-                      <tr className="border-b border-letterboxd-border/50">
+                      <tr>
                         <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
                           Lists Created
                         </td>
@@ -441,14 +433,12 @@ const UserComparison = () => {
           {/* Rating Distribution Comparison */}
           {(user1Data || user2Data) && (
             <div className="card">
-              <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-4">
-                Rating Comparison
-              </h3>
+              <h3 className="subheading">Rating Comparison</h3>
 
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="data-table">
                   <thead>
-                    <tr className="border-b border-letterboxd-border">
+                    <tr>
                       <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
                         User
                       </th>
@@ -465,7 +455,7 @@ const UserComparison = () => {
                   </thead>
                   <tbody>
                     {user1Data && (
-                      <tr className="border-b border-letterboxd-border/50">
+                      <tr>
                         <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
                           {user1Data.displayName || user1Data.username}
                         </td>
@@ -483,7 +473,7 @@ const UserComparison = () => {
                       </tr>
                     )}
                     {user2Data && (
-                      <tr className="border-b border-letterboxd-border/50">
+                      <tr>
                         <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
                           {user2Data.displayName || user2Data.username}
                         </td>
@@ -514,7 +504,6 @@ const UserComparison = () => {
             </div>
           )}
 
-          {/* Taste Compatibility */}
           {moviesInCommonData && user1Data && user2Data && (
             <TasteCompatibility
               user1Data={user1Data}
@@ -523,12 +512,9 @@ const UserComparison = () => {
             />
           )}
 
-          {/* Movies in Common */}
           {moviesInCommonData && (
             <div className="card">
-              <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-4">
-                Movies in Common
-              </h3>
+              <h3 className="subheading">Movies in Common</h3>
 
               <div className="mb-4">
                 <div className="flex items-center gap-2 mb-2">
@@ -569,7 +555,7 @@ const UserComparison = () => {
                 <div className="overflow-x-auto max-h-50vh">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-letterboxd-border">
+                      <tr>
                         <th className="sticky top-0 text-left py-3 px-4 text-letterboxd-text-secondary font-medium z-1 bg-letterboxd-bg-secondary">
                           Movie Title
                         </th>
@@ -591,13 +577,9 @@ const UserComparison = () => {
 
                         return (
                           shouldShow && (
-                            <tr
-                              key={`${movie.title}-${index}`}
-                              className="border-b border-letterboxd-border/50"
-                            >
+                            <tr key={`${movie.title}-${index}`}>
                               <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
                                 <a
-                                  className="hover:underline"
                                   href={`https://letterboxd.com/film/${movie.film_slug}`}
                                   target="_blank"
                                 >

@@ -3,6 +3,7 @@ import { TrophyIcon } from "@heroicons/react/24/solid";
 import apiService from "../services/api";
 import RatingDistributionHistogram from "./RatingDistributionHistogram";
 import Header from "./Header";
+import Spinner from "./Spinner";
 
 interface HaterRanking {
   username: string;
@@ -52,11 +53,7 @@ const HaterRankings = ({
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center min-h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-letterboxd-accent"></div>
-      </div>
-    );
+    return <Spinner />;
   }
 
   if (error) {
@@ -83,26 +80,28 @@ const HaterRankings = ({
         )}
       </div>
 
-      <div className="bg-letterboxd-bg-secondary rounded-lg shadow-lg overflow-hidden">
-        <div className="px-6 py-4 border-b border-letterboxd-border">
-          <h2 className="text-lg font-semibold text-letterboxd-text-primary">
-            Users ranked by average movie rating (lowest first)
-          </h2>
-          <p className="text-sm text-letterboxd-text-secondary mt-1">
-            The user with the lowest average rating is the biggest hater! 🏆
-          </p>
-        </div>
+      <div>
+        <h3 className="subheading">
+          Users ranked by average movie rating (lowest first)
+        </h3>
 
         {rankings.length === 0 ? (
           <div className="px-6 py-8 text-center text-letterboxd-text-secondary">
-            No user ratings found. Users need to have their ratings scraped first.
+            No user ratings found. Users need to have their ratings scraped
+            first.
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-letterboxd-bg-primary border-b border-letterboxd-border">
+              <thead>
                 <tr>
-                  {["Rank", "User", "Total Movies Rated", "Average Rating", "Rating Distribution"].map((header) => (
+                  {[
+                    "Rank",
+                    "User",
+                    "Total Movies Rated",
+                    "Average Rating",
+                    "Rating Distribution",
+                  ].map((header) => (
                     <th
                       key={header}
                       className="px-6 py-3 text-left text-xs font-medium text-letterboxd-text-secondary uppercase tracking-wider"
@@ -112,16 +111,11 @@ const HaterRankings = ({
                   ))}
                 </tr>
               </thead>
-              <tbody className="bg-letterboxd-bg-secondary divide-y divide-letterboxd-border">
+              <tbody>
                 {rankings.map((ranking, index) => (
-                  <tr
-                    key={ranking.username}
-                    className={`hover:bg-letterboxd-bg-primary transition-colors duration-200 ${
-                      index === 0 ? "bg-yellow-50 dark:bg-yellow-900/20" : ""
-                    }`}
-                  >
-                    <td className="px-6 py-1 whitespace-nowrap text-sm font-medium text-letterboxd-text-primary">
-                      #{index + 1}
+                  <tr key={ranking.username}>
+                    <td className="px-6 py-1 whitespace-nowrap text-lg text-letterboxd-text-primary font-bold">
+                      {index + 1}
                     </td>
                     <td className="px-6 py-1 whitespace-nowrap">
                       <div className="flex items-center space-x-2">
@@ -135,7 +129,12 @@ const HaterRankings = ({
                               : "text-letterboxd-text-primary"
                           }`}
                         >
-                          {ranking.displayName || ranking.username}
+                          <a
+                            href={`https://letterboxd.com/${ranking.username}`}
+                            target="_blank"
+                          >
+                            {ranking.displayName || ranking.username}
+                          </a>
                         </span>
                       </div>
                     </td>
@@ -161,7 +160,8 @@ const HaterRankings = ({
       {rankings.length > 0 && (
         <div className="text-center text-sm text-letterboxd-text-secondary">
           <p>
-            Showing {rankings.length} user{rankings.length !== 1 ? "s" : ""} with ratings data
+            Showing {rankings.length} user{rankings.length !== 1 ? "s" : ""}{" "}
+            with ratings data
           </p>
         </div>
       )}
@@ -173,7 +173,7 @@ const HaterRankings = ({
     return (
       <div className="min-h-screen bg-letterboxd-bg-primary">
         <Header />
-        <main className="max-w-7xl mx-auto px-6 py-8">
+        <main className="main-content">
           <RankingsContent />
         </main>
       </div>

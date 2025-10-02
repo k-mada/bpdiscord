@@ -17,15 +17,16 @@ module.exports = {
         letterboxd: {
           "bg-primary": "#1a1d1f", // Main dark background
           "bg-secondary": "#2a2d2f", // Slightly lighter background
-          "bg-tertiary": "#3a3d3f", // Even lighter for cards/sections
+          "bg-tertiary": "#2c3440", // Even lighter for cards/sections
           "text-primary": "#e0e0e0", // Main text color
           "text-secondary": "#a0a0a0", // Secondary text
           "text-muted": "#808080", // Muted text
-          accent: "#42b883", // Letterboxd green
-          "accent-hover": "#3aa876", // Darker green for hover
+          accent: "#00ac1c", // Letterboxd green
+          "accent-hover": "#009d1a", // Darker green for hover
           pro: "#f5c518", // PRO badge gold
           border: "#404040", // Border color
           "border-light": "#505050", // Lighter border
+          "link-hover": "#40bcf4", // Link hover color
         },
       },
       fontFamily: {

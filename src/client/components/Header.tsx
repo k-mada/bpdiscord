@@ -43,7 +43,7 @@ const Header = () => {
 
   return (
     <header className="bg-letterboxd-bg-secondary border-b border-letterboxd-border px-6 py-4">
-      <div className="max-w-7xl mx-auto flex justify-between items-center">
+      <div className="max-w-5xl mx-auto flex justify-between items-center">
         <button
           onClick={() => navigateTo("/")}
           className="text-2xl text-left font-bold text-letterboxd-text-primary hover:text-letterboxd-accent transition-colors duration-200"
