@@ -295,8 +295,12 @@ const ScraperInterface = () => {
 
             case "complete":
               setFilmCount(data.data.totalFilms);
-              setSuccess(`Successfully updated ${data.data.totalFilms} films and user ratings!`);
-              setFetchStatus(`Operation completed! ${data.data.totalFilms} films and ratings updated`);
+              setSuccess(
+                `Successfully updated ${data.data.totalFilms} films and user ratings!`
+              );
+              setFetchStatus(
+                `Operation completed! ${data.data.totalFilms} films and ratings updated`
+              );
               eventSource.close();
               setStreaming(false);
               break;
@@ -429,7 +433,23 @@ const ScraperInterface = () => {
                   {streaming ? "Getting films..." : "Update films"}
                 </button>
               </div>
+              {error && (
+                <div className="card border-red-500/30 bg-red-900/10">
+                  <h3 className="text-lg font-semibold text-red-400 mb-2">
+                    Error
+                  </h3>
+                  <p className="text-red-300">{error}</p>
+                </div>
+              )}
 
+              {success && (
+                <div className="card border-green-500/30 bg-green-900/10">
+                  <h3 className="text-lg font-semibold text-green-400 mb-2">
+                    Success
+                  </h3>
+                  <p className="text-green-300">{success}</p>
+                </div>
+              )}
               {fetchStatus && (
                 <div className="mt-4 p-3 bg-letterboxd-bg-primary rounded-lg border border-letterboxd-border">
                   <p className="text-letterboxd-text-secondary text-sm">
@@ -473,49 +493,36 @@ const ScraperInterface = () => {
                     {streaming ? "Live Progress Log" : "Operation Log"}
                   </h4>
                   <div className="max-h-80 overflow-y-auto space-y-1">
-                    {streamProgress.slice().reverse().map((progress, index) => (
-                      <div
-                        key={index}
-                        className="text-xs text-letterboxd-text-muted p-2 bg-letterboxd-bg-primary rounded"
-                      >
-                        <span className="text-letterboxd-text-secondary font-mono">
-                          {new Date(progress.timestamp).toLocaleTimeString()}
-                        </span>
-                        {" - "}
-                        <span
-                          className={`${
-                            progress.type === "error"
-                              ? "text-red-400"
-                              : progress.type === "complete"
-                              ? "text-green-400"
-                              : "text-letterboxd-text-muted"
-                          }`}
+                    {streamProgress
+                      .slice()
+                      .reverse()
+                      .map((progress, index) => (
+                        <div
+                          key={index}
+                          className="text-xs text-letterboxd-text-muted p-2 bg-letterboxd-bg-primary rounded"
                         >
-                          {progress.message}
-                        </span>
-                      </div>
-                    ))}
+                          <span className="text-letterboxd-text-secondary font-mono">
+                            {new Date(progress.timestamp).toLocaleTimeString()}
+                          </span>
+                          {" - "}
+                          <span
+                            className={`${
+                              progress.type === "error"
+                                ? "text-red-400"
+                                : progress.type === "complete"
+                                ? "text-green-400"
+                                : "text-letterboxd-text-muted"
+                            }`}
+                          >
+                            {progress.message}
+                          </span>
+                        </div>
+                      ))}
                   </div>
                 </div>
               )}
             </div>
           </div>
-
-          {error && (
-            <div className="card border-red-500/30 bg-red-900/10">
-              <h3 className="text-lg font-semibold text-red-400 mb-2">Error</h3>
-              <p className="text-red-300">{error}</p>
-            </div>
-          )}
-
-          {success && (
-            <div className="card border-green-500/30 bg-green-900/10">
-              <h3 className="text-lg font-semibold text-green-400 mb-2">
-                Success
-              </h3>
-              <p className="text-green-300">{success}</p>
-            </div>
-          )}
 
           {/* User Ratings Table */}
           {userRatings && (
@@ -569,18 +576,6 @@ const ScraperInterface = () => {
                   {userRatings.ratings.reduce((sum, r) => sum + r.count, 0)}
                 </p>
               </div>
-            </div>
-          )}
-
-          {/* Films Count */}
-          {filmCount !== null && (
-            <div className="card">
-              <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-4">
-                Films Data
-              </h3>
-              <p className="text-letterboxd-text-primary">
-                {filmCount} films fetched
-              </p>
             </div>
           )}
         </div>

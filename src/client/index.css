@@ -17,6 +17,11 @@
       monospace;
   }
 
+  a:hover {
+    color: #40bcf4;
+    text-decoration: none;
+  }
+
   select {
     appearance: none;
   }
@@ -35,16 +40,34 @@
 }
 
 @layer components {
+  .main-content {
+    @apply max-w-5xl mx-auto py-8;
+  }
+
+  .navigation {
+    @apply bg-tertiary;
+  }
   .btn-primary {
-    @apply bg-letterboxd-accent hover:bg-letterboxd-accent-hover text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+    @apply bg-letterboxd-accent hover:bg-letterboxd-accent-hover text-white font-medium py-1 px-3 rounded-sm transition-colors duration-200;
+  }
+
+  .subheading {
+    @apply text-xl font-semibold text-letterboxd-text-primary mb-4 pb-2 border-b border-letterboxd-border;
   }
 
   .btn-secondary {
     @apply bg-letterboxd-bg-secondary hover:bg-letterboxd-bg-tertiary text-letterboxd-text-primary font-medium py-2 px-4 rounded-lg border border-letterboxd-border transition-colors duration-200;
   }
 
+  .data-table {
+    @apply w-full;
+  }
+
+  /* .card {
+    @apply bg-letterboxd-bg-tertiary rounded-xl p-4;
+  } */
   .card {
-    @apply bg-letterboxd-bg-secondary rounded-xl p-4 shadow-letterboxd border border-letterboxd-border;
+    @apply p-4;
   }
 
   .input-field {
