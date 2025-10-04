@@ -19,9 +19,7 @@ const Dashboard = () => {
         </p>
       </div>
       <div className="movie-counter">
-        <span className="text-3xl font-bold">
-          Number of movies watched by this Discord:
-        </span>
+        <h3>Number of movies watched by this Discord:</h3>
         <span className="text-3xl font-bold movie-count"></span>
       </div>
       <h3 className="subheading">Most watched movies</h3>
