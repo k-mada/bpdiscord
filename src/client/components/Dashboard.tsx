@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "./Header";
 
@@ -13,12 +13,6 @@ const Dashboard = () => {
     }
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
-  };
-
   const getUserName = () => {
     if (user?.user_metadata?.name) {
       return user.user_metadata.name;
@@ -32,10 +26,8 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-letterboxd-bg-primary">
       <Header />
-      
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="max-w-5xl mx-auto px-6 py-8">
         <div className="space-y-8">
-          {/* Welcome Section */}
           <div className="text-center">
             <h1 className="text-4xl font-bold text-letterboxd-text-primary mb-4">
               Welcome back, {getUserName()}!
@@ -43,6 +35,10 @@ const Dashboard = () => {
             <p className="text-letterboxd-text-secondary text-lg">
               Your Letterboxd data analysis dashboard
             </p>
+          </div>
+          <div>
+            <span className="text-3xl font-bold">Total Movies:</span>
+            <span className="text-3xl font-bold movie-counter"></span>
           </div>
 
           {/* Quick Actions */}
@@ -54,7 +50,7 @@ const Dashboard = () => {
               <p className="text-letterboxd-text-secondary mb-4">
                 View and manage your account settings
               </p>
-              <button 
+              <button
                 onClick={() => navigate("/profile")}
                 className="btn-primary w-full"
               >
@@ -69,7 +65,7 @@ const Dashboard = () => {
               <p className="text-letterboxd-text-secondary mb-4">
                 Scrape and analyze Letterboxd rating data
               </p>
-              <button 
+              <button
                 onClick={() => navigate("/fetcher")}
                 className="btn-primary w-full"
               >
@@ -84,7 +80,7 @@ const Dashboard = () => {
               <p className="text-letterboxd-text-secondary mb-4">
                 Compare rating patterns between users
               </p>
-              <button 
+              <button
                 onClick={() => navigate("/compare")}
                 className="btn-primary w-full"
               >

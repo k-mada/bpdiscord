@@ -9,13 +9,21 @@ module.exports = {
   ],
   theme: {
     extend: {
+      screens: {
+        "max-xs": { max: "480px" },
+        "max-sm": { max: "640px" },
+        "max-md": { max: "768px" },
+        "max-lg": { max: "1024px" },
+        "max-xl": { max: "1280px" },
+        "max-2xl": { max: "1536px" },
+      },
       zIndex: {
         1: "1",
       },
       colors: {
         // Letterboxd-inspired color palette
         letterboxd: {
-          "bg-primary": "#1a1d1f", // Main dark background
+          "bg-primary": "#14191c", // Main dark background
           "bg-secondary": "#2a2d2f", // Slightly lighter background
           "bg-tertiary": "#2c3440", // Even lighter for cards/sections
           "text-primary": "#e0e0e0", // Main text color
@@ -30,7 +38,7 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans: ["Inter", "Roboto", "Arial", "sans-serif"],
+        sans: ["Be Vietnam Pro", "Roboto", "Arial", "sans-serif"],
       },
       fontSize: {
         xs: ["0.75rem", { lineHeight: "1rem" }],

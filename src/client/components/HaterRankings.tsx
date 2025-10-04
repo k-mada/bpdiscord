@@ -68,23 +68,14 @@ const HaterRankings = ({
   }
 
   const RankingsContent = () => (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-letterboxd-text-primary">
-          Hater Rankings
-        </h1>
-        {onBackToProfile && (
-          <button onClick={onBackToProfile} className="btn-secondary">
-            Back to Profile
-          </button>
-        )}
-      </div>
-
+    <div>
+      <h1 className="text-3xl font-bold text-letterboxd-text-primary mb-2">
+        Hater Rankings
+      </h1>
+      <h3 className="subheading">
+        Users ranked by average movie rating (lowest first)
+      </h3>
       <div>
-        <h3 className="subheading">
-          Users ranked by average movie rating (lowest first)
-        </h3>
-
         {rankings.length === 0 ? (
           <div className="px-6 py-8 text-center text-letterboxd-text-secondary">
             No user ratings found. Users need to have their ratings scraped
