@@ -3,7 +3,7 @@ import { moviesData } from "../constants";
 
 const Dashboard = () => {
   const topMoviesWatched = moviesData
-    .sort((a, b) => b.usersWatched - a.usersWatched)
+    .sort((a, b) => b.usersWatched - a.usersWatched || b.rating - a.rating)
     .slice(0, 24);
 
   const highestRatedMovies = moviesData
