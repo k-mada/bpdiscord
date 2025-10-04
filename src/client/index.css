@@ -60,13 +60,23 @@
 }
 
 .movie-count {
-  animation: counter 5s forwards alternate ease-in-out;
-  counter-reset: num var(--num);
   font: 800 32px "Be Vietnam Pro", sans-serif;
   padding-left: 1rem;
+
+  animation: counter 5s forwards alternate ease-in-out;
+  counter-reset: num var(--num);
+
+  @screen max-md {
+    animation: none;
+    counter-reset: num var(--num);
+  }
 }
 .movie-count::after {
   content: counter(num);
+
+  @screen max-md {
+    content: "16019";
+  }
 }
 
 @keyframes counter {
