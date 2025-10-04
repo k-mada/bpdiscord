@@ -42,7 +42,7 @@ const Header = () => {
   };
 
   return (
-    <header className="bg-letterboxd-bg-secondary border-b border-letterboxd-border px-6 py-4">
+    <header>
       <div className="max-w-5xl mx-auto flex justify-between items-center">
         <button
           onClick={() => navigateTo("/")}

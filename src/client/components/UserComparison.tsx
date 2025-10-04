@@ -148,15 +148,6 @@ const UserComparison = () => {
     }
   }, [selectedUser1, selectedUser2]);
 
-  const getRatingCount = (
-    userData: UserData | null,
-    rating: number
-  ): number => {
-    if (!userData) return 0;
-    const ratingItem = userData.ratings.find((r) => r.rating === rating);
-    return ratingItem ? ratingItem.count : 0;
-  };
-
   const getTotalRatings = (userData: UserData | null): number => {
     if (!userData) return 0;
     return userData.ratings.reduce((sum, r) => sum + r.count, 0);
@@ -174,19 +165,6 @@ const UserComparison = () => {
     return totalCount > 0 ? totalWeightedRating / totalCount : 0;
   };
 
-  const getRatingPercentage = (
-    userData: UserData | null,
-    rating: number
-  ): number => {
-    const count = getRatingCount(userData, rating);
-    const total = getTotalRatings(userData);
-    return total > 0 ? (count / total) * 100 : 0;
-  };
-
-  const isHigherCount = (count1: number, count2: number): boolean => {
-    return count1 > count2;
-  };
-
   const StarRating = ({ rating }: { rating: number }) => {
     const fullStars = Math.floor(rating);
     const hasHalfStar = rating % 1 !== 0;
@@ -194,14 +172,12 @@ const UserComparison = () => {
 
     return (
       <div className="flex items-center">
-        {/* Full stars */}
         {Array.from({ length: fullStars }, (_, i) => (
           <span key={`full-${i}`} className="text-letterboxd-accent text-lg">
             ★
           </span>
         ))}
 
-        {/* Half star */}
         {hasHalfStar && (
           <div key="half" className="relative inline-block text-lg">
             <span className="text-letterboxd-border">☆</span>
@@ -214,7 +190,6 @@ const UserComparison = () => {
           </div>
         )}
 
-        {/* Empty stars */}
         {Array.from({ length: emptyStars }, (_, i) => (
           <span key={`empty-${i}`} className="text-letterboxd-border text-lg">
             ☆
@@ -228,22 +203,15 @@ const UserComparison = () => {
     <div className="min-h-screen bg-letterboxd-bg-primary">
       <Header />
       <main className="main-content">
-        <div className="space-y-8">
-          {/* Header */}
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-letterboxd-text-primary mb-2">
-              User Comparison
-            </h2>
-            <p className="text-letterboxd-text-secondary">
-              Compare rating statistics between two Letterboxd users
-            </p>
-          </div>
-
-          {/* User Selection */}
+        <div>
+          <h1 className="text-3xl font-bold text-letterboxd-text-primary mb-2">
+            User Comparison
+          </h1>
+          <h3 className="subheading">
+            Compare rating statistics between two Letterboxd users
+          </h3>
           <div className="card">
-            <h3 className="subheading">Select Users to Compare</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* User 1 Selection */}
               <div className="relative">
                 <div className="select-wrapper">
                   <select
@@ -261,8 +229,6 @@ const UserComparison = () => {
                   </select>
                 </div>
               </div>
-
-              {/* User 2 Selection */}
               <div>
                 <div className="select-wrapper">
                   <select
@@ -282,8 +248,6 @@ const UserComparison = () => {
               </div>
             </div>
           </div>
-
-          {/* Error Display */}
           {error && (
             <div className="card border-red-500/30 bg-red-900/10">
               <h3 className="text-lg font-semibold text-red-400 mb-2">Error</h3>
@@ -291,146 +255,14 @@ const UserComparison = () => {
             </div>
           )}
 
-          {/* Loading state for movies */}
-
-          {/* Profile Comparison */}
-          {(user1Data || user2Data) && (
-            <div className="card">
-              <h3 className="subheading">Profile Comparison</h3>
-              {loadingMovies && (
-                <div className="text-center py-8">
-                  <Spinner />
-                </div>
-              )}
-              {!loadingMovies && (
-                <div className="overflow-x-auto mb-8 data-table">
-                  <table className="data-table">
-                    <thead>
-                      <tr>
-                        <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
-                          Metric
-                        </th>
-                        <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
-                          {user1Data?.displayName ||
-                            user1Data?.username ||
-                            "User 1"}
-                        </th>
-                        <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
-                          {user2Data?.displayName ||
-                            user2Data?.username ||
-                            "User 2"}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
-                          Total Films Rated
-                        </td>
-                        <td
-                          className={`py-3 px-4 text-letterboxd-text-primary ${
-                            (user1Data?.totalFilms || 0) >
-                            (user2Data?.totalFilms || 0)
-                              ? "bg-green-900/20"
-                              : ""
-                          }`}
-                        >
-                          {user1Data?.totalFilms || 0}
-                        </td>
-                        <td
-                          className={`py-3 px-4 text-letterboxd-text-primary ${
-                            (user2Data?.totalFilms || 0) >
-                            (user1Data?.totalFilms || 0)
-                              ? "bg-green-900/20"
-                              : ""
-                          }`}
-                        >
-                          {user2Data?.totalFilms || 0}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
-                          Followers
-                        </td>
-                        <td
-                          className={`py-3 px-4 text-letterboxd-text-primary ${
-                            (user1Data?.followers || 0) >
-                            (user2Data?.followers || 0)
-                              ? "bg-green-900/20"
-                              : ""
-                          }`}
-                        >
-                          {user1Data?.followers?.toLocaleString() || 0}
-                        </td>
-                        <td
-                          className={`py-3 px-4 text-letterboxd-text-primary ${
-                            (user2Data?.followers || 0) >
-                            (user1Data?.followers || 0)
-                              ? "bg-green-900/20"
-                              : ""
-                          }`}
-                        >
-                          {user2Data?.followers?.toLocaleString() || 0}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
-                          Following
-                        </td>
-                        <td
-                          className={`py-3 px-4 text-letterboxd-text-primary ${
-                            (user1Data?.following || 0) >
-                            (user2Data?.following || 0)
-                              ? "bg-green-900/20"
-                              : ""
-                          }`}
-                        >
-                          {user1Data?.following?.toLocaleString() || 0}
-                        </td>
-                        <td
-                          className={`py-3 px-4 text-letterboxd-text-primary ${
-                            (user2Data?.following || 0) >
-                            (user1Data?.following || 0)
-                              ? "bg-green-900/20"
-                              : ""
-                          }`}
-                        >
-                          {user2Data?.following?.toLocaleString() || 0}
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
-                          Lists Created
-                        </td>
-                        <td
-                          className={`py-3 px-4 text-letterboxd-text-primary ${
-                            (user1Data?.numberOfLists || 0) >
-                            (user2Data?.numberOfLists || 0)
-                              ? "bg-green-900/20"
-                              : ""
-                          }`}
-                        >
-                          {user1Data?.numberOfLists || 0}
-                        </td>
-                        <td
-                          className={`py-3 px-4 text-letterboxd-text-primary ${
-                            (user2Data?.numberOfLists || 0) >
-                            (user1Data?.numberOfLists || 0)
-                              ? "bg-green-900/20"
-                              : ""
-                          }`}
-                        >
-                          {user2Data?.numberOfLists || 0}
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
+          {moviesInCommonData && user1Data && user2Data && (
+            <TasteCompatibility
+              user1Data={user1Data}
+              user2Data={user2Data}
+              moviesInCommon={moviesInCommonData.moviesInCommon}
+            />
           )}
 
-          {/* Rating Distribution Comparison */}
           {(user1Data || user2Data) && (
             <div className="card">
               <h3 className="subheading">Rating Comparison</h3>
@@ -439,53 +271,37 @@ const UserComparison = () => {
                 <table className="data-table">
                   <thead>
                     <tr>
-                      <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
-                        User
-                      </th>
-                      <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
-                        Number Movies Rated
-                      </th>
-                      <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
-                        Distribution
-                      </th>
-                      <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
-                        Average Rating
-                      </th>
+                      <th>User</th>
+                      <th>Number Movies Rated</th>
+                      <th>Distribution</th>
+                      <th>Average Rating</th>
                     </tr>
                   </thead>
                   <tbody>
                     {user1Data && (
                       <tr>
-                        <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
-                          {user1Data.displayName || user1Data.username}
-                        </td>
-                        <td className="py-3 px-4 text-letterboxd-text-primary">
-                          {getTotalRatings(user1Data).toLocaleString()}
-                        </td>
+                        <td>{user1Data.displayName || user1Data.username}</td>
+                        <td>{getTotalRatings(user1Data).toLocaleString()}</td>
                         <td className="py-3 px-4">
                           <RatingDistributionHistogram
                             distribution={user1Data.ratings}
                           />
                         </td>
-                        <td className="py-3 px-4 text-letterboxd-text-primary">
+                        <td>
                           {calculateAverageRating(user1Data).toFixed(2)} / 5.0
                         </td>
                       </tr>
                     )}
                     {user2Data && (
                       <tr>
-                        <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
-                          {user2Data.displayName || user2Data.username}
-                        </td>
-                        <td className="py-3 px-4 text-letterboxd-text-primary">
-                          {getTotalRatings(user2Data).toLocaleString()}
-                        </td>
-                        <td className="py-3 px-4">
+                        <td>{user2Data.displayName || user2Data.username}</td>
+                        <td>{getTotalRatings(user2Data).toLocaleString()}</td>
+                        <td>
                           <RatingDistributionHistogram
                             distribution={user2Data.ratings}
                           />
                         </td>
-                        <td className="py-3 px-4 text-letterboxd-text-primary">
+                        <td>
                           {calculateAverageRating(user2Data).toFixed(2)} / 5.0
                         </td>
                       </tr>
@@ -503,15 +319,6 @@ const UserComparison = () => {
               </div>
             </div>
           )}
-
-          {moviesInCommonData && user1Data && user2Data && (
-            <TasteCompatibility
-              user1Data={user1Data}
-              user2Data={user2Data}
-              moviesInCommon={moviesInCommonData.moviesInCommon}
-            />
-          )}
-
           {moviesInCommonData && (
             <div className="card">
               <h3 className="subheading">Movies in Common</h3>
@@ -553,7 +360,7 @@ const UserComparison = () => {
 
               {moviesInCommonData.count > 0 && (
                 <div className="overflow-x-auto max-h-50vh">
-                  <table className="w-full">
+                  <table className="data-table">
                     <thead>
                       <tr>
                         <th className="sticky top-0 text-left py-3 px-4 text-letterboxd-text-secondary font-medium z-1 bg-letterboxd-bg-secondary">

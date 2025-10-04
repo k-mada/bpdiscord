@@ -12,20 +12,19 @@ import ScraperInterface from "./components/ScraperInterface";
 import UserComparison from "./components/UserComparison";
 import HaterRankings from "./components/HaterRankings";
 import ProtectedRoute from "./components/ProtectedRoute";
+import Stats from "./components/Stats";
 
 function App() {
   return (
     <Router>
       <Routes>
-        {/* Public routes */}
         <Route path="/compare" element={<UserComparison />} />
         <Route
           path="/hater-rankings"
           element={<HaterRankings isPublic={true} />}
         />
+        <Route path="/stats" element={<Stats />} />
         <Route path="/login" element={<LoginPage />} />
-
-        {/* Protected routes */}
         <Route
           path="/dashboard"
           element={
@@ -52,7 +51,7 @@ function App() {
         />
 
         {/* Default redirect */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<Stats />} />
       </Routes>
     </Router>
   );
