@@ -10,6 +10,12 @@
   inherits: false;
 }
 
+@property --movieCount {
+  syntax: "<integer>";
+  initial-value: 16019;
+  inherits: true;
+}
+
 @layer base {
   body {
     @apply bg-letterboxd-bg-primary text-letterboxd-text-primary;
@@ -72,9 +78,14 @@
   counter-reset: num var(--num);
   font: 800 32px "Be Vietnam Pro", sans-serif;
   padding-left: 1rem;
-}
-.movie-count::after {
-  content: counter(num);
+
+  &::after {
+    content: counter(num);
+
+    @screen max-md {
+      content: "16019";
+    }
+  }
 }
 
 @keyframes counter {
@@ -82,7 +93,7 @@
     --num: 0;
   }
   to {
-    --num: 16019;
+    --num: var(--movieCount);
   }
 }
 
