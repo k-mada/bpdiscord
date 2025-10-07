@@ -4,11 +4,13 @@ import Tooltip from "./Tooltip";
 
 interface RatingDistributionHistogramProps {
   distribution: Array<{ rating: number; count: number }>;
+  size?: string;
   className?: string;
 }
 
 const RatingDistributionHistogram = ({
   distribution,
+  size = "sm",
   className = "",
 }: RatingDistributionHistogramProps) => {
   if (!distribution || distribution.length === 0) {
@@ -24,13 +26,16 @@ const RatingDistributionHistogram = ({
   const distributionMap = new Map(distribution.map((d) => [d.rating, d.count]));
 
   return (
-    <div className={`flex items-end space-x-1 h-16 w-32 ${className}`}>
+    <div className={`histogram-${size} ${className}`}>
+      {size === "md" && <span className="rating-star">★</span>}
       {ALL_RATINGS.map((rating) => {
         const count = distributionMap.get(rating) || 0;
+
         const percentage = maxCount > 0 ? count / maxCount : 0;
+        const heightScale = size === "sm" ? 60 : 100;
         // Use a more pronounced height calculation - minimum 4px for any data, max 60px
         const heightPx =
-          count > 0 ? Math.max(4, Math.round(percentage * 60)) : 2;
+          count > 0 ? Math.max(4, Math.round(percentage * heightScale)) : 2;
 
         // Check if this bar has the maximum count (tallest bar)
         const isTallestBar = count > 0 && count === maxCount;
@@ -50,7 +55,7 @@ const RatingDistributionHistogram = ({
 
         return (
           <Tooltip key={rating} content={tooltipContent}>
-            <div className="relative" style={{ width: "10px" }}>
+            <div className="histogram-bar">
               <div
                 className={`rounded-sm transition-all cursor-pointer ${
                   count === 0
@@ -68,6 +73,11 @@ const RatingDistributionHistogram = ({
           </Tooltip>
         );
       })}
+      {size === "md" && (
+        <span className="rating-green rating-green-tiny rating-5">
+          <span className="rating-star">★★★★★</span>
+        </span>
+      )}
     </div>
   );
 };

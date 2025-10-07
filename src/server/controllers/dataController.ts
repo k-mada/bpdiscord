@@ -389,6 +389,30 @@ export async function upsertUserProfile(
   }
 }
 
+// Get total ratings distribution for all users
+export async function getTotalRatingsDistribution(): Promise<{
+  success: boolean;
+  data?: Array<{ rating: number; count: number }>;
+  error?: string;
+}> {
+  try {
+    const { data, error } = await supabaseAdmin.rpc(
+      "get_rating_distribution_all"
+    );
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data: data || [] };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
 // UserFilms Management Methods
 export async function getUserFilms(lbusername: string): Promise<{
   success: boolean;

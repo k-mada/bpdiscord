@@ -242,6 +242,15 @@ class ApiService {
       body: JSON.stringify({ username }),
     });
   }
+
+  // Hater rankings endpoint
+  async getRatingsDistribution(): Promise<
+    ApiResponse<Array<{ rating: number; count: number }>>
+  > {
+    return this.request<Array<{ rating: number; count: number }>>(
+      "/stats/total-ratings"
+    );
+  }
 }
 
 export const apiService = new ApiService();
