@@ -3,18 +3,29 @@ import ContentWrapper from "./ContentWrapper";
 import { moviesData } from "../constants";
 import apiService from "../services/api";
 import RatingDistributionHistogram from "./RatingDistributionHistogram";
+import Spinner from "./Spinner";
 
 const Dashboard = () => {
   const [totalRatings, setTotalRatings] = useState<any>(null);
+  const [loadingUserRatings, setLoadingUserRatings] = useState(true);
 
-  useEffect(() => {
-    const getRatingsDistribution = async () => {
+  const getRatingsDistribution = async () => {
+    try {
+      setLoadingUserRatings(true);
+
       const ratingsDistribution = await apiService.getRatingsDistribution();
 
       if (ratingsDistribution.data) {
         setTotalRatings(ratingsDistribution.data);
       }
-    };
+    } catch (error) {
+      console.error("Error fetching ratings distribution:", error);
+    } finally {
+      setLoadingUserRatings(false);
+    }
+  };
+
+  useEffect(() => {
     getRatingsDistribution();
   }, []);
 
@@ -41,7 +52,11 @@ const Dashboard = () => {
 
       <h3 className="subheading">How we rated of our movies:</h3>
       <div className="flex mb-4 justify-center">
-        <RatingDistributionHistogram distribution={totalRatings} size="md" />
+        {loadingUserRatings ? (
+          <Spinner />
+        ) : (
+          <RatingDistributionHistogram distribution={totalRatings} size="md" />
+        )}
       </div>
       <h3 className="subheading">Most watched movies</h3>
       <ul className="film-list-small movie-poster-fade-in">
