@@ -24,15 +24,10 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
-  .body-text.-prose {
-    font-family: "PT Serif", serif;
-    font-size: 1.2rem;
+  header {
+    @apply bg-letterboxd-bg-secondary border-b border-letterboxd-border px-6 py-4;
+    font-family: "Be Vietnam Pro", sans-serif;
   }
-
-  .body-text.-prose p {
-    @apply mb-4;
-  }
-
   code {
     font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
       monospace;
@@ -47,6 +42,15 @@
     appearance: none;
   }
 
+  .body-text.-prose {
+    font-family: "PT Serif", serif;
+    font-size: 1.2rem;
+  }
+
+  .body-text.-prose p {
+    @apply mb-4;
+  }
+
   .select-wrapper {
     position: relative;
   }
@@ -58,85 +62,6 @@
     top: 50%;
     transform: translateY(-50%);
   }
-}
-
-.movie-counter {
-  @apply flex items-center justify-start mb-4;
-  font-family: "PT Serif", serif;
-}
-
-.movie-counter h3 {
-  @apply text-3xl font-bold;
-
-  @screen max-md {
-    font-size: 1.5rem;
-  }
-}
-
-.movie-count {
-  animation: counter 5s forwards alternate ease-in-out;
-  counter-reset: num var(--num);
-  font: 800 32px "Be Vietnam Pro", sans-serif;
-  padding-left: 1rem;
-
-  &::after {
-    content: counter(num);
-
-    @screen max-md {
-      content: "16019";
-    }
-  }
-}
-
-@keyframes counter {
-  from {
-    --num: 0;
-  }
-  to {
-    --num: var(--movieCount);
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-.film-list {
-  @apply flex justify-start flex-wrap gap-4;
-}
-
-.film-list > li {
-  @apply flex items-start max-w-[230px] relative;
-}
-
-.film-list > li > img {
-  @apply w-10 h-10 rounded-md;
-}
-
-.film-list-small {
-  @apply flex justify-start flex-wrap gap-2;
-}
-
-.film-list-small > li {
-  @apply flex items-start gap-4 mb-4 max-w-[105px] relative;
-}
-
-.movie-poster-fade-in li {
-  opacity: 0;
-}
-
-.movie-poster-fade-in li {
-  animation: fadeIn 0.8s ease-in-out forwards;
-}
-
-header {
-  @apply bg-letterboxd-bg-secondary border-b border-letterboxd-border px-6 py-4;
-  font-family: "Be Vietnam Pro", sans-serif;
 }
 
 @layer components {
@@ -170,6 +95,29 @@ header {
 
   .data-table > tbody > tr > td {
     @apply py-3 px-4 text-letterboxd-text-primary font-medium;
+  }
+
+  .histogram-sm {
+    @apply flex items-end space-x-1 h-16 w-32;
+  }
+
+  .histogram-md {
+    @apply flex items-end space-x-1 h-32;
+  }
+
+  .histogram-bar {
+    position: relative;
+    width: 10px;
+  }
+
+  .histogram-md .histogram-bar {
+    /* @apply relative w-10; */
+    position: relative;
+    width: 40px;
+  }
+
+  .rating-star {
+    color: rgb(0 172 28 / var(--tw-bg-opacity, 1));
   }
 
   .rating-overlay {
@@ -208,11 +156,7 @@ header {
       opacity: 1;
     }
   }
-  /* .rating-overlay:hover {
-  } */
-  /* .card {
-    @apply bg-letterboxd-bg-tertiary rounded-xl p-4;
-  } */
+
   .card {
     @apply p-4;
   }
@@ -228,4 +172,59 @@ header {
   .pro-badge {
     @apply bg-letterboxd-pro text-black text-xs font-bold px-2 py-1 rounded;
   }
+}
+
+.movie-counter {
+  @apply flex items-center justify-start mb-4;
+  font-family: "PT Serif", serif;
+}
+
+.movie-counter h3 {
+  @apply text-3xl font-bold;
+
+  @screen max-md {
+    font-size: 1.5rem;
+  }
+}
+
+.movie-count {
+  font: 800 32px "Be Vietnam Pro", sans-serif;
+  padding-left: 1rem;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.film-list {
+  @apply flex justify-start max-md:justify-center flex-wrap gap-4;
+}
+
+.film-list > li {
+  @apply flex items-start max-w-[230px] relative;
+}
+
+.film-list > li > img {
+  @apply w-10 h-10 rounded-md;
+}
+
+.film-list-small {
+  @apply flex justify-start flex-wrap gap-2;
+}
+
+.film-list-small > li {
+  @apply flex items-start gap-4 mb-4 max-w-[105px] relative;
+}
+
+.movie-poster-fade-in li {
+  opacity: 0;
+}
+
+.movie-poster-fade-in li {
+  animation: fadeIn 0.8s ease-in-out forwards;
 }
