@@ -1,26 +1,30 @@
 /// <reference lib="dom" />
 import { EventEmitter } from "events";
 import * as cheerio from "cheerio";
-import { upsertUserRatings, upsertUserProfile } from "./controllers/dataController";
 import {
+  upsertUserRatings,
+  upsertUserProfile,
+} from "./controllers/dataController";
+import {
+  BLOCKED_RESOURCES,
+  BROWSER_HEADERS,
   BROWSER_CONFIG,
   CHROME_ARGS,
   LETTERBOXD_SELECTORS,
-  BLOCKED_RESOURCES,
   LOADING_STRATEGIES,
-  BROWSER_HEADERS,
   USER_AGENT,
 } from "./constants";
 import {
+  buildFilmsPageUrl,
+  delay,
+  detectLikedStatus,
+  extractRatingsData,
+  findRatingsSection,
+  forceGarbageCollection,
   parseNumberFromText,
   parseStarRating,
-  detectLikedStatus,
-  buildFilmsPageUrl,
   validateUserProfile,
-  findRatingsSection,
-  extractRatingsData,
-  delay,
-  forceGarbageCollection,
+  validateFilmPage,
 } from "./utilities";
 import { UserFilm } from "./types";
 // Interfaces
@@ -334,16 +338,46 @@ export const scrapeUserRatings = async (
 };
 
 /**
+ * Scrape ratings from a film page
+ */
+export const scrapeFilmRatings = async (
+  filmSlug: string
+): Promise<Array<{ rating: number; count: number }>> => {
+  console.log(`Fetching ratings for ${filmSlug} from Letterboxd...`);
+
+  const page = await createPage();
+  const url = `https://letterboxd.com/film/${filmSlug}`;
+
+  try {
+    await loadPageWithRetry(page, url);
+    await waitForPageContent(page);
+
+    const pageContent = await page.content();
+    const $ = cheerio.load(pageContent);
+
+    validateFilmPage($, filmSlug);
+    const ratingsSection = findRatingsSection($);
+    const ratings = extractRatingsData($, ratingsSection);
+
+    if (ratings.length === 0) {
+      throw new Error("No ratings data could be extracted from the page");
+    }
+
+    ratings.sort((a, b) => a.rating - b.rating);
+    return ratings;
+  } finally {
+    await closePageAndBrowser(page);
+  }
+};
+
+/**
  * Save ratings to database
  */
 export const saveRatingsToDatabase = async (
   username: string,
   ratings: Array<{ rating: number; count: number }>
 ): Promise<void> => {
-  const insertResult = await upsertUserRatings(
-    username,
-    ratings
-  );
+  const insertResult = await upsertUserRatings(username, ratings);
 
   if (!insertResult.success) {
     console.error("Database operation failed:", insertResult.error);
@@ -425,10 +459,7 @@ export const saveProfileToDatabase = async (
       profileData
     );
 
-    const result = await upsertUserProfile(
-      username,
-      profileData
-    );
+    const result = await upsertUserProfile(username, profileData);
 
     if (!result.success) {
       console.error("Database operation failed:", result.error);

@@ -1,9 +1,8 @@
 import { Request, Response } from "express";
-import { getUserRatings, upsertUserRatings, getUserProfile, upsertUserProfile, getAllUsernames } from "./dataController";
+import { getUserRatings as dbGetUserRatings, upsertUserRatings, getUserProfile as dbGetUserProfile, upsertUserProfile, getAllUsernames } from "./dataController";
 
-export class FilmUserController {
-  // Get user ratings from database only
-  static async getUserRatings(req: Request, res: Response): Promise<void> {
+// Get user ratings from database only
+export async function getUserRatings(req: Request, res: Response): Promise<void> {
     const { username } = req.params;
     const { fallback } = req.query;
 
@@ -15,7 +14,7 @@ export class FilmUserController {
     console.log(`Retrieving ratings from database for user: ${username}`);
 
     try {
-      const dbResult = await getUserRatings(username);
+      const dbResult = await dbGetUserRatings(username);
 
       if (dbResult.success && dbResult.data && dbResult.data.length > 0) {
         const ratings = dbResult.data.map((item: any) => ({
@@ -87,10 +86,10 @@ export class FilmUserController {
         }`,
       });
     }
-  }
+}
 
-  // Get user profile from database only
-  static async getUserProfile(req: Request, res: Response): Promise<void> {
+// Get user profile from database only
+export async function getUserProfile(req: Request, res: Response): Promise<void> {
     const { username } = req.params;
     const { fallback } = req.query;
 
@@ -102,7 +101,7 @@ export class FilmUserController {
     console.log(`Retrieving profile from database for user: ${username}`);
 
     try {
-      const profileResult = await getUserProfile(username);
+      const profileResult = await dbGetUserProfile(username);
 
       if (profileResult.success && profileResult.data) {
         res.json({
@@ -173,10 +172,10 @@ export class FilmUserController {
         }`,
       });
     }
-  }
+}
 
-  // Get complete user data (profile + ratings) from database only
-  static async getUserComplete(req: Request, res: Response): Promise<void> {
+// Get complete user data (profile + ratings) from database only
+export async function getUserComplete(req: Request, res: Response): Promise<void> {
     const { username } = req.params;
     const { fallback } = req.query;
 
@@ -189,10 +188,10 @@ export class FilmUserController {
 
     try {
       // Get profile data
-      const profileResult = await getUserProfile(username);
-      
+      const profileResult = await dbGetUserProfile(username);
+
       // Get ratings data
-      const ratingsResult = await getUserRatings(username);
+      const ratingsResult = await dbGetUserRatings(username);
 
       const hasProfile = profileResult.success && profileResult.data;
       const hasRatings = ratingsResult.success && ratingsResult.data && ratingsResult.data.length > 0;
@@ -309,10 +308,10 @@ export class FilmUserController {
         }`,
       });
     }
-  }
+}
 
-  // Get list of all users with their display names
-  static async getAllUsers(req: Request, res: Response): Promise<void> {
+// Get list of all users with their display names
+export async function getAllUsers(req: Request, res: Response): Promise<void> {
     console.log("Retrieving all users from database");
 
     try {
@@ -336,5 +335,4 @@ export class FilmUserController {
         }`,
       });
     }
-  }
 }

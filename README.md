@@ -7,7 +7,7 @@ A full-stack TypeScript web application for scraping and analyzing Letterboxd us
 BPDiscord provides powerful tools for analyzing Letterboxd movie rating data:
 
 - **User Comparison**: Compare rating statistics between any two users
-- **Hater Rankings**: Rank users by average rating (lowest = biggest "hater") 
+- **Hater Rankings**: Rank users by average rating (lowest = biggest "hater")
 - **Profile Analysis**: Display user profiles with followers, following, and lists
 - **Rating Distributions**: Visual histograms of rating patterns
 - **Data Scraping**: Automated extraction of Letterboxd profile data
@@ -22,8 +22,9 @@ bpdiscord/
 │   │   ├── controllers/  # Business logic controllers
 │   │   │   ├── authController.ts
 │   │   │   ├── comparisonController.ts
+│   │   │   ├── dataController.ts        # Database operations
 │   │   │   ├── filmUserController.ts    # Database-first user operations
-│   │   │   ├── scraperController.ts     # Force-scraping operations
+│   │   │   ├── scraperController.ts     # Force-scraping endpoints (module exports)
 │   │   │   └── userController.ts
 │   │   ├── middleware/   # Authentication, validation, error handling
 │   │   ├── routes/       # API route definitions
@@ -32,6 +33,9 @@ bpdiscord/
 │   │   │   ├── filmUserRoutes.ts        # Database-first endpoints
 │   │   │   ├── scraperRoutes.ts         # Force-scraping endpoints
 │   │   │   └── userRoutes.ts
+│   │   ├── scraperFunctions.ts # Core scraping logic (browser, page management)
+│   │   ├── utilities.ts  # Helper functions and parsers
+│   │   ├── constants.ts  # Configuration constants
 │   │   ├── types.ts      # Server-specific TypeScript definitions
 │   │   ├── server.ts     # Main server file
 │   │   ├── package.json  # Server dependencies
@@ -62,12 +66,14 @@ bpdiscord/
 ### Public Features (No Authentication Required)
 
 #### User Comparison (`/compare`)
+
 - Compare rating statistics between any two Letterboxd users
 - Side-by-side profile metrics (followers, following, lists, total films)
 - Visual rating distribution comparison with percentages
 - Highlighting of higher values for easy comparison
 
 #### Hater Rankings (`/hater-rankings`)
+
 - Rank all users by average movie rating (lowest first)
 - Visual rating distribution histograms
 - Trophy icon for the biggest "hater" (lowest average rating)
@@ -76,12 +82,14 @@ bpdiscord/
 ### Protected Features (Authentication Required)
 
 #### Dashboard (`/dashboard`)
+
 - **Profile Management**: View and manage user account
 - **Data Fetcher**: Scrape Letterboxd user data
 - **Enhanced Comparison**: Full comparison tools
 - **Private Rankings**: Authenticated hater rankings view
 
 #### Data Scraping
+
 - Extract user rating distributions from Letterboxd profiles
 - Scrape user profile data (display name, followers, following, lists)
 - Get complete film lists with ratings
@@ -90,6 +98,7 @@ bpdiscord/
 ### Backend API
 
 #### Authentication & Security
+
 - JWT token-based authentication via Supabase
 - Row Level Security (RLS) with service role bypass
 - Rate limiting (100 requests/15min general, 20 requests/15min scraping)
@@ -97,6 +106,7 @@ bpdiscord/
 - Input validation and sanitization
 
 #### Web Scraping
+
 - Puppeteer browser automation for data extraction
 - Cheerio HTML parsing for structured data extraction
 - Retry mechanisms and error handling
@@ -105,6 +115,7 @@ bpdiscord/
 ### Frontend
 
 #### Modern React Application
+
 - TypeScript for type safety
 - Tailwind CSS for responsive design
 - React Router for navigation
@@ -112,6 +123,7 @@ bpdiscord/
 - Real-time feedback and loading states
 
 #### User Experience
+
 - Responsive design for mobile and desktop
 - Visual highlighting of comparison data
 - Interactive histograms and charts
@@ -163,11 +175,13 @@ yarn install:all
 ### Manual Installation
 
 #### 1. Install Root Dependencies
+
 ```bash
 yarn install
 ```
 
 #### 2. Install Server Dependencies
+
 ```bash
 cd src/server
 yarn install
@@ -175,6 +189,7 @@ cd ../..
 ```
 
 #### 3. Install Client Dependencies
+
 ```bash
 cd src/client
 yarn install
@@ -187,6 +202,7 @@ cd ../..
 2. Set up the required tables:
 
 #### Users Table
+
 ```sql
 CREATE TABLE "Users" (
   "lbusername" VARCHAR PRIMARY KEY,
@@ -200,6 +216,7 @@ CREATE TABLE "Users" (
 ```
 
 #### UserRatings Table
+
 ```sql
 CREATE TABLE "UserRatings" (
   "username" VARCHAR,
@@ -218,29 +235,36 @@ CREATE TABLE "UserRatings" (
 ### Development Mode
 
 #### Option 1: Start Both (Concurrent - Recommended)
+
 ```bash
 yarn dev
 ```
+
 - Server runs on `http://localhost:3001`
 - Client runs on `http://localhost:5173` (or 5174 if 5173 is in use)
 
 #### Option 2: Start Individually
 
 **Start the Server**
+
 ```bash
 yarn dev:server
 ```
+
 Server runs on `http://localhost:3001`
 
 **Start the Client (new terminal)**
+
 ```bash
-yarn dev:client  
+yarn dev:client
 ```
+
 Client runs on `http://localhost:5173`
 
 ### Production Mode
 
 #### Build and Start
+
 ```bash
 # Build both server and client
 yarn build
@@ -258,13 +282,15 @@ yarn start
 ### Public Endpoints
 
 #### Film User API (`/api/film-users`) - Database-First
+
 - `GET /` - Get all users with display names
 - `GET /:username/ratings` - Get user's ratings (database only)
-- `GET /:username/profile` - Get user's profile (database only)  
+- `GET /:username/profile` - Get user's profile (database only)
 - `GET /:username/complete` - Get complete user data (database only)
 - Add `?fallback=scrape` to any endpoint to scrape if data missing
 
 #### Comparison API (`/api/comparison`)
+
 - `GET /usernames` - Get list of users with display names
 - `POST /user-ratings` - Get user's ratings and profile data
 - `POST /compare` - Compare two users' data
@@ -273,12 +299,14 @@ yarn start
 ### Protected Endpoints (Require Authentication)
 
 #### Authentication (`/api/auth`)
+
 - `POST /signup` - User registration
 - `POST /login` - User login
 - `POST /logout` - Session termination
 - `POST /password-reset` - Password reset
 
 #### Scraper API (`/api/scraper`) - Force-Scraping Only
+
 - `POST /getUserRatings` - Force scrape user's rating distribution
 - `POST /getUserProfile` - Force scrape complete profile + ratings
 - `POST /getAllFilms` - Force scrape user's film list
@@ -286,6 +314,7 @@ yarn start
 - **Note**: Disabled in production unless `ENABLE_SCRAPER=true`
 
 #### User Management (`/api/users`)
+
 - `GET /` - Get all users
 - `GET /me` - Get current user profile
 - `GET /:id` - Get specific user
@@ -293,16 +322,19 @@ yarn start
 - `DELETE /:id` - Delete user
 
 ### Health Check
+
 - `GET /api/health` - Server status
 
 ## Usage
 
 ### Public Access
+
 1. Visit `http://localhost:5173/compare` for user comparison
 2. Visit `http://localhost:5173/hater-rankings` for rankings
 3. No authentication required for public features
 
 ### Authenticated Access
+
 1. Start the application (see Running section)
 2. Navigate to `http://localhost:5173` (redirects to login)
 3. Sign up or log in to access dashboard
@@ -311,20 +343,52 @@ yarn start
 
 ## Data Processing
 
+### Scraping Architecture
+
+The scraping system is organized into modular, reusable components:
+
+#### Core Scraping Functions (`scraperFunctions.ts`)
+
+- **Browser Management**: Shared browser instances with automatic cleanup
+- **Page Creation**: Optimized Puppeteer page setup with stealth measures
+- **User Profile Scraping**: Extract display name, followers, following, lists
+- **Rating Scraping**: Parse rating histogram from user profile
+- **Film Scraping**: Multi-page film list extraction with progress tracking
+- **Memory Management**: Aggressive cleanup and garbage collection
+
+#### Utility Functions (`utilities.ts`)
+
+- **parseStarRating()**: Self-contained star rating parser (works in browser context)
+- **detectLikedStatus()**: Detect liked films from DOM structure
+- **parseNumberFromText()**: Handle K/M suffixes (1.2K → 1200)
+- **validateUserProfile()**: Verify page content and detect 404s
+- **Data Formatters**: Consistent API response formatting
+
+#### Configuration (`constants.ts`)
+
+- **LETTERBOXD_SELECTORS**: CSS selectors for Letterboxd elements
+- **BROWSER_CONFIG**: Timeouts, delays, and resource limits
+- **STAR_PATTERNS**: Star rating patterns for parsing
+- **BLOCKED_RESOURCES**: Resources to block for performance
+
 ### Scraping Algorithm
+
 1. **Input Validation**: Verify Letterboxd username format
-2. **Browser Launch**: Automated Puppeteer browser session
-3. **Page Navigation**: Load user's Letterboxd profile
-4. **Data Extraction**: Parse HTML using CSS selectors
-5. **Data Validation**: Ensure extracted data is valid
+2. **Browser Launch**: Shared Puppeteer browser with stealth configuration
+3. **Page Navigation**: Load user's Letterboxd profile with retry strategies
+4. **Data Extraction**: Parse HTML using CSS selectors (Cheerio or browser context)
+5. **Data Validation**: Ensure extracted data is valid and complete
 6. **Database Storage**: Upsert data with conflict resolution
+7. **Cleanup**: Close pages and manage memory
 
 ### Rating Calculations
+
 - **Average Rating**: Σ(rating × count) / Σ(count)
 - **Percentage Distribution**: (count / total) × 100
 - **Hater Rankings**: Sort by ascending average rating
 
 ### Number Parsing
+
 - Handles abbreviated formats: "1.2K" → 1200, "2.5M" → 2500000
 - Removes commas and normalizes text
 - Graceful fallback to 0 for invalid data
@@ -334,6 +398,7 @@ yarn start
 ### Available Scripts
 
 #### Root Scripts
+
 - `yarn dev` - Start both server and client concurrently
 - `yarn build` - Build both server and client
 - `yarn build:server` - Build server only
@@ -343,6 +408,7 @@ yarn start
 - `yarn clean` - Clean build directories
 
 #### Server Scripts (run from src/server/)
+
 - `yarn dev` - Development server with hot reload
 - `yarn build` - Build TypeScript to JavaScript
 - `yarn start` - Start production server
@@ -350,32 +416,50 @@ yarn start
 - `yarn clean` - Clean build directory
 
 #### Client Scripts (run from src/client/)
+
 - `yarn dev` - Vite development server with hot reload
 - `yarn build` - Build for production with Vite
 - `yarn preview` - Preview production build locally
 
 ### Code Organization
 
-- **Controllers**: Handle business logic and database operations
+#### Backend Architecture
+
+- **Controllers**: Handle business logic and HTTP request/response
+  - **scraperController.ts**: Force-scraping endpoints (module exports pattern)
+  - **filmUserController.ts**: Database-first operations with fallback
+  - **dataController.ts**: Database CRUD operations
+  - **comparisonController.ts**: User comparison logic
+- **Core Modules**:
+  - **scraperFunctions.ts**: Browser automation, page management, scraping logic
+  - **utilities.ts**: Helper functions (parsers, validators, formatters)
+  - **constants.ts**: Configuration constants (selectors, timeouts, patterns)
 - **Routes**: Define API endpoints and middleware
 - **Middleware**: Authentication, validation, error handling
 - **Types**: Shared TypeScript interfaces
+
+#### Frontend Architecture
+
 - **Components**: Reusable React components
 - **Services**: API client and utility functions
+- **Types**: Client-specific TypeScript definitions
 
 ## Technologies Used
 
 ### Backend
+
 - **Express.js** - Web framework
-- **TypeScript** - Type safety
+- **TypeScript** - Type safety and modular architecture
 - **Supabase** - PostgreSQL database and authentication
-- **Puppeteer** - Browser automation
-- **Cheerio** - HTML parsing
+- **Puppeteer** - Browser automation for web scraping
+- **Cheerio** - Server-side HTML parsing
 - **JWT** - Authentication tokens
 - **Helmet** - Security headers
 - **Express Rate Limit** - API rate limiting
+- **@sparticuz/chromium** - Serverless Chrome for Vercel deployment
 
 ### Frontend
+
 - **Vite** - Fast build tool and dev server
 - **React 18** - UI framework
 - **TypeScript** - Type safety
@@ -384,6 +468,7 @@ yarn start
 - **Heroicons** - Icon library
 
 ### Database
+
 - **PostgreSQL** (via Supabase) - Primary database
 - **Row Level Security** - Data access control
 - **Real-time subscriptions** - Live data updates
@@ -391,12 +476,14 @@ yarn start
 ## Error Handling
 
 ### Backend
+
 - Global error middleware with structured responses
 - Retry mechanisms for scraping failures
 - Graceful degradation for external service issues
 - Detailed logging for debugging
 
 ### Frontend
+
 - Error boundaries for React component errors
 - User-friendly error messages
 - Loading states and retry options
@@ -408,6 +495,7 @@ yarn start
 - **Frontend**: Component memoization and lazy loading
 - **Scraping**: Resource blocking and browser reuse
 - **API**: Rate limiting and response caching
+- **Modular Architecture**: Separated scraping logic into reusable functions
 
 ## Contributing
 
@@ -426,10 +514,11 @@ yarn start
 This project is configured for Vercel deployment with both frontend and backend. Here's the complete setup:
 
 #### Project Structure for Deployment
+
 ```
 project/
 ├── package.json              # Root orchestration
-├── vercel.json               # Deployment configuration  
+├── vercel.json               # Deployment configuration
 ├── tsconfig.json             # Root TypeScript config
 └── src/
     ├── client/               # Frontend (React/Vite)
@@ -445,6 +534,7 @@ project/
 #### Critical Configuration Files
 
 **1. Root `package.json` Build Script**
+
 ```json
 {
   "scripts": {
@@ -452,91 +542,57 @@ project/
   }
 }
 ```
+
 **Important**: Root build script should ONLY build the server. Vercel handles client building separately.
 
 **2. Server `tsconfig.json` (`src/server/tsconfig.json`)**
+
 ```json
 {
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./",
+    "rootDir": "./"
     // ... other options
   },
   "include": ["./**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"]
 }
 ```
-**Critical**: Server needs its own `tsconfig.json` to prevent compiling client files.
 
-**3. `vercel.json` Configuration**
-```json
-{
-  "version": 2,
-  "builds": [
-    {
-      "src": "src/server/server.ts",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "src/client/package.json", 
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "build"
-      }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/src/server/server.ts"
-    },
-    {
-      "src": "/assets/(.*)",
-      "dest": "/src/client/assets/$1"
-    },
-    {
-      "src": "/(favicon\\.ico|manifest\\.json|logo.*\\.png|robots\\.txt)",
-      "dest": "/src/client/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/src/client/index.html"
-    }
-  ],
-  "env": {
-    "NODE_ENV": "production",
-    "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD": "true"
-  }
-}
-```
+**Critical**: Server needs its own `tsconfig.json` to prevent compiling client files.
 
 #### Route Configuration Explained
 
 Routes are processed **in order**:
+
 1. **API Routes** (`/api/(.*)`) → Server function
-2. **Asset Routes** (`/assets/(.*)`) → Static files  
+2. **Asset Routes** (`/assets/(.*)`) → Static files
 3. **Specific Static Files** → favicon, manifest, etc.
 4. **Catch-All** (`/(.*)`) → React app (SPA routing)
 
 #### Common Deployment Issues and Solutions
 
 **Problem: 404 Errors on Deployment**
-- **Cause**: Routes pointing to wrong file locations  
+
+- **Cause**: Routes pointing to wrong file locations
 - **Solution**: Ensure routes match actual build output structure (`/src/client/index.html`)
 
-**Problem: Static Assets Getting 401/404 Errors**  
-- **Cause**: All requests routed to index.html instead of serving static files  
+**Problem: Static Assets Getting 401/404 Errors**
+
+- **Cause**: All requests routed to index.html instead of serving static files
 - **Solution**: Add specific routes for assets before catch-all route
 
 **Problem: Build Conflicts**
-- **Cause**: Multiple `vercel.json` files or incorrect TypeScript compilation scope  
-- **Solution**: 
+
+- **Cause**: Multiple `vercel.json` files or incorrect TypeScript compilation scope
+- **Solution**:
   - Remove any `vercel.json` files from subdirectories
-  - Ensure server has its own `tsconfig.json` 
+  - Ensure server has its own `tsconfig.json`
   - Root build script should only build server
 
 **Problem: Mysterious Build Artifacts**
-- **Cause**: Root build script building both client and server  
+
+- **Cause**: Root build script building both client and server
 - **Solution**: Let Vercel handle client build via `@vercel/static-build`
 
 #### Deployment Process
@@ -551,7 +607,7 @@ Set these in your Vercel dashboard:
 
 ```bash
 SUPABASE_URL=your_supabase_url
-SUPABASE_ANON_KEY=your_supabase_anon_key  
+SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 NODE_ENV=production
 ENABLE_SCRAPER=true  # Optional: Enable scraping in production
@@ -574,19 +630,3 @@ This configuration enables true full-stack deployment where both frontend and ba
 ## License
 
 MIT License - see LICENSE file for details
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Scraping Failures**: Usually due to Letterboxd changes or rate limiting
-2. **Authentication Errors**: Check Supabase configuration and token expiration
-3. **Database Errors**: Verify Supabase credentials and RLS policies
-4. **CORS Issues**: Ensure frontend URL is in allowed origins
-
-### Debug Information
-
-- Enable verbose logging in development mode
-- Check browser network tab for API request details
-- Monitor Supabase dashboard for database and auth logs
-- Verify environment variables are properly set

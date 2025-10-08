@@ -91,7 +91,10 @@ export const parseStarRating = (ratingText: string | undefined): number => {
 /**
  * Detect if a film is liked based on container element
  */
-export const detectLikedStatus = (container: Element, index: number): boolean => {
+export const detectLikedStatus = (
+  container: Element,
+  index: number
+): boolean => {
   let liked = false;
 
   // Strategy 1: Exact match for the provided structure
@@ -136,7 +139,10 @@ export const detectLikedStatus = (container: Element, index: number): boolean =>
 /**
  * Build Letterboxd films page URL
  */
-export const buildFilmsPageUrl = (username: string, pageNum: number): string => {
+export const buildFilmsPageUrl = (
+  username: string,
+  pageNum: number
+): string => {
   return pageNum === 1
     ? `https://letterboxd.com/${username}/films`
     : `https://letterboxd.com/${username}/films/page/${pageNum}`;
@@ -184,9 +190,7 @@ export const validateUserProfile = ($: any, username: string): void => {
       pageTitle.includes("404") ||
       pageTitle.toLowerCase().includes("error"))
   ) {
-    throw new Error(
-      `Invalid page title indicates user not found: ${username}`
-    );
+    throw new Error(`Invalid page title indicates user not found: ${username}`);
   }
 
   // Check for basic page content
@@ -196,6 +200,38 @@ export const validateUserProfile = ($: any, username: string): void => {
   }
 
   console.log(`Profile validation passed for user: ${username}`);
+};
+
+/**
+ * Validate user profile page content
+ */
+export const validateFilmPage = ($: any, filmSlug: string): void => {
+  // Check for specific error indicators, excluding common UI elements like "errormessage" divs
+  const errorIndicators = $(
+    '.error-page, .not-found, [class="404"], [class="error-404"]'
+  );
+  if (errorIndicators.length > 0) {
+    throw new Error(`Film not found: ${filmSlug}`);
+  }
+
+  // Check page title for obvious errors
+  const pageTitle = $("title").text();
+  if (
+    pageTitle &&
+    (pageTitle.toLowerCase().includes("page not found") ||
+      pageTitle.includes("404") ||
+      pageTitle.toLowerCase().includes("error"))
+  ) {
+    throw new Error(`Invalid page title indicates film not found: ${filmSlug}`);
+  }
+
+  // Check for basic page content
+  const bodyText = $("body").text();
+  if (!bodyText || bodyText.length < 100) {
+    throw new Error(`Insufficient page content for film: ${filmSlug}`);
+  }
+
+  console.log(`Profile validation passed for film: ${filmSlug}`);
 };
 
 /**
