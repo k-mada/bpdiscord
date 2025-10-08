@@ -40,11 +40,11 @@ export class FilmUserController {
       if (fallback === "scrape") {
         console.log(`No data in database, falling back to scraping for ${username}`);
         
-        // Import ScraperController dynamically to avoid circular dependencies
-        const { ScraperController } = await import("./scraperController");
-        
+        // Import scraper functions dynamically to avoid circular dependencies
+        const { scrapeUserRatings } = await import("../scraperFunctions");
+
         try {
-          const scrapedRatings = await ScraperController.scrapeUserRatings(username);
+          const scrapedRatings = await scrapeUserRatings(username);
           
           // Save to database
           const insertResult = await upsertUserRatings(username, scrapedRatings);
@@ -124,12 +124,11 @@ export class FilmUserController {
       if (fallback === "scrape") {
         console.log(`No profile in database, falling back to scraping for ${username}`);
         
-        // Import ScraperController dynamically to avoid circular dependencies
-        const { ScraperController } = await import("./scraperController");
-        
+        // Import scraper functions dynamically to avoid circular dependencies
+        const { scrapeUserProfileData } = await import("../scraperFunctions");
+
         try {
-          // Access the private method through a public interface
-          const scrapedProfile = await ScraperController.scrapeUserProfileData(username);
+          const scrapedProfile = await scrapeUserProfileData(username);
           
           // Save to database
           const insertResult = await upsertUserProfile(username, scrapedProfile);
@@ -228,9 +227,9 @@ export class FilmUserController {
       if (fallback === "scrape") {
         console.log(`Missing data in database, falling back to scraping for ${username}`);
         
-        // Import ScraperController dynamically to avoid circular dependencies
-        const { ScraperController } = await import("./scraperController");
-        
+        // Import scraper functions dynamically to avoid circular dependencies
+        const { scrapeUserProfileData, scrapeUserRatings } = await import("../scraperFunctions");
+
         try {
           let profileData = profileResult.data;
           let ratingsData = hasRatings ? ratingsResult.data!.map((item: any) => ({
@@ -240,7 +239,7 @@ export class FilmUserController {
 
           // Scrape profile if missing
           if (!hasProfile) {
-            const scrapedProfile = await ScraperController.scrapeUserProfileData(username);
+            const scrapedProfile = await scrapeUserProfileData(username);
             const insertResult = await upsertUserProfile(username, scrapedProfile);
             if (!insertResult.success) {
               console.warn("Failed to save scraped profile to database:", insertResult.error);
@@ -256,7 +255,7 @@ export class FilmUserController {
 
           // Scrape ratings if missing
           if (!hasRatings) {
-            const scrapedRatings = await ScraperController.scrapeUserRatings(username);
+            const scrapedRatings = await scrapeUserRatings(username);
             const insertResult = await upsertUserRatings(username, scrapedRatings);
             if (!insertResult.success) {
               console.warn("Failed to save scraped ratings to database:", insertResult.error);
