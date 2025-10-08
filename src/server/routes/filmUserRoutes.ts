@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { FilmUserController } from "../controllers/filmUserController";
+import { getUserRatings, getUserProfile, getUserComplete, getAllUsers } from "../controllers/filmUserController";
 
 const router = Router();
 
@@ -8,15 +8,15 @@ const router = Router();
 // Add ?fallback=scrape query parameter to enable scraping fallback
 
 // Get user ratings from database
-router.get("/:username/ratings", FilmUserController.getUserRatings);
+router.get("/:username/ratings", getUserRatings);
 
-// Get user profile from database  
-router.get("/:username/profile", FilmUserController.getUserProfile);
+// Get user profile from database
+router.get("/:username/profile", getUserProfile);
 
 // Get complete user data (profile + ratings) from database
-router.get("/:username/complete", FilmUserController.getUserComplete);
+router.get("/:username/complete", getUserComplete);
 
 // Get list of all users with display names
-router.get("/", FilmUserController.getAllUsers);
+router.get("/", getAllUsers);
 
 export default router;
