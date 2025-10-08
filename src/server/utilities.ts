@@ -59,12 +59,28 @@ export const parseNumberFromText = (text: string): number => {
 
 /**
  * Parse star rating from text (for film ratings)
+ * Note: This function must be self-contained as it's serialized for browser context
  */
 export const parseStarRating = (ratingText: string | undefined): number => {
   if (!ratingText) return 0;
 
   const text = ratingText.trim();
-  for (const { pattern, rating } of STAR_PATTERNS) {
+
+  // Inline star patterns (must be self-contained for browser context)
+  const patterns = [
+    { pattern: "★★★★★", rating: 5 },
+    { pattern: "★★★★½", rating: 4.5 },
+    { pattern: "★★★★", rating: 4 },
+    { pattern: "★★★½", rating: 3.5 },
+    { pattern: "★★★", rating: 3 },
+    { pattern: "★★½", rating: 2.5 },
+    { pattern: "★★", rating: 2 },
+    { pattern: "★½", rating: 1.5 },
+    { pattern: "★", rating: 1 },
+    { pattern: "½", rating: 0.5 },
+  ];
+
+  for (const { pattern, rating } of patterns) {
     if (text.includes(pattern)) {
       return rating;
     }

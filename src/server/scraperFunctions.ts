@@ -501,11 +501,11 @@ export const extractTotalPages = async (
   username: string
 ): Promise<number> => {
   try {
-    await page.waitForSelector(LETTERBOXD_SELECTORS.PAGINATION_SECTION, {
+    await page.waitForSelector("div.paginate-pages", {
       timeout: BROWSER_CONFIG.PAGINATION_TIMEOUT,
     });
     const numberOfPages = await page.$eval(
-      LETTERBOXD_SELECTORS.PAGINATION,
+      "div.paginate-pages > ul > li:last-child > a",
       (element: Element) => element.textContent
     );
     const totalPages = Number(numberOfPages) || 1;

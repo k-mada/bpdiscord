@@ -1,6 +1,12 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
-import { ScraperController } from "../controllers/scraperController";
+import {
+  getData,
+  getUserRatings,
+  getAllFilms,
+  getUserProfile,
+  fetchFilms,
+} from "../controllers/scraperController";
 import { validateScraperRequest } from "../middleware/validation";
 import { handleValidationErrors } from "../middleware/errorHandler";
 import { authenticateToken } from "../middleware/auth";
@@ -17,7 +23,7 @@ const scraperLimiter = rateLimit({
 router.get(
   "/stream-films/:username",
   [scraperLimiter, handleValidationErrors],
-  ScraperController.fetchFilms
+  fetchFilms
 );
 
 // Apply authentication to remaining scraper routes
@@ -27,25 +33,25 @@ router.use(authenticateToken);
 router.post(
   "/getData",
   [scraperLimiter, ...validateScraperRequest, handleValidationErrors],
-  ScraperController.getData
+  getData
 );
 
 router.post(
   "/getUserRatings",
   [scraperLimiter, handleValidationErrors],
-  ScraperController.getUserRatings
+  getUserRatings
 );
 
 router.post(
   "/getAllFilms",
   [scraperLimiter, handleValidationErrors],
-  ScraperController.getAllFilms
+  getAllFilms
 );
 
 router.post(
   "/getUserProfile",
   [scraperLimiter, handleValidationErrors],
-  ScraperController.getUserProfile
+  getUserProfile
 );
 
 export default router;
