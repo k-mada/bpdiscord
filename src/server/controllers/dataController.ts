@@ -1,6 +1,5 @@
 import { supabase, supabaseAdmin } from "../config/database";
-import { UserFilm } from "../types";
-// import { ApiResponse } from '../types';
+import { LBFilm, UserFilm } from "../types";
 
 // User Ratings Management
 export async function deleteUserRatings(
@@ -460,6 +459,39 @@ export async function upsertUserFilms(
       .from("UserFilms")
       .upsert(filmsToUpsert, {
         onConflict: "lbusername,film_slug",
+        ignoreDuplicates: false,
+      });
+
+    if (error) {
+      console.error("Database upsert error:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Database operation error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown database error",
+    };
+  }
+}
+
+export async function upsertLBFilms(
+  films: LBFilm[]
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const filmsToUpsert = films.map((film) => ({
+      film_slug: film.film_slug,
+      rating: film.rating,
+      rating_count: film.rating_count || false,
+      updated_at: new Date().toISOString(),
+    }));
+
+    const { error } = await supabaseAdmin
+      .from("LBFilmRatings")
+      .upsert(filmsToUpsert, {
+        onConflict: "film_slug, rating",
         ignoreDuplicates: false,
       });
 

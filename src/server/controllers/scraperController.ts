@@ -5,7 +5,7 @@ import { EventEmitter } from "events";
 import { ApiResponse, ScraperSelector } from "../types";
 import { getUserFilms, upsertUserFilms } from "./dataController";
 import { BROWSER_CONFIG } from "../constants";
-import { parseRatingFromTitle, formatFilmsResponse, delay } from "../utilities";
+import { formatFilmsResponse, delay } from "../utilities";
 import {
   createPage,
   closePageAndBrowser,
@@ -39,17 +39,17 @@ export const scrapePage = async (
       await delay(BROWSER_CONFIG.PAGE_DELAY);
     }
 
-    const parseRatingFnString =
-      parseRatingFromTitle.toString().match(/{([\s\S]*)}$/)?.[1] || "";
-
     const collatedData = await page.evaluate(
-      (selectorsData: ScraperSelector[], parseRatingFnStr: string) => {
+      (selectorsData: ScraperSelector[]) => {
         const results: Record<string, any>[] = [];
 
-        const parseRatingFromTitle = new Function(
-          "title",
-          parseRatingFnStr
-        ) as (title: string | undefined) => number;
+        // Inline parseRatingFromTitle for efficiency
+        const parseRatingFromTitle = (title: string | undefined): number => {
+          if (!title) return 0;
+          const starCount = (title.match(/★/g) || []).length;
+          const halfStarCount = (title.match(/½/g) || []).length;
+          return starCount + halfStarCount * 0.5;
+        };
 
         const extractElementData = (
           element: Element,
@@ -60,7 +60,7 @@ export const scrapePage = async (
           if (selector.attributes && Array.isArray(selector.attributes)) {
             selector.attributes.forEach((attr) => {
               const value = element.getAttribute(attr);
-              console.log(`Getting attribute ${attr}:`, value);
+              // console.log(`Getting attribute ${attr}:`, value);
               if (value) {
                 data[attr] = value;
               }
@@ -79,9 +79,16 @@ export const scrapePage = async (
           return data;
         };
 
+        // Cache parent selector lookup
+        let cachedParentSelector: string | null | undefined = undefined;
         const findParentContainer = (): string | null => {
+          if (cachedParentSelector !== undefined) {
+            return cachedParentSelector;
+          }
+
           if (document.querySelector("li.poster-container")) {
-            return "li.poster-container";
+            cachedParentSelector = "li.poster-container";
+            return cachedParentSelector;
           }
 
           const commonParents = ["li", "div", "article", "section", "tr"];
@@ -101,78 +108,61 @@ export const scrapePage = async (
                 }
 
                 if (hasMatchingElements) {
-                  return parent;
+                  cachedParentSelector = parent;
+                  return cachedParentSelector;
                 }
               }
             }
           }
-          return null;
+          cachedParentSelector = null;
+          return cachedParentSelector;
         };
 
         const parentSelector = findParentContainer();
-        console.log(`Using parent selector:`, parentSelector);
+        // console.log(`Using parent selector:`, parentSelector);
 
         if (parentSelector) {
           const parentElements = document.querySelectorAll(parentSelector);
-          console.log(`Found ${parentElements.length} parent elements`);
+          // console.log(`Found ${parentElements.length} parent elements`);
 
-          parentElements.forEach((parentElement, index) => {
+          parentElements.forEach((parentElement) => {
             const combinedRecord: Record<string, any> = {};
-            console.log(`Processing parent element ${index}`);
+            // console.log(`Processing parent element ${index}`);
 
             for (const selector of selectorsData) {
-              console.log(`Processing selector:`, selector);
+              // console.log(`Processing selector:`, selector);
 
               let element;
               if (selector.css === parentSelector) {
                 element = parentElement;
               } else {
-                const allElements = document.querySelectorAll(selector.css);
-                for (let i = 0; i < allElements.length; i++) {
-                  const el = allElements[i];
-                  if (parentElement.contains(el as Node)) {
-                    element = el;
-                    break;
-                  }
-                }
+                // Optimize: Query within parent element instead of globally
+                element = parentElement.querySelector(selector.css);
               }
 
               if (element) {
                 const elementData = extractElementData(element, selector);
-                console.log(
-                  `Extracted data for selector ${selector.css}:`,
-                  elementData
-                );
+                // console.log(
+                //   `Extracted data for selector ${selector.css}:`,
+                //   elementData
+                // );
                 Object.assign(combinedRecord, elementData);
-              } else {
-                console.log(`No element found for selector:`, selector.css);
-              }
+              } // else {
+                // console.log(`No element found for selector:`, selector.css);
+              // }
             }
 
-            const ratingElement = parentElement.querySelector(
-              "p.poster-viewingdata > span.rating, .rating, [class*='rating']"
-            );
-            if (ratingElement) {
-              const ratingText = ratingElement.textContent?.trim();
-              if (
-                ratingText &&
-                (ratingText.includes("★") || ratingText.includes("☆"))
-              ) {
-                combinedRecord.rating = parseRatingFromTitle(ratingText);
-                console.log(`Added rating:`, combinedRecord.rating);
-              }
-            }
-
+            // Remove duplicate rating extraction - already handled in extractElementData
             if (Object.keys(combinedRecord).length > 0) {
-              console.log(`Final combined record:`, combinedRecord);
-              console.log(
-                `Keys in combined record:`,
-                Object.keys(combinedRecord)
-              );
+              // console.log(`Final combined record:`, combinedRecord);
+              // console.log(
+              //   `Keys in combined record:`,
+              //   Object.keys(combinedRecord)
+              // );
               results.push(combinedRecord);
-            } else {
-              console.log(`No data extracted for this parent element`);
-            }
+            } // else {
+              // console.log(`No data extracted for this parent element`);
+            // }
           });
         } else {
           for (const selector of selectorsData) {
@@ -181,22 +171,7 @@ export const scrapePage = async (
             elements.forEach((element) => {
               const elementData = extractElementData(element, selector);
 
-              const parentContainer = element.closest("li.poster-container");
-              if (parentContainer) {
-                const ratingElement = parentContainer.querySelector(
-                  "p.poster-viewingdata > span.rating, .rating, [class*='rating']"
-                );
-                if (ratingElement) {
-                  const ratingText = ratingElement.textContent?.trim();
-                  if (
-                    ratingText &&
-                    (ratingText.includes("★") || ratingText.includes("☆"))
-                  ) {
-                    elementData.rating = parseRatingFromTitle(ratingText);
-                  }
-                }
-              }
-
+              // Remove duplicate rating extraction - already handled in extractElementData
               if (Object.keys(elementData).length > 0) {
                 results.push(elementData);
               }
@@ -206,8 +181,7 @@ export const scrapePage = async (
 
         return results;
       },
-      selectors,
-      parseRatingFnString
+      selectors
     );
 
     return collatedData;
@@ -394,7 +368,114 @@ export const getData = async (req: Request, res: Response): Promise<void> => {
 };
 
 /**
+ * Core film scraping logic (shared between getAllFilms and fetchFilms)
+ * @param username - Letterboxd username
+ * @param forceRefresh - Skip database check and force scraping
+ * @param progressEmitter - Optional EventEmitter for SSE progress updates
+ * @returns Object with films data and metadata
+ */
+async function scrapeAndSaveFilms(
+  username: string,
+  forceRefresh: boolean = false,
+  progressEmitter?: EventEmitter
+): Promise<{
+  films: any[];
+  source: string;
+  fromDatabase: boolean;
+}> {
+  // Try database first (unless force refresh)
+  if (!forceRefresh) {
+    const dbResult = await getUserFilms(username);
+
+    if (dbResult.success && dbResult.data && dbResult.data.length > 0) {
+      console.log(`Returning ${dbResult.data.length} films from database for ${username}`);
+      return {
+        films: dbResult.data,
+        source: "database",
+        fromDatabase: true,
+      };
+    }
+
+    console.log(`No films in database for ${username}, proceeding to scrape`);
+  } else {
+    console.log(`Force refresh requested for ${username}, scraping fresh data`);
+  }
+
+  // Scrape films (with or without progress reporting)
+  const scrapedFilms = progressEmitter
+    ? await scrapeUserFilmsWithProgress(username, progressEmitter)
+    : await scrapeUserFilms(username);
+
+  // Save films to database
+  if (progressEmitter) {
+    progressEmitter.emit("progress", {
+      type: "saving",
+      message: "Saving films to database...",
+      timestamp: new Date().toISOString(),
+    });
+  } else {
+    console.log(`Saving ${scrapedFilms.length} films to database...`);
+  }
+
+  const saveResult = await upsertUserFilms(username, scrapedFilms);
+  if (!saveResult.success) {
+    console.warn("Failed to save scraped films to database:", saveResult.error);
+  } else {
+    console.log(`Successfully saved ${scrapedFilms.length} films to database`);
+  }
+
+  // Also scrape and save ratings
+  if (progressEmitter) {
+    progressEmitter.emit("progress", {
+      type: "scraping_ratings",
+      message: "Scraping user ratings...",
+      timestamp: new Date().toISOString(),
+    });
+  }
+
+  try {
+    const scrapedRatings = await scrapeUserRatings(username);
+
+    if (progressEmitter) {
+      progressEmitter.emit("progress", {
+        type: "saving_ratings",
+        message: "Saving ratings to database...",
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    await saveRatingsToDatabase(username, scrapedRatings);
+
+    if (progressEmitter) {
+      progressEmitter.emit("progress", {
+        type: "ratings_complete",
+        message: `Updated ${scrapedRatings.length} rating categories`,
+        ratingsCount: scrapedRatings.length,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  } catch (ratingsError) {
+    console.warn("Failed to update ratings:", ratingsError);
+    if (progressEmitter) {
+      progressEmitter.emit("progress", {
+        type: "ratings_warning",
+        message: "Warning: Could not update ratings data",
+        timestamp: new Date().toISOString(),
+      });
+    }
+  }
+
+  const source = forceRefresh ? "scraped_force_refresh" : "scraped_fallback";
+  return {
+    films: scrapedFilms,
+    source,
+    fromDatabase: false,
+  };
+}
+
+/**
  * Get all films for a user (database-first with scraping fallback)
+ * Returns JSON response (non-streaming)
  */
 export const getAllFilms = async (
   req: Request,
@@ -425,52 +506,17 @@ export const getAllFilms = async (
   }, BROWSER_CONFIG.LONG_OPERATION_TIMEOUT);
 
   try {
-    if (!forceRefresh) {
-      const dbResult = await getUserFilms(username);
-
-      if (dbResult.success && dbResult.data && dbResult.data.length > 0) {
-        clearTimeout(timeoutId);
-        res.json(
-          formatFilmsResponse(
-            username,
-            dbResult.data,
-            "User films retrieved from database",
-            "database"
-          )
-        );
-        return;
-      }
-
-      console.log(`No films in database for ${username}, proceeding to fetch`);
-    } else {
-      console.log(
-        `Force refresh requested for ${username}, fetching fresh data`
-      );
-    }
-
-    const scrapedFilms = await scrapeUserFilms(username);
-
-    console.log(`Saving ${scrapedFilms.length} films to database...`);
-    const saveResult = await upsertUserFilms(username, scrapedFilms);
-    if (!saveResult.success) {
-      console.warn(
-        "Failed to save scraped films to database:",
-        saveResult.error
-      );
-    } else {
-      console.log(
-        `Successfully saved ${scrapedFilms.length} films to database`
-      );
-    }
+    const result = await scrapeAndSaveFilms(username, forceRefresh);
 
     clearTimeout(timeoutId);
-    const source = forceRefresh ? "scraped_force_refresh" : "scraped_fallback";
     res.json(
       formatFilmsResponse(
         username,
-        scrapedFilms,
-        "User films fetched successfully",
-        source
+        result.films,
+        result.fromDatabase
+          ? "User films retrieved from database"
+          : "User films fetched successfully",
+        result.source
       )
     );
   } catch (error) {
@@ -709,62 +755,18 @@ export const fetchFilms = async (
       timestamp: new Date().toISOString(),
     });
 
-    const films = await scrapeUserFilmsWithProgress(username, progressEmitter);
-
-    if (isCompleted) return;
-
-    progressEmitter.emit("progress", {
-      type: "saving",
-      message: "Saving films to database...",
-      timestamp: new Date().toISOString(),
-    });
-
-    await upsertUserFilms(username, films);
-
-    if (isCompleted) return;
-
-    // Also scrape and update user ratings
-    progressEmitter.emit("progress", {
-      type: "scraping_ratings",
-      message: "Scraping user ratings...",
-      timestamp: new Date().toISOString(),
-    });
-
-    try {
-      const scrapedRatings = await scrapeUserRatings(username);
-
-      progressEmitter.emit("progress", {
-        type: "saving_ratings",
-        message: "Saving ratings to database...",
-        timestamp: new Date().toISOString(),
-      });
-
-      await saveRatingsToDatabase(username, scrapedRatings);
-
-      progressEmitter.emit("progress", {
-        type: "ratings_complete",
-        message: `Updated ${scrapedRatings.length} rating categories`,
-        ratingsCount: scrapedRatings.length,
-        timestamp: new Date().toISOString(),
-      });
-    } catch (ratingsError) {
-      console.warn("Failed to update ratings:", ratingsError);
-      progressEmitter.emit("progress", {
-        type: "ratings_warning",
-        message: "Warning: Could not update ratings data",
-        timestamp: new Date().toISOString(),
-      });
-    }
+    // Use shared scraping logic with progress reporting
+    const result = await scrapeAndSaveFilms(username, true, progressEmitter);
 
     if (isCompleted) return;
 
     clearTimeout(productionTimeout);
     progressEmitter.emit("complete", {
       username,
-      totalFilms: films.length,
-      films,
-      source: "scraped",
-      message: `Successfully fetched ${films.length} films for ${username}`,
+      totalFilms: result.films.length,
+      films: result.films,
+      source: result.source,
+      message: `Successfully fetched ${result.films.length} films for ${username}`,
     });
   } catch (error) {
     console.error(`Error in fetchFilms for ${username}:`, error);
