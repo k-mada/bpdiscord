@@ -349,3 +349,37 @@ export const forceGarbageCollection = (): void => {
     global.gc();
   }
 };
+
+/**
+ * Verify if a Letterboxd user exists
+ * Optimized for speed by using a HEAD request to check HTTP status codes.
+ * Letterboxd reliably returns 404 for non-existent users.
+ *
+ * @param username - Letterboxd username to verify
+ * @returns Promise<boolean> - true if user exists (200), false if not (404)
+ */
+export const verifyLetterboxdUserExists = async (username: string): Promise<boolean> => {
+  const url = `https://letterboxd.com/${username}`;
+
+  try {
+    const axios = (await import('axios')).default;
+
+    const response = await axios.head(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+      },
+      maxRedirects: 5,
+      timeout: 5000, // 5 second timeout
+      validateStatus: (status) => status < 500, // Don't throw on 404
+    });
+
+    // Letterboxd returns proper HTTP status codes
+    return response.status === 200;
+
+  } catch (error) {
+    // Network errors, timeouts, etc.
+    console.error(`Error verifying user ${username}:`, error);
+    // On error, return false to prevent trying to scrape non-existent user
+    return false;
+  }
+};

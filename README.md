@@ -147,6 +147,7 @@ SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 PORT=3001
 NODE_ENV=development
+CRON_SECRET=your_random_secret_key  # For manual cron triggers
 ```
 
 ### Frontend (.env)
@@ -313,6 +314,13 @@ yarn start
 - `POST /getData` - Generic scraping with custom selectors
 - **Note**: Disabled in production unless `ENABLE_SCRAPER=true`
 
+#### Cron API (`/api/cron`) - Automated Data Refresh
+
+- `POST /refresh-all-users` - Refresh all users' data from Letterboxd
+- `POST /refresh-user/:username` - Refresh specific user's data
+- **Authentication**: Vercel Cron header or Bearer token
+- **Schedule**: Daily at 2 AM (configurable in vercel.json)
+
 #### User Management (`/api/users`)
 
 - `GET /` - Get all users
@@ -340,6 +348,140 @@ yarn start
 3. Sign up or log in to access dashboard
 4. Use the Data Fetcher to scrape Letterboxd profiles
 5. View comparisons and rankings with your data
+
+### Testing Cron Job Endpoints
+
+The cron endpoints allow automated data refresh for all users. Here's how to test them:
+
+#### Prerequisites
+
+1. Make sure you have a `CRON_SECRET` in your `.env` file:
+   ```bash
+   CRON_SECRET=your_random_secret_key
+   ```
+
+2. Generate a secure secret (optional):
+   ```bash
+   # Using OpenSSL (Mac/Linux)
+   openssl rand -base64 32
+
+   # Or using Node.js
+   node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+   ```
+
+#### Testing in Development
+
+**1. Start the development server:**
+```bash
+yarn dev:server
+```
+
+**2. Test refresh all users:**
+```bash
+curl -X POST http://localhost:3001/api/cron/refresh-all-users \
+  -H "Authorization: Bearer your_cron_secret" \
+  -H "Content-Type: application/json"
+```
+
+**3. Test refresh specific user:**
+```bash
+curl -X POST http://localhost:3001/api/cron/refresh-user/username \
+  -H "Authorization: Bearer your_cron_secret" \
+  -H "Content-Type: application/json"
+```
+
+**Expected Response:**
+```json
+{
+  "message": "Refresh completed",
+  "duration": "45.23s",
+  "results": {
+    "totalUsers": 5,
+    "success": 5,
+    "failed": 0,
+    "skipped": 0,
+    "errors": []
+  }
+}
+```
+
+#### Testing in Production (Vercel)
+
+**1. Set `CRON_SECRET` in Vercel Dashboard:**
+- Go to your project → Settings → Environment Variables
+- Add `CRON_SECRET` with a secure value
+- Redeploy if needed
+
+**2. Test the production endpoint:**
+```bash
+curl -X POST https://your-app.vercel.app/api/cron/refresh-all-users \
+  -H "Authorization: Bearer your_cron_secret" \
+  -H "Content-Type: application/json"
+```
+
+**3. Check Vercel Logs:**
+- Go to your project dashboard
+- Click **Functions** or **Logs**
+- Look for `/api/cron/refresh-all-users` executions
+- View detailed logs including:
+  - Start time and duration
+  - Success/failure counts
+  - Individual user refresh status
+  - Any error messages
+
+#### Automatic Cron Execution (Production Only)
+
+Once deployed to Vercel (Pro plan or higher):
+
+1. **Cron runs automatically** at the scheduled time (default: 2 AM UTC daily)
+2. **No authentication needed** - Vercel adds the `x-vercel-cron-signature` header automatically
+3. **View cron status:**
+   - Vercel Dashboard → Your Project → Settings → Cron Jobs
+   - See scheduled jobs, last run time, and execution history
+
+#### Monitoring Cron Job Results
+
+**View detailed logs:**
+```bash
+# In development - check terminal output
+yarn dev:server
+
+# In production - check Vercel logs:
+# 1. Vercel Dashboard → Your Project → Functions
+# 2. Filter by "/api/cron/refresh-all-users"
+# 3. Click any execution to see full logs
+```
+
+**Log output includes:**
+```
+=== Starting scheduled refresh of all users ===
+Found 5 users to refresh
+[1/5] Refreshing data for: username1
+[1/5] ✓ Successfully refreshed username1
+[2/5] Refreshing data for: username2
+...
+=== Refresh Summary ===
+Total users: 5
+✓ Success: 5
+✗ Failed: 0
+Duration: 45.23s
+```
+
+#### Troubleshooting
+
+**401 Unauthorized Error:**
+- Check that `CRON_SECRET` matches in `.env` and your request
+- Ensure the `Authorization` header is formatted correctly: `Bearer your_secret`
+
+**Timeout Errors:**
+- Vercel Hobby plan has 10-second timeout (won't work for many users)
+- Vercel Pro plan has 300-second timeout (5 minutes)
+- Consider reducing the number of users or optimizing scraping
+
+**Rate Limiting:**
+- The refresh includes 2-second delays between users to avoid being blocked
+- If you have many users, the process will take time
+- Monitor logs to see progress
 
 ## Data Processing
 
@@ -611,6 +753,7 @@ SUPABASE_ANON_KEY=your_supabase_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 NODE_ENV=production
 ENABLE_SCRAPER=true  # Optional: Enable scraping in production
+CRON_SECRET=your_random_secret_key  # For manual cron triggers (optional)
 ```
 
 #### Verification Steps

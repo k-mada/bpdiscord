@@ -1,4 +1,4 @@
-import { SupabaseClient } from '@supabase/supabase-js';
+import { SupabaseClient } from "@supabase/supabase-js";
 
 // ===========================
 // API Response Types
@@ -54,7 +54,7 @@ export interface SupabaseUser {
   email?: string;
   user_metadata?: {
     name?: string;
-    role?: 'admin' | 'user';
+    role?: "admin" | "user";
   };
   created_at: string;
   updated_at?: string;
@@ -134,6 +134,12 @@ export interface UserFilm {
   liked: boolean;
 }
 
+export interface LBFilm {
+  film_slug: string;
+  rating: number;
+  rating_count: number;
+}
+
 // ===========================
 // Global Type Extensions
 // ===========================
@@ -164,7 +170,7 @@ declare global {
       SUPABASE_SERVICE_ROLE_KEY: string;
       JWT_SECRET: string;
       PORT?: string;
-      NODE_ENV?: 'development' | 'production' | 'test';
+      NODE_ENV?: "development" | "production" | "test";
       FRONTEND_URL?: string;
       VERCEL_URL?: string;
       ENABLE_SCRAPER?: string;

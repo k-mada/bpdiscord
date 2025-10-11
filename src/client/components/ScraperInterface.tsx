@@ -46,11 +46,6 @@ const ScraperInterface = () => {
     loadAvailableUsers();
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
-  };
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
   const [fetchStatus, setFetchStatus] = useState<string>("");
@@ -117,66 +112,6 @@ const ScraperInterface = () => {
       }
     } finally {
       setFetchStatus("");
-      setLoading(false);
-    }
-  };
-
-  const handleFetchAllData = async () => {
-    if (!username.trim()) {
-      setError("Please enter a username");
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    setSuccess(null);
-    setUserRatings(null);
-    setFilmCount(null);
-
-    try {
-      // Force scrape user profile and ratings
-      setFetchStatus("Force scraping user profile and ratings...");
-      const profileResponse = await apiService.forceScrapeUserProfile(
-        username,
-        token
-      );
-
-      if (profileResponse.error) {
-        throw new Error(
-          `User profile scraping failed: ${profileResponse.error}`
-        );
-      }
-
-      // Fetch all films
-      setFetchStatus("Fetching user's films...");
-      const filmsResponse = await apiService.getAllFilms(username, token);
-
-      if (filmsResponse.error) {
-        throw new Error(`Films fetch failed: ${filmsResponse.error}`);
-      }
-
-      // Process user ratings data
-      if (profileResponse.data && profileResponse.data.ratings) {
-        setUserRatings({
-          username: username,
-          ratings: profileResponse.data.ratings,
-        });
-      }
-
-      // Process films data
-      if (filmsResponse.data && filmsResponse.data.filmData) {
-        const totalFilms = filmsResponse.data.filmData.flat().length;
-        setFilmCount(totalFilms);
-      }
-
-      setSuccess("All data fetched successfully!");
-      setFetchStatus("");
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "An error occurred";
-      setError(errorMessage);
-      setFetchStatus("");
-    } finally {
       setLoading(false);
     }
   };
@@ -418,13 +353,6 @@ const ScraperInterface = () => {
                 >
                   {loading ? "Checking..." : "Check current ratings data"}
                 </button>
-                {/* <button
-              onClick={handleFetchAllData}
-              disabled={loading || streaming || !username.trim()}
-              className="btn-primary flex-1"
-            >
-              {loading ? "Scraping..." : "Force Scrape Data"}
-            </button> */}
                 <button
                   onClick={handleStreamScraping}
                   disabled={loading || streaming || !username.trim()}

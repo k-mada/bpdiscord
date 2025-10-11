@@ -10,6 +10,7 @@ import scraperRoutes from "./routes/scraperRoutes";
 import comparisonRoutes from "./routes/comparisonRoutes";
 import filmUserRoutes from "./routes/filmUserRoutes";
 import statsRoutes from "./routes/statsRoutes";
+import cronRoutes from "./routes/cronRoutes";
 import { globalErrorHandler } from "./middleware/errorHandler";
 import { ApiResponse } from "./types";
 
@@ -140,6 +141,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/comparison", comparisonRoutes);
 app.use("/api/film-users", filmUserRoutes);
 app.use("/api/stats", statsRoutes);
+app.use("/api/cron", cronRoutes);
 
 // Only load scraper routes in development or when explicitly enabled
 if (
