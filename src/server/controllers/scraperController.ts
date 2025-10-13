@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import { EventEmitter } from "events";
 
 import { ApiResponse, ScraperSelector } from "../types";
-import { getUserFilms, upsertUserFilms } from "./dataController";
+import { getUserFilms, dbUpsertUserFilms } from "./dataController";
 import { BROWSER_CONFIG } from "../constants";
 import { formatFilmsResponse, delay } from "../utilities";
 import {
@@ -148,7 +148,7 @@ export const scrapePage = async (
                 // );
                 Object.assign(combinedRecord, elementData);
               } // else {
-                // console.log(`No element found for selector:`, selector.css);
+              // console.log(`No element found for selector:`, selector.css);
               // }
             }
 
@@ -161,7 +161,7 @@ export const scrapePage = async (
               // );
               results.push(combinedRecord);
             } // else {
-              // console.log(`No data extracted for this parent element`);
+            // console.log(`No data extracted for this parent element`);
             // }
           });
         } else {
@@ -388,7 +388,9 @@ async function scrapeAndSaveFilms(
     const dbResult = await getUserFilms(username);
 
     if (dbResult.success && dbResult.data && dbResult.data.length > 0) {
-      console.log(`Returning ${dbResult.data.length} films from database for ${username}`);
+      console.log(
+        `Returning ${dbResult.data.length} films from database for ${username}`
+      );
       return {
         films: dbResult.data,
         source: "database",
@@ -417,7 +419,7 @@ async function scrapeAndSaveFilms(
     console.log(`Saving ${scrapedFilms.length} films to database...`);
   }
 
-  const saveResult = await upsertUserFilms(username, scrapedFilms);
+  const saveResult = await dbUpsertUserFilms(username, scrapedFilms);
   if (!saveResult.success) {
     console.warn("Failed to save scraped films to database:", saveResult.error);
   } else {

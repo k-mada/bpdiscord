@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
-import { getTotalRatingsDistribution } from "./dataController";
+import { dbGetTotalRatingsDistribution } from "./dataController";
 
 export async function getTotalRatings(
   req: Request,
   res: Response
 ): Promise<void> {
-  const result = await getTotalRatingsDistribution();
+  const result = await dbGetTotalRatingsDistribution();
   res.json(result);
 }

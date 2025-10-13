@@ -1,13 +1,61 @@
 import { Request, Response } from "express";
 import {
-  getUserRatings as dbGetUserRatings,
-  upsertUserRatings,
-  getUserProfile as dbGetUserProfile,
-  upsertUserProfile,
-  getAllUsernames,
+  dbGetUserRatings,
+  dbUpsertUserRatings,
+  dbGetUserProfile,
+  dbUpsertUserProfile,
+  dbGetAllUsernames,
 } from "./dataController";
 
-// Get user ratings from database only
+export async function getFilmRatings(
+  req: Request,
+  res: Response
+): Promise<void> {
+  const { filmSlug } = req.params;
+
+  if (!filmSlug) {
+    res.status(400).json({ error: "Film slug is required" });
+    return;
+  }
+
+  console.log(`Retrieving ratings from database for user: ${filmSlug}`);
+
+  try {
+    const dbResult = await dbGetUserRatings(filmSlug);
+    if (dbResult.success && dbResult.data && dbResult.data.length > 0) {
+      const ratings = dbResult.data.map((item: any) => ({
+        rating: item.rating,
+        count: item.count,
+      }));
+
+      res.json({
+        message: "User ratings retrieved from database",
+        data: {
+          filmSlug,
+          ratings,
+          timestamp: new Date().toISOString(),
+          source: "database",
+          success: true,
+        },
+      });
+      return;
+    }
+  } catch (error) {
+    console.error("Error in getFilmRatings:", error);
+    res.status(500).json({
+      error: `Failed to get film ratings: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    });
+  }
+}
+
+/**
+ *  Get user ratings from database. if fallback is true, scrape the data from Letterboxd.
+ * @param req
+ * @param res
+ * @returns
+ */
 export async function getUserRatings(
   req: Request,
   res: Response
@@ -57,7 +105,10 @@ export async function getUserRatings(
         const scrapedRatings = await scrapeUserRatings(username);
 
         // Save to database
-        const insertResult = await upsertUserRatings(username, scrapedRatings);
+        const insertResult = await dbUpsertUserRatings(
+          username,
+          scrapedRatings
+        );
         if (!insertResult.success) {
           console.warn(
             "Failed to save scraped ratings to database:",
@@ -150,7 +201,10 @@ export async function getUserProfile(
         const scrapedProfile = await scrapeUserProfileData(username);
 
         // Save to database
-        const insertResult = await upsertUserProfile(username, scrapedProfile);
+        const insertResult = await dbUpsertUserProfile(
+          username,
+          scrapedProfile
+        );
         if (!insertResult.success) {
           console.warn(
             "Failed to save scraped profile to database:",
@@ -278,7 +332,7 @@ export async function getUserComplete(
         // Scrape profile if missing
         if (!hasProfile) {
           const scrapedProfile = await scrapeUserProfileData(username);
-          const insertResult = await upsertUserProfile(
+          const insertResult = await dbUpsertUserProfile(
             username,
             scrapedProfile
           );
@@ -300,7 +354,7 @@ export async function getUserComplete(
         // Scrape ratings if missing
         if (!hasRatings) {
           const scrapedRatings = await scrapeUserRatings(username);
-          const insertResult = await upsertUserRatings(
+          const insertResult = await dbUpsertUserRatings(
             username,
             scrapedRatings
           );
@@ -370,7 +424,7 @@ export async function getAllUsers(req: Request, res: Response): Promise<void> {
   console.log("Retrieving all users from database");
 
   try {
-    const result = await getAllUsernames();
+    const result = await dbGetAllUsernames();
 
     if (result.success && result.data) {
       res.json({

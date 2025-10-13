@@ -2,8 +2,8 @@
 import { EventEmitter } from "events";
 import * as cheerio from "cheerio";
 import {
-  upsertUserRatings,
-  upsertUserProfile,
+  dbUpsertUserRatings,
+  dbUpsertUserProfile,
 } from "./controllers/dataController";
 import {
   BLOCKED_RESOURCES,
@@ -377,7 +377,7 @@ export const saveRatingsToDatabase = async (
   username: string,
   ratings: Array<{ rating: number; count: number }>
 ): Promise<void> => {
-  const insertResult = await upsertUserRatings(username, ratings);
+  const insertResult = await dbUpsertUserRatings(username, ratings);
 
   if (!insertResult.success) {
     console.error("Database operation failed:", insertResult.error);
@@ -459,7 +459,7 @@ export const saveProfileToDatabase = async (
       profileData
     );
 
-    const result = await upsertUserProfile(username, profileData);
+    const result = await dbUpsertUserProfile(username, profileData);
 
     if (!result.success) {
       console.error("Database operation failed:", result.error);

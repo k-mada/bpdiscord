@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
 import {
-  getAllUsernames,
-  upsertUserRatings,
-  upsertUserProfile,
-  upsertUserFilms,
+  dbGetAllUsernames,
+  dbUpsertUserProfile,
+  dbUpsertUserRatings,
+  dbUpsertUserFilms,
 } from "./dataController";
 import {
   scrapeUserRatings,
@@ -24,7 +24,7 @@ export async function refreshAllUsers(
 
   try {
     // Get all users from database
-    const result = await getAllUsernames();
+    const result = await dbGetAllUsernames();
 
     if (!result.success || !result.data) {
       console.error("Failed to retrieve users from database");
@@ -62,9 +62,9 @@ export async function refreshAllUsers(
           // Update database with fresh data
           const [profileUpdate, ratingsUpdate, filmsUpdate] = await Promise.all(
             [
-              upsertUserProfile(user.username, profile),
-              upsertUserRatings(user.username, ratings),
-              upsertUserFilms(user.username, films),
+              dbUpsertUserProfile(user.username, profile),
+              dbUpsertUserRatings(user.username, ratings),
+              dbUpsertUserFilms(user.username, films),
             ]
           );
 
@@ -168,9 +168,9 @@ export async function refreshUser(req: Request, res: Response): Promise<void> {
 
     // Update database
     const [profileUpdate, ratingsUpdate, filmsUpdate] = await Promise.all([
-      upsertUserProfile(username, profile),
-      upsertUserRatings(username, ratings),
-      upsertUserFilms(username, films),
+      dbUpsertUserProfile(username, profile),
+      dbUpsertUserRatings(username, ratings),
+      dbUpsertUserFilms(username, films),
     ]);
 
     if (

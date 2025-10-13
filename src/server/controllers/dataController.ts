@@ -2,7 +2,7 @@ import { supabase, supabaseAdmin } from "../config/database";
 import { LBFilm, UserFilm } from "../types";
 
 // User Ratings Management
-export async function deleteUserRatings(
+export async function dbDeleteUserRatings(
   username: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
@@ -26,7 +26,7 @@ export async function deleteUserRatings(
   }
 }
 
-export async function upsertUserRatings(
+export async function dbUpsertUserRatings(
   username: string,
   ratings: Array<{ rating: number; count: number }>
 ): Promise<{ success: boolean; error?: string }> {
@@ -68,7 +68,7 @@ export async function upsertUserRatings(
   }
 }
 
-export async function getUserRatings(username: string): Promise<{
+export async function dbGetUserRatings(username: string): Promise<{
   success: boolean;
   data?: any[];
   error?: string;
@@ -96,7 +96,34 @@ export async function getUserRatings(username: string): Promise<{
   }
 }
 
-export async function getAllUsernames(): Promise<{
+export async function dbGetLBFilmRatings(filmSlugs: string[]): Promise<{
+  success: boolean;
+  data?: any[];
+  error?: string;
+}> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("LBFilmRatings")
+      .select("film_slugrating, rating_count")
+      .in("flim_slug", filmSlugs)
+      .order("rating", { ascending: true });
+
+    if (error) {
+      console.error("Database select error:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data: data || [] };
+  } catch (error) {
+    console.error("Database operation error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown database error",
+    };
+  }
+}
+
+export async function dbGetAllUsernames(): Promise<{
   success: boolean;
   data?: Array<{ username: string; displayName?: string }>;
   error?: string;
@@ -154,7 +181,7 @@ export async function getAllUsernames(): Promise<{
 }
 
 // Film Data Management (for future use)
-export async function insertFilmData(
+export async function dbInsertFilmData(
   filmData: any[]
 ): Promise<{ success: boolean; error?: string }> {
   try {
@@ -175,35 +202,8 @@ export async function insertFilmData(
   }
 }
 
-export async function getFilmData(username: string): Promise<{
-  success: boolean;
-  data?: any[];
-  error?: string;
-}> {
-  try {
-    const { data, error } = await supabase
-      .from("Films")
-      .select("*")
-      .eq("username", username)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      console.error("Database select error:", error);
-      return { success: false, error: error.message };
-    }
-
-    return { success: true, data: data || [] };
-  } catch (error) {
-    console.error("Database operation error:", error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown database error",
-    };
-  }
-}
-
 // Hater Rankings - Get all users with their average ratings and rating distributions
-export async function getHaterRankings(): Promise<{
+export async function dbGetHaterRankings(): Promise<{
   success: boolean;
   data?: Array<{
     username: string;
@@ -299,7 +299,7 @@ export async function getHaterRankings(): Promise<{
 }
 
 // User Profile Management
-export async function getUserProfile(username: string): Promise<{
+export async function dbGetUserProfile(username: string): Promise<{
   success: boolean;
   data?: {
     username: string;
@@ -349,7 +349,7 @@ export async function getUserProfile(username: string): Promise<{
   }
 }
 
-export async function upsertUserProfile(
+export async function dbUpsertUserProfile(
   username: string,
   profileData: {
     displayName: string;
@@ -389,7 +389,7 @@ export async function upsertUserProfile(
 }
 
 // Get total ratings distribution for all users
-export async function getTotalRatingsDistribution(): Promise<{
+export async function dbGetTotalRatingsDistribution(): Promise<{
   success: boolean;
   data?: Array<{ rating: number; count: number }>;
   error?: string;
@@ -441,7 +441,7 @@ export async function getUserFilms(lbusername: string): Promise<{
   }
 }
 
-export async function upsertUserFilms(
+export async function dbUpsertUserFilms(
   lbusername: string,
   films: UserFilm[]
 ): Promise<{ success: boolean; error?: string }> {
@@ -477,7 +477,7 @@ export async function upsertUserFilms(
   }
 }
 
-export async function upsertLBFilms(
+export async function dbUpsertLBFilms(
   films: LBFilm[]
 ): Promise<{ success: boolean; error?: string }> {
   try {
@@ -510,7 +510,7 @@ export async function upsertLBFilms(
   }
 }
 
-export async function deleteUserFilms(
+export async function dbDeleteUserFilms(
   lbusername: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
@@ -533,7 +533,7 @@ export async function deleteUserFilms(
 }
 
 // Get movies in common between two users
-export async function getMoviesInCommon(
+export async function dbGetMoviesInCommon(
   user1: string,
   user2: string
 ): Promise<{
