@@ -251,6 +251,20 @@ class ApiService {
       "/stats/total-ratings"
     );
   }
+
+  // Hater rankings endpoint
+  async getAllUserFilms(): Promise<
+    ApiResponse<Array<{ rating: number; count: number }>>
+  > {
+    return this.request<Array<{ rating: number; count: number }>>(
+      "/stats/all-user-films"
+    );
+  }
+
+  // Hater rankings endpoint
+  async getUserFilmsCount(): Promise<ApiResponse<number>> {
+    return this.request<number>("/stats/user-films-count");
+  }
 }
 
 export const apiService = new ApiService();

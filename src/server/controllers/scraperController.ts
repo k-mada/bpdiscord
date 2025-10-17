@@ -3,7 +3,7 @@ import { Request, Response } from "express";
 import { EventEmitter } from "events";
 
 import { ApiResponse, ScraperSelector } from "../types";
-import { getUserFilms, dbUpsertUserFilms } from "./dataController";
+import { dbGetUserFilms, dbUpsertUserFilms } from "./dataController";
 import { BROWSER_CONFIG } from "../constants";
 import { formatFilmsResponse, delay } from "../utilities";
 import {
@@ -385,7 +385,7 @@ async function scrapeAndSaveFilms(
 }> {
   // Try database first (unless force refresh)
   if (!forceRefresh) {
-    const dbResult = await getUserFilms(username);
+    const dbResult = await dbGetUserFilms(username);
 
     if (dbResult.success && dbResult.data && dbResult.data.length > 0) {
       console.log(

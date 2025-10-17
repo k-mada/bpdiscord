@@ -96,6 +96,31 @@ export async function dbGetUserRatings(username: string): Promise<{
   }
 }
 
+export async function dbGetLBFilms(): Promise<{
+  success: boolean;
+  data?: any[];
+  error?: string;
+}> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("LBFilms")
+      .select("title, film_slug");
+
+    if (error) {
+      console.error("Database select error:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data: data || [] };
+  } catch (error) {
+    console.error("Database operation error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown database error",
+    };
+  }
+}
+
 export async function dbGetLBFilmRatings(filmSlugs: string[]): Promise<{
   success: boolean;
   data?: any[];
@@ -114,6 +139,39 @@ export async function dbGetLBFilmRatings(filmSlugs: string[]): Promise<{
     }
 
     return { success: true, data: data || [] };
+  } catch (error) {
+    console.error("Database operation error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown database error",
+    };
+  }
+}
+
+export async function dbUpsertLBFilmRatings(
+  lbFilms: LBFilm[]
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const lbFilmsToUpsert = lbFilms.map((film) => ({
+      film_slug: film.film_slug,
+      rating: film.rating,
+      rating_count: film.rating_count,
+      updated_at: new Date().toISOString(),
+    }));
+
+    const { error } = await supabaseAdmin
+      .from("LBFilmRatings")
+      .upsert(lbFilmsToUpsert, {
+        onConflict: "film_slug, rating",
+        ignoreDuplicates: false,
+      });
+
+    if (error) {
+      console.error("Database upsert error:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
   } catch (error) {
     console.error("Database operation error:", error);
     return {
@@ -412,8 +470,30 @@ export async function dbGetTotalRatingsDistribution(): Promise<{
   }
 }
 
+// Get total ratings distribution for all users
+export async function dbGetAllUserFilms(): Promise<{
+  success: boolean;
+  data?: Array<{ rating: number; count: number }>;
+  error?: string;
+}> {
+  try {
+    const { data, error } = await supabaseAdmin.rpc("get_all_user_films");
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data: data || [] };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
 // UserFilms Management Methods
-export async function getUserFilms(lbusername: string): Promise<{
+export async function dbGetUserFilms(lbusername: string): Promise<{
   success: boolean;
   data?: (UserFilm & {
     created_at: string;
@@ -427,6 +507,27 @@ export async function getUserFilms(lbusername: string): Promise<{
       .select("film_slug, title, rating, liked, created_at, updated_at")
       .eq("lbusername", lbusername)
       .order("created_at", { ascending: false });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data: data || [] };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+export async function dbGetUserFilmsCount(): Promise<{
+  success: boolean;
+  data?: number;
+  error?: string;
+}> {
+  try {
+    const { data, error } = await supabaseAdmin.rpc("get_user_films_count");
 
     if (error) {
       return { success: false, error: error.message };
