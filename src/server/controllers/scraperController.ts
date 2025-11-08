@@ -3,7 +3,11 @@ import { Request, Response } from "express";
 import { EventEmitter } from "events";
 
 import { ApiResponse, ScraperSelector } from "../types";
-import { getUserFilms, upsertUserFilms } from "./dataController";
+import {
+  dbGetUserFilms,
+  dbUpsertUserFilms,
+  dbGetFilmsByUser,
+} from "./dataController";
 import { BROWSER_CONFIG } from "../constants";
 import { formatFilmsResponse, delay } from "../utilities";
 import {
@@ -11,12 +15,19 @@ import {
   closePageAndBrowser,
   cleanup,
   scrapeUserRatings,
+  scrapeLBFilmRatings,
   saveRatingsToDatabase,
+  saveLBFilmRatingsToDatabase,
   scrapeUserProfileData,
   saveProfileToDatabase,
   scrapeUserFilms,
   scrapeUserFilmsWithProgress,
 } from "../scraperFunctions";
+import {
+  initializeSSEContext,
+  handleSSEError,
+  setupProductionTimeout,
+} from "../sseUtils";
 
 /**
  * Scrape page data based on selectors
@@ -148,7 +159,7 @@ export const scrapePage = async (
                 // );
                 Object.assign(combinedRecord, elementData);
               } // else {
-                // console.log(`No element found for selector:`, selector.css);
+              // console.log(`No element found for selector:`, selector.css);
               // }
             }
 
@@ -161,7 +172,7 @@ export const scrapePage = async (
               // );
               results.push(combinedRecord);
             } // else {
-              // console.log(`No data extracted for this parent element`);
+            // console.log(`No data extracted for this parent element`);
             // }
           });
         } else {
@@ -185,109 +196,6 @@ export const scrapePage = async (
     );
 
     return collatedData;
-  } finally {
-    await closePageAndBrowser(page);
-  }
-};
-
-/**
- * Extract data from page based on selectors
- */
-export const extractData = async (
-  url: string,
-  selectors: ScraperSelector[]
-): Promise<Record<string, any>[]> => {
-  const page = await createPage();
-  console.log("in extractData");
-  try {
-    await page.goto(url, { waitUntil: "domcontentloaded" });
-    console.log("navigated");
-    await delay(BROWSER_CONFIG.PAGE_DELAY);
-    console.log("waited");
-
-    console.log("About to evaluate page with selectors:", selectors);
-
-    page.on("console", (consoleMessageObject: any) => {
-      if (consoleMessageObject._type !== "warning") {
-        console.debug(consoleMessageObject._text);
-      }
-    });
-
-    const extractedData = await page.evaluate(
-      (selectorsData: ScraperSelector[]) => {
-        const results: Record<string, any>[] = [];
-
-        const mainContent = document.querySelector("div#content.site-body");
-        if (!mainContent) {
-          console.log("Main content container not found");
-          return [];
-        }
-
-        const filmContainers = mainContent.querySelectorAll(
-          "li.poster-container"
-        );
-        console.log(`Found ${filmContainers.length} film containers`);
-
-        filmContainers.forEach((container, index) => {
-          const record: Record<string, any> = {};
-          console.log(`Processing film container ${index}`);
-
-          selectorsData.forEach((selector) => {
-            const elements = container.querySelectorAll(selector.css);
-            console.log(
-              `Found ${elements.length} elements for selector ${selector.css} in container ${index}`
-            );
-
-            if (elements.length > 0) {
-              const element = elements[0];
-
-              if (element) {
-                if (selector.attributes && selector.attributes.length > 0) {
-                  selector.attributes.forEach((attr) => {
-                    const value = element.getAttribute(attr);
-                    if (value) {
-                      record[selector.name] = value;
-                      console.log(
-                        `Set ${selector.name} = ${value} for container ${index}`
-                      );
-                    }
-                  });
-                } else {
-                  const text = element.textContent?.trim();
-                  if (text) {
-                    if (text.includes("★") || text.includes("☆")) {
-                      const starCount = (text.match(/★/g) || []).length;
-                      const halfStarCount = (text.match(/½/g) || []).length;
-                      const rating = starCount + halfStarCount * 0.5;
-                      record[selector.name] = rating;
-                      console.log(
-                        `Set ${selector.name} = ${rating} (parsed from: ${text}) for container ${index}`
-                      );
-                    } else {
-                      record[selector.name] = text;
-                      console.log(
-                        `Set ${selector.name} = ${text} for container ${index}`
-                      );
-                    }
-                  }
-                }
-              }
-            }
-          });
-
-          if (Object.keys(record).length > 0) {
-            results.push(record);
-            console.log(`Added record for container ${index}:`, record);
-          }
-        });
-
-        return results;
-      },
-      selectors
-    );
-
-    console.log("Page evaluation completed. Result:", extractedData);
-    return extractedData;
   } finally {
     await closePageAndBrowser(page);
   }
@@ -385,10 +293,12 @@ async function scrapeAndSaveFilms(
 }> {
   // Try database first (unless force refresh)
   if (!forceRefresh) {
-    const dbResult = await getUserFilms(username);
+    const dbResult = await dbGetUserFilms(username);
 
     if (dbResult.success && dbResult.data && dbResult.data.length > 0) {
-      console.log(`Returning ${dbResult.data.length} films from database for ${username}`);
+      console.log(
+        `Returning ${dbResult.data.length} films from database for ${username}`
+      );
       return {
         films: dbResult.data,
         source: "database",
@@ -417,7 +327,7 @@ async function scrapeAndSaveFilms(
     console.log(`Saving ${scrapedFilms.length} films to database...`);
   }
 
-  const saveResult = await upsertUserFilms(username, scrapedFilms);
+  const saveResult = await dbUpsertUserFilms(username, scrapedFilms);
   if (!saveResult.success) {
     console.warn("Failed to save scraped films to database:", saveResult.error);
   } else {
@@ -574,6 +484,46 @@ export const getUserRatings = async (
 };
 
 /**
+ * Get user ratings (force scraping)
+ */
+export const getLBFilmRatings = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const { filmSlug } = req.body;
+
+  if (!filmSlug) {
+    res.status(400).json({ error: "Film slug is required" });
+    return;
+  }
+
+  console.log(`Force fetching ratings for film: ${filmSlug}`);
+
+  try {
+    const scrapedRatings = await scrapeLBFilmRatings(filmSlug);
+    await saveLBFilmRatingsToDatabase(filmSlug, scrapedRatings);
+
+    res.json({
+      message: "Film ratings scraped and stored successfully",
+      data: {
+        filmSlug,
+        ratings: scrapedRatings,
+        timestamp: new Date().toISOString(),
+        source: "scraped",
+        success: true,
+      },
+    });
+  } catch (error) {
+    console.error("Error in getLBFilmRatings:", error);
+    res.status(500).json({
+      error: `Failed to fetch LB film ratings: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    });
+  }
+};
+
+/**
  * Get user profile (force scraping)
  */
 export const getUserProfile = async (
@@ -643,78 +593,10 @@ export const fetchFilms = async (
 
   console.log(`Starting SSE stream for film fetching: ${username}`);
 
-  res.writeHead(200, {
-    "Content-Type": "text/event-stream",
-    "Cache-Control": "no-cache",
-    Connection: "keep-alive",
-    "Access-Control-Allow-Origin": "*",
-    "Access-Control-Allow-Headers": "Cache-Control",
-  });
+  // Initialize SSE context with all necessary setup
+  const { progressEmitter, isCompleted, cleanupFn } = initializeSSEContext(res);
 
-  const progressEmitter = new EventEmitter();
-  let isCompleted = false;
-  let heartbeatInterval: NodeJS.Timeout;
-
-  progressEmitter.on("progress", (data) => {
-    if (!res.headersSent || !res.writable) return;
-    try {
-      res.write(`data: ${JSON.stringify(data)}\n\n`);
-    } catch (writeError) {
-      console.error("Error writing SSE data:", writeError);
-    }
-  });
-
-  progressEmitter.on("error", (error) => {
-    if (!res.headersSent || !res.writable || isCompleted) return;
-    try {
-      res.write(
-        `data: ${JSON.stringify({
-          type: "error",
-          message: error.message,
-          timestamp: new Date().toISOString(),
-        })}\n\n`
-      );
-      cleanupFn();
-    } catch (writeError) {
-      console.error("Error writing SSE error:", writeError);
-    }
-  });
-
-  progressEmitter.on("complete", (data) => {
-    if (!res.headersSent || !res.writable || isCompleted) return;
-    try {
-      res.write(
-        `data: ${JSON.stringify({
-          type: "complete",
-          data,
-          timestamp: new Date().toISOString(),
-        })}\n\n`
-      );
-      cleanupFn();
-    } catch (writeError) {
-      console.error("Error writing SSE completion:", writeError);
-    }
-  });
-
-  const cleanupFn = () => {
-    if (isCompleted) return;
-    isCompleted = true;
-
-    if (heartbeatInterval) {
-      clearInterval(heartbeatInterval);
-    }
-
-    progressEmitter.removeAllListeners();
-
-    if (!res.headersSent && res.writable) {
-      try {
-        res.end();
-      } catch (endError) {
-        console.error("Error ending SSE response:", endError);
-      }
-    }
-  };
-
+  // Setup request lifecycle handlers
   req.on("close", () => {
     console.log(`SSE connection closed for ${username}`);
     cleanupFn();
@@ -724,29 +606,8 @@ export const fetchFilms = async (
     // Browser cleanup handled elsewhere
   });
 
-  const productionTimeout = setTimeout(() => {
-    console.log(`Production timeout reached for ${username}`);
-    progressEmitter.emit("error", {
-      message:
-        "Operation timeout - the scraping process is taking too long. Please try again later or contact support.",
-      code: "PRODUCTION_TIMEOUT",
-    });
-  }, BROWSER_CONFIG.PRODUCTION_TIMEOUT);
-
-  heartbeatInterval = setInterval(() => {
-    if (!res.headersSent || !res.writable || isCompleted) return;
-    try {
-      res.write(
-        `data: ${JSON.stringify({
-          type: "heartbeat",
-          timestamp: new Date().toISOString(),
-        })}\n\n`
-      );
-    } catch (writeError) {
-      console.error("Error writing heartbeat:", writeError);
-      cleanupFn();
-    }
-  }, BROWSER_CONFIG.SSE_HEARTBEAT_INTERVAL);
+  // Setup production timeout
+  const productionTimeout = setupProductionTimeout(username, progressEmitter);
 
   try {
     progressEmitter.emit("progress", {
@@ -758,7 +619,7 @@ export const fetchFilms = async (
     // Use shared scraping logic with progress reporting
     const result = await scrapeAndSaveFilms(username, true, progressEmitter);
 
-    if (isCompleted) return;
+    if (isCompleted.value) return;
 
     clearTimeout(productionTimeout);
     progressEmitter.emit("complete", {
@@ -771,30 +632,109 @@ export const fetchFilms = async (
   } catch (error) {
     console.error(`Error in fetchFilms for ${username}:`, error);
     clearTimeout(productionTimeout);
-
-    if (!isCompleted) {
-      const errorMessage =
-        error instanceof Error ? error.message : "Unknown error occurred";
-
-      if (
-        errorMessage.includes("Navigation timeout") ||
-        errorMessage.includes("TimeoutError")
-      ) {
-        progressEmitter.emit("error", {
-          message:
-            "Page loading timeout - the Letterboxd page is taking too long to load. Please try again later.",
-          code: "NAVIGATION_TIMEOUT",
-          username,
-        });
-      } else {
-        progressEmitter.emit("error", {
-          message: errorMessage,
-          username,
-        });
-      }
-    }
+    handleSSEError(error, username, progressEmitter, isCompleted.value);
   }
 };
 
+/**
+ * gets all movies by a username and then fetches the ratings for each of those movies and updates it in the database
+ */
+export const getLBFilmRatingsByUsername = async (
+  req: Request,
+  res: Response
+) => {
+  const { username } = req.params;
+
+  if (!username) {
+    res.status(400).json({ error: "Username is required" });
+    return;
+  }
+
+  console.log(`Starting SSE stream for LB film fetching: ${username}`);
+
+  // Initialize SSE context with all necessary setup
+  const { progressEmitter, isCompleted, cleanupFn } = initializeSSEContext(res);
+
+  // Setup request lifecycle handlers
+  req.on("close", () => {
+    console.log(`SSE connection closed for ${username}`);
+    cleanupFn();
+  });
+
+  // Setup production timeout
+  const productionTimeout = setupProductionTimeout(username, progressEmitter);
+
+  try {
+    progressEmitter.emit("progress", {
+      type: "start",
+      message: `Fetching film ratings for ${username}`,
+      timestamp: new Date().toISOString(),
+    });
+
+    // first, get the movies by username
+    const userFilms = await dbGetFilmsByUser(username);
+    let filmSlugs: string[] = [];
+    if (userFilms.success && userFilms.data) {
+      userFilms.data.forEach((film) => {
+        if (film.film_slug) {
+          filmSlugs.push(film.film_slug);
+        }
+      });
+    }
+
+    progressEmitter.emit("progress", {
+      type: "films_loaded",
+      message: `Found ${filmSlugs.length} films`,
+      count: filmSlugs.length,
+      timestamp: new Date().toISOString(),
+    });
+
+    // next get the ratings for all films
+    // if (filmSlugs.length > 0) {
+    // TODO: Implement film ratings scraping logic
+    let ratingsWithSlugs = [];
+
+    if (filmSlugs.length > 0) {
+      for (let i = 0; i < filmSlugs.length; i++) {
+        const filmSlug = filmSlugs[i];
+        if (filmSlug) {
+          const filmRatings = await scrapeLBFilmRatings(filmSlug);
+
+          ratingsWithSlugs.push({ filmSlug, ...filmRatings });
+
+          progressEmitter.emit("progress", {
+            username,
+            message: `Successfully scraped ratings for ${filmSlug}`,
+          });
+        }
+      }
+    }
+    console.log(ratingsWithSlugs);
+    // TODO: UPDATE DB WITH RATINGS
+
+    clearTimeout(productionTimeout);
+    progressEmitter.emit("progress", {
+      username,
+      totalFilms: filmSlugs.length,
+      message: `Successfully scraped ${filmSlugs.length} films for ${username}`,
+    });
+
+    if (isCompleted.value) return;
+
+    clearTimeout(productionTimeout);
+    progressEmitter.emit("complete", {
+      username,
+      totalFilms: filmSlugs.length,
+      message: `Successfully processed ${filmSlugs.length} films for ${username}`,
+    });
+  } catch (error) {
+    console.error(
+      `Error in getLBFilmRatingsByUsername for ${username}:`,
+      error
+    );
+    clearTimeout(productionTimeout);
+    handleSSEError(error, username, progressEmitter, isCompleted.value);
+  }
+};
 // Export cleanup for module management
 export { cleanup };

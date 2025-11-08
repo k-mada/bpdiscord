@@ -11,6 +11,7 @@ import UserProfile from "./components/UserProfile";
 import ScraperInterface from "./components/ScraperInterface";
 import UserComparison from "./components/UserComparison";
 import HaterRankings from "./components/HaterRankings";
+import HaterRankings2 from "./components/HaterRankings2";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Stats from "./components/Stats";
 
@@ -21,7 +22,7 @@ function App() {
         <Route path="/compare" element={<UserComparison />} />
         <Route
           path="/hater-rankings"
-          element={<HaterRankings isPublic={true} />}
+          element={<HaterRankings2 isPublic={true} />}
         />
         <Route path="/stats" element={<Stats />} />
         <Route path="/login" element={<LoginPage />} />

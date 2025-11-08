@@ -1,5 +1,11 @@
 import { Router } from "express";
-import { getUserRatings, getUserProfile, getUserComplete, getAllUsers } from "../controllers/filmUserController";
+import {
+  getUserRatings,
+  getUserProfile,
+  getUserComplete,
+  getAllUsers,
+  getFilmsByUser,
+} from "../controllers/filmUserController";
 
 const router = Router();
 
@@ -18,5 +24,8 @@ router.get("/:username/complete", getUserComplete);
 
 // Get list of all users with display names
 router.get("/", getAllUsers);
+
+// Get list of all filmes by a user
+router.get("/:username/films", getFilmsByUser);
 
 export default router;

@@ -1,7 +1,11 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
 import { handleValidationErrors } from "../middleware/errorHandler";
-import { getTotalRatings } from "../controllers/statsController";
+import {
+  getTotalRatings,
+  getAllUserFilms,
+  getUserFilmsCount,
+} from "../controllers/statsController";
 
 const router = Router();
 
@@ -15,6 +19,18 @@ router.get(
   "/total-ratings",
   [scraperLimiter, handleValidationErrors],
   getTotalRatings
+);
+
+router.get(
+  "/all-user-films",
+  [scraperLimiter, handleValidationErrors],
+  getAllUserFilms
+);
+
+router.get(
+  "/user-films-count",
+  [scraperLimiter, handleValidationErrors],
+  getUserFilmsCount
 );
 
 export default router;

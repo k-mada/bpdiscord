@@ -175,6 +175,11 @@ class ApiService {
     return this.request<ApiResponse<any>>("/comparison/hater-rankings");
   }
 
+  // New Hater rankings
+  async getHaterRankings2(): Promise<ApiResponse<any>> {
+    return this.request<ApiResponse<any>>("/comparison/v2/hater-rankings");
+  }
+
   // New database-first film user endpoints (no auth required)
   async getFilmUserRatings(
     username: string,
@@ -250,6 +255,20 @@ class ApiService {
     return this.request<Array<{ rating: number; count: number }>>(
       "/stats/total-ratings"
     );
+  }
+
+  // Hater rankings endpoint
+  async getAllUserFilms(): Promise<
+    ApiResponse<Array<{ rating: number; count: number }>>
+  > {
+    return this.request<Array<{ rating: number; count: number }>>(
+      "/stats/all-user-films"
+    );
+  }
+
+  // Hater rankings endpoint
+  async getUserFilmsCount(): Promise<ApiResponse<number>> {
+    return this.request<number>("/stats/user-films-count");
   }
 }
 

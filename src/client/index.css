@@ -17,6 +17,10 @@
 }
 
 @layer base {
+  html {
+    scrollbar-gutter: stable;
+  }
+
   body {
     @apply bg-letterboxd-bg-primary text-letterboxd-text-primary;
 
@@ -40,6 +44,14 @@
 
   select {
     appearance: none;
+  }
+
+  p {
+    @apply mb-4;
+  }
+
+  ol > li {
+    @apply ml-2 mb-2;
   }
 
   .body-text.-prose {
@@ -95,6 +107,10 @@
 
   .data-table > tbody > tr > td {
     @apply py-3 px-4 text-letterboxd-text-primary font-medium;
+  }
+
+  .table-heading-row > th {
+    @apply px-6 py-3 text-left text-xs font-medium text-letterboxd-text-secondary uppercase tracking-wider;
   }
 
   .histogram-sm {
@@ -171,6 +187,69 @@
 
   .pro-badge {
     @apply bg-letterboxd-pro text-black text-xs font-bold px-2 py-1 rounded;
+  }
+
+  .calculation-explanation {
+    @apply text-sm;
+
+    & > ol {
+      margin-left: 1rem;
+      list-style-type: decimal;
+    }
+  }
+
+  .differential-wrapper {
+    position: relative;
+    margin-top: 20px;
+  }
+  .differential-line {
+    margin: 10px 0;
+    width: 200px;
+    height: 1px;
+    border: solid 1px white;
+    @apply border-gray-600;
+  }
+  .differential-midpoint {
+    position: absolute;
+    top: 26px;
+    left: 100px;
+    width: 1px;
+    height: 10px;
+    @apply border-solid border-gray-600;
+    border-width: 1px;
+  }
+  .differential-rating {
+    position: absolute;
+    left: 0;
+    top: 6px;
+  }
+  .rating-text {
+    position: absolute;
+    top: -23px;
+    left: 5px;
+    padding: 0.1rem 0.5rem 0.1rem 0.2rem;
+    border: solid 1px @apply text-white;
+    border-radius: 4px 4px 4px 0;
+    border-width: 1px;
+    @apply text-white;
+    @apply bg-gray-700;
+  }
+  .rating-marker {
+    position: absolute;
+    top: 20px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    @apply bg-green-500;
+  }
+  .rating-line {
+    position: absolute;
+    top: 0;
+    left: 5px;
+    width: 1px;
+    height: 20px;
+    @apply border-solid border-white;
+    border-width: 0 0 0 1px;
   }
 }
 

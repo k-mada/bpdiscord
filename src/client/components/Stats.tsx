@@ -6,6 +6,7 @@ import RatingDistributionHistogram from "./RatingDistributionHistogram";
 import Spinner from "./Spinner";
 
 const Dashboard = () => {
+  const [userFilmsCount, setUserFilmsCount] = useState<number>(0);
   const [totalRatings, setTotalRatings] = useState<any>(null);
   const [loadingUserRatings, setLoadingUserRatings] = useState(true);
 
@@ -25,8 +26,18 @@ const Dashboard = () => {
     }
   };
 
+  const getUserFilmsCount = async () => {
+    try {
+      const userFilmsCount = await apiService.getUserFilmsCount();
+      setUserFilmsCount(userFilmsCount.data || 0);
+    } catch (error) {
+      console.error("Error fetching user films count:", error);
+    }
+  };
+
   useEffect(() => {
     getRatingsDistribution();
+    getUserFilmsCount();
   }, []);
 
   const topMoviesWatched = moviesData
@@ -36,6 +47,7 @@ const Dashboard = () => {
   const highestRatedMovies = moviesData
     .sort((a, b) => b.rating - a.rating)
     .slice(0, 12);
+
   return (
     <ContentWrapper>
       <div className="body-text -prose">
@@ -47,7 +59,7 @@ const Dashboard = () => {
       </div>
       <div className="movie-counter">
         <h3>Movies watched by this Discord:</h3>
-        <span className="text-3xl font-bold movie-count">16019</span>
+        <span className="text-3xl font-bold movie-count">{userFilmsCount}</span>
       </div>
 
       <h3 className="subheading">How we rated of our movies:</h3>

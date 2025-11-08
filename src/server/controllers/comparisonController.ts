@@ -1,11 +1,16 @@
 import { Request, Response } from "express";
 import { ApiResponse } from "../types";
-import { getAllUsernames, getUserRatings, getUserProfile, getMoviesInCommon } from "./dataController";
+import {
+  dbGetAllUsernames,
+  dbGetUserRatings,
+  dbGetUserProfile,
+  dbGetMoviesInCommon,
+} from "./dataController";
 
 export class ComparisonController {
   static async getAllUsernames(req: Request, res: Response): Promise<void> {
     try {
-      const result = await getAllUsernames();
+      const result = await dbGetAllUsernames();
 
       if (!result.success) {
         const response: ApiResponse = {
@@ -45,8 +50,8 @@ export class ComparisonController {
 
       // Get both ratings and profile data
       const [ratingsResult, profileResult] = await Promise.all([
-        getUserRatings(username),
-        getUserProfile(username),
+        dbGetUserRatings(username),
+        dbGetUserProfile(username),
       ]);
 
       if (!ratingsResult.success) {
@@ -106,8 +111,8 @@ export class ComparisonController {
 
       // Get ratings for both users
       const [result1, result2] = await Promise.all([
-        getUserRatings(user1),
-        getUserRatings(user2),
+        dbGetUserRatings(user1),
+        dbGetUserRatings(user2),
       ]);
 
       if (!result1.success || !result2.success) {
@@ -177,7 +182,7 @@ export class ComparisonController {
         return;
       }
 
-      const result = await getMoviesInCommon(user1, user2);
+      const result = await dbGetMoviesInCommon(user1, user2);
 
       if (!result.success) {
         const response: ApiResponse = {

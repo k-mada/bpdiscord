@@ -102,41 +102,65 @@ export const LETTERBOXD_SELECTORS = {
   LIKED_FALLBACK: "[class*='liked']",
 
   // Error indicators
-  ERROR_INDICATORS: '.error-page, .not-found, [class="404"], [class="error-404"]',
+  ERROR_INDICATORS:
+    '.error-page, .not-found, [class="404"], [class="error-404"]',
 
   // Content containers
   MAIN_CONTENT: "div#content.site-body",
   POSTER_CONTAINER: "li.poster-container",
-  RATING_CONTEXT: "p.poster-viewingdata > span.rating, .rating, [class*='rating']",
+  RATING_CONTEXT:
+    "p.poster-viewingdata > span.rating, .rating, [class*='rating']",
 };
 
 // Resource types to block for performance
 export const BLOCKED_RESOURCES = {
   PERFORMANCE: ["image", "font", "media"],
   MEMORY_OPTIMIZATION: ["image", "stylesheet", "font", "media"],
-  TRACKING: ["google-analytics", "facebook.com", "twitter.com", "doubleclick", "ads", "analytics", "track"],
+  TRACKING: [
+    "google-analytics",
+    "facebook.com",
+    "twitter.com",
+    "doubleclick",
+    "ads",
+    "analytics",
+    "track",
+  ],
 };
 
 // Parent container types for element grouping
 export const CONTAINER_TYPES = ["li", "div", "article", "section", "tr"];
 
 // Element attributes to extract
-export const ELEMENT_ATTRIBUTES = ["data-original-title", "title", "aria-label"];
+export const ELEMENT_ATTRIBUTES = [
+  "data-original-title",
+  "title",
+  "aria-label",
+];
 
 // Loading strategies for page navigation
 export const LOADING_STRATEGIES = [
-  { waitUntil: "networkidle2" as const, timeout: BROWSER_CONFIG.PAGE_LOAD_TIMEOUT },
-  { waitUntil: "domcontentloaded" as const, timeout: BROWSER_CONFIG.PAGE_LOAD_TIMEOUT_FAST },
-  { waitUntil: "load" as const, timeout: BROWSER_CONFIG.PAGE_LOAD_TIMEOUT_SLOW },
+  {
+    waitUntil: "domcontentloaded" as const,
+    timeout: BROWSER_CONFIG.PAGE_LOAD_TIMEOUT_FAST,
+  },
+  {
+    waitUntil: "networkidle2" as const,
+    timeout: BROWSER_CONFIG.PAGE_LOAD_TIMEOUT,
+  },
+  {
+    waitUntil: "load" as const,
+    timeout: BROWSER_CONFIG.PAGE_LOAD_TIMEOUT_SLOW,
+  },
 ];
 
 // HTTP headers for realistic browser simulation
 export const BROWSER_HEADERS = {
   "Accept-Language": "en-US,en;q=0.9",
   "Accept-Encoding": "gzip, deflate, br",
-  "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+  Accept:
+    "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
   "Cache-Control": "no-cache",
-  "Pragma": "no-cache",
+  Pragma: "no-cache",
   "Sec-Fetch-Dest": "document",
   "Sec-Fetch-Mode": "navigate",
   "Sec-Fetch-Site": "none",
@@ -144,7 +168,8 @@ export const BROWSER_HEADERS = {
 };
 
 // User agent string
-export const USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+export const USER_AGENT =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 // Star rating patterns (ordered by priority - longest first)
 export const STAR_PATTERNS = [
