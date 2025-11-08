@@ -78,7 +78,7 @@
 
 @layer components {
   .main-content {
-    @apply max-w-5xl mx-auto py-8 px-4;
+    @apply max-w-5xl mx-auto py-8 px-4 overflow-x-auto;
   }
   .navigation {
     @apply bg-tertiary;
