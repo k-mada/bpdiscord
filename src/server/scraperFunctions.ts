@@ -4,6 +4,7 @@ import * as cheerio from "cheerio";
 import {
   dbUpsertUserRatings,
   dbUpsertUserProfile,
+  dbUpsertLBFilmRatings,
 } from "./controllers/dataController";
 import {
   BLOCKED_RESOURCES,
@@ -62,7 +63,7 @@ export const getBrowser = async (): Promise<any> => {
 /**
  * Create new browser instance with optimized configuration
  */
-export const createBrowser = async (): Promise<any> => {
+const createBrowser = async (): Promise<any> => {
   let puppeteer: any = null;
   let launchOptions: any = {
     headless: true,
@@ -171,7 +172,7 @@ export const createPage = async (): Promise<any> => {
 };
 
 /**
- * Create page specifically for film scraping without request interception
+ * Create page specifically for film scraping (simple headless mode)
  */
 export const createPageForFilmScraping = async (): Promise<any> => {
   let puppeteer: any = null;
@@ -219,7 +220,7 @@ export const createPageForFilmScraping = async (): Promise<any> => {
       : BROWSER_CONFIG.VIEWPORT_DEVELOPMENT
   );
 
-  // NO REQUEST INTERCEPTION for film scraping to avoid "Request already handled" errors
+  // Set realistic headers
   await page.setExtraHTTPHeaders({
     "Accept-Language": "en-US,en;q=0.9",
     "Accept-Encoding": "gzip, deflate, br",
@@ -338,33 +339,69 @@ export const scrapeUserRatings = async (
 };
 
 /**
- * Scrape ratings from a film page
+ * Scrape aggregate rating data from film page JSON-LD
+ *
+ * NOTE: Film pages are protected by bot detection that blocks the ratings histogram widget.
+ * We can only extract aggregate data (average rating, total count) from JSON-LD.
+ * Full histogram distribution (ratings by 0.5-5.0) is not available via web scraping.
  */
-export const scrapeFilmRatings = async (
+export const scrapeLBFilmRatings = async (
   filmSlug: string
-): Promise<Array<{ rating: number; count: number }>> => {
-  console.log(`Fetching ratings for ${filmSlug} from Letterboxd...`);
+): Promise<Array<{ avgRating: number; count: number }>> => {
+  console.log(`Fetching aggregate rating data for ${filmSlug} from JSON-LD...`);
 
-  const page = await createPage();
+  const page = await createPageForFilmScraping();
   const url = `https://letterboxd.com/film/${filmSlug}`;
 
   try {
-    await loadPageWithRetry(page, url);
-    await waitForPageContent(page);
+    await loadPageWithRetry(page, url, "networkidle2");
+    await delay(1000);
 
     const pageContent = await page.content();
     const $ = cheerio.load(pageContent);
 
     validateFilmPage($, filmSlug);
-    const ratingsSection = findRatingsSection($);
-    const ratings = extractRatingsData($, ratingsSection);
 
-    if (ratings.length === 0) {
-      throw new Error("No ratings data could be extracted from the page");
+    // Extract JSON-LD structured data
+    const scriptTag = $("script[type='application/ld+json']").first();
+    if (!scriptTag.length) {
+      throw new Error("No JSON-LD data found on film page");
     }
 
-    ratings.sort((a, b) => a.rating - b.rating);
-    return ratings;
+    let content = scriptTag.html();
+    if (!content) {
+      throw new Error("JSON-LD script tag is empty");
+    }
+
+    // Strip CDATA wrapper if present
+    content = content
+      .replace(/\/\*\s*<!\[CDATA\[\s*\*\//, "")
+      .replace(/\/\*\s*\]\]>\s*\*\//, "")
+      .trim();
+
+    const data = JSON.parse(content);
+
+    if (!data.aggregateRating) {
+      throw new Error("No aggregateRating found in JSON-LD data");
+    }
+
+    const { ratingValue, ratingCount } = data.aggregateRating;
+
+    console.log(`Successfully extracted aggregate rating for ${filmSlug}:`);
+    // console.log(`  Average: ${ratingValue}/5.0`);
+    // console.log(`  Total ratings: ${ratingCount.toLocaleString()}`);
+    // console.log(
+    //   `  (Note: Full histogram distribution not available due to bot detection)`
+    // );
+
+    // Return aggregate data as a single entry
+    // This is a workaround since we can't get the full 0.5-5.0 distribution
+    return [
+      {
+        avgRating: ratingValue,
+        count: ratingCount,
+      },
+    ];
   } finally {
     await closePageAndBrowser(page);
   }
@@ -388,6 +425,24 @@ export const saveRatingsToDatabase = async (
 
   console.log(
     `Successfully saved ${ratings.length} ratings for user ${username}`
+  );
+};
+
+export const saveLBFilmRatingsToDatabase = async (
+  filmSlug: string,
+  ratings: Array<{ avgRating: number; count: number }>
+): Promise<void> => {
+  const insertResult = await dbUpsertLBFilmRatings(filmSlug, ratings);
+
+  if (!insertResult.success) {
+    console.error("Database operation failed:", insertResult.error);
+    throw new Error(
+      `Failed to save ratings to database: ${insertResult.error}`
+    );
+  }
+
+  console.log(
+    `Successfully saved ${ratings.length} ratings for user ${filmSlug}`
   );
 };
 

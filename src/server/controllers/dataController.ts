@@ -130,7 +130,7 @@ export async function dbGetLBFilmRatings(filmSlugs: string[]): Promise<{
     const { data, error } = await supabaseAdmin
       .from("LBFilmRatings")
       .select("film_slugrating, rating_count")
-      .in("flim_slug", filmSlugs)
+      .in("film_slug", filmSlugs)
       .order("rating", { ascending: true });
 
     if (error) {
@@ -149,20 +149,21 @@ export async function dbGetLBFilmRatings(filmSlugs: string[]): Promise<{
 }
 
 export async function dbUpsertLBFilmRatings(
-  lbFilms: LBFilm[]
+  filmSlug: string,
+  ratings: { avgRating: number; count: number }[]
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const lbFilmsToUpsert = lbFilms.map((film) => ({
-      film_slug: film.film_slug,
-      rating: film.rating,
-      rating_count: film.rating_count,
+    const lbFilmsToUpsert = ratings.map((film) => ({
+      film_slug: filmSlug,
+      avg_rating: film.avgRating,
+      rating_count: film.count,
       updated_at: new Date().toISOString(),
     }));
 
     const { error } = await supabaseAdmin
       .from("LBFilmRatings")
       .upsert(lbFilmsToUpsert, {
-        onConflict: "film_slug, rating",
+        onConflict: "film_slug",
         ignoreDuplicates: false,
       });
 
@@ -253,6 +254,54 @@ export async function dbInsertFilmData(
     return { success: true };
   } catch (error) {
     console.error("Database insert error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown database error",
+    };
+  }
+}
+
+// Updated Hater rankings
+export async function dbGetHaterRankings2(): Promise<{
+  success: boolean;
+  data?: Array<{
+    displayName: string;
+    username: string;
+    filmsRated: number;
+    differential: number;
+    adjustedDifferential: number;
+  }>;
+  error?: string;
+}> {
+  try {
+    const { data: rankingsData, error: rankingsError } =
+      await supabaseAdmin.rpc("get_hater_rankings");
+
+    if (rankingsError) {
+      console.error("Database select error:", rankingsError);
+      return { success: false, error: rankingsError.message };
+    }
+
+    if (!rankingsData || rankingsData.length === 0) {
+      return { success: true, data: [] };
+    }
+
+    let formattedRankings = [];
+    if (rankingsData) {
+      formattedRankings = rankingsData.map((item: any) => {
+        return {
+          username: item.lbusername,
+          displayName: item.display_name,
+          filmsRated: item.films_rated,
+          differential: item.differential,
+          adjustedDifferential: item.normalized,
+        };
+      });
+    }
+
+    return { success: true, data: formattedRankings };
+  } catch (error) {
+    console.error("Database operation error:", error);
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown database error",
@@ -707,6 +756,38 @@ export async function dbGetMoviesInCommon(
     };
   } catch (error) {
     console.error("Database operation error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown database error",
+    };
+  }
+}
+
+export async function dbGetFilmsByUser(username: string): Promise<{
+  success: boolean;
+  data?: Array<{
+    title: string;
+    film_slug: string;
+    rating: number;
+    liked: boolean;
+    created_at: string;
+    updated_at: string;
+  }>;
+  error?: string;
+}> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("UserFilms")
+      .select("title, film_slug, rating, liked, created_at, updated_at")
+      .eq("lbusername", username)
+      .order("film_slug", { ascending: true });
+
+    if (error) {
+      console.error("Database query error for", username);
+      return { success: false, error: error.message };
+    }
+    return { success: true, data: data || [] };
+  } catch (error) {
     return {
       success: false,
       error: error instanceof Error ? error.message : "Unknown database error",

@@ -6,11 +6,7 @@ interface TooltipProps {
   className?: string;
 }
 
-const Tooltip = ({
-  content,
-  children,
-  className = "",
-}: TooltipProps) => {
+const Tooltip = ({ content, children, className = "" }: TooltipProps) => {
   const [isVisible, setIsVisible] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const tooltipRef = useRef<HTMLDivElement>(null);
@@ -62,10 +58,9 @@ const Tooltip = ({
       onMouseMove={handleMouseMove}
     >
       {children}
-
       <div
         ref={tooltipRef}
-        className={`fixed z-50 px-3 py-2 text-sm text-letterboxd-text-primary bg-letterboxd-bg-primary border border-letterboxd-border rounded-md shadow-letterboxd-lg pointer-events-none transition-opacity duration-300 ${
+        className={`fixed z-50 px-3 py-2 text-sm text-letterboxd-text-primary bg-letterboxd-bg-primary border border-letterboxd-border rounded-md shadow-letterboxd-lg pointer-events-none transition-opacity duration-300 max-w-xs ${
           isVisible ? "opacity-100" : "opacity-0"
         }`}
         style={{
@@ -74,7 +69,7 @@ const Tooltip = ({
           visibility: isVisible ? "visible" : "hidden",
         }}
       >
-        <div className="whitespace-nowrap">{content}</div>
+        <div className="break-words lowercase">{content}</div>
         {/* Tooltip arrow */}
         <div
           className="absolute w-2 h-2 bg-letterboxd-bg-primary border-b border-r border-letterboxd-border transform rotate-45"

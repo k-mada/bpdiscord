@@ -231,7 +231,7 @@ export const validateFilmPage = ($: any, filmSlug: string): void => {
     throw new Error(`Insufficient page content for film: ${filmSlug}`);
   }
 
-  console.log(`Profile validation passed for film: ${filmSlug}`);
+  console.log(`Film page validation passed for film: ${filmSlug}`);
 };
 
 /**
@@ -239,18 +239,16 @@ export const validateFilmPage = ($: any, filmSlug: string): void => {
  */
 export const findRatingsSection = ($: any): any => {
   const selectors = [
+    "div.rating-histogram-exploded",
+    "div.rating-hisogram",
     "section.ratings-histogram-chart",
     ".ratings-histogram-chart",
-    "[class*='rating-stats']",
-    "[class*='rating-distribution']",
-    "section[class*='rating']",
-    "div[class*='rating']",
-    "[class*='rating']",
   ];
 
   for (const selector of selectors) {
     const section = $(selector);
     if (section.length > 0) {
+      console.log(`found section for ${selector}`);
       return section;
     }
   }
@@ -358,15 +356,18 @@ export const forceGarbageCollection = (): void => {
  * @param username - Letterboxd username to verify
  * @returns Promise<boolean> - true if user exists (200), false if not (404)
  */
-export const verifyLetterboxdUserExists = async (username: string): Promise<boolean> => {
+export const verifyLetterboxdUserExists = async (
+  username: string
+): Promise<boolean> => {
   const url = `https://letterboxd.com/${username}`;
 
   try {
-    const axios = (await import('axios')).default;
+    const axios = (await import("axios")).default;
 
     const response = await axios.head(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
       },
       maxRedirects: 5,
       timeout: 5000, // 5 second timeout
@@ -375,7 +376,6 @@ export const verifyLetterboxdUserExists = async (username: string): Promise<bool
 
     // Letterboxd returns proper HTTP status codes
     return response.status === 200;
-
   } catch (error) {
     // Network errors, timeouts, etc.
     console.error(`Error verifying user ${username}:`, error);

@@ -6,6 +6,7 @@ import {
   getAllFilms,
   getUserProfile,
   fetchFilms,
+  getLBFilmRatingsByUsername,
 } from "../controllers/scraperController";
 import { validateScraperRequest } from "../middleware/validation";
 import { handleValidationErrors } from "../middleware/errorHandler";
@@ -24,6 +25,12 @@ router.get(
   "/stream-films/:username",
   [scraperLimiter, handleValidationErrors],
   fetchFilms
+);
+
+router.get(
+  "/update-lb-films/:username",
+  [scraperLimiter, handleValidationErrors],
+  getLBFilmRatingsByUsername
 );
 
 // Apply authentication to remaining scraper routes

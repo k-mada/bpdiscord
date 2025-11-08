@@ -175,6 +175,11 @@ class ApiService {
     return this.request<ApiResponse<any>>("/comparison/hater-rankings");
   }
 
+  // New Hater rankings
+  async getHaterRankings2(): Promise<ApiResponse<any>> {
+    return this.request<ApiResponse<any>>("/comparison/v2/hater-rankings");
+  }
+
   // New database-first film user endpoints (no auth required)
   async getFilmUserRatings(
     username: string,

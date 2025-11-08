@@ -5,6 +5,7 @@ import {
   dbGetUserProfile,
   dbUpsertUserProfile,
   dbGetAllUsernames,
+  dbGetFilmsByUser,
 } from "./dataController";
 
 export async function getFilmRatings(
@@ -440,6 +441,34 @@ export async function getAllUsers(req: Request, res: Response): Promise<void> {
     console.error("Error in getAllUsers:", error);
     res.status(500).json({
       error: `Failed to get users: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    });
+  }
+}
+
+export async function getFilmsByUser(
+  req: Request,
+  res: Response
+): Promise<void> {
+  const { username } = req.params;
+
+  if (!username) {
+    res.status(400).json({ error: "Username is required" });
+    return;
+  }
+  try {
+    const result = await dbGetFilmsByUser(username);
+    if (result.success && result.data) {
+      res.json({
+        message: "Films retrieved successfully",
+        data: result.data,
+      });
+    }
+  } catch (error) {
+    console.error("Error in getFilmsByUser:", error);
+    res.status(500).json({
+      error: `Failed to get films: ${
         error instanceof Error ? error.message : "Unknown error"
       }`,
     });
