@@ -45,12 +45,13 @@ const Modal = ({ isOpen, onClose, children, className = "" }: ModalProps) => {
         document.documentElement.style.overflow = originalOverflow;
       };
     }
+    return undefined;
   }, [isOpen]);
 
   if (!isOpen) return null;
 
   const modalContent = (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Modal overlay */}
       <div
         className="absolute inset-0 bg-black opacity-50"
@@ -60,9 +61,10 @@ const Modal = ({ isOpen, onClose, children, className = "" }: ModalProps) => {
 
       {/* Modal content */}
       <div
-        className={`relative bg-letterboxd-bg-primary border border-letterboxd-border rounded-md shadow-letterboxd-lg max-w-lg w-full mx-4 ${className}`}
+        className={`relative bg-letterboxd-bg-primary border border-letterboxd-border rounded-md shadow-letterboxd-lg max-w-lg w-full max-h-[90vh] flex flex-col ${className}`}
         role="dialog"
         aria-modal="true"
+        onClick={(e) => e.stopPropagation()}
       >
         {children}
       </div>
@@ -80,17 +82,24 @@ const ModalHeader = ({
 }: ModalHeaderProps) => {
   return (
     <div
-      className={`flex items-center justify-between px-6 py-4 border-b border-letterboxd-border ${className}`}
+      className={`flex items-center justify-between px-4 sm:px-6 py-4 border-b border-letterboxd-border flex-shrink-0 ${className}`}
     >
-      <h2 className="text-xl  text-letterboxd-text-primary">{children}</h2>
-      <XMarkIcon onClick={onClose} className="w-5 h-5 cursor-pointer" />
+      <h2 className="text-lg sm:text-xl text-letterboxd-text-primary">
+        {children}
+      </h2>
+      <XMarkIcon
+        onClick={onClose}
+        className="w-5 h-5 cursor-pointer text-letterboxd-text-primary hover:text-letterboxd-text-secondary transition-colors"
+      />
     </div>
   );
 };
 
 const ModalBody = ({ children, className = "" }: ModalBodyProps) => {
   return (
-    <div className={`px-6 py-4 text-letterboxd-text-primary ${className}`}>
+    <div
+      className={`px-4 sm:px-6 py-4 text-letterboxd-text-primary overflow-y-auto flex-1 min-h-0 ${className}`}
+    >
       {children}
     </div>
   );
