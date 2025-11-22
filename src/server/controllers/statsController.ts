@@ -3,6 +3,7 @@ import {
   dbGetTotalRatingsDistribution,
   dbGetAllUserFilms,
   dbGetUserFilmsCount,
+  dbGetMissingFilms,
 } from "./dataController";
 
 export async function getTotalRatings(
@@ -26,5 +27,13 @@ export async function getUserFilmsCount(
   res: Response
 ): Promise<void> {
   const result = await dbGetUserFilmsCount();
+  res.json(result);
+}
+
+export async function getMissingFilms(
+  req: Request,
+  res: Response
+): Promise<void> {
+  const result = await dbGetMissingFilms();
   res.json(result);
 }

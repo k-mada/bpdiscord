@@ -270,6 +270,16 @@ class ApiService {
   async getUserFilmsCount(): Promise<ApiResponse<number>> {
     return this.request<number>("/stats/user-films-count");
   }
+  // Movie Swap endpoint
+  // TODO: NEED TO STANDARDIZE MOVIE OBJECT, TOO MANY VARIATIONS
+  async getMovieSwap(
+    user1: string,
+    user2: string
+  ): Promise<ApiResponse<{ filmSlug: string; title: string }[]>> {
+    return this.request<{ filmSlug: string; title: string }[]>(
+      "/comparison/movie-swap"
+    );
+  }
 }
 
 export const apiService = new ApiService();

@@ -794,3 +794,52 @@ export async function dbGetFilmsByUser(username: string): Promise<{
     };
   }
 }
+
+export async function dbGetMovieSwap(
+  user1: string,
+  user2: string
+): Promise<{
+  success: boolean;
+  data?: Array<{
+    title: string;
+    film_slug: string;
+  }>;
+  error?: string;
+}> {
+  try {
+    const { data, error } = await supabaseAdmin.rpc("get_movie_swap", {
+      user1,
+      user2,
+    });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+    return { success: true, data: data || [] };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown database error",
+    };
+  }
+}
+
+export async function dbGetMissingFilms(): Promise<{
+  success: boolean;
+  data?: Array<string>;
+  error?: string;
+}> {
+  try {
+    const { data, error } = await supabaseAdmin.rpc("get_missing_films");
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+    return { success: true, data: data || [] };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown database error",
+    };
+  }
+}

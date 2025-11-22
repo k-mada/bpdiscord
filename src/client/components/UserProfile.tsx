@@ -1,9 +1,7 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import Header from "./Header";
 
 const UserProfile = () => {
-  const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
@@ -13,19 +11,6 @@ const UserProfile = () => {
     }
   }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/login");
-  };
-
-  const handleNavigateToScraper = () => {
-    navigate("/fetcher");
-  };
-
-  const handleNavigateToComparison = () => {
-    navigate("/compare");
-  };
   const getUserName = () => {
     if (user?.user_metadata?.name) {
       return user.user_metadata.name;

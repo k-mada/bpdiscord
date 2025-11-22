@@ -5,212 +5,271 @@ import {
   dbGetUserRatings,
   dbGetUserProfile,
   dbGetMoviesInCommon,
+  dbGetMovieSwap,
 } from "./dataController";
 
-export class ComparisonController {
-  static async getAllUsernames(req: Request, res: Response): Promise<void> {
-    try {
-      const result = await dbGetAllUsernames();
+// export class ComparisonController {
+export async function getAllUsernames(
+  req: Request,
+  res: Response
+): Promise<void> {
+  try {
+    const result = await dbGetAllUsernames();
 
-      if (!result.success) {
-        const response: ApiResponse = {
-          error: result.error || "Failed to get usernames",
-        };
-        res.status(500).json(response);
-        return;
-      }
-
+    if (!result.success) {
       const response: ApiResponse = {
-        message: "Usernames retrieved successfully",
-        data: result.data,
-      };
-
-      // TODO: WHY BAD REQUEST?
-
-      res.json(response);
-    } catch (error) {
-      console.error("Get usernames error:", error);
-      const response: ApiResponse = {
-        error: `Failed to get usernames: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`,
+        error: result.error || "Failed to get usernames",
       };
       res.status(500).json(response);
+      return;
     }
-  }
 
-  static async getUserRatings(req: Request, res: Response): Promise<void> {
-    try {
-      const { username } = req.body;
-      if (!username) {
-        const response: ApiResponse = { error: "Username is required" };
-        res.status(400).json(response);
-        return;
-      }
+    const response: ApiResponse = {
+      message: "Usernames retrieved successfully",
+      data: result.data,
+    };
 
-      // Get both ratings and profile data
-      const [ratingsResult, profileResult] = await Promise.all([
-        dbGetUserRatings(username),
-        dbGetUserProfile(username),
-      ]);
+    // TODO: WHY BAD REQUEST?
 
-      if (!ratingsResult.success) {
-        const response: ApiResponse = {
-          error: ratingsResult.error || "Failed to get user ratings",
-        };
-        res.status(500).json(response);
-        return;
-      }
-
-      // Transform the ratings data to match the expected format
-      const ratings =
-        ratingsResult.data?.map((item: any) => ({
-          rating: item.rating,
-          count: item.count,
-        })) || [];
-
-      // Calculate total films rated
-      const totalFilms = ratings.reduce((sum, r) => sum + r.count, 0);
-
-      const response: ApiResponse = {
-        message: "User ratings retrieved successfully",
-        data: {
-          username,
-          displayName: profileResult.data?.displayName || username,
-          followers: profileResult.data?.followers || 0,
-          following: profileResult.data?.following || 0,
-          numberOfLists: profileResult.data?.numberOfLists || 0,
-          totalFilms,
-          ratings,
-        },
-      };
-
-      res.json(response);
-    } catch (error) {
-      console.error("Get user ratings error:", error);
-      const response: ApiResponse = {
-        error: `Failed to get user ratings: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`,
-      };
-      res.status(500).json(response);
-    }
-  }
-
-  static async compareUsers(req: Request, res: Response): Promise<void> {
-    try {
-      const { user1, user2 } = req.body;
-
-      if (!user1 || !user2) {
-        const response: ApiResponse = {
-          error: "Both user1 and user2 are required",
-        };
-        res.status(400).json(response);
-        return;
-      }
-
-      // Get ratings for both users
-      const [result1, result2] = await Promise.all([
-        dbGetUserRatings(user1),
-        dbGetUserRatings(user2),
-      ]);
-
-      if (!result1.success || !result2.success) {
-        const response: ApiResponse = {
-          error: "Failed to retrieve user ratings",
-        };
-        res.status(500).json(response);
-        return;
-      }
-
-      // Transform the data
-      const ratings1 =
-        result1.data?.map((item: any) => ({
-          rating: item.rating,
-          count: item.count,
-        })) || [];
-
-      const ratings2 =
-        result2.data?.map((item: any) => ({
-          rating: item.rating,
-          count: item.count,
-        })) || [];
-
-      const response: ApiResponse = {
-        message: "User comparison retrieved successfully",
-        data: {
-          user1: {
-            username: user1,
-            ratings: ratings1,
-          },
-          user2: {
-            username: user2,
-            ratings: ratings2,
-          },
-        },
-      };
-
-      res.json(response);
-    } catch (error) {
-      console.error("Compare users error:", error);
-      const response: ApiResponse = {
-        error: `Failed to compare users: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`,
-      };
-      res.status(500).json(response);
-    }
-  }
-
-  static async getMoviesInCommon(req: Request, res: Response): Promise<void> {
-    try {
-      const { user1, user2 } = req.body;
-
-      if (!user1 || !user2) {
-        const response: ApiResponse = {
-          error: "Both user1 and user2 are required",
-        };
-        res.status(400).json(response);
-        return;
-      }
-
-      if (user1 === user2) {
-        const response: ApiResponse = {
-          error: "Cannot compare user with themselves",
-        };
-        res.status(400).json(response);
-        return;
-      }
-
-      const result = await dbGetMoviesInCommon(user1, user2);
-
-      if (!result.success) {
-        const response: ApiResponse = {
-          error: result.error || "Failed to get movies in common",
-        };
-        res.status(500).json(response);
-        return;
-      }
-
-      const response: ApiResponse = {
-        message: "Movies in common retrieved successfully",
-        data: {
-          user1,
-          user2,
-          moviesInCommon: result.data || [],
-          count: result.count || 0,
-        },
-      };
-
-      res.json(response);
-    } catch (error) {
-      console.error("Get movies in common error:", error);
-      const response: ApiResponse = {
-        error: `Failed to get movies in common: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`,
-      };
-      res.status(500).json(response);
-    }
+    res.json(response);
+  } catch (error) {
+    console.error("Get usernames error:", error);
+    const response: ApiResponse = {
+      error: `Failed to get usernames: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+    res.status(500).json(response);
   }
 }
+
+export async function getUserRatings(
+  req: Request,
+  res: Response
+): Promise<void> {
+  try {
+    const { username } = req.body;
+    if (!username) {
+      const response: ApiResponse = { error: "Username is required" };
+      res.status(400).json(response);
+      return;
+    }
+
+    // Get both ratings and profile data
+    const [ratingsResult, profileResult] = await Promise.all([
+      dbGetUserRatings(username),
+      dbGetUserProfile(username),
+    ]);
+
+    if (!ratingsResult.success) {
+      const response: ApiResponse = {
+        error: ratingsResult.error || "Failed to get user ratings",
+      };
+      res.status(500).json(response);
+      return;
+    }
+
+    // Transform the ratings data to match the expected format
+    const ratings =
+      ratingsResult.data?.map((item: any) => ({
+        rating: item.rating,
+        count: item.count,
+      })) || [];
+
+    // Calculate total films rated
+    const totalFilms = ratings.reduce((sum, r) => sum + r.count, 0);
+
+    const response: ApiResponse = {
+      message: "User ratings retrieved successfully",
+      data: {
+        username,
+        displayName: profileResult.data?.displayName || username,
+        followers: profileResult.data?.followers || 0,
+        following: profileResult.data?.following || 0,
+        numberOfLists: profileResult.data?.numberOfLists || 0,
+        totalFilms,
+        ratings,
+      },
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error("Get user ratings error:", error);
+    const response: ApiResponse = {
+      error: `Failed to get user ratings: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+    res.status(500).json(response);
+  }
+}
+
+export async function compareUsers(req: Request, res: Response): Promise<void> {
+  try {
+    const { user1, user2 } = req.body;
+
+    if (!user1 || !user2) {
+      const response: ApiResponse = {
+        error: "Both user1 and user2 are required",
+      };
+      res.status(400).json(response);
+      return;
+    }
+
+    // Get ratings for both users
+    const [result1, result2] = await Promise.all([
+      dbGetUserRatings(user1),
+      dbGetUserRatings(user2),
+    ]);
+
+    if (!result1.success || !result2.success) {
+      const response: ApiResponse = {
+        error: "Failed to retrieve user ratings",
+      };
+      res.status(500).json(response);
+      return;
+    }
+
+    // Transform the data
+    const ratings1 =
+      result1.data?.map((item: any) => ({
+        rating: item.rating,
+        count: item.count,
+      })) || [];
+
+    const ratings2 =
+      result2.data?.map((item: any) => ({
+        rating: item.rating,
+        count: item.count,
+      })) || [];
+
+    const response: ApiResponse = {
+      message: "User comparison retrieved successfully",
+      data: {
+        user1: {
+          username: user1,
+          ratings: ratings1,
+        },
+        user2: {
+          username: user2,
+          ratings: ratings2,
+        },
+      },
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error("Compare users error:", error);
+    const response: ApiResponse = {
+      error: `Failed to compare users: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+    res.status(500).json(response);
+  }
+}
+
+export async function getMoviesInCommon(
+  req: Request,
+  res: Response
+): Promise<void> {
+  try {
+    const { user1, user2 } = req.body;
+
+    if (!user1 || !user2) {
+      const response: ApiResponse = {
+        error: "Both user1 and user2 are required",
+      };
+      res.status(400).json(response);
+      return;
+    }
+
+    if (user1 === user2) {
+      const response: ApiResponse = {
+        error: "Cannot compare user with themselves",
+      };
+      res.status(400).json(response);
+      return;
+    }
+
+    const result = await dbGetMoviesInCommon(user1, user2);
+
+    if (!result.success) {
+      const response: ApiResponse = {
+        error: result.error || "Failed to get movies in common",
+      };
+      res.status(500).json(response);
+      return;
+    }
+
+    const response: ApiResponse = {
+      message: "Movies in common retrieved successfully",
+      data: {
+        user1,
+        user2,
+        moviesInCommon: result.data || [],
+        count: result.count || 0,
+      },
+    };
+
+    res.json(response);
+  } catch (error) {
+    console.error("Get movies in common error:", error);
+    const response: ApiResponse = {
+      error: `Failed to get movies in common: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+    res.status(500).json(response);
+  }
+}
+
+export async function getMovieSwap(req: Request, res: Response): Promise<void> {
+  try {
+    const user1 = req.query.user1?.toString();
+    const user2 = req.query.user2?.toString();
+
+    if (!user1 || !user2) {
+      const response: ApiResponse = {
+        error: "Both user1 and user2 are required",
+      };
+      res.status(400).json(response);
+      return;
+    }
+
+    const result = await dbGetMovieSwap(user1, user2);
+
+    if (!result.success) {
+      const response: ApiResponse = {
+        error: result.error || "Failed to get movies in common",
+      };
+      res.status(500).json(response);
+      return;
+    }
+
+    let movieSwapMovies: { filmSlug: string; title: string }[] = [];
+    if (result.data) {
+      movieSwapMovies = result.data.map((value, index) => {
+        return {
+          filmSlug: value.film_slug,
+          title: value.title,
+        };
+      });
+    }
+
+    const response: ApiResponse = {
+      message: "Movie swap retrieved successfully",
+      data: movieSwapMovies || [],
+    };
+    res.json(response);
+  } catch (error) {
+    console.error("Get movie swap error:", error);
+    const response: ApiResponse = {
+      error: `Failed to get movie swap: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+    res.status(500).json(response);
+  }
+}
+// }

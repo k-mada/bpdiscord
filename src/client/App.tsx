@@ -34,14 +34,15 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
+        {/* <Route
           path="/profile"
           element={
             <ProtectedRoute>
               <UserProfile />
             </ProtectedRoute>
           }
-        />
+        /> */}
+        <Route path="/:username" element={<UserProfile />} />
         <Route
           path="/fetcher"
           element={
