@@ -1,5 +1,11 @@
 import { Router } from "express";
-import { ComparisonController } from "../controllers/comparisonController";
+import {
+  getAllUsernames,
+  getUserRatings,
+  compareUsers,
+  getMoviesInCommon,
+  getMovieSwap,
+} from "../controllers/comparisonController";
 import {
   dbGetHaterRankings,
   dbGetHaterRankings2,
@@ -7,10 +13,11 @@ import {
 
 const router = Router();
 
-router.get("/usernames", ComparisonController.getAllUsernames);
-router.post("/user-ratings", ComparisonController.getUserRatings);
-router.post("/compare", ComparisonController.compareUsers);
-router.post("/movies-in-common", ComparisonController.getMoviesInCommon);
+router.get("/movie-swap", getMovieSwap);
+router.get("/usernames", getAllUsernames);
+router.post("/user-ratings", getUserRatings);
+router.post("/compare", compareUsers);
+router.post("/movies-in-common", getMoviesInCommon);
 
 // Public hater rankings endpoint
 router.get("/hater-rankings", async (req, res): Promise<void> => {
