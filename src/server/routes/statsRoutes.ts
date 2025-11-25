@@ -5,6 +5,7 @@ import {
   getTotalRatings,
   getAllUserFilms,
   getUserFilmsCount,
+  getMissingFilms,
 } from "../controllers/statsController";
 
 const router = Router();
@@ -31,6 +32,12 @@ router.get(
   "/user-films-count",
   [scraperLimiter, handleValidationErrors],
   getUserFilmsCount
+);
+
+router.get(
+  "/get-missing-films",
+  [scraperLimiter, handleValidationErrors],
+  getMissingFilms
 );
 
 export default router;
