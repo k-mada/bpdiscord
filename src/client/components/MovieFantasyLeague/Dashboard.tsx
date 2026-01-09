@@ -71,6 +71,14 @@ const MovieFantasyLeague = () => {
       <h2 className="text-xl font-bold text-letterboxd-text-primary mb-4">
         Select a movie to view its MFL score breakdown
       </h2>
+      <p className="text-letterboxd-text-secondary mb-4">
+        <a
+          href="/mfl/scoring-reference"
+          className="underline hover:no-underline"
+        >
+          Scoring reference
+        </a>
+      </p>
       <MovieSelector movies={movies} onMovieSelect={handleMovieSelect} />
       {loading && <Spinner />}
       {selectedMovie !== "-1" && movieScores.length === 0 && (

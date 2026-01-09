@@ -55,6 +55,12 @@ const Header = () => {
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-4">
           <button
+            onClick={() => navigateTo("/mfl")}
+            className={getNavButtonClass("/mfl")}
+          >
+            MFL
+          </button>
+          <button
             onClick={() => navigateTo("/compare")}
             className={getNavButtonClass("/compare")}
           >
@@ -66,12 +72,7 @@ const Header = () => {
           >
             Hater Rankings
           </button>
-          <button
-            onClick={() => navigateTo("/dashboard")}
-            className={getNavButtonClass("/dashboard")}
-          >
-            Dashboard
-          </button>
+
           <button
             onClick={() => navigateTo("/profile")}
             className={getNavButtonClass("/profile")}
