@@ -70,9 +70,6 @@ const createBrowser = async (): Promise<any> => {
   };
 
   if (process.env.VERCEL) {
-    console.log(
-      "is vercel/serverless, importing @sparticuz/chromium and puppeteer-core"
-    );
     const chromium = (await import("@sparticuz/chromium")).default;
     puppeteer = (await import("puppeteer-core")).default;
     launchOptions = {
@@ -83,13 +80,11 @@ const createBrowser = async (): Promise<any> => {
       timeout: BROWSER_CONFIG.BROWSER_LAUNCH_TIMEOUT,
     };
   } else {
-    console.log("Not serverless, using full puppeteer for local development");
+    // Not serverless, using full puppeteer for local development
     try {
       puppeteer = (await import("puppeteer")).default;
     } catch (error) {
-      console.log(
-        "Full puppeteer not available, falling back to puppeteer-core with system Chrome"
-      );
+      // Full puppeteer not available, falling back to puppeteer-core with system Chrome"
       puppeteer = (await import("puppeteer-core")).default;
       const chromium = (await import("@sparticuz/chromium")).default;
       launchOptions = {
@@ -99,7 +94,7 @@ const createBrowser = async (): Promise<any> => {
     }
   }
 
-  console.log("Launching browser with options:", launchOptions);
+  // Launching browser with options
   return await puppeteer.launch(launchOptions);
 };
 
@@ -402,6 +397,28 @@ export const scrapeLBFilmRatings = async (
         count: ratingCount,
       },
     ];
+  } finally {
+    await closePageAndBrowser(page);
+  }
+};
+
+export const scrapeLBFilmRatingsDistribution = async (
+  filmSlug: string
+): Promise<Array<{ rating: number; count: number }>> => {
+  const page = await createPageForFilmScraping();
+  const url = `https://letterboxd.com/csi/film/${filmSlug}/ratings-summary/`;
+
+  try {
+    await loadPageWithRetry(page, url, "networkidle2");
+    await delay(1000);
+
+    const pageContent = await page.content();
+    const $ = cheerio.load(pageContent);
+
+    validateFilmPage($, filmSlug);
+    const ratingsSection = findRatingsSection($);
+    const ratings = extractRatingsData($, ratingsSection);
+    return ratings;
   } finally {
     await closePageAndBrowser(page);
   }
@@ -851,7 +868,7 @@ export const scrapeFilmsPageWithMemoryCleanup = async (
     const films = await extractFilmsFromPage(page);
 
     progressEmitter.emit("progress", {
-      type: "page_extracted",
+      type: "page_scraped",
       message: `Extracted ${films.length} films from page ${pageNum}`,
       currentPage: pageNum,
       filmsFromPage: films.length,

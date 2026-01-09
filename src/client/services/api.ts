@@ -6,6 +6,8 @@ import {
   AuthResponse,
   ScraperRequest,
   PasswordResetConfirmRequest,
+  MFLScoringMetric,
+  MFLMovieScore,
 } from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
@@ -279,6 +281,40 @@ class ApiService {
     return this.request<{ filmSlug: string; title: string }[]>(
       "/comparison/movie-swap"
     );
+  }
+
+  async getMflScoringMetrics(): Promise<ApiResponse<MFLScoringMetric[]>> {
+    return this.request<MFLScoringMetric[]>("/mfl/scoring-metrics");
+  }
+
+  async getMflMovies(): Promise<
+    ApiResponse<{ title: string; filmSlug: string }[]>
+  > {
+    return this.request<{ title: string; filmSlug: string }[]>("/mfl/movies");
+  }
+
+  async getMflMovieScore(
+    filmSlug: string
+  ): Promise<ApiResponse<MFLMovieScore[]>> {
+    return this.request<MFLMovieScore[]>(`/mfl/movie-score/${filmSlug}`);
+  }
+
+  async upsertMflMovieScore(
+    filmSlug: string,
+    pointsAwarded: number,
+    metricId: number,
+    scoringId?: number
+  ): Promise<ApiResponse<any>> {
+    return this.request<any>(`/mfl/upsert-movie-score`, {
+      method: "POST",
+      body: JSON.stringify({ filmSlug, pointsAwarded, metricId, scoringId }),
+    });
+  }
+
+  async deleteMflScoringMetric(scoringId: number): Promise<ApiResponse<any>> {
+    return this.request<any>(`/mfl/delete-scoring-metric/${scoringId}`, {
+      method: "DELETE",
+    });
   }
 }
 

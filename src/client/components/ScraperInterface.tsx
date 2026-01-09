@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import apiService from "../services/api";
 import { ALL_RATINGS } from "../constants";
-import Header from "./Header";
 
 interface Rating {
   rating: number;
@@ -293,220 +292,212 @@ const ScraperInterface = () => {
   };
 
   return (
-    <div className="min-h-screen bg-letterboxd-bg-primary">
-      <Header />
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        <div className="space-y-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-letterboxd-text-primary mb-2">
-              Letterboxd Data Fetcher
-            </h2>
-            <p className="text-letterboxd-text-secondary">
-              Check database for existing data or fetch latest data from
-              Letterboxd
-            </p>
+    <div className="space-y-8">
+      <div className="text-center">
+        <h2 className="text-3xl font-bold text-letterboxd-text-primary mb-2">
+          Letterboxd Data Fetcher
+        </h2>
+        <p className="text-letterboxd-text-secondary">
+          Check database for existing data or fetch latest data from Letterboxd
+        </p>
+      </div>
+
+      <div className="card">
+        <div className="space-y-4">
+          <div>
+            <label
+              htmlFor="username"
+              className="block text-sm font-medium text-letterboxd-text-secondary mb-2"
+            >
+              Letterboxd Username
+            </label>
+            {loadingUsers ? (
+              <div className="input-field w-full flex items-center justify-center">
+                <span className="text-letterboxd-text-muted">
+                  Loading users...
+                </span>
+              </div>
+            ) : (
+              <select
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                disabled={loading || streaming}
+                className="input-field w-full"
+              >
+                <option value="">
+                  {availableUsers.length > 0
+                    ? "Select a user..."
+                    : "No users available"}
+                </option>
+                {availableUsers.map((user) => (
+                  <option key={user.username} value={user.username}>
+                    {user.displayName || user.username} ({user.username})
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
-          <div className="card">
-            <div className="space-y-4">
-              <div>
-                <label
-                  htmlFor="username"
-                  className="block text-sm font-medium text-letterboxd-text-secondary mb-2"
-                >
-                  Letterboxd Username
-                </label>
-                {loadingUsers ? (
-                  <div className="input-field w-full flex items-center justify-center">
-                    <span className="text-letterboxd-text-muted">
-                      Loading users...
-                    </span>
-                  </div>
-                ) : (
-                  <select
-                    id="username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    disabled={loading || streaming}
-                    className="input-field w-full"
-                  >
-                    <option value="">
-                      {availableUsers.length > 0
-                        ? "Select a user..."
-                        : "No users available"}
-                    </option>
-                    {availableUsers.map((user) => (
-                      <option key={user.username} value={user.username}>
-                        {user.displayName || user.username} ({user.username})
-                      </option>
-                    ))}
-                  </select>
-                )}
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-4">
-                <button
-                  onClick={handleCheckExistingData}
-                  disabled={loading || streaming || !username.trim()}
-                  className="btn-secondary flex-1"
-                >
-                  {loading ? "Checking..." : "Check current ratings data"}
-                </button>
-                <button
-                  onClick={handleStreamScraping}
-                  disabled={loading || streaming || !username.trim()}
-                  className="btn-primary flex-1"
-                >
-                  {streaming ? "Getting films..." : "Update films"}
-                </button>
-              </div>
-              {error && (
-                <div className="card border-red-500/30 bg-red-900/10">
-                  <h3 className="text-lg font-semibold text-red-400 mb-2">
-                    Error
-                  </h3>
-                  <p className="text-red-300">{error}</p>
-                </div>
-              )}
-
-              {success && (
-                <div className="card border-green-500/30 bg-green-900/10">
-                  <h3 className="text-lg font-semibold text-green-400 mb-2">
-                    Success
-                  </h3>
-                  <p className="text-green-300">{success}</p>
-                </div>
-              )}
-              {fetchStatus && (
-                <div className="mt-4 p-3 bg-letterboxd-bg-primary rounded-lg border border-letterboxd-border">
-                  <p className="text-letterboxd-text-secondary text-sm">
-                    {fetchStatus}
-                  </p>
-                </div>
-              )}
-
-              {/* Progress Bar for Streaming */}
-              {streaming && totalPages > 0 && (
-                <div className="mt-4 p-4 bg-letterboxd-bg-secondary rounded-lg border border-letterboxd-border">
-                  <div className="space-y-3">
-                    <div className="flex justify-between text-sm text-letterboxd-text-secondary">
-                      <span>Page Progress</span>
-                      <span>
-                        {currentPage} / {totalPages}
-                      </span>
-                    </div>
-                    <div className="w-full bg-letterboxd-bg-primary rounded-full h-2">
-                      <div
-                        className="bg-letterboxd-accent h-2 rounded-full transition-all duration-300"
-                        style={{
-                          width: `${(currentPage / totalPages) * 100}%`,
-                        }}
-                      />
-                    </div>
-                    <div className="flex justify-between text-xs text-letterboxd-text-muted">
-                      <span>Films collected: {totalFilmsCollected}</span>
-                      <span>
-                        {Math.round((currentPage / totalPages) * 100)}% complete
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Live Progress Log */}
-              {streamProgress.length > 0 && (
-                <div className="mt-4 p-4 bg-letterboxd-bg-secondary rounded-lg border border-letterboxd-border">
-                  <h4 className="text-sm font-semibold text-letterboxd-text-secondary mb-3">
-                    {streaming ? "Live Progress Log" : "Operation Log"}
-                  </h4>
-                  <div className="max-h-80 overflow-y-auto space-y-1">
-                    {streamProgress
-                      .slice()
-                      .reverse()
-                      .map((progress, index) => (
-                        <div
-                          key={index}
-                          className="text-xs text-letterboxd-text-muted p-2 bg-letterboxd-bg-primary rounded"
-                        >
-                          <span className="text-letterboxd-text-secondary font-mono">
-                            {new Date(progress.timestamp).toLocaleTimeString()}
-                          </span>
-                          {" - "}
-                          <span
-                            className={`${
-                              progress.type === "error"
-                                ? "text-red-400"
-                                : progress.type === "complete"
-                                ? "text-green-400"
-                                : "text-letterboxd-text-muted"
-                            }`}
-                          >
-                            {progress.message}
-                          </span>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              )}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <button
+              onClick={handleCheckExistingData}
+              disabled={loading || streaming || !username.trim()}
+              className="btn-secondary flex-1"
+            >
+              {loading ? "Checking..." : "Check current ratings data"}
+            </button>
+            <button
+              onClick={handleStreamScraping}
+              disabled={loading || streaming || !username.trim()}
+              className="btn-primary flex-1"
+            >
+              {streaming ? "Getting films..." : "Update films"}
+            </button>
+          </div>
+          {error && (
+            <div className="card border-red-500/30 bg-red-900/10">
+              <h3 className="text-lg font-semibold text-red-400 mb-2">Error</h3>
+              <p className="text-red-300">{error}</p>
             </div>
-          </div>
+          )}
 
-          {/* User Ratings Table */}
-          {userRatings && (
-            <div className="card">
-              <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-4">
-                User Ratings for {userRatings.username}
+          {success && (
+            <div className="card border-green-500/30 bg-green-900/10">
+              <h3 className="text-lg font-semibold text-green-400 mb-2">
+                Success
               </h3>
+              <p className="text-green-300">{success}</p>
+            </div>
+          )}
+          {fetchStatus && (
+            <div className="mt-4 p-3 bg-letterboxd-bg-primary rounded-lg border border-letterboxd-border">
+              <p className="text-letterboxd-text-secondary text-sm">
+                {fetchStatus}
+              </p>
+            </div>
+          )}
 
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-letterboxd-border">
-                      <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
-                        Rating
-                      </th>
-                      <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
-                        Count
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {ALL_RATINGS.map((rating) => {
-                      const ratingItem = userRatings.ratings.find(
-                        (r) => r.rating === rating
-                      );
-                      const count = ratingItem ? ratingItem.count : 0;
-
-                      return (
-                        <tr
-                          key={rating}
-                          className="border-b border-letterboxd-border/50"
-                        >
-                          <td className="py-3 px-4 text-letterboxd-text-primary">
-                            <span className="text-letterboxd-accent">
-                              {renderStars(rating)}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-letterboxd-text-primary">
-                            {count}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+          {/* Progress Bar for Streaming */}
+          {streaming && totalPages > 0 && (
+            <div className="mt-4 p-4 bg-letterboxd-bg-secondary rounded-lg border border-letterboxd-border">
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm text-letterboxd-text-secondary">
+                  <span>Page Progress</span>
+                  <span>
+                    {currentPage} / {totalPages}
+                  </span>
+                </div>
+                <div className="w-full bg-letterboxd-bg-primary rounded-full h-2">
+                  <div
+                    className="bg-letterboxd-accent h-2 rounded-full transition-all duration-300"
+                    style={{
+                      width: `${(currentPage / totalPages) * 100}%`,
+                    }}
+                  />
+                </div>
+                <div className="flex justify-between text-xs text-letterboxd-text-muted">
+                  <span>Films collected: {totalFilmsCollected}</span>
+                  <span>
+                    {Math.round((currentPage / totalPages) * 100)}% complete
+                  </span>
+                </div>
               </div>
+            </div>
+          )}
 
-              <div className="mt-4 p-4 bg-letterboxd-bg-primary rounded-lg">
-                <p className="text-sm text-letterboxd-text-muted">
-                  Total films rated:{" "}
-                  {userRatings.ratings.reduce((sum, r) => sum + r.count, 0)}
-                </p>
+          {/* Live Progress Log */}
+          {streamProgress.length > 0 && (
+            <div className="mt-4 p-4 bg-letterboxd-bg-secondary rounded-lg border border-letterboxd-border">
+              <h4 className="text-sm font-semibold text-letterboxd-text-secondary mb-3">
+                {streaming ? "Live Progress Log" : "Operation Log"}
+              </h4>
+              <div className="max-h-80 overflow-y-auto space-y-1">
+                {streamProgress
+                  .slice()
+                  .reverse()
+                  .map((progress, index) => (
+                    <div
+                      key={index}
+                      className="text-xs text-letterboxd-text-muted p-2 bg-letterboxd-bg-primary rounded"
+                    >
+                      <span className="text-letterboxd-text-secondary font-mono">
+                        {new Date(progress.timestamp).toLocaleTimeString()}
+                      </span>
+                      {" - "}
+                      <span
+                        className={`${
+                          progress.type === "error"
+                            ? "text-red-400"
+                            : progress.type === "complete"
+                            ? "text-green-400"
+                            : "text-letterboxd-text-muted"
+                        }`}
+                      >
+                        {progress.message}
+                      </span>
+                    </div>
+                  ))}
               </div>
             </div>
           )}
         </div>
-      </main>
+      </div>
+
+      {/* User Ratings Table */}
+      {userRatings && (
+        <div className="card">
+          <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-4">
+            User Ratings for {userRatings.username}
+          </h3>
+
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-letterboxd-border">
+                  <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
+                    Rating
+                  </th>
+                  <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
+                    Count
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {ALL_RATINGS.map((rating) => {
+                  const ratingItem = userRatings.ratings.find(
+                    (r) => r.rating === rating
+                  );
+                  const count = ratingItem ? ratingItem.count : 0;
+
+                  return (
+                    <tr
+                      key={rating}
+                      className="border-b border-letterboxd-border/50"
+                    >
+                      <td className="py-3 px-4 text-letterboxd-text-primary">
+                        <span className="text-letterboxd-accent">
+                          {renderStars(rating)}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-letterboxd-text-primary">
+                        {count}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="mt-4 p-4 bg-letterboxd-bg-primary rounded-lg">
+            <p className="text-sm text-letterboxd-text-muted">
+              Total films rated:{" "}
+              {userRatings.ratings.reduce((sum, r) => sum + r.count, 0)}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

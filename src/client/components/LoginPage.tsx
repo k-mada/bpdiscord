@@ -41,16 +41,13 @@ const LoginPage = () => {
       }
 
       if (response.data?.access_token) {
-        console.log(
-          "Storing token in localStorage, length:",
-          response.data.access_token.length
-        );
         localStorage.setItem("token", response.data.access_token);
         if (response.data.user) {
           localStorage.setItem("user", JSON.stringify(response.data.user));
         }
         // Redirect to the page the user was trying to access, or dashboard if none
-        const redirectPath = localStorage.getItem("redirectAfterLogin") || "/dashboard";
+        const redirectPath =
+          localStorage.getItem("redirectAfterLogin") || "/dashboard";
         localStorage.removeItem("redirectAfterLogin");
         navigate(redirectPath);
       } else {
@@ -93,7 +90,7 @@ const LoginPage = () => {
           <h2 className="text-2xl font-semibold text-letterboxd-text-primary mb-6 text-center">
             {isLogin ? "Login" : "Sign Up"}
           </h2>
-          
+
           {loginRequired && (
             <div className="mb-4 p-3 bg-yellow-900/20 border border-yellow-600/30 rounded-md">
               <p className="text-yellow-200 text-sm text-center">

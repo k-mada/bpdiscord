@@ -198,6 +198,29 @@ export interface ComparisonResponse {
 }
 
 // ===========================
+// MFL Types
+// ===========================
+export interface MFLScoringMetric {
+  metricId: number;
+  metric: string;
+  metricName: string;
+  category: string;
+  scoringCondition: string;
+  pointValue: number;
+}
+
+export interface MFLMovieScore {
+  scoringId: number;
+  filmSlug: string;
+  metricId: number;
+  pointsAwarded: number;
+  category: string;
+  metric: string;
+  metricName: string;
+  scoringCondition: string;
+}
+
+// ===========================
 // Component Props Types
 // ===========================
 
