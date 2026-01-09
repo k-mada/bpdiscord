@@ -17,6 +17,7 @@ import {
   scrapeUserRatings,
   scrapeLBFilmRatings,
   saveRatingsToDatabase,
+  scrapeLBFilmRatingsDistribution,
   saveLBFilmRatingsToDatabase,
   scrapeUserProfileData,
   saveProfileToDatabase,
@@ -483,15 +484,12 @@ export const getUserRatings = async (
   }
 };
 
-/**
- * Get user ratings (force scraping)
- */
 export const getLBFilmRatings = async (
   req: Request,
   res: Response
 ): Promise<void> => {
-  const { filmSlug } = req.body;
-
+  const { filmSlug } = req.params;
+  console.log("filmSlug", req.params);
   if (!filmSlug) {
     res.status(400).json({ error: "Film slug is required" });
     return;
@@ -502,6 +500,43 @@ export const getLBFilmRatings = async (
   try {
     const scrapedRatings = await scrapeLBFilmRatings(filmSlug);
     await saveLBFilmRatingsToDatabase(filmSlug, scrapedRatings);
+
+    res.json({
+      message: "Film ratings scraped and stored successfully",
+      data: {
+        filmSlug,
+        ratings: scrapedRatings,
+        timestamp: new Date().toISOString(),
+        source: "scraped",
+        success: true,
+      },
+    });
+  } catch (error) {
+    console.error("Error in getLBFilmRatings:", error);
+    res.status(500).json({
+      error: `Failed to fetch LB film ratings: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    });
+  }
+};
+
+export const getLBFilmRatingsDistribution = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
+  const { filmSlug } = req.params;
+  console.log("filmSlug", req.params);
+  if (!filmSlug) {
+    res.status(400).json({ error: "Film slug is required" });
+    return;
+  }
+
+  console.log(`Force fetching ratings for film: ${filmSlug}`);
+
+  try {
+    const scrapedRatings = await scrapeLBFilmRatingsDistribution(filmSlug);
+    // await saveLBFilmRatingsToDatabase(filmSlug, scrapedRatings);
 
     res.json({
       message: "Film ratings scraped and stored successfully",
@@ -736,5 +771,6 @@ export const getLBFilmRatingsByUsername = async (
     handleSSEError(error, username, progressEmitter, isCompleted.value);
   }
 };
+
 // Export cleanup for module management
 export { cleanup };

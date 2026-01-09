@@ -843,3 +843,172 @@ export async function dbGetMissingFilms(): Promise<{
     };
   }
 }
+
+export async function dbGetMFLScoringMetrics(): Promise<{
+  success: boolean;
+  data?: Array<{
+    metric_id: number;
+    metric: string;
+    metric_name: string;
+    category: string;
+    scoring_condition: string;
+    point_value: number;
+  }>;
+  error?: string;
+}> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("MFLScoringMetrics")
+      .select(
+        "metric_id, metric, metric_name, category, scoring_condition, point_value"
+      );
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data: data || [] };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+export async function dbGetMFLUserScores(username: string): Promise<{
+  success: boolean;
+  data?: Array<{
+    username: string;
+    metric_id: number;
+    points_awarded: number;
+    category: string;
+  }>;
+  error?: string;
+}> {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("MFLScoringTally")
+      .select(
+        "username, metric_id, points_awarded, category, MFLScoringMetrics(metric_id, category)"
+      )
+      .eq("username", username);
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+    return { success: true, data: data || [] };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+export async function dbGetMflMovieScore(filmSlug: string): Promise<{
+  success: boolean;
+  data?: Array<{
+    scoring_id: number;
+    metric_id: number;
+    film_slug: string;
+    points_awarded: number;
+    metric: string;
+    metric_name: string;
+    category: string;
+    scoring_condition: string;
+  }>;
+  error?: string;
+}> {
+  try {
+    const { data, error } = await supabaseAdmin.rpc("get_mfl_movie_scores", {
+      p_film_slug: filmSlug,
+    });
+    if (error) {
+      return { success: false, error: error.message };
+    }
+    return { success: true, data: data || [] };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+export async function dbGetMFLMovies(): Promise<{
+  success: boolean;
+  data?: Array<{
+    title: string;
+    film_slug: string;
+  }>;
+  error?: string;
+}> {
+  try {
+    const { data, error } = await supabaseAdmin.rpc("get_mfl_movies");
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+    return { success: true, data: data || [] };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+export async function dbUpsertMflMovieScore(
+  filmSlug: string,
+  pointsAwarded: number,
+  metricId: number,
+  scoringId?: number
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const mflMovieScoreToUpsert = {
+      scoring_id: scoringId,
+      film_slug: filmSlug,
+      metric_id: metricId,
+      points_awarded: pointsAwarded,
+    };
+
+    const { error } = await supabaseAdmin
+      .from("MFLScoringTally")
+      .upsert(mflMovieScoreToUpsert, {
+        onConflict: "scoring_id",
+      });
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+export async function dbDeleteMflScoringMetric(scoringId: number): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    const { error } = await supabaseAdmin
+      .from("MFLScoringTally")
+      .delete()
+      .eq("scoring_id", scoringId);
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  } catch (error) {
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}

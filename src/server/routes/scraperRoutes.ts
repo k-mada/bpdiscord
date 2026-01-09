@@ -7,6 +7,8 @@ import {
   getUserProfile,
   fetchFilms,
   getLBFilmRatingsByUsername,
+  getLBFilmRatings,
+  getLBFilmRatingsDistribution,
 } from "../controllers/scraperController";
 import { validateScraperRequest } from "../middleware/validation";
 import { handleValidationErrors } from "../middleware/errorHandler";
@@ -19,6 +21,18 @@ const scraperLimiter = rateLimit({
   max: 20, // Limit each IP to 20 scraping requests per windowMs
   message: { error: "Too many scraping requests, please try again later." },
 });
+
+router.get(
+  "/film/:filmSlug/ratings-distribution",
+  [scraperLimiter, handleValidationErrors],
+  getLBFilmRatingsDistribution
+);
+
+router.get(
+  "/film/:filmSlug/ratings",
+  [scraperLimiter, handleValidationErrors],
+  getLBFilmRatings
+);
 
 // SSE endpoint for streaming film scraping updates (PUBLIC - no auth required)
 router.get(

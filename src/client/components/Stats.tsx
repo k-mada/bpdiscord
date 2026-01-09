@@ -49,7 +49,7 @@ const Dashboard = () => {
     .slice(0, 12);
 
   return (
-    <ContentWrapper>
+    <div>
       <div className="body-text -prose">
         <p>
           Welcome to the Big Picture Discord. This is a fun project meant to
@@ -95,7 +95,7 @@ const Dashboard = () => {
           </li>
         ))}
       </ul>
-    </ContentWrapper>
+    </div>
   );
 };
 

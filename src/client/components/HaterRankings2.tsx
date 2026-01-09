@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { TrophyIcon } from "@heroicons/react/24/solid";
 import apiService from "../services/api";
-// import RatingDistributionHistogram from "./RatingDistributionHistogram";
-import Header from "./Header";
+
 import Spinner from "./Spinner";
 import { Modal, ModalHeader, ModalBody } from "./Modal";
 import RatingDifferential from "./RatingDifferential";
@@ -196,14 +195,7 @@ const HaterRankings2 = ({
 
   // Public version with header and full page layout
   if (isPublic) {
-    return (
-      <div className="min-h-screen bg-letterboxd-bg-primary">
-        <Header />
-        <main className="main-content">
-          <RankingsContent />
-        </main>
-      </div>
-    );
+    return <RankingsContent />;
   }
 
   // Dashboard version (embedded within authenticated layout)

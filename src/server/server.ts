@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 
 import authRoutes from "./routes/authRoutes";
 import userRoutes from "./routes/userRoutes";
+import mflRoutes from "./routes/mflRoutes";
 import scraperRoutes from "./routes/scraperRoutes";
 import comparisonRoutes from "./routes/comparisonRoutes";
 import filmUserRoutes from "./routes/filmUserRoutes";
@@ -99,8 +100,8 @@ app.use(cors(corsOptions));
 
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  windowMs: 10 * 60 * 1000, //  minutes
+  max: 500, // Limit each IP to 500 requests per windowMs
   message: { error: "Too many requests, please try again later." },
   standardHeaders: true,
   legacyHeaders: false,
@@ -142,6 +143,7 @@ app.use("/api/comparison", comparisonRoutes);
 app.use("/api/film-users", filmUserRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/cron", cronRoutes);
+app.use("/api/mfl", mflRoutes);
 
 // Only load scraper routes in development or when explicitly enabled
 if (
