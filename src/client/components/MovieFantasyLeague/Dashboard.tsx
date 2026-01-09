@@ -80,11 +80,6 @@ const MovieFantasyLeague = () => {
       )}
       {!loading && movieScores.length > 0 && (
         <div className="flex flex-col gap-2">
-          <div className="flex flex-col gap-2">
-            <h3 className="text-l font-bold text-letterboxd-text-primary my-4">
-              Total points: {totalPoints}
-            </h3>
-          </div>
           <table className="data-table">
             <thead>
               <tr>
@@ -110,6 +105,10 @@ const MovieFantasyLeague = () => {
                   </tr>
                 );
               })}
+              <tr className="border-t-2 border-letterboxd-border">
+                <td className="font-bold text-xl">Total points:</td>
+                <td className="font-bold text-xl">{totalPoints}</td>
+              </tr>
             </tbody>
           </table>
         </div>
