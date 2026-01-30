@@ -7,28 +7,28 @@ import Spinner from "../Spinner";
 
 const getMetricById = (
   scoringMetrics: MFLScoringMetric[],
-  metricId: number
+  metricId: number,
 ) => {
   return scoringMetrics.find((metric) => metric.metricId === metricId);
 };
 
 const getMovieScoreByMetricId = (
   movieScore: MFLMovieScore[],
-  metricId: number
+  metricId: number,
 ) => {
   return movieScore.find((score) => score.metricId === metricId);
 };
 
 const MFLAdmin = () => {
   const [movies, setMovies] = useState<{ title: string; filmSlug: string }[]>(
-    []
+    [],
   );
 
   // list of scoring metrics for all movies
   const [scoringMetrics, setScoringMetrics] = useState<MFLScoringMetric[]>([]);
   // selected scoring metric after user selects a movie
   const [selectedMetric, setSelectedMetric] = useState<MFLScoringMetric | null>(
-    null
+    null,
   );
 
   const [movieScore, setMovieScore] = useState<MFLMovieScore[]>([]); // list of scores for the selected movie
@@ -87,8 +87,9 @@ const MFLAdmin = () => {
   }, []);
 
   const resetForm = () => {
+    setSelectedScoringId(0);
     setInputPointsAwarded(0);
-    setSelectedMetric(null);
+    // setSelectedMetric(null);
     setDisableScoreInput(true);
   };
 
@@ -116,7 +117,7 @@ const MFLAdmin = () => {
       if (sortedSelectedMovieScore) {
         const totalPoints = sortedSelectedMovieScore.reduce(
           (acc, curr) => acc + curr.pointsAwarded,
-          0
+          0,
         );
         setTotalPoints(totalPoints);
         setMovieScore(sortedSelectedMovieScore);
@@ -139,40 +140,39 @@ const MFLAdmin = () => {
     if (selectedMetric?.metricId) {
       const existingScore = getMovieScoreByMetricId(
         movieScore,
-        selectedMetric?.metricId
+        selectedMetric?.metricId,
       );
 
       console.log("existingScore", existingScore);
       // const metric = getMetricById(scoringMetrics, selectedMetric.metricId);
 
       let response;
-      if (existingScore) {
+      if (existingScore && selectedScoringId > 0) {
         console.log("updating existing score", existingScore);
         response = await apiService.upsertMflMovieScore(
           existingScore.filmSlug,
           inputPointsAwarded,
           selectedMetric.metricId,
-          existingScore.scoringId
+          existingScore.scoringId,
         );
       } else {
         console.log("creating new score");
         response = await apiService.upsertMflMovieScore(
           currentSelectedMovie,
           inputPointsAwarded,
-          selectedMetric.metricId
+          selectedMetric.metricId,
         );
       }
 
       // Only refresh if the API call was successful
       if (!response.error && currentSelectedMovie) {
         resetForm();
-        const refreshedMovieScore = await getMflMovieScore(
-          currentSelectedMovie
-        );
+        const refreshedMovieScore =
+          await getMflMovieScore(currentSelectedMovie);
         if (refreshedMovieScore) {
           const totalPoints = refreshedMovieScore.reduce(
             (acc, curr) => acc + curr.pointsAwarded,
-            0
+            0,
           );
           setTotalPoints(totalPoints);
           setMovieScore(refreshedMovieScore);
@@ -182,7 +182,7 @@ const MFLAdmin = () => {
   };
 
   const handlePointsAwardedChange = (
-    event: React.ChangeEvent<HTMLInputElement>
+    event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     setInputPointsAwarded(parseInt(event.target.value));
   };
@@ -191,8 +191,11 @@ const MFLAdmin = () => {
     event.preventDefault();
     const scoringId = event.currentTarget.getAttribute("data-scoring-id");
     if (scoringId) {
+      const existingScoringId = parseInt(scoringId);
+      setSelectedScoringId(existingScoringId);
+
       const score = movieScore.find(
-        (score: MFLMovieScore) => score.scoringId === parseInt(scoringId)
+        (score: MFLMovieScore) => score.scoringId === existingScoringId,
       );
       if (score) {
         console.log("score!", score);
@@ -223,22 +226,20 @@ const MFLAdmin = () => {
 
   const handleConfirmDeleteMetric = async () => {
     if (selectedScoringId > 0) {
-      const response = await apiService.deleteMflScoringMetric(
-        selectedScoringId
-      );
+      const response =
+        await apiService.deleteMflScoringMetric(selectedScoringId);
       if (response.error) {
         console.error("Error deleting metric", response.error);
       } else {
         console.log("Metric deleted successfully");
         // Refresh the movie score data after successful deletion
         if (currentSelectedMovie) {
-          const refreshedMovieScore = await getMflMovieScore(
-            currentSelectedMovie
-          );
+          const refreshedMovieScore =
+            await getMflMovieScore(currentSelectedMovie);
           if (refreshedMovieScore) {
             const totalPoints = refreshedMovieScore.reduce(
               (acc, curr) => acc + curr.pointsAwarded,
-              0
+              0,
             );
             setTotalPoints(totalPoints);
             setMovieScore(refreshedMovieScore);
