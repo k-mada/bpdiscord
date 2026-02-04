@@ -847,6 +847,25 @@ export const scrapeFilmsPageWithMemoryCleanup = async (
   try {
     page = await browser.newPage();
 
+    // Apply stealth measures to avoid bot detection
+    await page.setUserAgent(USER_AGENT);
+    await page.setViewport(
+      process.env.VERCEL
+        ? BROWSER_CONFIG.VIEWPORT_PRODUCTION
+        : BROWSER_CONFIG.VIEWPORT_DEVELOPMENT
+    );
+    await page.setExtraHTTPHeaders(BROWSER_HEADERS);
+
+    // Stealth JavaScript to hide automation markers
+    await page.evaluateOnNewDocument(() => {
+      Object.defineProperty(navigator, "webdriver", {
+        get: () => undefined,
+      });
+      Object.defineProperty(navigator, "chrome", {
+        get: () => undefined,
+      });
+    });
+
     await page.setRequestInterception(true);
     page.on("request", (req: any) => {
       const resourceType = req.resourceType();
