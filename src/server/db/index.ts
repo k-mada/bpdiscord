@@ -31,9 +31,9 @@ const client = postgres(databaseUrl, {
   // Connection timeout after 10 seconds
   connect_timeout: 10,
 
-  // SSL configuration for production (required for Supabase)
-  // Test databases may be local, so don't require SSL
-  ssl: isProduction ? 'require' : false,
+  // SSL configuration (required for Supabase pooler)
+  // Only disable SSL for local test databases
+  ssl: isTest ? false : 'require',
 
   // Prepare statements for better performance
   prepare: true,

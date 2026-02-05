@@ -16,11 +16,7 @@ import {
   dbMutation,
   dbTransaction,
 } from "../db/utils";
-import {
-  HaterRankingRow,
-  MissingFilmsRow,
-  toNumber,
-} from "../db/queryTypes";
+import { HaterRankingRow, MissingFilmsRow, toNumber } from "../db/queryTypes";
 
 // ===========================
 // User Ratings Management
@@ -253,22 +249,11 @@ export async function dbGetHaterRankings2(): Promise<{
   error?: string;
 }> {
   return dbOperation(async () => {
-    // Matches RPC: get_hater_rankings
+    // Calls PostgreSQL function: get_hater_rankings()
     // Compares user film ratings to the film's lb_rating from Films table
-    const result = await db.execute<HaterRankingRow>(sql`
-      SELECT
-        u.display_name,
-        uf.lbusername,
-        count(distinct(uf.film_slug)) as films_rated,
-        sum(uf.rating - f.lb_rating) as differential,
-        ROUND((sum(uf.rating - f.lb_rating) / count(uf.film_slug) * 100)::NUMERIC, 2) as normalized
-      FROM "UserFilms" as uf
-      INNER JOIN "Films" as f ON f.film_slug = uf.film_slug
-      INNER JOIN "Users" as u ON u.lbusername = uf.lbusername
-      WHERE uf.rating > 0
-      GROUP BY u.display_name, uf.lbusername
-      ORDER BY normalized asc
-    `);
+    const result = await db.execute<HaterRankingRow>(
+      sql`SELECT * FROM get_hater_rankings()`,
+    );
 
     return result.map((row) => ({
       username: row.lbusername,
