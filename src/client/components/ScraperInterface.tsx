@@ -124,6 +124,7 @@ const ScraperInterface = () => {
       eventSource.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
+          console.log(data);
           // Add to progress log (excluding heartbeat events)
           if (data.type !== "heartbeat") {
             setStreamProgress((prev) => [...prev, data]);
