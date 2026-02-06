@@ -14,6 +14,7 @@ import statsRoutes from "./routes/statsRoutes";
 import cronRoutes from "./routes/cronRoutes";
 import { globalErrorHandler } from "./middleware/errorHandler";
 import { ApiResponse } from "./types";
+import { cleanup } from "./scraperFunctions";
 
 // Load environment variables
 // In production, environment variables should be set via system environment
@@ -31,7 +32,7 @@ app.use(helmet());
 const corsOptions = {
   origin: (
     origin: string | undefined,
-    callback: (err: Error | null, allow?: boolean) => void
+    callback: (err: Error | null, allow?: boolean) => void,
   ) => {
     // Allow requests with no origin (like mobile apps or Postman)
     if (!origin) {
@@ -64,7 +65,7 @@ const corsOptions = {
       // Check exact matches first, then patterns
       const exactMatch = allowedOrigins.includes(origin);
       const patternMatch = allowedPatterns.some((pattern) =>
-        pattern.test(origin)
+        pattern.test(origin),
       );
       const isAllowed = exactMatch || patternMatch;
 
@@ -170,10 +171,20 @@ app.use((req: Request, res: Response): void => {
   res.status(404).json(response);
 });
 
+process.on("SIGTERM", async () => {
+  await cleanup();
+  process.exit(0);
+});
+
+process.on("SIGINT", async () => {
+  await cleanup();
+  process.exit(0);
+});
+
 // Start server
 app.listen(PORT, (): void => {
   console.log(
-    `🚀 Secure TypeScript server running on http://localhost:${PORT}`
+    `🚀 Secure TypeScript server running on http://localhost:${PORT}`,
   );
   console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);

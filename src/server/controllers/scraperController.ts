@@ -12,7 +12,6 @@ import { BROWSER_CONFIG } from "../constants";
 import { formatFilmsResponse, delay } from "../utilities";
 import {
   createPage,
-  closePageAndBrowser,
   cleanup,
   scrapeUserRatings,
   scrapeLBFilmRatings,
@@ -198,7 +197,7 @@ export const scrapePage = async (
 
     return collatedData;
   } finally {
-    await closePageAndBrowser(page);
+    await page.close();
   }
 };
 

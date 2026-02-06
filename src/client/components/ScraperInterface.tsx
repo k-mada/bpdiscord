@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import apiService from "../services/api";
 import { ALL_RATINGS } from "../constants";
 
@@ -14,16 +13,6 @@ interface UserData {
 }
 
 const ScraperInterface = () => {
-  const navigate = useNavigate();
-  const [token, setToken] = useState<string | null>(null);
-
-  useEffect(() => {
-    const storedToken = localStorage.getItem("token");
-    if (storedToken) {
-      setToken(storedToken);
-    }
-  }, []);
-
   // Load available users on component mount
   useEffect(() => {
     const loadAvailableUsers = async () => {
@@ -49,9 +38,7 @@ const ScraperInterface = () => {
   const [loading, setLoading] = useState(false);
   const [fetchStatus, setFetchStatus] = useState<string>("");
   const [userRatings, setUserRatings] = useState<UserData | null>(null);
-  const [filmCount, setFilmCount] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
   // SSE streaming states
   const [streaming, setStreaming] = useState(false);
@@ -84,9 +71,7 @@ const ScraperInterface = () => {
 
     setLoading(true);
     setError(null);
-    setSuccess(null);
     setUserRatings(null);
-    setFilmCount(null);
 
     try {
       setFetchStatus("Checking database for existing data...");
@@ -97,16 +82,15 @@ const ScraperInterface = () => {
           username: username,
           ratings: response.data.ratings,
         });
-        setSuccess("Data found in database!");
       }
     } catch (err) {
       if (err instanceof Error && err.message.includes("404")) {
         setError(
-          "No data found in database. Use 'Force Scrape' to collect data."
+          "No data found in database. Use 'Force Scrape' to collect data.",
         );
       } else {
         setError(
-          err instanceof Error ? err.message : "Failed to check existing data"
+          err instanceof Error ? err.message : "Failed to check existing data",
         );
       }
     } finally {
@@ -123,9 +107,7 @@ const ScraperInterface = () => {
 
     setStreaming(true);
     setError(null);
-    setSuccess(null);
     setUserRatings(null);
-    setFilmCount(null);
     setStreamProgress([]);
     setCurrentPage(0);
     setTotalPages(0);
@@ -136,7 +118,7 @@ const ScraperInterface = () => {
         `/api/scraper/stream-films/${encodeURIComponent(username)}`,
         {
           withCredentials: false,
-        }
+        },
       );
 
       eventSource.onmessage = (event) => {
@@ -179,20 +161,20 @@ const ScraperInterface = () => {
             case "page_start":
               setCurrentPage(data.currentPage);
               setFetchStatus(
-                `Fetching page ${data.currentPage} of ${data.totalPages}...`
+                `Fetching page ${data.currentPage} of ${data.totalPages}...`,
               );
               break;
 
             case "page_scraped":
               setFetchStatus(
-                `Fetched ${data.filmsFromPage} films from page ${data.page}`
+                `Fetched ${data.filmsFromPage} films from page ${data.page}`,
               );
               break;
 
             case "page_complete":
               setTotalFilmsCollected(data.filmsCollectedSoFar);
               setFetchStatus(
-                `Page ${data.currentPage} complete - ${data.filmsCollectedSoFar} total films`
+                `Page ${data.currentPage} complete - ${data.filmsCollectedSoFar} total films`,
               );
               break;
 
@@ -202,7 +184,7 @@ const ScraperInterface = () => {
 
             case "scraping_complete":
               setFetchStatus(
-                `Fetching complete! ${data.totalFilms} films collected`
+                `Fetching complete! ${data.totalFilms} films collected`,
               );
               break;
 
@@ -227,12 +209,8 @@ const ScraperInterface = () => {
               break;
 
             case "complete":
-              setFilmCount(data.data.totalFilms);
-              setSuccess(
-                `Successfully updated ${data.data.totalFilms} films and user ratings!`
-              );
               setFetchStatus(
-                `Operation completed! ${data.data.totalFilms} films and ratings updated`
+                `Operation completed! ${data.data.totalFilms} films and ratings updated`,
               );
               eventSource.close();
               setStreaming(false);
@@ -242,11 +220,11 @@ const ScraperInterface = () => {
               // Handle specific error codes
               if (data.code === "NAVIGATION_TIMEOUT") {
                 setError(
-                  `${data.message} This is usually temporary - please try again in a few minutes.`
+                  `${data.message} This is usually temporary - please try again in a few minutes.`,
                 );
               } else if (data.code === "PRODUCTION_TIMEOUT") {
                 setError(
-                  `${data.message} The operation was automatically stopped to prevent server overload.`
+                  `${data.message} The operation was automatically stopped to prevent server overload.`,
                 );
               } else {
                 setError(data.message);
@@ -361,15 +339,6 @@ const ScraperInterface = () => {
               <p className="text-red-300">{error}</p>
             </div>
           )}
-
-          {success && (
-            <div className="card border-green-500/30 bg-green-900/10">
-              <h3 className="text-lg font-semibold text-green-400 mb-2">
-                Success
-              </h3>
-              <p className="text-green-300">{success}</p>
-            </div>
-          )}
           {fetchStatus && (
             <div className="mt-4 p-3 bg-letterboxd-bg-primary rounded-lg border border-letterboxd-border">
               <p className="text-letterboxd-text-secondary text-sm">
@@ -430,8 +399,8 @@ const ScraperInterface = () => {
                           progress.type === "error"
                             ? "text-red-400"
                             : progress.type === "complete"
-                            ? "text-green-400"
-                            : "text-letterboxd-text-muted"
+                              ? "text-green-400"
+                              : "text-letterboxd-text-muted"
                         }`}
                       >
                         {progress.message}
@@ -466,7 +435,7 @@ const ScraperInterface = () => {
               <tbody>
                 {ALL_RATINGS.map((rating) => {
                   const ratingItem = userRatings.ratings.find(
-                    (r) => r.rating === rating
+                    (r) => r.rating === rating,
                   );
                   const count = ratingItem ? ratingItem.count : 0;
 

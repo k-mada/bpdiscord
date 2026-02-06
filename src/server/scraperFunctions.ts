@@ -39,12 +39,17 @@ export interface UserProfileData {
 // Browser management state
 let browserInstance: any | null = null;
 let browserPromise: Promise<any> | null = null;
+let cleanupTimeout: NodeJS.Timeout | null = null;
 
 /**
  * Get or create browser instance (reuse for performance)
  */
 export const getBrowser = async (): Promise<any> => {
   if (browserInstance && browserInstance.isConnected()) {
+    if (cleanupTimeout) {
+      clearTimeout(cleanupTimeout);
+    }
+    scheduleCleanup();
     return browserInstance;
   }
 
@@ -56,9 +61,19 @@ export const getBrowser = async (): Promise<any> => {
   browserPromise = createBrowser();
   browserInstance = await browserPromise;
   browserPromise = null;
-
+  scheduleCleanup();
   return browserInstance;
 };
+
+function scheduleCleanup() {
+  cleanupTimeout = setTimeout(
+    async () => {
+      console.log("Closing idle browser after 5 minutes");
+      await cleanup();
+    },
+    5 * 60 * 1000,
+  );
+}
 
 /**
  * Create new browser instance with optimized configuration
@@ -112,7 +127,7 @@ export const createPage = async (): Promise<any> => {
   await page.setViewport(
     process.env.VERCEL
       ? BROWSER_CONFIG.VIEWPORT_PRODUCTION
-      : BROWSER_CONFIG.VIEWPORT_DEVELOPMENT
+      : BROWSER_CONFIG.VIEWPORT_DEVELOPMENT,
   );
 
   // Enable request interception for performance optimization in production
@@ -137,17 +152,6 @@ export const createPage = async (): Promise<any> => {
   // Set additional headers
   await page.setExtraHTTPHeaders(BROWSER_HEADERS);
 
-  // Performance optimizations
-  await page.setRequestInterception(true);
-  page.on("request", (req: any) => {
-    const resourceType = req.resourceType();
-    if (BLOCKED_RESOURCES.PERFORMANCE.slice(0, 2).includes(resourceType)) {
-      req.abort();
-    } else {
-      req.continue();
-    }
-  });
-
   // Stealth measures
   await page.evaluateOnNewDocument(() => {
     Object.defineProperty(navigator, "webdriver", {
@@ -168,51 +172,17 @@ export const createPage = async (): Promise<any> => {
 
 /**
  * Create page specifically for film scraping (simple headless mode)
+ * Uses shared browser instance for better performance
  */
 export const createPageForFilmScraping = async (): Promise<any> => {
-  let puppeteer: any = null;
-  let launchOptions: any = {
-    headless: true,
-  };
-
-  if (process.env.VERCEL) {
-    console.log(
-      "is vercel/serverless, importing @sparticuz/chromium and puppeteer-core for film scraping"
-    );
-    const chromium = (await import("@sparticuz/chromium")).default;
-    puppeteer = (await import("puppeteer-core")).default;
-    launchOptions = {
-      ...launchOptions,
-      args: [...chromium.args, ...CHROME_ARGS.MEMORY_OPTIMIZATION.slice(0, -5)],
-      executablePath: await chromium.executablePath(),
-      defaultViewport: BROWSER_CONFIG.VIEWPORT_PRODUCTION,
-      timeout: BROWSER_CONFIG.BROWSER_LAUNCH_TIMEOUT,
-    };
-  } else {
-    console.log("Not serverless, using full puppeteer for local development");
-    try {
-      puppeteer = (await import("puppeteer")).default;
-    } catch (error) {
-      console.log(
-        "Full puppeteer not available, falling back to puppeteer-core with system Chrome"
-      );
-      puppeteer = (await import("puppeteer-core")).default;
-      const chromium = (await import("@sparticuz/chromium")).default;
-      launchOptions = {
-        ...launchOptions,
-        args: chromium.args,
-      };
-    }
-  }
-
-  const browser = await puppeteer.launch(launchOptions);
+  const browser = await getBrowser();
   const page = await browser.newPage();
 
   await page.setUserAgent(USER_AGENT);
   await page.setViewport(
     process.env.VERCEL
       ? BROWSER_CONFIG.VIEWPORT_PRODUCTION
-      : BROWSER_CONFIG.VIEWPORT_DEVELOPMENT
+      : BROWSER_CONFIG.VIEWPORT_DEVELOPMENT,
   );
 
   // Set realistic headers
@@ -225,7 +195,6 @@ export const createPageForFilmScraping = async (): Promise<any> => {
     Pragma: "no-cache",
   });
 
-  (page as any)._browser = browser;
   return page;
 };
 
@@ -252,7 +221,7 @@ export const closePageAndBrowser = async (page: any): Promise<void> => {
 export const loadPageWithRetry = async (
   page: any,
   url: string,
-  waitUntil: "networkidle2" | "domcontentloaded" | "load" = "networkidle2"
+  waitUntil: "networkidle2" | "domcontentloaded" | "load" = "networkidle2",
 ): Promise<void> => {
   console.log(`Loading page: ${url}`);
 
@@ -271,7 +240,7 @@ export const loadPageWithRetry = async (
       console.warn(`Strategy ${index + 1} failed:`, error);
       if (index === strategies.length - 1) {
         throw new Error(
-          `Failed to load page after ${strategies.length} attempts: ${error}`
+          `Failed to load page after ${strategies.length} attempts: ${error}`,
         );
       }
     }
@@ -304,7 +273,7 @@ export const cleanup = async (): Promise<void> => {
  * Scrape user ratings from Letterboxd profile
  */
 export const scrapeUserRatings = async (
-  username: string
+  username: string,
 ): Promise<Array<{ rating: number; count: number }>> => {
   console.log(`Fetching ratings for ${username} from Letterboxd...`);
 
@@ -329,7 +298,7 @@ export const scrapeUserRatings = async (
     ratings.sort((a, b) => a.rating - b.rating);
     return ratings;
   } finally {
-    await closePageAndBrowser(page);
+    await page.close();
   }
 };
 
@@ -341,7 +310,7 @@ export const scrapeUserRatings = async (
  * Full histogram distribution (ratings by 0.5-5.0) is not available via web scraping.
  */
 export const scrapeLBFilmRatings = async (
-  filmSlug: string
+  filmSlug: string,
 ): Promise<Array<{ avgRating: number; count: number }>> => {
   console.log(`Fetching aggregate rating data for ${filmSlug} from JSON-LD...`);
 
@@ -398,12 +367,12 @@ export const scrapeLBFilmRatings = async (
       },
     ];
   } finally {
-    await closePageAndBrowser(page);
+    await page.close();
   }
 };
 
 export const scrapeLBFilmRatingsDistribution = async (
-  filmSlug: string
+  filmSlug: string,
 ): Promise<Array<{ rating: number; count: number }>> => {
   const page = await createPageForFilmScraping();
   const url = `https://letterboxd.com/csi/film/${filmSlug}/ratings-summary/`;
@@ -420,7 +389,7 @@ export const scrapeLBFilmRatingsDistribution = async (
     const ratings = extractRatingsData($, ratingsSection);
     return ratings;
   } finally {
-    await closePageAndBrowser(page);
+    await page.close();
   }
 };
 
@@ -429,37 +398,37 @@ export const scrapeLBFilmRatingsDistribution = async (
  */
 export const saveRatingsToDatabase = async (
   username: string,
-  ratings: Array<{ rating: number; count: number }>
+  ratings: Array<{ rating: number; count: number }>,
 ): Promise<void> => {
   const insertResult = await dbUpsertUserRatings(username, ratings);
 
   if (!insertResult.success) {
     console.error("Database operation failed:", insertResult.error);
     throw new Error(
-      `Failed to save ratings to database: ${insertResult.error}`
+      `Failed to save ratings to database: ${insertResult.error}`,
     );
   }
 
   console.log(
-    `Successfully saved ${ratings.length} ratings for user ${username}`
+    `Successfully saved ${ratings.length} ratings for user ${username}`,
   );
 };
 
 export const saveLBFilmRatingsToDatabase = async (
   filmSlug: string,
-  ratings: Array<{ avgRating: number; count: number }>
+  ratings: Array<{ avgRating: number; count: number }>,
 ): Promise<void> => {
   const insertResult = await dbUpsertLBFilmRatings(filmSlug, ratings);
 
   if (!insertResult.success) {
     console.error("Database operation failed:", insertResult.error);
     throw new Error(
-      `Failed to save ratings to database: ${insertResult.error}`
+      `Failed to save ratings to database: ${insertResult.error}`,
     );
   }
 
   console.log(
-    `Successfully saved ${ratings.length} ratings for user ${filmSlug}`
+    `Successfully saved ${ratings.length} ratings for user ${filmSlug}`,
   );
 };
 
@@ -467,7 +436,7 @@ export const saveLBFilmRatingsToDatabase = async (
  * Scrape user profile data
  */
 export const scrapeUserProfileData = async (
-  username: string
+  username: string,
 ): Promise<UserProfileData> => {
   console.log(`Fetching profile data for ${username} from Letterboxd...`);
 
@@ -504,7 +473,7 @@ export const scrapeUserProfileData = async (
     }
 
     console.log(
-      `Profile data extracted: displayName="${displayName}", followers=${followers}, following=${following}, numberOfLists=${numberOfLists}`
+      `Profile data extracted: displayName="${displayName}", followers=${followers}, following=${following}, numberOfLists=${numberOfLists}`,
     );
 
     return {
@@ -514,7 +483,7 @@ export const scrapeUserProfileData = async (
       numberOfLists,
     };
   } finally {
-    await closePageAndBrowser(page);
+    await page.close();
   }
 };
 
@@ -523,12 +492,12 @@ export const scrapeUserProfileData = async (
  */
 export const saveProfileToDatabase = async (
   username: string,
-  profileData: UserProfileData
+  profileData: UserProfileData,
 ): Promise<void> => {
   try {
     console.log(
       `Saving profile data for ${username} to database:`,
-      profileData
+      profileData,
     );
 
     const result = await dbUpsertUserProfile(username, profileData);
@@ -553,12 +522,12 @@ export const extractFilmsFromPage = async (page: any): Promise<UserFilm[]> => {
     (parseStarRatingStr: string, detectLikedStatusStr: string) => {
       const parseStarRating = new Function(
         "ratingText",
-        parseStarRatingStr
+        parseStarRatingStr,
       ) as (ratingText: string | undefined) => number;
       const detectLikedStatus = new Function(
         "container",
         "index",
-        detectLikedStatusStr
+        detectLikedStatusStr,
       ) as (container: Element, index: number) => boolean;
 
       const films: UserFilm[] = [];
@@ -572,7 +541,7 @@ export const extractFilmsFromPage = async (page: any): Promise<UserFilm[]> => {
 
         if (filmSlug && filmTitle) {
           const ratingElement = container.querySelector(
-            "p.poster-viewingdata span.rating"
+            "p.poster-viewingdata span.rating",
           );
           const ratingText = ratingElement?.textContent?.trim();
           const rating = parseStarRating(ratingText);
@@ -592,7 +561,7 @@ export const extractFilmsFromPage = async (page: any): Promise<UserFilm[]> => {
       return films;
     },
     parseStarRating.toString().match(/{([\s\S]*)}$/)?.[1] || "",
-    detectLikedStatus.toString().match(/{([\s\S]*)}$/)?.[1] || ""
+    detectLikedStatus.toString().match(/{([\s\S]*)}$/)?.[1] || "",
   );
 };
 
@@ -601,7 +570,7 @@ export const extractFilmsFromPage = async (page: any): Promise<UserFilm[]> => {
  */
 export const extractTotalPages = async (
   page: any,
-  username: string
+  username: string,
 ): Promise<number> => {
   try {
     await page.waitForSelector("div.paginate-pages", {
@@ -609,7 +578,7 @@ export const extractTotalPages = async (
     });
     const numberOfPages = await page.$eval(
       "div.paginate-pages > ul > li:last-child > a",
-      (element: Element) => element.textContent
+      (element: Element) => element.textContent,
     );
     const totalPages = Number(numberOfPages) || 1;
     console.log(`Found ${totalPages} total pages for ${username}`);
@@ -625,7 +594,7 @@ export const extractTotalPages = async (
  */
 export const scrapeFilmsPage = async (
   username: string,
-  pageNum: number
+  pageNum: number,
 ): Promise<{ films: UserFilm[]; totalPages: number }> => {
   const page = await createPageForFilmScraping();
 
@@ -643,12 +612,12 @@ export const scrapeFilmsPage = async (
     console.log(
       `Fetched ${filmsData.length} films from page ${pageNum}, ${
         filmsData.filter((f) => f.liked).length
-      } liked`
+      } liked`,
     );
 
     return { films: filmsData, totalPages };
   } finally {
-    await closePageAndBrowser(page);
+    await page.close();
   }
 };
 
@@ -656,11 +625,11 @@ export const scrapeFilmsPage = async (
  * Scrape all user films
  */
 export const scrapeUserFilms = async (
-  username: string
+  username: string,
 ): Promise<UserFilm[]> => {
   const startTime = Date.now();
   console.log(
-    `Starting film fetching for ${username} at ${new Date().toISOString()}`
+    `Starting film fetching for ${username} at ${new Date().toISOString()}`,
   );
 
   const films: UserFilm[] = [];
@@ -674,7 +643,7 @@ export const scrapeUserFilms = async (
     for (let page = 2; page <= firstPageData.totalPages; page++) {
       const pageStartTime = Date.now();
       console.log(
-        `Scraping page ${page} of ${firstPageData.totalPages} for ${username} (${films.length} films collected so far)`
+        `Scraping page ${page} of ${firstPageData.totalPages} for ${username} (${films.length} films collected so far)`,
       );
 
       const pageData = await scrapeFilmsPage(username, page);
@@ -682,7 +651,7 @@ export const scrapeUserFilms = async (
 
       const pageTime = Date.now() - pageStartTime;
       console.log(
-        `Page ${page} completed in ${pageTime}ms, collected ${pageData.films.length} films`
+        `Page ${page} completed in ${pageTime}ms, collected ${pageData.films.length} films`,
       );
 
       await delay(BROWSER_CONFIG.FILM_SCRAPING_DELAY);
@@ -694,7 +663,7 @@ export const scrapeUserFilms = async (
         films.length
       } films for ${username} in ${totalTime}ms (${
         films.filter((f) => f.liked).length
-      } liked)`
+      } liked)`,
     );
 
     return films;
@@ -702,7 +671,7 @@ export const scrapeUserFilms = async (
     const totalTime = Date.now() - startTime;
     console.error(
       `Film fetching failed for ${username} after ${totalTime}ms:`,
-      error
+      error,
     );
     throw error;
   }
@@ -713,7 +682,7 @@ export const scrapeUserFilms = async (
  */
 export const scrapeUserFilmsWithProgress = async (
   username: string,
-  progressEmitter: EventEmitter
+  progressEmitter: EventEmitter,
 ): Promise<UserFilm[]> => {
   const startTime = Date.now();
   progressEmitter.emit("progress", {
@@ -744,7 +713,7 @@ export const scrapeUserFilmsWithProgress = async (
       username,
       1,
       sharedBrowser,
-      progressEmitter
+      progressEmitter,
     );
     films.push(...firstPageData.films);
 
@@ -770,7 +739,7 @@ export const scrapeUserFilmsWithProgress = async (
         username,
         page,
         sharedBrowser,
-        progressEmitter
+        progressEmitter,
       );
 
       films.push(...pageData.films);
@@ -789,11 +758,6 @@ export const scrapeUserFilmsWithProgress = async (
 
       if (page % BROWSER_CONFIG.MEMORY_CLEANUP_INTERVAL === 0) {
         forceGarbageCollection();
-        progressEmitter.emit("progress", {
-          type: "memory_cleanup",
-          message: `Memory cleanup after page ${page}`,
-          timestamp: new Date().toISOString(),
-        });
       }
     }
 
@@ -840,7 +804,7 @@ export const scrapeFilmsPageWithMemoryCleanup = async (
   username: string,
   pageNum: number,
   browser: any,
-  progressEmitter: EventEmitter
+  progressEmitter: EventEmitter,
 ): Promise<{ films: UserFilm[]; totalPages: number }> => {
   let page: any = null;
 
@@ -852,7 +816,7 @@ export const scrapeFilmsPageWithMemoryCleanup = async (
     await page.setViewport(
       process.env.VERCEL
         ? BROWSER_CONFIG.VIEWPORT_PRODUCTION
-        : BROWSER_CONFIG.VIEWPORT_DEVELOPMENT
+        : BROWSER_CONFIG.VIEWPORT_DEVELOPMENT,
     );
     await page.setExtraHTTPHeaders(BROWSER_HEADERS);
 
