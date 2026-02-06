@@ -828,12 +828,26 @@ export const scrapeFilmsPageWithMemoryCleanup = async (
       Object.defineProperty(navigator, "chrome", {
         get: () => undefined,
       });
+      // Also override permissions API like createPage() does
+      const originalQuery = window.navigator.permissions.query;
+      window.navigator.permissions.query = (parameters) =>
+        parameters.name === "notifications"
+          ? Promise.resolve({ state: Notification.permission } as any)
+          : originalQuery(parameters);
     });
 
+    // Request interception with both memory optimization and tracking blocking
     await page.setRequestInterception(true);
     page.on("request", (req: any) => {
       const resourceType = req.resourceType();
-      if (BLOCKED_RESOURCES.MEMORY_OPTIMIZATION.includes(resourceType)) {
+      const url = req.url();
+
+      // Block memory-heavy resources AND tracking (like createPage() does in production)
+      if (
+        BLOCKED_RESOURCES.MEMORY_OPTIMIZATION.includes(resourceType) ||
+        (process.env.VERCEL &&
+          BLOCKED_RESOURCES.TRACKING.some((tracker) => url.includes(tracker)))
+      ) {
         req.abort();
       } else {
         req.continue();
@@ -841,7 +855,10 @@ export const scrapeFilmsPageWithMemoryCleanup = async (
     });
 
     const url = buildFilmsPageUrl(username, pageNum);
-    await loadPageWithRetry(page, url, "domcontentloaded");
+    // Use networkidle2 for better reliability in production
+    await loadPageWithRetry(page, url, "networkidle2");
+    // Add small delay to ensure dynamic content loads
+    await delay(1000);
 
     let totalPages = 1;
     if (pageNum === 1) {
@@ -849,6 +866,13 @@ export const scrapeFilmsPageWithMemoryCleanup = async (
     }
 
     const films = await extractFilmsFromPage(page);
+
+    // Debug: Log if no films found
+    if (films.length === 0 && pageNum > 1) {
+      const pageTitle = await page.title();
+      const bodyText = await page.evaluate(() => document.body.innerText.substring(0, 200));
+      console.warn(`⚠️  Page ${pageNum} returned 0 films. Title: "${pageTitle}", Body preview: "${bodyText}"`);
+    }
 
     progressEmitter.emit("progress", {
       type: "page_scraped",
