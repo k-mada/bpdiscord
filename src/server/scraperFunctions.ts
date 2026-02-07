@@ -77,6 +77,7 @@ function scheduleCleanup() {
 
 /**
  * Create new browser instance with optimized configuration
+ * Uses puppeteer-extra with stealth plugin to bypass Cloudflare bot detection
  */
 const createBrowser = async (): Promise<any> => {
   let puppeteer: any = null;
@@ -86,30 +87,42 @@ const createBrowser = async (): Promise<any> => {
 
   if (process.env.VERCEL) {
     const chromium = (await import("@sparticuz/chromium")).default;
-    puppeteer = (await import("puppeteer-core")).default;
+    // Use puppeteer-extra with stealth plugin for production
+    const puppeteerExtra = (await import("puppeteer-extra")).default;
+    const StealthPlugin = (await import("puppeteer-extra-plugin-stealth"))
+      .default;
+    puppeteerExtra.use(StealthPlugin());
+
+    // Override launch to use chromium executable
+    puppeteer = {
+      launch: (options: any) =>
+        puppeteerExtra.launch({
+          ...options,
+          executablePath: chromium.executablePath(),
+        }),
+    };
+
     launchOptions = {
       ...launchOptions,
       args: [...chromium.args, ...CHROME_ARGS.MEMORY_OPTIMIZATION],
-      executablePath: await chromium.executablePath(),
       defaultViewport: BROWSER_CONFIG.VIEWPORT_MINIMAL,
       timeout: BROWSER_CONFIG.BROWSER_LAUNCH_TIMEOUT,
     };
   } else {
-    // Not serverless, using full puppeteer for local development
+    // Use puppeteer-extra with stealth plugin for local development
     try {
-      puppeteer = (await import("puppeteer")).default;
+      const puppeteerExtra = (await import("puppeteer-extra")).default;
+      const StealthPlugin = (await import("puppeteer-extra-plugin-stealth"))
+        .default;
+      puppeteerExtra.use(StealthPlugin());
+      puppeteer = puppeteerExtra;
     } catch (error) {
-      // Full puppeteer not available, falling back to puppeteer-core with system Chrome"
-      puppeteer = (await import("puppeteer-core")).default;
-      const chromium = (await import("@sparticuz/chromium")).default;
-      launchOptions = {
-        ...launchOptions,
-        args: chromium.args,
-      };
+      // Fall back to regular puppeteer if puppeteer-extra not available
+      puppeteer = (await import("puppeteer")).default;
     }
   }
 
-  // Launching browser with options
+  console.log("Launching browser with stealth plugin to bypass Cloudflare...");
   return await puppeteer.launch(launchOptions);
 };
 
@@ -754,10 +767,17 @@ export const scrapeUserFilmsWithProgress = async (
         timestamp: new Date().toISOString(),
       });
 
-      await delay(BROWSER_CONFIG.MEMORY_CLEANUP_DELAY);
+      // Use longer delay in production to avoid Cloudflare rate limiting
+      const delayMs = process.env.VERCEL ? 3000 : BROWSER_CONFIG.MEMORY_CLEANUP_DELAY;
+      await delay(delayMs);
 
       if (page % BROWSER_CONFIG.MEMORY_CLEANUP_INTERVAL === 0) {
         forceGarbageCollection();
+        progressEmitter.emit("progress", {
+          type: "memory_cleanup",
+          message: `Memory cleanup after page ${page}`,
+          timestamp: new Date().toISOString(),
+        });
       }
     }
 
