@@ -86,43 +86,36 @@ const createBrowser = async (): Promise<any> => {
   };
 
   if (process.env.VERCEL) {
+    // Serverless environment - use puppeteer-core with chromium
+    // Note: puppeteer-extra doesn't bundle well in serverless, use manual stealth instead
     const chromium = (await import("@sparticuz/chromium")).default;
-    // Use puppeteer-extra with stealth plugin for production
-    const puppeteerExtra = (await import("puppeteer-extra")).default;
-    const StealthPlugin = (await import("puppeteer-extra-plugin-stealth"))
-      .default;
-    puppeteerExtra.use(StealthPlugin());
-
-    // Override launch to use chromium executable
-    puppeteer = {
-      launch: (options: any) =>
-        puppeteerExtra.launch({
-          ...options,
-          executablePath: chromium.executablePath(),
-        }),
-    };
+    puppeteer = (await import("puppeteer-core")).default;
 
     launchOptions = {
       ...launchOptions,
       args: [...chromium.args, ...CHROME_ARGS.MEMORY_OPTIMIZATION],
+      executablePath: await chromium.executablePath(),
       defaultViewport: BROWSER_CONFIG.VIEWPORT_MINIMAL,
       timeout: BROWSER_CONFIG.BROWSER_LAUNCH_TIMEOUT,
     };
+
+    console.log("Launching browser in serverless mode with manual stealth...");
   } else {
-    // Use puppeteer-extra with stealth plugin for local development
+    // Local development - try to use puppeteer-extra with stealth plugin
     try {
       const puppeteerExtra = (await import("puppeteer-extra")).default;
       const StealthPlugin = (await import("puppeteer-extra-plugin-stealth"))
         .default;
       puppeteerExtra.use(StealthPlugin());
       puppeteer = puppeteerExtra;
+      console.log("Launching browser with stealth plugin...");
     } catch (error) {
       // Fall back to regular puppeteer if puppeteer-extra not available
       puppeteer = (await import("puppeteer")).default;
+      console.log("Launching browser without stealth plugin (fallback)...");
     }
   }
 
-  console.log("Launching browser with stealth plugin to bypass Cloudflare...");
   return await puppeteer.launch(launchOptions);
 };
 
@@ -840,20 +833,46 @@ export const scrapeFilmsPageWithMemoryCleanup = async (
     );
     await page.setExtraHTTPHeaders(BROWSER_HEADERS);
 
-    // Stealth JavaScript to hide automation markers
+    // Enhanced stealth JavaScript to hide automation markers
     await page.evaluateOnNewDocument(() => {
+      // Remove webdriver flag
       Object.defineProperty(navigator, "webdriver", {
         get: () => undefined,
       });
-      Object.defineProperty(navigator, "chrome", {
-        get: () => undefined,
-      });
-      // Also override permissions API like createPage() does
+
+      // Add chrome object (normal browsers have this)
+      if (!(window as any).chrome) {
+        (window as any).chrome = {
+          runtime: {},
+        };
+      }
+
+      // Override permissions API
       const originalQuery = window.navigator.permissions.query;
       window.navigator.permissions.query = (parameters) =>
         parameters.name === "notifications"
           ? Promise.resolve({ state: Notification.permission } as any)
           : originalQuery(parameters);
+
+      // Override plugins to appear as regular browser
+      Object.defineProperty(navigator, "plugins", {
+        get: () => [1, 2, 3, 4, 5],
+      });
+
+      // Override languages
+      Object.defineProperty(navigator, "languages", {
+        get: () => ["en-US", "en"],
+      });
+
+      // Add realistic platform
+      Object.defineProperty(navigator, "platform", {
+        get: () => "Win32",
+      });
+
+      // Remove automation-related properties
+      delete (window.navigator as any).__webdriver;
+      delete (window as any).domAutomation;
+      delete (window as any).domAutomationController;
     });
 
     // Request interception with both memory optimization and tracking blocking
