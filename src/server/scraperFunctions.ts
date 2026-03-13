@@ -91,7 +91,13 @@ const createBrowser = async (): Promise<any> => {
     const puppeteerExtra = (await import("puppeteer-extra")).default;
     const StealthPlugin = (await import("puppeteer-extra-plugin-stealth"))
       .default;
-    puppeteerExtra.use(StealthPlugin());
+    const stealth = StealthPlugin();
+    // Disable Chrome-specific evasions not available in serverless Chromium builds
+    stealth.enabledEvasions.delete("chrome.app");
+    stealth.enabledEvasions.delete("chrome.csi");
+    stealth.enabledEvasions.delete("chrome.loadTimes");
+    stealth.enabledEvasions.delete("chrome.runtime");
+    puppeteerExtra.use(stealth);
 
     // Override launch to use chromium executable
     puppeteer = {
@@ -114,7 +120,12 @@ const createBrowser = async (): Promise<any> => {
       const puppeteerExtra = (await import("puppeteer-extra")).default;
       const StealthPlugin = (await import("puppeteer-extra-plugin-stealth"))
         .default;
-      puppeteerExtra.use(StealthPlugin());
+      const stealth = StealthPlugin();
+      stealth.enabledEvasions.delete("chrome.app");
+      stealth.enabledEvasions.delete("chrome.csi");
+      stealth.enabledEvasions.delete("chrome.loadTimes");
+      stealth.enabledEvasions.delete("chrome.runtime");
+      puppeteerExtra.use(stealth);
       puppeteer = puppeteerExtra;
     } catch (error) {
       // Fall back to regular puppeteer if puppeteer-extra not available
