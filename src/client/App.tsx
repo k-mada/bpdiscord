@@ -10,6 +10,7 @@ import ScoringReference from "./components/MovieFantasyLeague/ScoringReference";
 import HaterRankings2 from "./components/HaterRankings2";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Stats from "./components/Stats";
+import OscarsPage from "./components/OscarsPage";
 import MainLayout from "./components/MainLayout";
 
 function App() {
@@ -34,6 +35,7 @@ function App() {
             element={<HaterRankings2 isPublic={true} />}
           />
           <Route path="/stats" element={<Stats />} />
+          <Route path="/oscars-2026" element={<OscarsPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route
             path="/dashboard"
