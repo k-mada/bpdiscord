@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import oscarsData from "../data/oscars2026.json";
 
 interface Pick {
@@ -53,17 +53,6 @@ const OscarsPage = () => {
       return true;
     });
 
-  // Override overflow on .main-content so sticky header works
-  useEffect(() => {
-    const main = document.querySelector<HTMLElement>(".main-content");
-    if (main) {
-      main.style.overflow = "visible";
-      return () => {
-        main.style.overflow = "";
-      };
-    }
-  }, []);
-
   const seanWins = categories.filter((c) => c.winner === "sean").length;
   const amandaWins = categories.filter((c) => c.winner === "amanda").length;
   const hasAnyWinner = seanWins > 0 || amandaWins > 0;
@@ -74,7 +63,7 @@ const OscarsPage = () => {
     viewMode === "should_win" ? cat.pick_amanda_should_win : cat.pick_amanda;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-12">
+    <div className="oscars-page max-w-4xl mx-auto px-4 py-12">
       {/* Header */}
       <div className="mb-10 text-center">
         <p className="uppercase tracking-[0.3em] text-letterboxd-pro text-xs font-semibold mb-3">
