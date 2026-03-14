@@ -81,6 +81,9 @@
   .main-content {
     @apply max-w-5xl mx-auto py-8 px-4 overflow-x-auto;
   }
+  .main-content:has(.oscars-page) {
+    @apply overflow-visible;
+  }
   .navigation {
     @apply bg-letterboxd-bg-tertiary;
   }
