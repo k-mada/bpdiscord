@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import oscarsData from "../data/oscars2026.json";
 
 interface Pick {
@@ -11,8 +11,12 @@ interface Category {
   category: string;
   pick_sean: Pick;
   pick_amanda: Pick;
+  pick_sean_should_win: Pick;
+  pick_amanda_should_win: Pick;
   winner: string;
 }
+
+type ViewMode = "will_win" | "should_win";
 
 const PickCell = ({ pick, isWinner }: { pick: Pick; isWinner: boolean }) => (
   <div className="flex items-center justify-center text-center px-3 py-2">
@@ -35,9 +39,19 @@ const PickCell = ({ pick, isWinner }: { pick: Pick; isWinner: boolean }) => (
 );
 
 const OscarsPage = () => {
-  const categories = (oscarsData.categories as Category[]).sort(
-    (a, b) => a.order - b.order,
-  );
+  const [viewMode, setViewMode] = useState<ViewMode>("will_win");
+
+  const categories = (oscarsData.categories as Category[])
+    .sort((a, b) => a.order - b.order)
+    .filter((cat) => {
+      if (viewMode === "should_win") {
+        return (
+          cat.pick_sean_should_win.bolded_title !== "" ||
+          cat.pick_amanda_should_win.bolded_title !== ""
+        );
+      }
+      return true;
+    });
 
   // Override overflow on .main-content so sticky header works
   useEffect(() => {
@@ -53,6 +67,11 @@ const OscarsPage = () => {
   const seanWins = categories.filter((c) => c.winner === "sean").length;
   const amandaWins = categories.filter((c) => c.winner === "amanda").length;
   const hasAnyWinner = seanWins > 0 || amandaWins > 0;
+
+  const getSeanPick = (cat: Category) =>
+    viewMode === "should_win" ? cat.pick_sean_should_win : cat.pick_sean;
+  const getAmandaPick = (cat: Category) =>
+    viewMode === "should_win" ? cat.pick_amanda_should_win : cat.pick_amanda;
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12">
@@ -70,7 +89,32 @@ const OscarsPage = () => {
         <p className="text-5xl font-extralight text-letterboxd-pro mt-1">
           {oscarsData.year}
         </p>
-        {hasAnyWinner && (
+
+        {/* Toggle */}
+        <div className="mt-6 inline-flex rounded-lg border border-letterboxd-border overflow-hidden">
+          <button
+            onClick={() => setViewMode("will_win")}
+            className={`px-5 py-2 text-sm font-semibold transition-colors ${
+              viewMode === "will_win"
+                ? "bg-letterboxd-pro text-letterboxd-bg-primary"
+                : "bg-letterboxd-bg-secondary text-letterboxd-text-secondary hover:text-letterboxd-text-primary"
+            }`}
+          >
+            Who Will Win
+          </button>
+          <button
+            onClick={() => setViewMode("should_win")}
+            className={`px-5 py-2 text-sm font-semibold transition-colors ${
+              viewMode === "should_win"
+                ? "bg-letterboxd-pro text-letterboxd-bg-primary"
+                : "bg-letterboxd-bg-secondary text-letterboxd-text-secondary hover:text-letterboxd-text-primary"
+            }`}
+          >
+            Who Should Win
+          </button>
+        </div>
+
+        {hasAnyWinner && viewMode === "will_win" && (
           <div className="flex justify-center gap-10 mt-6">
             <div className="text-center">
               <p className="text-2xl font-bold text-letterboxd-pro">
@@ -118,10 +162,13 @@ const OscarsPage = () => {
             <div className="px-3 py-2 text-sm font-semibold text-letterboxd-text-primary">
               {cat.category}
             </div>
-            <PickCell pick={cat.pick_sean} isWinner={cat.winner === "sean"} />
             <PickCell
-              pick={cat.pick_amanda}
-              isWinner={cat.winner === "amanda"}
+              pick={getSeanPick(cat)}
+              isWinner={cat.winner === "sean" && viewMode === "will_win"}
+            />
+            <PickCell
+              pick={getAmandaPick(cat)}
+              isWinner={cat.winner === "amanda" && viewMode === "will_win"}
             />
           </div>
         ))}

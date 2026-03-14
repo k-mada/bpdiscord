@@ -6,6 +6,8 @@
       "category": "Best Picture",
       "pick_sean": { "bolded_title": "One Battle After Another", "subtitle": "" },
       "pick_amanda": { "bolded_title": "One Battle After Another", "subtitle": "" },
+      "pick_sean_should_win": { "bolded_title": "One Battle After Another", "subtitle": "" },
+      "pick_amanda_should_win": { "bolded_title": "One Battle After Another", "subtitle": "" },
       "winner": ""
     },
     {
@@ -13,6 +15,8 @@
       "category": "Director",
       "pick_sean": { "bolded_title": "Paul Thomas Anderson", "subtitle": "One Battle After Another" },
       "pick_amanda": { "bolded_title": "Paul Thomas Anderson", "subtitle": "One Battle After Another" },
+      "pick_sean_should_win": { "bolded_title": "Paul Thomas Anderson", "subtitle": "One Battle After Another" },
+      "pick_amanda_should_win": { "bolded_title": "Paul Thomas Anderson", "subtitle": "One Battle After Another" },
       "winner": ""
     },
     {
@@ -20,6 +24,8 @@
       "category": "Actor in a Leading Role",
       "pick_sean": { "bolded_title": "Michael B. Jordan", "subtitle": "Sinners" },
       "pick_amanda": { "bolded_title": "Michael B. Jordan", "subtitle": "Sinners" },
+      "pick_sean_should_win": { "bolded_title": "Leonardo DiCaprio", "subtitle": "One Battle After Another" },
+      "pick_amanda_should_win": { "bolded_title": "Timoth\u00e9e Chalamet", "subtitle": "Marty Supreme" },
       "winner": ""
     },
     {
@@ -27,6 +33,8 @@
       "category": "Actress in a Leading Role",
       "pick_sean": { "bolded_title": "Jessie Buckley", "subtitle": "Hamnet" },
       "pick_amanda": { "bolded_title": "Jessie Buckley", "subtitle": "Hamnet" },
+      "pick_sean_should_win": { "bolded_title": "Jessie Buckley", "subtitle": "Hamnet" },
+      "pick_amanda_should_win": { "bolded_title": "Rose Byrne", "subtitle": "If I Had Legs I'd Kick You" },
       "winner": ""
     },
     {
@@ -34,6 +42,8 @@
       "category": "Best Actor in a Supporting Role",
       "pick_sean": { "bolded_title": "Sean Penn", "subtitle": "One Battle After Another" },
       "pick_amanda": { "bolded_title": "Sean Penn", "subtitle": "One Battle After Another" },
+      "pick_sean_should_win": { "bolded_title": "Stellan Skarsg\u00e5rd", "subtitle": "Sentimental Value" },
+      "pick_amanda_should_win": { "bolded_title": "Benicio Del Toro", "subtitle": "One Battle After Another" },
       "winner": ""
     },
     {
@@ -41,6 +51,8 @@
       "category": "Best Actress in a Supporting Role",
       "pick_sean": { "bolded_title": "Amy Madigan", "subtitle": "Weapons" },
       "pick_amanda": { "bolded_title": "Wunmi Mosaku", "subtitle": "Sinners" },
+      "pick_sean_should_win": { "bolded_title": "Inga Ibsdotter Lilleaas", "subtitle": "Sentimental Value" },
+      "pick_amanda_should_win": { "bolded_title": "Inga Ibsdotter Lilleaas", "subtitle": "Sentimental Value" },
       "winner": ""
     },
     {
@@ -48,6 +60,8 @@
       "category": "Best Adapted Screenplay",
       "pick_sean": { "bolded_title": "One Battle After Another", "subtitle": "" },
       "pick_amanda": { "bolded_title": "One Battle After Another", "subtitle": "" },
+      "pick_sean_should_win": { "bolded_title": "One Battle After Another", "subtitle": "" },
+      "pick_amanda_should_win": { "bolded_title": "One Battle After Another", "subtitle": "" },
       "winner": ""
     },
     {
@@ -55,6 +69,8 @@
       "category": "Best Original Screenplay",
       "pick_sean": { "bolded_title": "Sinners", "subtitle": "" },
       "pick_amanda": { "bolded_title": "Sinners", "subtitle": "" },
+      "pick_sean_should_win": { "bolded_title": "Sentimental Value", "subtitle": "" },
+      "pick_amanda_should_win": { "bolded_title": "Sinners", "subtitle": "" },
       "winner": ""
     },
     {
@@ -62,6 +78,8 @@
       "category": "Cinematography",
       "pick_sean": { "bolded_title": "Michael Bauman", "subtitle": "One Battle After Another" },
       "pick_amanda": { "bolded_title": "Michael Bauman", "subtitle": "One Battle After Another" },
+      "pick_sean_should_win": { "bolded_title": "Autumn Durald Arkapaw", "subtitle": "Sinners" },
+      "pick_amanda_should_win": { "bolded_title": "Autumn Durald Arkapaw", "subtitle": "Sinners" },
       "winner": ""
     },
     {
@@ -69,6 +87,8 @@
       "category": "Casting",
       "pick_sean": { "bolded_title": "Francine Maisler", "subtitle": "Sinners" },
       "pick_amanda": { "bolded_title": "Francine Maisler", "subtitle": "Sinners" },
+      "pick_sean_should_win": { "bolded_title": "Gabriel Domingues", "subtitle": "The Secret Agent" },
+      "pick_amanda_should_win": { "bolded_title": "Gabriel Domingues", "subtitle": "The Secret Agent" },
       "winner": ""
     },
     {
@@ -76,6 +96,8 @@
       "category": "Film Editing",
       "pick_sean": { "bolded_title": "One Battle After Another", "subtitle": "Andy Jurgensen" },
       "pick_amanda": { "bolded_title": "One Battle After Another", "subtitle": "Andy Jurgensen" },
+      "pick_sean_should_win": { "bolded_title": "One Battle After Another", "subtitle": "Andy Jurgensen" },
+      "pick_amanda_should_win": { "bolded_title": "Marty Supreme", "subtitle": "Ronald Bronstein & Josh Safdie" },
       "winner": ""
     },
     {
@@ -83,6 +105,8 @@
       "category": "Visual Effects",
       "pick_sean": { "bolded_title": "Avatar: Fire and Ash", "subtitle": "" },
       "pick_amanda": { "bolded_title": "Avatar: Fire and Ash", "subtitle": "" },
+      "pick_sean_should_win": { "bolded_title": "Avatar: Fire and Ash", "subtitle": "" },
+      "pick_amanda_should_win": { "bolded_title": "F1", "subtitle": "" },
       "winner": ""
     },
     {
@@ -90,6 +114,8 @@
       "category": "Original Score",
       "pick_sean": { "bolded_title": "Sinners", "subtitle": "Ludwig Goransson" },
       "pick_amanda": { "bolded_title": "Sinners", "subtitle": "Ludwig Goransson" },
+      "pick_sean_should_win": { "bolded_title": "Bugonia", "subtitle": "Jerskin Fendrix" },
+      "pick_amanda_should_win": { "bolded_title": "Marty Supreme", "subtitle": "Daniel Lopatin" },
       "winner": ""
     },
     {
@@ -97,6 +123,8 @@
       "category": "Documentary Feature Film",
       "pick_sean": { "bolded_title": "The Perfect Neighbor", "subtitle": "" },
       "pick_amanda": { "bolded_title": "The Perfect Neighbor", "subtitle": "" },
+      "pick_sean_should_win": { "bolded_title": "The Alabama Solution", "subtitle": "" },
+      "pick_amanda_should_win": { "bolded_title": "The Alabama Solution", "subtitle": "" },
       "winner": ""
     },
     {
@@ -104,6 +132,8 @@
       "category": "International Feature Film",
       "pick_sean": { "bolded_title": "Sentimental Value", "subtitle": "Norway" },
       "pick_amanda": { "bolded_title": "Sentimental Value", "subtitle": "Norway" },
+      "pick_sean_should_win": { "bolded_title": "The Secret Agent", "subtitle": "Brazil" },
+      "pick_amanda_should_win": { "bolded_title": "The Secret Agent", "subtitle": "Brazil" },
       "winner": ""
     },
     {
@@ -111,6 +141,8 @@
       "category": "Animated Feature Film",
       "pick_sean": { "bolded_title": "Kpop Demon Hunters", "subtitle": "" },
       "pick_amanda": { "bolded_title": "Kpop Demon Hunters", "subtitle": "" },
+      "pick_sean_should_win": { "bolded_title": "Kpop Demon Hunters", "subtitle": "" },
+      "pick_amanda_should_win": { "bolded_title": "Kpop Demon Hunters", "subtitle": "" },
       "winner": ""
     },
     {
@@ -118,6 +150,8 @@
       "category": "Sound",
       "pick_sean": { "bolded_title": "F1", "subtitle": "Gareth John, Al Nelson, Gwendolyn Yates Whittle, Gary A. Rizzo and Juan Peralta" },
       "pick_amanda": { "bolded_title": "F1", "subtitle": "Gareth John, Al Nelson, Gwendolyn Yates Whittle, Gary A. Rizzo and Juan Peralta" },
+      "pick_sean_should_win": { "bolded_title": "Sinners", "subtitle": "Chris Welcker, Benjamin A. Burtt, Felipe Pacheco, Brandon Proctor and Steve Boeddeker" },
+      "pick_amanda_should_win": { "bolded_title": "F1", "subtitle": "Gareth John, Al Nelson, Gwendolyn Yates Whittle, Gary A. Rizzo and Juan Peralta" },
       "winner": ""
     },
     {
@@ -125,6 +159,8 @@
       "category": "Production Design",
       "pick_sean": { "bolded_title": "Frankenstein", "subtitle": "Tamara Deverell" },
       "pick_amanda": { "bolded_title": "Frankenstein", "subtitle": "Tamara Deverell" },
+      "pick_sean_should_win": { "bolded_title": "Marty Supreme", "subtitle": "Jack Fisk" },
+      "pick_amanda_should_win": { "bolded_title": "Marty Supreme", "subtitle": "Jack Fisk" },
       "winner": ""
     },
     {
@@ -132,6 +168,8 @@
       "category": "Makeup and Hairstyling",
       "pick_sean": { "bolded_title": "Frankenstein", "subtitle": "Mike Hill, Jordan Samuel, and Cliona Furey" },
       "pick_amanda": { "bolded_title": "Frankenstein", "subtitle": "Mike Hill, Jordan Samuel, and Cliona Furey" },
+      "pick_sean_should_win": { "bolded_title": "The Ugly Stepsister", "subtitle": "Thomas Foldberg and Anne Cathrine Sauerberg" },
+      "pick_amanda_should_win": { "bolded_title": "Frankenstein", "subtitle": "Mike Hill, Jordan Samuel, and Cliona Furey" },
       "winner": ""
     },
     {
@@ -139,6 +177,8 @@
       "category": "Costume Design",
       "pick_sean": { "bolded_title": "Frankenstein", "subtitle": "Kate Hawley" },
       "pick_amanda": { "bolded_title": "Frankenstein", "subtitle": "Kate Hawley" },
+      "pick_sean_should_win": { "bolded_title": "Marty Supreme", "subtitle": "Miyako Bellizzi" },
+      "pick_amanda_should_win": { "bolded_title": "Marty Supreme", "subtitle": "Miyako Bellizzi" },
       "winner": ""
     },
     {
@@ -146,6 +186,8 @@
       "category": "Best Animated Short",
       "pick_sean": { "bolded_title": "Butterfly", "subtitle": "" },
       "pick_amanda": { "bolded_title": "Butterfly", "subtitle": "" },
+      "pick_sean_should_win": { "bolded_title": "Retirement Plan", "subtitle": "" },
+      "pick_amanda_should_win": { "bolded_title": "Butterfly", "subtitle": "" },
       "winner": ""
     },
     {
@@ -153,6 +195,8 @@
       "category": "Live Action Short Film",
       "pick_sean": { "bolded_title": "Two People Exchanging Saliva", "subtitle": "" },
       "pick_amanda": { "bolded_title": "Two People Exchanging Saliva", "subtitle": "" },
+      "pick_sean_should_win": { "bolded_title": "Two People Exchanging Saliva", "subtitle": "" },
+      "pick_amanda_should_win": { "bolded_title": "The Best First Feature Oscar", "subtitle": "" },
       "winner": ""
     },
     {
@@ -160,6 +204,8 @@
       "category": "Best Documentary Short",
       "pick_sean": { "bolded_title": "All the Empty Rooms", "subtitle": "" },
       "pick_amanda": { "bolded_title": "All the Empty Rooms", "subtitle": "" },
+      "pick_sean_should_win": { "bolded_title": "Perfectly a Strangeness", "subtitle": "" },
+      "pick_amanda_should_win": { "bolded_title": "The Devil Is Busy", "subtitle": "" },
       "winner": ""
     },
     {
@@ -167,6 +213,8 @@
       "category": "Original Song",
       "pick_sean": { "bolded_title": "\"Golden\"", "subtitle": "from Kpop Demon Hunters" },
       "pick_amanda": { "bolded_title": "\"Golden\"", "subtitle": "from Kpop Demon Hunters" },
+      "pick_sean_should_win": { "bolded_title": "\"Golden\"", "subtitle": "from Kpop Demon Hunters" },
+      "pick_amanda_should_win": { "bolded_title": "\"Golden\"", "subtitle": "from Kpop Demon Hunters" },
       "winner": ""
     }
   ]
