@@ -2,7 +2,7 @@
   "year": 2026,
   "categories": [
     {
-      "order": 1,
+      "order": 24,
       "category": "Best Picture",
       "pick_sean": { "bolded_title": "One Battle After Another", "subtitle": "" },
       "pick_amanda": { "bolded_title": "One Battle After Another", "subtitle": "" },
@@ -11,7 +11,7 @@
       "winner": ""
     },
     {
-      "order": 2,
+      "order": 23,
       "category": "Director",
       "pick_sean": { "bolded_title": "Paul Thomas Anderson", "subtitle": "One Battle After Another" },
       "pick_amanda": { "bolded_title": "Paul Thomas Anderson", "subtitle": "One Battle After Another" },
@@ -20,7 +20,7 @@
       "winner": ""
     },
     {
-      "order": 3,
+      "order": 21,
       "category": "Actor in a Leading Role",
       "pick_sean": { "bolded_title": "Michael B. Jordan", "subtitle": "Sinners" },
       "pick_amanda": { "bolded_title": "Michael B. Jordan", "subtitle": "Sinners" },
@@ -29,7 +29,7 @@
       "winner": ""
     },
     {
-      "order": 4,
+      "order": 22,
       "category": "Actress in a Leading Role",
       "pick_sean": { "bolded_title": "Jessie Buckley", "subtitle": "Hamnet" },
       "pick_amanda": { "bolded_title": "Jessie Buckley", "subtitle": "Hamnet" },
@@ -38,7 +38,7 @@
       "winner": ""
     },
     {
-      "order": 5,
+      "order": 8,
       "category": "Best Actor in a Supporting Role",
       "pick_sean": { "bolded_title": "Sean Penn", "subtitle": "One Battle After Another" },
       "pick_amanda": { "bolded_title": "Sean Penn", "subtitle": "One Battle After Another" },
@@ -47,7 +47,7 @@
       "winner": ""
     },
     {
-      "order": 6,
+      "order": 1,
       "category": "Best Actress in a Supporting Role",
       "pick_sean": { "bolded_title": "Amy Madigan", "subtitle": "Weapons" },
       "pick_amanda": { "bolded_title": "Wunmi Mosaku", "subtitle": "Sinners" },
@@ -56,7 +56,7 @@
       "winner": ""
     },
     {
-      "order": 7,
+      "order": 9,
       "category": "Best Adapted Screenplay",
       "pick_sean": { "bolded_title": "One Battle After Another", "subtitle": "" },
       "pick_amanda": { "bolded_title": "One Battle After Another", "subtitle": "" },
@@ -65,7 +65,7 @@
       "winner": ""
     },
     {
-      "order": 8,
+      "order": 10,
       "category": "Best Original Screenplay",
       "pick_sean": { "bolded_title": "Sinners", "subtitle": "" },
       "pick_amanda": { "bolded_title": "Sinners", "subtitle": "" },
@@ -74,7 +74,7 @@
       "winner": ""
     },
     {
-      "order": 9,
+      "order": 18,
       "category": "Cinematography",
       "pick_sean": { "bolded_title": "Michael Bauman", "subtitle": "One Battle After Another" },
       "pick_amanda": { "bolded_title": "Michael Bauman", "subtitle": "One Battle After Another" },
@@ -83,7 +83,7 @@
       "winner": ""
     },
     {
-      "order": 10,
+      "order": 6,
       "category": "Casting",
       "pick_sean": { "bolded_title": "Francine Maisler", "subtitle": "Sinners" },
       "pick_amanda": { "bolded_title": "Francine Maisler", "subtitle": "Sinners" },
@@ -92,7 +92,7 @@
       "winner": ""
     },
     {
-      "order": 11,
+      "order": 17,
       "category": "Film Editing",
       "pick_sean": { "bolded_title": "One Battle After Another", "subtitle": "Andy Jurgensen" },
       "pick_amanda": { "bolded_title": "One Battle After Another", "subtitle": "Andy Jurgensen" },
@@ -110,7 +110,7 @@
       "winner": ""
     },
     {
-      "order": 13,
+      "order": 15,
       "category": "Original Score",
       "pick_sean": { "bolded_title": "Sinners", "subtitle": "Ludwig Goransson" },
       "pick_amanda": { "bolded_title": "Sinners", "subtitle": "Ludwig Goransson" },
@@ -128,7 +128,7 @@
       "winner": ""
     },
     {
-      "order": 15,
+      "order": 19,
       "category": "International Feature Film",
       "pick_sean": { "bolded_title": "Sentimental Value", "subtitle": "Norway" },
       "pick_amanda": { "bolded_title": "Sentimental Value", "subtitle": "Norway" },
@@ -137,7 +137,7 @@
       "winner": ""
     },
     {
-      "order": 16,
+      "order": 2,
       "category": "Animated Feature Film",
       "pick_sean": { "bolded_title": "Kpop Demon Hunters", "subtitle": "" },
       "pick_amanda": { "bolded_title": "Kpop Demon Hunters", "subtitle": "" },
@@ -146,7 +146,7 @@
       "winner": ""
     },
     {
-      "order": 17,
+      "order": 16,
       "category": "Sound",
       "pick_sean": { "bolded_title": "F1", "subtitle": "Gareth John, Al Nelson, Gwendolyn Yates Whittle, Gary A. Rizzo and Juan Peralta" },
       "pick_amanda": { "bolded_title": "F1", "subtitle": "Gareth John, Al Nelson, Gwendolyn Yates Whittle, Gary A. Rizzo and Juan Peralta" },
@@ -155,7 +155,7 @@
       "winner": ""
     },
     {
-      "order": 18,
+      "order": 11,
       "category": "Production Design",
       "pick_sean": { "bolded_title": "Frankenstein", "subtitle": "Tamara Deverell" },
       "pick_amanda": { "bolded_title": "Frankenstein", "subtitle": "Tamara Deverell" },
@@ -164,7 +164,7 @@
       "winner": ""
     },
     {
-      "order": 19,
+      "order": 5,
       "category": "Makeup and Hairstyling",
       "pick_sean": { "bolded_title": "Frankenstein", "subtitle": "Mike Hill, Jordan Samuel, and Cliona Furey" },
       "pick_amanda": { "bolded_title": "Frankenstein", "subtitle": "Mike Hill, Jordan Samuel, and Cliona Furey" },
@@ -173,7 +173,7 @@
       "winner": ""
     },
     {
-      "order": 20,
+      "order": 4,
       "category": "Costume Design",
       "pick_sean": { "bolded_title": "Frankenstein", "subtitle": "Kate Hawley" },
       "pick_amanda": { "bolded_title": "Frankenstein", "subtitle": "Kate Hawley" },
@@ -182,7 +182,7 @@
       "winner": ""
     },
     {
-      "order": 21,
+      "order": 3,
       "category": "Best Animated Short",
       "pick_sean": { "bolded_title": "Butterfly", "subtitle": "" },
       "pick_amanda": { "bolded_title": "Butterfly", "subtitle": "" },
@@ -191,7 +191,7 @@
       "winner": ""
     },
     {
-      "order": 22,
+      "order": 7,
       "category": "Live Action Short Film",
       "pick_sean": { "bolded_title": "Two People Exchanging Saliva", "subtitle": "" },
       "pick_amanda": { "bolded_title": "Two People Exchanging Saliva", "subtitle": "" },
@@ -200,7 +200,7 @@
       "winner": ""
     },
     {
-      "order": 23,
+      "order": 13,
       "category": "Best Documentary Short",
       "pick_sean": { "bolded_title": "All the Empty Rooms", "subtitle": "" },
       "pick_amanda": { "bolded_title": "All the Empty Rooms", "subtitle": "" },
@@ -209,7 +209,7 @@
       "winner": ""
     },
     {
-      "order": 24,
+      "order": 20,
       "category": "Original Song",
       "pick_sean": { "bolded_title": "\"Golden\"", "subtitle": "from Kpop Demon Hunters" },
       "pick_amanda": { "bolded_title": "\"Golden\"", "subtitle": "from Kpop Demon Hunters" },
