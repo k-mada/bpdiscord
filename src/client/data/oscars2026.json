@@ -2,7 +2,7 @@
   "year": 2026,
   "categories": [
     {
-      "order": 1,
+      "order": 24,
       "category": "Best Picture",
       "nominees": ["Bugonia", "F1", "Frankenstein", "Hamnet", "Marty Supreme", "One Battle After Another", "The Secret Agent", "Sentimental Value", "Sinners", "Train Dreams"],
       "pick_sean": { "bolded_title": "One Battle After Another", "subtitle": "" },
@@ -12,7 +12,7 @@
       "winner": ""
     },
     {
-      "order": 2,
+      "order": 23,
       "category": "Director",
       "nominees": ["Paul Thomas Anderson — One Battle After Another", "Ryan Coogler — Sinners", "Chloé Zhao — Hamnet", "Josh Safdie — Marty Supreme", "Joachim Trier — Sentimental Value"],
       "pick_sean": { "bolded_title": "Paul Thomas Anderson", "subtitle": "One Battle After Another" },
@@ -22,7 +22,7 @@
       "winner": ""
     },
     {
-      "order": 3,
+      "order": 21,
       "category": "Actor in a Leading Role",
       "nominees": ["Timothée Chalamet — Marty Supreme", "Leonardo DiCaprio — One Battle After Another", "Ethan Hawke — Blue Moon", "Michael B. Jordan — Sinners", "Wagner Moura — The Secret Agent"],
       "pick_sean": { "bolded_title": "Michael B. Jordan", "subtitle": "Sinners" },
@@ -32,7 +32,7 @@
       "winner": ""
     },
     {
-      "order": 4,
+      "order": 22,
       "category": "Actress in a Leading Role",
       "nominees": ["Jessie Buckley — Hamnet", "Rose Byrne — If I Had Legs I'd Kick You", "Kate Hudson — Song Sung Blue", "Renate Reinsve — Sentimental Value", "Emma Stone — Bugonia"],
       "pick_sean": { "bolded_title": "Jessie Buckley", "subtitle": "Hamnet" },
@@ -42,7 +42,7 @@
       "winner": ""
     },
     {
-      "order": 5,
+      "order": 8,
       "category": "Best Actor in a Supporting Role",
       "nominees": ["Benicio Del Toro — One Battle After Another", "Jacob Elordi — Frankenstein", "Delroy Lindo — Sinners", "Sean Penn — One Battle After Another", "Stellan Skarsgård — Sentimental Value"],
       "pick_sean": { "bolded_title": "Sean Penn", "subtitle": "One Battle After Another" },
@@ -52,7 +52,7 @@
       "winner": ""
     },
     {
-      "order": 6,
+      "order": 1,
       "category": "Best Actress in a Supporting Role",
       "nominees": ["Elle Fanning — Sentimental Value", "Inga Ibsdotter Lilleaas — Sentimental Value", "Amy Madigan — Weapons", "Wunmi Mosaku — Sinners", "Teyana Taylor — One Battle After Another"],
       "pick_sean": { "bolded_title": "Amy Madigan", "subtitle": "Weapons" },
@@ -62,7 +62,7 @@
       "winner": ""
     },
     {
-      "order": 7,
+      "order": 9,
       "category": "Best Adapted Screenplay",
       "nominees": ["Will Tracy — Bugonia", "Guillermo del Toro — Frankenstein", "Chloé Zhao & Maggie O'Farrell — Hamnet", "Paul Thomas Anderson — One Battle After Another", "Clint Bailey & Greg Kwedar — Train Dreams"],
       "pick_sean": { "bolded_title": "One Battle After Another", "subtitle": "" },
@@ -72,7 +72,7 @@
       "winner": ""
     },
     {
-      "order": 8,
+      "order": 10,
       "category": "Best Original Screenplay",
       "nominees": ["Robert Kaplow — Blue Moon", "Jafar Panahi — It Was Just an Accident", "Ronald Bronstein & Josh Safdie — Marty Supreme", "Eskil Vogt & Joachim Trier — Sentimental Value", "Ryan Coogler — Sinners"],
       "pick_sean": { "bolded_title": "Sinners", "subtitle": "" },
@@ -82,7 +82,7 @@
       "winner": ""
     },
     {
-      "order": 9,
+      "order": 18,
       "category": "Cinematography",
       "nominees": ["Frankenstein", "Marty Supreme", "One Battle After Another", "Sentimental Value", "Sinners", "Train Dreams"],
       "pick_sean": { "bolded_title": "Michael Bauman", "subtitle": "One Battle After Another" },
@@ -92,7 +92,7 @@
       "winner": ""
     },
     {
-      "order": 10,
+      "order": 6,
       "category": "Casting",
       "nominees": ["Hamnet", "Marty Supreme", "One Battle After Another", "The Secret Agent", "Sinners"],
       "pick_sean": { "bolded_title": "Francine Maisler", "subtitle": "Sinners" },
@@ -102,7 +102,7 @@
       "winner": ""
     },
     {
-      "order": 11,
+      "order": 17,
       "category": "Film Editing",
       "nominees": ["Stephen Mirrione — F1", "Ronald Bronstein & Josh Safdie — Marty Supreme", "Andy Jurgensen — One Battle After Another", "Olivier Bugge Coutté — Sentimental Value", "Michael Shawver — Sinners"],
       "pick_sean": { "bolded_title": "One Battle After Another", "subtitle": "Andy Jurgensen" },
@@ -122,7 +122,7 @@
       "winner": ""
     },
     {
-      "order": 13,
+      "order": 15,
       "category": "Original Score",
       "nominees": ["Jerskin Fendrix — Bugonia", "Alexandre Desplat — Frankenstein", "Max Richter — Hamnet", "Jonny Greenwood — One Battle After Another", "Ludwig Göransson — Sinners"],
       "pick_sean": { "bolded_title": "Sinners", "subtitle": "Ludwig Goransson" },
@@ -142,7 +142,7 @@
       "winner": ""
     },
     {
-      "order": 15,
+      "order": 19,
       "category": "International Feature Film",
       "nominees": ["It Was Just an Accident (France)", "The Secret Agent (Brazil)", "Sentimental Value (Norway)", "Sirât (Spain)", "The Voice of Hind Rajab (Tunisia)"],
       "pick_sean": { "bolded_title": "Sentimental Value", "subtitle": "Norway" },
@@ -152,7 +152,7 @@
       "winner": ""
     },
     {
-      "order": 16,
+      "order": 2,
       "category": "Animated Feature Film",
       "nominees": ["Arco", "Elio", "KPop Demon Hunters", "Little Amélie or the Character of Rain", "Zootopia 2"],
       "pick_sean": { "bolded_title": "Kpop Demon Hunters", "subtitle": "" },
@@ -162,7 +162,7 @@
       "winner": ""
     },
     {
-      "order": 17,
+      "order": 16,
       "category": "Sound",
       "nominees": ["F1", "Frankenstein", "One Battle After Another", "Sinners", "Sirât"],
       "pick_sean": { "bolded_title": "F1", "subtitle": "Gareth John, Al Nelson, Gwendolyn Yates Whittle, Gary A. Rizzo and Juan Peralta" },
@@ -172,7 +172,7 @@
       "winner": ""
     },
     {
-      "order": 18,
+      "order": 11,
       "category": "Production Design",
       "nominees": ["Tamara Deverell — Frankenstein", "Fiona Crombie — Hamnet", "Jack Fisk — Marty Supreme", "Florencia Martin — One Battle After Another", "Hannah Beachler — Sinners"],
       "pick_sean": { "bolded_title": "Frankenstein", "subtitle": "Tamara Deverell" },
@@ -182,7 +182,7 @@
       "winner": ""
     },
     {
-      "order": 19,
+      "order": 5,
       "category": "Makeup and Hairstyling",
       "nominees": ["Frankenstein", "Kokuho", "Sinners", "The Smashing Machine", "The Ugly Stepsister"],
       "pick_sean": { "bolded_title": "Frankenstein", "subtitle": "Mike Hill, Jordan Samuel, and Cliona Furey" },
@@ -192,7 +192,7 @@
       "winner": ""
     },
     {
-      "order": 20,
+      "order": 4,
       "category": "Costume Design",
       "nominees": ["Avatar: Fire and Ash", "Frankenstein", "Hamnet", "Marty Supreme", "Sinners"],
       "pick_sean": { "bolded_title": "Frankenstein", "subtitle": "Kate Hawley" },
@@ -202,7 +202,7 @@
       "winner": ""
     },
     {
-      "order": 21,
+      "order": 3,
       "category": "Best Animated Short",
       "nominees": ["Butterfly", "Forevergreen", "The Girl Who Cried Pearls", "Retirement Plan", "The Three Sisters"],
       "pick_sean": { "bolded_title": "Butterfly", "subtitle": "" },
@@ -212,7 +212,7 @@
       "winner": ""
     },
     {
-      "order": 22,
+      "order": 7,
       "category": "Live Action Short Film",
       "nominees": ["Butcher's Stain", "A Friend of Dorothy", "Jane Austen's Period Drama", "The Singers", "Two People Exchanging Saliva"],
       "pick_sean": { "bolded_title": "Two People Exchanging Saliva", "subtitle": "" },
@@ -222,7 +222,7 @@
       "winner": ""
     },
     {
-      "order": 23,
+      "order": 13,
       "category": "Best Documentary Short",
       "nominees": ["All the Empty Rooms", "Armed Only with a Camera: The Life and Death of Brent Renaud", "Children No More: Were and Are Gone", "The Devil Is Busy", "Perfectly a Strangeness"],
       "pick_sean": { "bolded_title": "All the Empty Rooms", "subtitle": "" },
@@ -232,7 +232,7 @@
       "winner": ""
     },
     {
-      "order": 24,
+      "order": 20,
       "category": "Original Song",
       "nominees": ["\"Dear Me\" — Diane Warren: Relentless", "\"Golden\" — KPop Demon Hunters", "\"Highest 2 Lowest\" — Highest 2 Lowest", "\"I Lied To You\" — Sinners", "\"Sweet Dreams of Joy\" — Viva Verdi!", "\"Train Dreams\" — Train Dreams"],
       "pick_sean": { "bolded_title": "\"Golden\"", "subtitle": "from Kpop Demon Hunters" },

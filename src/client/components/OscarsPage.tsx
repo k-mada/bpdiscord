@@ -16,6 +16,7 @@ interface Category {
   pick_sean_should_win: Pick;
   pick_amanda_should_win: Pick;
   winner: string;
+  actual_winner: string;
 }
 
 type ViewMode = "will_win" | "should_win";
@@ -23,6 +24,7 @@ type ViewMode = "will_win" | "should_win";
 interface PickCellProps {
   pick: Pick;
   isWinner: boolean;
+  isCorrectPick: boolean;
 }
 
 interface TableProps {
@@ -30,6 +32,7 @@ interface TableProps {
   getSeanPick: (cat: Category) => Pick;
   getAmandaPick: (cat: Category) => Pick;
   viewMode: ViewMode;
+  isCorrectPick: (pick: Pick, cat: Category) => boolean;
 }
 
 interface ToggleProps {
@@ -91,7 +94,11 @@ const NomineesModal = ({ category, nominees, onClose }: NomineesModalProps) => (
   </div>
 );
 
-const CategoryLabel = ({ category, isDesktop, onMobileTap }: CategoryLabelProps) => {
+const CategoryLabel = ({
+  category,
+  isDesktop,
+  onMobileTap,
+}: CategoryLabelProps) => {
   const [showTooltip, setShowTooltip] = useState(false);
   const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({});
   const triggerRef = useRef<HTMLDivElement>(null);
@@ -101,11 +108,14 @@ const CategoryLabel = ({ category, isDesktop, onMobileTap }: CategoryLabelProps)
     if (!showTooltip || !triggerRef.current || !tooltipRef.current) return;
     const triggerRect = triggerRef.current.getBoundingClientRect();
     const tooltipRect = tooltipRef.current.getBoundingClientRect();
-    const openBelow = triggerRect.bottom + tooltipRect.height + 4 <= window.innerHeight;
+    const openBelow =
+      triggerRect.bottom + tooltipRect.height + 4 <= window.innerHeight;
 
     setTooltipStyle({
       left: triggerRect.left,
-      top: openBelow ? triggerRect.bottom + 4 : triggerRect.top - tooltipRect.height - 4,
+      top: openBelow
+        ? triggerRect.bottom + 4
+        : triggerRect.top - tooltipRect.height - 4,
     });
   }, [showTooltip]);
 
@@ -155,7 +165,7 @@ const CategoryLabel = ({ category, isDesktop, onMobileTap }: CategoryLabelProps)
   );
 };
 
-const PickCell = ({ pick, isWinner }: PickCellProps) => (
+const PickCell = ({ pick, isWinner, isCorrectPick }: PickCellProps) => (
   <div className="flex items-center justify-center text-center px-2 py-2 md:px-3">
     <div
       className={`inline-block px-2 py-1 rounded ${
@@ -166,6 +176,7 @@ const PickCell = ({ pick, isWinner }: PickCellProps) => (
         className="text-base md:text-lg font-semibold text-letterboxd-text-primary leading-snug mb-0"
         style={{ fontFamily: "'Playfair Display', serif" }}
       >
+        {isCorrectPick && <span className="mr-1">🏆</span>}
         {pick.bolded_title}
       </p>
       {pick.subtitle && (
@@ -211,6 +222,7 @@ const DesktopTable = ({
   getSeanPick,
   getAmandaPick,
   viewMode,
+  isCorrectPick,
 }: TableProps) => (
   <div className="card">
     {/* Sticky header — sits below the sticky toggle */}
@@ -239,10 +251,12 @@ const DesktopTable = ({
         <PickCell
           pick={getSeanPick(cat)}
           isWinner={cat.winner === "sean" && viewMode === "will_win"}
+          isCorrectPick={isCorrectPick(getSeanPick(cat), cat)}
         />
         <PickCell
           pick={getAmandaPick(cat)}
           isWinner={cat.winner === "amanda" && viewMode === "will_win"}
+          isCorrectPick={isCorrectPick(getAmandaPick(cat), cat)}
         />
       </div>
     ))}
@@ -259,6 +273,7 @@ const MobileTable = ({
   getAmandaPick,
   viewMode,
   onCategoryTap,
+  isCorrectPick,
 }: MobileTableProps) => (
   <div className="space-y-1">
     {/* Sticky column labels — sits below the sticky toggle */}
@@ -291,10 +306,12 @@ const MobileTable = ({
           <PickCell
             pick={getSeanPick(cat)}
             isWinner={cat.winner === "sean" && viewMode === "will_win"}
+            isCorrectPick={isCorrectPick(getSeanPick(cat), cat)}
           />
           <PickCell
             pick={getAmandaPick(cat)}
             isWinner={cat.winner === "amanda" && viewMode === "will_win"}
+            isCorrectPick={isCorrectPick(getAmandaPick(cat), cat)}
           />
         </div>
       </div>
@@ -328,11 +345,15 @@ const OscarsPage = () => {
   const getAmandaPick = (cat: Category) =>
     viewMode === "should_win" ? cat.pick_amanda_should_win : cat.pick_amanda;
 
+  const isCorrectPick = (pick: Pick, cat: Category) =>
+    cat.actual_winner !== "" && pick.bolded_title === cat.actual_winner;
+
   const tableProps: TableProps = {
     categories,
     getSeanPick,
     getAmandaPick,
     viewMode,
+    isCorrectPick,
   };
 
   return (
