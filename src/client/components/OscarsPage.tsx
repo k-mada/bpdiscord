@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import oscarsData from "../data/oscars2026.json";
 import { useMediaQuery } from "../hooks/useMediaQuery";
 
@@ -10,6 +10,7 @@ interface Pick {
 interface Category {
   order: number;
   category: string;
+  nominees: string[];
   pick_sean: Pick;
   pick_amanda: Pick;
   pick_sean_should_win: Pick;
@@ -39,7 +40,130 @@ interface ToggleProps {
   setViewMode: (mode: ViewMode) => void;
 }
 
+interface NomineesModalProps {
+  category: string;
+  nominees: string[];
+  onClose: () => void;
+}
+
+interface CategoryLabelProps {
+  category: Category;
+  isDesktop: boolean;
+  onMobileTap: (cat: Category) => void;
+}
+
 const STICKY_TOGGLE_HEIGHT = "top-[44px]";
+
+const NomineesModal = ({ category, nominees, onClose }: NomineesModalProps) => (
+  <div
+    className="fixed inset-0 z-50 flex items-end justify-center bg-black/60"
+    onClick={onClose}
+  >
+    <div
+      className="w-full max-w-lg bg-letterboxd-bg-secondary rounded-t-2xl p-5 pb-8 animate-slide-up"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="flex justify-between items-center mb-4">
+        <h3
+          className="text-lg font-bold text-letterboxd-pro"
+          style={{ fontFamily: "'Playfair Display', serif" }}
+        >
+          {category}
+        </h3>
+        <button
+          onClick={onClose}
+          className="text-letterboxd-text-muted hover:text-letterboxd-text-primary text-2xl leading-none px-2"
+        >
+          &times;
+        </button>
+      </div>
+      <p className="text-[10px] uppercase tracking-widest text-letterboxd-text-muted mb-3">
+        Nominees
+      </p>
+      <ul className="space-y-2">
+        {nominees.map((nominee) => (
+          <li
+            key={nominee}
+            className="text-sm text-letterboxd-text-primary border-b border-letterboxd-border/30 pb-2 last:border-0"
+          >
+            {nominee}
+          </li>
+        ))}
+      </ul>
+    </div>
+  </div>
+);
+
+const CategoryLabel = ({
+  category,
+  isDesktop,
+  onMobileTap,
+}: CategoryLabelProps) => {
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [tooltipStyle, setTooltipStyle] = useState<React.CSSProperties>({});
+  const triggerRef = useRef<HTMLDivElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!showTooltip || !triggerRef.current || !tooltipRef.current) return;
+    const triggerRect = triggerRef.current.getBoundingClientRect();
+    const tooltipRect = tooltipRef.current.getBoundingClientRect();
+    const openBelow =
+      triggerRect.bottom + tooltipRect.height + 4 <= window.innerHeight;
+
+    setTooltipStyle({
+      left: triggerRect.left,
+      top: openBelow
+        ? triggerRect.bottom + 4
+        : triggerRect.top - tooltipRect.height - 4,
+    });
+  }, [showTooltip]);
+
+  if (!isDesktop) {
+    return (
+      <button
+        className="px-3 py-2 text-sm font-semibold text-letterboxd-text-primary text-left underline decoration-dotted decoration-letterboxd-text-muted/50 underline-offset-2 cursor-pointer hover:text-letterboxd-pro transition-colors w-full"
+        onClick={() => onMobileTap(category)}
+      >
+        {category.category}
+      </button>
+    );
+  }
+
+  return (
+    <div
+      ref={triggerRef}
+      className="px-3 py-2"
+      onMouseEnter={() => setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
+    >
+      <span className="text-sm font-semibold text-letterboxd-text-primary underline decoration-dotted decoration-letterboxd-text-muted/50 underline-offset-2 cursor-default">
+        {category.category}
+      </span>
+      {showTooltip && (
+        <div
+          ref={tooltipRef}
+          style={tooltipStyle}
+          className="fixed z-30 w-72 bg-letterboxd-bg-secondary border border-letterboxd-border rounded-lg shadow-xl p-3"
+        >
+          <p className="text-[10px] uppercase tracking-widest text-letterboxd-pro mb-2 font-semibold">
+            Nominees
+          </p>
+          <ul className="space-y-1.5">
+            {category.nominees.map((nominee) => (
+              <li
+                key={nominee}
+                className="text-xs text-letterboxd-text-primary"
+              >
+                {nominee}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const PickCell = ({ pick, isWinner, isCorrectPick }: PickCellProps) => (
   <div className="flex items-center justify-center text-center px-2 py-2 md:px-3">
@@ -123,9 +247,7 @@ const DesktopTable = ({
           i % 2 === 0 ? "bg-letterboxd-bg-secondary/30" : ""
         }`}
       >
-        <div className="px-3 py-2 text-sm font-semibold text-letterboxd-text-primary">
-          {cat.category}
-        </div>
+        <CategoryLabel category={cat} isDesktop onMobileTap={() => {}} />
         <PickCell
           pick={getSeanPick(cat)}
           isWinner={cat.winner === "sean" && viewMode === "will_win"}
@@ -141,13 +263,18 @@ const DesktopTable = ({
   </div>
 );
 
+interface MobileTableProps extends TableProps {
+  onCategoryTap: (cat: Category) => void;
+}
+
 const MobileTable = ({
   categories,
   getSeanPick,
   getAmandaPick,
   viewMode,
+  onCategoryTap,
   isCorrectPick,
-}: TableProps) => (
+}: MobileTableProps) => (
   <div className="space-y-1">
     {/* Sticky column labels — sits below the sticky toggle */}
     <div
@@ -168,8 +295,12 @@ const MobileTable = ({
           i % 2 === 0 ? "bg-letterboxd-bg-secondary/30" : ""
         }`}
       >
-        <div className="px-3 pt-3 pb-1 text-xs font-semibold uppercase tracking-wider text-letterboxd-text-secondary text-center">
-          {cat.category}
+        <div className="px-3 pt-3 pb-1 text-center">
+          <CategoryLabel
+            category={cat}
+            isDesktop={false}
+            onMobileTap={onCategoryTap}
+          />
         </div>
         <div className="grid grid-cols-2 min-h-[56px]">
           <PickCell
@@ -190,6 +321,7 @@ const MobileTable = ({
 
 const OscarsPage = () => {
   const [viewMode, setViewMode] = useState<ViewMode>("will_win");
+  const [modalCategory, setModalCategory] = useState<Category | null>(null);
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const categories = (oscarsData.categories as Category[])
@@ -269,7 +401,15 @@ const OscarsPage = () => {
       {isDesktop ? (
         <DesktopTable {...tableProps} />
       ) : (
-        <MobileTable {...tableProps} />
+        <MobileTable {...tableProps} onCategoryTap={setModalCategory} />
+      )}
+
+      {modalCategory && (
+        <NomineesModal
+          category={modalCategory.category}
+          nominees={modalCategory.nominees}
+          onClose={() => setModalCategory(null)}
+        />
       )}
     </div>
   );

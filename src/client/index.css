@@ -285,6 +285,19 @@
   }
 }
 
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.25s ease-out;
+}
+
 .film-list {
   @apply flex justify-start max-md:justify-center flex-wrap gap-4;
 }
