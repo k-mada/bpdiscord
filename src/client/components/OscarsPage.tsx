@@ -122,7 +122,7 @@ const CategoryLabel = ({
   if (!isDesktop) {
     return (
       <button
-        className="px-3 py-2 text-sm font-semibold text-letterboxd-text-primary text-left underline decoration-dotted decoration-letterboxd-text-muted/50 underline-offset-2 cursor-pointer hover:text-letterboxd-pro transition-colors w-full"
+        className="px-3 py-2 text-sm font-semibold text-letterboxd-text-primary text-center underline decoration-dotted decoration-letterboxd-text-muted/50 underline-offset-2 cursor-pointer hover:text-letterboxd-pro transition-colors w-full"
         onClick={() => onMobileTap(category)}
       >
         {category.category}
@@ -217,6 +217,22 @@ const StickyToggle = ({ viewMode, setViewMode }: ToggleProps) => (
   </div>
 );
 
+const WinnerCell = ({ cat }: { cat: Category }) => (
+  <div className="flex items-center justify-center text-center px-2 py-2 md:px-3">
+    {cat.actual_winner ? (
+      <p
+        className="text-base md:text-lg font-semibold text-letterboxd-text-primary leading-snug mb-0"
+        style={{ fontFamily: "'Playfair Display', serif" }}
+      >
+        <span className="mr-1">🏆</span>
+        {cat.actual_winner}
+      </p>
+    ) : (
+      <span className="text-letterboxd-text-muted text-xs">—</span>
+    )}
+  </div>
+);
+
 const DesktopTable = ({
   categories,
   getSeanPick,
@@ -227,7 +243,7 @@ const DesktopTable = ({
   <div className="card">
     {/* Sticky header — sits below the sticky toggle */}
     <div
-      className={`grid grid-cols-[35%_1fr_1fr] sticky ${STICKY_TOGGLE_HEIGHT} z-10 bg-letterboxd-bg-secondary shadow-md border-b border-letterboxd-pro/30`}
+      className={`grid grid-cols-[25%_1fr_1fr_1fr] sticky ${STICKY_TOGGLE_HEIGHT} z-10 bg-letterboxd-bg-secondary shadow-md border-b border-letterboxd-pro/30`}
     >
       <div className="px-3 py-2 text-left text-sm font-semibold uppercase tracking-wider text-letterboxd-pro">
         Category
@@ -238,12 +254,15 @@ const DesktopTable = ({
       <div className="px-3 py-2 text-center text-sm font-semibold uppercase tracking-wider text-letterboxd-pro">
         Amanda
       </div>
+      <div className="px-3 py-2 text-center text-sm font-semibold uppercase tracking-wider text-letterboxd-pro">
+        Winner
+      </div>
     </div>
 
     {categories.map((cat, i) => (
       <div
         key={cat.order}
-        className={`grid grid-cols-[35%_1fr_1fr] items-center min-h-[72px] border-b border-letterboxd-border/50 ${
+        className={`grid grid-cols-[25%_1fr_1fr_1fr] items-center min-h-[72px] border-b border-letterboxd-border/50 ${
           i % 2 === 0 ? "bg-letterboxd-bg-secondary/30" : ""
         }`}
       >
@@ -258,6 +277,7 @@ const DesktopTable = ({
           isWinner={cat.winner === "amanda" && viewMode === "will_win"}
           isCorrectPick={isCorrectPick(getAmandaPick(cat), cat)}
         />
+        <WinnerCell cat={cat} />
       </div>
     ))}
   </div>
@@ -278,13 +298,16 @@ const MobileTable = ({
   <div className="space-y-1">
     {/* Sticky column labels — sits below the sticky toggle */}
     <div
-      className={`grid grid-cols-2 sticky ${STICKY_TOGGLE_HEIGHT} z-10 bg-letterboxd-bg-secondary shadow-md border-b border-letterboxd-pro/30 rounded-t-lg`}
+      className={`grid grid-cols-3 sticky ${STICKY_TOGGLE_HEIGHT} z-10 bg-letterboxd-bg-secondary shadow-md border-b border-letterboxd-pro/30 rounded-t-lg`}
     >
-      <div className="px-3 py-2 text-center text-sm font-semibold uppercase tracking-wider text-letterboxd-pro">
+      <div className="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider text-letterboxd-pro">
         Sean
       </div>
-      <div className="px-3 py-2 text-center text-sm font-semibold uppercase tracking-wider text-letterboxd-pro">
+      <div className="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider text-letterboxd-pro">
         Amanda
+      </div>
+      <div className="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider text-letterboxd-pro">
+        Winner
       </div>
     </div>
 
@@ -302,7 +325,7 @@ const MobileTable = ({
             onMobileTap={onCategoryTap}
           />
         </div>
-        <div className="grid grid-cols-2 min-h-[56px]">
+        <div className="grid grid-cols-3 min-h-[56px]">
           <PickCell
             pick={getSeanPick(cat)}
             isWinner={cat.winner === "sean" && viewMode === "will_win"}
@@ -313,6 +336,7 @@ const MobileTable = ({
             isWinner={cat.winner === "amanda" && viewMode === "will_win"}
             isCorrectPick={isCorrectPick(getAmandaPick(cat), cat)}
           />
+          <WinnerCell cat={cat} />
         </div>
       </div>
     ))}
