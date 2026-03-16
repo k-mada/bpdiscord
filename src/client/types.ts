@@ -320,6 +320,29 @@ export interface SignupFormData extends LoginFormData {
 }
 
 // ===========================
+// Oscars Types
+// ===========================
+
+export interface OscarsPrediction {
+  title: string;
+  subtitle: string;
+}
+
+export interface OscarsCategory {
+  order: number;
+  category: string;
+  nominees: OscarsPrediction[];
+  pick_sean: OscarsPrediction;
+  pick_amanda: OscarsPrediction;
+  pick_sean_should_win: OscarsPrediction;
+  pick_amanda_should_win: OscarsPrediction;
+  winner: string;
+  actual_winner: OscarsPrediction[];
+}
+
+export type OscarsViewMode = "will_win" | "should_win";
+
+// ===========================
 // Constants & Enums
 // ===========================
 
