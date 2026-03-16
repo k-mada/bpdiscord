@@ -370,7 +370,9 @@ const OscarsPage = () => {
     viewMode === "should_win" ? cat.pick_amanda_should_win : cat.pick_amanda;
 
   const isCorrectPick = (pick: Pick, cat: Category) =>
-    cat.actual_winner !== "" && pick.bolded_title === cat.actual_winner;
+    cat.actual_winner !== "" &&
+    (pick.bolded_title.toLowerCase() === cat.actual_winner.toLowerCase() ||
+      cat.actual_winner.toLowerCase().startsWith(pick.bolded_title.toLowerCase()));
 
   const tableProps: TableProps = {
     categories,
