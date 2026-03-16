@@ -16,7 +16,7 @@ interface Category {
   pick_sean_should_win: Pick;
   pick_amanda_should_win: Pick;
   winner: string;
-  actual_winner: string;
+  actual_winner: string | string[];
 }
 
 type ViewMode = "will_win" | "should_win";
@@ -217,21 +217,37 @@ const StickyToggle = ({ viewMode, setViewMode }: ToggleProps) => (
   </div>
 );
 
-const WinnerCell = ({ cat }: { cat: Category }) => (
-  <div className="flex items-center justify-center text-center px-2 py-2 md:px-3">
-    {cat.actual_winner ? (
-      <p
-        className="text-base md:text-lg font-semibold text-letterboxd-text-primary leading-snug mb-0"
-        style={{ fontFamily: "'Playfair Display', serif" }}
-      >
-        <span className="mr-1">🏆</span>
-        {cat.actual_winner}
-      </p>
-    ) : (
-      <span className="text-letterboxd-text-muted text-xs">—</span>
-    )}
-  </div>
-);
+const hasWinner = (winner: string | string[]): boolean =>
+  Array.isArray(winner) ? winner.length > 0 : winner !== "";
+
+const WinnerCell = ({ cat }: { cat: Category }) => {
+  const winners = Array.isArray(cat.actual_winner)
+    ? cat.actual_winner
+    : cat.actual_winner
+      ? [cat.actual_winner]
+      : [];
+
+  return (
+    <div className="flex items-center justify-center text-center px-2 py-2 md:px-3">
+      {winners.length > 0 ? (
+        <div className="flex flex-col gap-1">
+          {winners.map((w, i) => (
+            <p
+              key={i}
+              className="text-base md:text-lg font-semibold text-letterboxd-text-primary leading-snug mb-0"
+              style={{ fontFamily: "'Playfair Display', serif" }}
+            >
+              <span className="mr-1">🏆</span>
+              {w}
+            </p>
+          ))}
+        </div>
+      ) : (
+        <span className="text-letterboxd-text-muted text-xs">—</span>
+      )}
+    </div>
+  );
+};
 
 const DesktopTable = ({
   categories,
@@ -369,10 +385,20 @@ const OscarsPage = () => {
   const getAmandaPick = (cat: Category) =>
     viewMode === "should_win" ? cat.pick_amanda_should_win : cat.pick_amanda;
 
-  const isCorrectPick = (pick: Pick, cat: Category) =>
-    cat.actual_winner !== "" &&
-    (pick.bolded_title.toLowerCase() === cat.actual_winner.toLowerCase() ||
-      cat.actual_winner.toLowerCase().startsWith(pick.bolded_title.toLowerCase()));
+  const isCorrectPick = (pick: Pick, cat: Category) => {
+    const winners = Array.isArray(cat.actual_winner)
+      ? cat.actual_winner
+      : cat.actual_winner
+        ? [cat.actual_winner]
+        : [];
+    if (winners.length === 0) return false;
+    const pickLower = pick.bolded_title.toLowerCase();
+    return winners.some(
+      (w) =>
+        pickLower === w.toLowerCase() ||
+        w.toLowerCase().startsWith(pickLower)
+    );
+  };
 
   const tableProps: TableProps = {
     categories,

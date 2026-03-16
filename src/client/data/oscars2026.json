@@ -149,7 +149,7 @@
         "subtitle": "One Battle After Another"
       },
       "winner": "",
-      "actual_winner": ""
+      "actual_winner": "Sean Penn — One Battle After Another"
     },
     {
       "order": 1,
@@ -207,7 +207,7 @@
         "subtitle": ""
       },
       "winner": "",
-      "actual_winner": ""
+      "actual_winner": "Paul Thomas Anderson — One Battle After Another"
     },
     {
       "order": 10,
@@ -643,7 +643,7 @@
         "subtitle": ""
       },
       "winner": "",
-      "actual_winner": ""
+      "actual_winner": ["Two People Exchanging Saliva", "The Singers"]
     },
     {
       "order": 13,
@@ -702,7 +702,7 @@
         "subtitle": "from Kpop Demon Hunters"
       },
       "winner": "",
-      "actual_winner": ""
+      "actual_winner": "Ryan Coogler — Sinners"
     }
   ]
 }
