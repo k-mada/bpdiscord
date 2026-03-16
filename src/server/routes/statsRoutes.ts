@@ -19,25 +19,25 @@ const scraperLimiter = rateLimit({
 router.get(
   "/total-ratings",
   [scraperLimiter, handleValidationErrors],
-  getTotalRatings
+  getTotalRatings,
 );
 
 router.get(
   "/all-user-films",
   [scraperLimiter, handleValidationErrors],
-  getAllUserFilms
+  getAllUserFilms,
 );
 
 router.get(
   "/user-films-count",
   [scraperLimiter, handleValidationErrors],
-  getUserFilmsCount
+  getUserFilmsCount,
 );
 
 router.get(
   "/get-missing-films",
   [scraperLimiter, handleValidationErrors],
-  getMissingFilms
+  getMissingFilms,
 );
 
 export default router;
