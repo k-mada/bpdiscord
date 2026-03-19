@@ -10,6 +10,8 @@ import {
   boolean,
   timestamp,
   primaryKey,
+  uuid,
+  unique,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -168,6 +170,95 @@ export const mflMovieData = pgTable('MFLMovieData', {
 });
 
 // ===========================
+// Events Table
+// ===========================
+export const events = pgTable('Events', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: varchar('name').notNull(),
+  slug: varchar('slug').notNull().unique(),
+  year: integer('year').notNull(),
+  nominationsDate: timestamp('nominations_date', { withTimezone: true }),
+  awardsDate: timestamp('awards_date', { withTimezone: true }),
+  status: varchar('status', { length: 20 }).notNull().default('active'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
+
+export const eventsRelations = relations(events, ({ many }) => ({
+  categories: many(eventCategories),
+}));
+
+// ===========================
+// EventCategories Table
+// ===========================
+export const eventCategories = pgTable('EventCategories', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  name: varchar('name').notNull(),
+  displayOrder: integer('display_order').notNull(),
+  displayMode: varchar('display_mode', { length: 20 }).notNull().default('movie_first'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
+
+export const eventCategoriesRelations = relations(eventCategories, ({ one, many }) => ({
+  event: one(events, {
+    fields: [eventCategories.eventId],
+    references: [events.id],
+  }),
+  nominees: many(eventNominees),
+  picks: many(eventUserPicks),
+}));
+
+// ===========================
+// EventNominees Table
+// ===========================
+export const eventNominees = pgTable('EventNominees', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  categoryId: uuid('category_id').notNull().references(() => eventCategories.id, { onDelete: 'cascade' }),
+  personName: varchar('person_name'),
+  movieOrShowName: varchar('movie_or_show_name').notNull(),
+  isWinner: boolean('is_winner').notNull().default(false),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
+
+export const eventNomineesRelations = relations(eventNominees, ({ one, many }) => ({
+  category: one(eventCategories, {
+    fields: [eventNominees.categoryId],
+    references: [eventCategories.id],
+  }),
+  picks: many(eventUserPicks),
+}));
+
+// ===========================
+// EventUserPicks Table
+// ===========================
+export const eventUserPicks = pgTable(
+  'EventUserPicks',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    categoryId: uuid('category_id').notNull().references(() => eventCategories.id, { onDelete: 'cascade' }),
+    userId: varchar('user_id').notNull(),
+    nomineeId: uuid('nominee_id').notNull().references(() => eventNominees.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+  },
+  (table) => [unique().on(table.categoryId, table.userId)]
+);
+
+export const eventUserPicksRelations = relations(eventUserPicks, ({ one }) => ({
+  category: one(eventCategories, {
+    fields: [eventUserPicks.categoryId],
+    references: [eventCategories.id],
+  }),
+  nominee: one(eventNominees, {
+    fields: [eventUserPicks.nomineeId],
+    references: [eventNominees.id],
+  }),
+}));
+
+// ===========================
 // Type Exports
 // ===========================
 export type User = typeof users.$inferSelect;
@@ -196,3 +287,15 @@ export type NewMFLScoringTally = typeof mflScoringTally.$inferInsert;
 
 export type MFLMovieDataRow = typeof mflMovieData.$inferSelect;
 export type NewMFLMovieData = typeof mflMovieData.$inferInsert;
+
+export type Event = typeof events.$inferSelect;
+export type NewEvent = typeof events.$inferInsert;
+
+export type EventCategory = typeof eventCategories.$inferSelect;
+export type NewEventCategory = typeof eventCategories.$inferInsert;
+
+export type EventNominee = typeof eventNominees.$inferSelect;
+export type NewEventNominee = typeof eventNominees.$inferInsert;
+
+export type EventUserPick = typeof eventUserPicks.$inferSelect;
+export type NewEventUserPick = typeof eventUserPicks.$inferInsert;

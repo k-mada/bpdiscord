@@ -8,6 +8,9 @@ import {
   PasswordResetConfirmRequest,
   MFLScoringMetric,
   MFLMovieScore,
+  EventSummary,
+  EventData,
+  EventUserPick,
 } from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
@@ -18,12 +21,13 @@ class ApiService {
     options: RequestInit = {}
   ): Promise<ApiResponse<T>> {
     const url = `${API_BASE_URL}${endpoint}`;
+    const { headers: optionHeaders, ...restOptions } = options;
     const config: RequestInit = {
+      ...restOptions,
       headers: {
         "Content-Type": "application/json",
-        ...options.headers,
+        ...optionHeaders,
       },
-      ...options,
     };
 
     try {
@@ -314,6 +318,146 @@ class ApiService {
   async deleteMflScoringMetric(scoringId: number): Promise<ApiResponse<any>> {
     return this.request<any>(`/mfl/delete-scoring-metric/${scoringId}`, {
       method: "DELETE",
+    });
+  }
+  // ===========================
+  // Event endpoints (public)
+  // ===========================
+
+  async getEvents(
+    status?: string
+  ): Promise<ApiResponse<EventSummary[]>> {
+    const query = status ? `?status=${status}` : "";
+    return this.request<EventSummary[]>(`/events${query}`);
+  }
+
+  async getEventBySlug(slug: string): Promise<ApiResponse<EventData>> {
+    return this.request<EventData>(`/events/${slug}`);
+  }
+
+  // Event endpoints (authenticated)
+  async submitEventPick(
+    categoryId: string,
+    nomineeId: string,
+    token: string
+  ): Promise<ApiResponse> {
+    return this.request("/events/picks", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ categoryId, nomineeId }),
+    });
+  }
+
+  async getMyEventPicks(
+    slug: string,
+    token: string
+  ): Promise<ApiResponse<EventUserPick[]>> {
+    return this.request<EventUserPick[]>(`/events/${slug}/my-picks`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  }
+
+  // Event admin endpoints
+  async createEvent(
+    data: {
+      name: string;
+      slug: string;
+      year: number;
+      nominationsDate?: string;
+      awardsDate?: string;
+      status?: string;
+    },
+    token: string
+  ): Promise<ApiResponse<EventData>> {
+    return this.request<EventData>("/events/admin/events", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+  }
+
+  async updateEvent(
+    id: string,
+    data: Partial<{
+      name: string;
+      slug: string;
+      year: number;
+      nominationsDate: string;
+      awardsDate: string;
+      status: string;
+    }>,
+    token: string
+  ): Promise<ApiResponse> {
+    return this.request(`/events/admin/events/${id}`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+  }
+
+  async upsertEventCategory(
+    data: {
+      id?: string;
+      eventId: string;
+      name: string;
+      displayOrder: number;
+      displayMode?: string;
+    },
+    token: string
+  ): Promise<ApiResponse> {
+    return this.request("/events/admin/categories", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteEventCategory(
+    id: string,
+    token: string
+  ): Promise<ApiResponse> {
+    return this.request(`/events/admin/categories/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  }
+
+  async upsertEventNominee(
+    data: {
+      id?: string;
+      categoryId: string;
+      personName?: string;
+      movieOrShowName: string;
+      isWinner?: boolean;
+    },
+    token: string
+  ): Promise<ApiResponse> {
+    return this.request("/events/admin/nominees", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+  }
+
+  async deleteEventNominee(
+    id: string,
+    token: string
+  ): Promise<ApiResponse> {
+    return this.request(`/events/admin/nominees/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  }
+
+  async setEventWinner(
+    nomineeId: string,
+    isWinner: boolean,
+    token: string
+  ): Promise<ApiResponse> {
+    return this.request(`/events/admin/nominees/${nomineeId}/winner`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ isWinner }),
     });
   }
 }
