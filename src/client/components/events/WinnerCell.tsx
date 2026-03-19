@@ -1,4 +1,5 @@
 import { EventNominee } from "../../types";
+import { formatNominee } from "./utils";
 
 interface WinnerCellProps {
   winners: EventNominee[];
@@ -10,14 +11,7 @@ const WinnerCell = ({ winners, displayMode }: WinnerCellProps) => (
     {winners.length > 0 ? (
       <div className="flex flex-col gap-2">
         {winners.map((winner) => {
-          const primary =
-            displayMode === "person_first" && winner.personName
-              ? winner.personName
-              : winner.movieOrShowName;
-          const secondary =
-            displayMode === "person_first"
-              ? winner.movieOrShowName
-              : winner.personName;
+          const { primary, secondary } = formatNominee(winner, displayMode);
 
           return (
             <div key={winner.id} className="inline-block px-2 py-1">

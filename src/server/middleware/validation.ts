@@ -32,6 +32,12 @@ export const validateUserId: ValidationChain[] = [
     .withMessage('Invalid user ID format')
 ];
 
+export const validateUUIDParam: ValidationChain[] = [
+  param('id')
+    .isUUID()
+    .withMessage('Invalid ID format — expected a UUID')
+];
+
 export const validateAuth: ValidationChain[] = [
   body('email')
     .isEmail()

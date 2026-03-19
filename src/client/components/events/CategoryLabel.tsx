@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { EventCategory, EventNominee } from "../../types";
+import { EventCategory } from "../../types";
+import { formatNominee } from "./utils";
 
 interface DesktopCategoryLabelProps {
   category: EventCategory;
@@ -9,21 +10,6 @@ interface MobileCategoryLabelProps {
   category: EventCategory;
   onTap: (cat: EventCategory) => void;
 }
-
-const formatNominee = (
-  nominee: EventNominee,
-  displayMode: "movie_first" | "person_first"
-) => {
-  const primary =
-    displayMode === "person_first" && nominee.personName
-      ? nominee.personName
-      : nominee.movieOrShowName;
-  const secondary =
-    displayMode === "person_first"
-      ? nominee.movieOrShowName
-      : nominee.personName;
-  return { primary, secondary };
-};
 
 export const DesktopCategoryLabel = ({
   category,

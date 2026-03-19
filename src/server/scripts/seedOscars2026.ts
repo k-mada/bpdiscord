@@ -7,6 +7,7 @@
  * Or: DOTENV_CONFIG_PATH=src/server/.env npx tsx --require dotenv/config src/server/scripts/seedOscars2026.ts
  */
 
+import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { events, eventCategories, eventNominees } from "../db/schema";
 import oscarsData from "../../client/data/oscars2026.json";
@@ -64,62 +65,77 @@ function mapNominee(
 }
 
 async function seed() {
+  const SLUG = "oscars-2026";
   console.log("Seeding Oscars 2026 data...");
 
-  // 1. Create the event
-  const result = await db
-    .insert(events)
-    .values({
-      name: "The Oscars",
-      slug: "oscars-2026",
-      year: oscarsData.year,
-      status: "active",
-    })
-    .returning();
+  // Check if event already exists (idempotency guard)
+  const existing = await db
+    .select({ id: events.id })
+    .from(events)
+    .where(eq(events.slug, SLUG));
 
-  const event = result[0]!;
-  console.log(`Created event: ${event.name} (${event.id})`);
+  if (existing.length > 0) {
+    console.log(`Event with slug "${SLUG}" already exists (id: ${existing[0]!.id}). Skipping seed.`);
+    process.exit(0);
+  }
 
-  const categories = oscarsData.categories as OscarsCategory[];
-
-  for (const cat of categories) {
-    const displayMode = getDisplayMode(cat.category);
-
-    // 2. Create the category
-    const catResult = await db
-      .insert(eventCategories)
+  // Wrap in transaction so partial failures roll back cleanly
+  await db.transaction(async (tx) => {
+    // 1. Create the event
+    const result = await tx
+      .insert(events)
       .values({
-        eventId: event.id,
-        name: cat.category,
-        displayOrder: cat.order,
-        displayMode,
+        name: "The Oscars",
+        slug: SLUG,
+        year: oscarsData.year,
+        status: "active",
       })
       .returning();
 
-    const category = catResult[0]!;
-    console.log(`  Category: ${category.name} (${displayMode})`);
+    const event = result[0]!;
+    console.log(`Created event: ${event.name} (${event.id})`);
 
-    // 3. Create nominees
-    for (const nom of cat.nominees) {
-      const { personName, movieOrShowName } = mapNominee(nom, displayMode);
+    const categories = oscarsData.categories as OscarsCategory[];
 
-      // Check if this nominee is a winner
-      const isWinner = cat.actual_winner.some(
-        (w) =>
-          w.title.toLowerCase() === nom.title.toLowerCase() &&
-          w.subtitle.toLowerCase() === nom.subtitle.toLowerCase()
-      );
+    for (const cat of categories) {
+      const displayMode = getDisplayMode(cat.category);
 
-      await db.insert(eventNominees).values({
-        categoryId: category.id,
-        personName,
-        movieOrShowName,
-        isWinner,
-      });
+      // 2. Create the category
+      const catResult = await tx
+        .insert(eventCategories)
+        .values({
+          eventId: event.id,
+          name: cat.category,
+          displayOrder: cat.order,
+          displayMode,
+        })
+        .returning();
+
+      const category = catResult[0]!;
+      console.log(`  Category: ${category.name} (${displayMode})`);
+
+      // 3. Create nominees
+      for (const nom of cat.nominees) {
+        const { personName, movieOrShowName } = mapNominee(nom, displayMode);
+
+        // Check if this nominee is a winner
+        const isWinner = cat.actual_winner.some(
+          (w) =>
+            w.title.toLowerCase() === nom.title.toLowerCase() &&
+            w.subtitle.toLowerCase() === nom.subtitle.toLowerCase()
+        );
+
+        await tx.insert(eventNominees).values({
+          categoryId: category.id,
+          personName,
+          movieOrShowName,
+          isWinner,
+        });
+      }
+
+      console.log(`    ${cat.nominees.length} nominees added`);
     }
-
-    console.log(`    ${cat.nominees.length} nominees added`);
-  }
+  });
 
   console.log("\nSeeding complete!");
   console.log(

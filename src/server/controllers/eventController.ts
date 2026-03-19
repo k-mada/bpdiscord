@@ -1,5 +1,8 @@
 import { Request, Response } from "express";
 import { ApiResponse } from "../types";
+
+const VALID_STATUSES = ["active", "inactive"] as const;
+const VALID_DISPLAY_MODES = ["movie_first", "person_first"] as const;
 import {
   dbGetEvents,
   dbGetEventBySlug,
@@ -122,21 +125,18 @@ export async function getMyPicks(req: Request, res: Response): Promise<void> {
 
 // ===========================
 // Admin Endpoints
+// (admin authorization enforced by authorizeAdmin middleware in routes)
 // ===========================
 
-function isAdmin(req: Request): boolean {
-  return req.user?.user_metadata?.role === "admin";
-}
-
 export async function createEvent(req: Request, res: Response): Promise<void> {
-  if (!isAdmin(req)) {
-    res.status(403).json({ error: "Admin access required" });
-    return;
-  }
-
   const { name, slug, year, nominationsDate, awardsDate, status } = req.body;
   if (!name || !slug || !year) {
     res.status(400).json({ error: "name, slug, and year are required" });
+    return;
+  }
+
+  if (status && !VALID_STATUSES.includes(status)) {
+    res.status(400).json({ error: `status must be one of: ${VALID_STATUSES.join(", ")}` });
     return;
   }
 
@@ -160,11 +160,6 @@ export async function createEvent(req: Request, res: Response): Promise<void> {
 }
 
 export async function updateEvent(req: Request, res: Response): Promise<void> {
-  if (!isAdmin(req)) {
-    res.status(403).json({ error: "Admin access required" });
-    return;
-  }
-
   const { id } = req.params;
   if (!id) {
     res.status(400).json({ error: "Event ID is required" });
@@ -172,6 +167,12 @@ export async function updateEvent(req: Request, res: Response): Promise<void> {
   }
 
   const { name, slug, year, nominationsDate, awardsDate, status } = req.body;
+
+  if (status !== undefined && !VALID_STATUSES.includes(status)) {
+    res.status(400).json({ error: `status must be one of: ${VALID_STATUSES.join(", ")}` });
+    return;
+  }
+
   const updateData: Record<string, unknown> = {};
   if (name !== undefined) updateData.name = name;
   if (slug !== undefined) updateData.slug = slug;
@@ -197,16 +198,16 @@ export async function upsertCategory(
   req: Request,
   res: Response,
 ): Promise<void> {
-  if (!isAdmin(req)) {
-    res.status(403).json({ error: "Admin access required" });
-    return;
-  }
-
   const { id, eventId, name, displayOrder, displayMode } = req.body;
   if (!eventId || !name || displayOrder === undefined) {
     res
       .status(400)
       .json({ error: "eventId, name, and displayOrder are required" });
+    return;
+  }
+
+  if (displayMode && !VALID_DISPLAY_MODES.includes(displayMode)) {
+    res.status(400).json({ error: `displayMode must be one of: ${VALID_DISPLAY_MODES.join(", ")}` });
     return;
   }
 
@@ -232,11 +233,6 @@ export async function deleteCategory(
   req: Request,
   res: Response,
 ): Promise<void> {
-  if (!isAdmin(req)) {
-    res.status(403).json({ error: "Admin access required" });
-    return;
-  }
-
   const { id } = req.params;
   if (!id) {
     res.status(400).json({ error: "Category ID is required" });
@@ -258,10 +254,6 @@ export async function upsertNominee(
   req: Request,
   res: Response,
 ): Promise<void> {
-  if (!isAdmin(req)) {
-    res.status(403).json({ error: "Admin access required" });
-    return;
-  }
   const { id, categoryId, personName, movieOrShowName, isWinner } = req.body;
 
   if (!categoryId || !movieOrShowName) {
@@ -293,11 +285,6 @@ export async function deleteNominee(
   req: Request,
   res: Response,
 ): Promise<void> {
-  if (!isAdmin(req)) {
-    res.status(403).json({ error: "Admin access required" });
-    return;
-  }
-
   const { id } = req.params;
   if (!id) {
     res.status(400).json({ error: "Nominee ID is required" });
@@ -314,11 +301,6 @@ export async function deleteNominee(
 }
 
 export async function setWinner(req: Request, res: Response): Promise<void> {
-  if (!isAdmin(req)) {
-    res.status(403).json({ error: "Admin access required" });
-    return;
-  }
-
   const { id } = req.params;
   const { isWinner } = req.body;
 

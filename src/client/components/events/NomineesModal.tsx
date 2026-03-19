@@ -1,4 +1,6 @@
-import { EventCategory, EventNominee } from "../../types";
+import { useEffect, useRef } from "react";
+import { EventCategory } from "../../types";
+import { formatNominee } from "./utils";
 
 interface NomineesModalProps {
   category: EventCategory;
@@ -6,22 +8,24 @@ interface NomineesModalProps {
 }
 
 const NomineesModal = ({ category, onClose }: NomineesModalProps) => {
-  const formatNominee = (nominee: EventNominee) => {
-    const primary =
-      category.displayMode === "person_first" && nominee.personName
-        ? nominee.personName
-        : nominee.movieOrShowName;
-    const secondary =
-      category.displayMode === "person_first"
-        ? nominee.movieOrShowName
-        : nominee.personName;
-    return { primary, secondary };
-  };
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    closeButtonRef.current?.focus();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-end justify-center bg-black/60"
       onClick={onClose}
+      role="dialog"
+      aria-label={`${category.name} nominees`}
     >
       <div
         className="w-full max-w-lg bg-letterboxd-bg-secondary rounded-t-2xl p-5 pb-8 animate-slide-up"
@@ -35,6 +39,7 @@ const NomineesModal = ({ category, onClose }: NomineesModalProps) => {
             {category.name}
           </h3>
           <button
+            ref={closeButtonRef}
             onClick={onClose}
             className="text-letterboxd-text-muted hover:text-letterboxd-text-primary text-2xl leading-none px-2"
           >
@@ -46,7 +51,7 @@ const NomineesModal = ({ category, onClose }: NomineesModalProps) => {
         </p>
         <ul className="space-y-2">
           {category.nominees.map((nominee) => {
-            const { primary, secondary } = formatNominee(nominee);
+            const { primary, secondary } = formatNominee(nominee, category.displayMode);
             return (
               <li
                 key={nominee.id}

@@ -113,7 +113,6 @@ class ApiService {
     username: string,
     token: string
   ): Promise<ApiResponse<any>> {
-    console.log("TOKEN", token);
     return this.request<ApiResponse<any>>("/scraper/getUserRatings", {
       method: "POST",
       headers: {

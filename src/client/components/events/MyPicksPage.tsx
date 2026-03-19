@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { EventData, EventCategory, EventUserPick } from "../../types";
 import { apiService } from "../../services/api";
+import { formatNominee } from "./utils";
 
 const MyPicksPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -10,9 +11,10 @@ const MyPicksPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
-  const token = localStorage.getItem("token") || "";
+  const [pickError, setPickError] = useState<string | null>(null);
 
   useEffect(() => {
+    const token = localStorage.getItem("token") || "";
     if (!slug || !token) return;
 
     const fetchData = async () => {
@@ -35,7 +37,7 @@ const MyPicksPage = () => {
     };
 
     fetchData();
-  }, [slug, token]);
+  }, [slug]);
 
   const getPickForCategory = (categoryId: string): string | null => {
     const pick = picks.find((p) => p.categoryId === categoryId);
@@ -43,8 +45,10 @@ const MyPicksPage = () => {
   };
 
   const handlePickChange = async (categoryId: string, nomineeId: string) => {
+    const token = localStorage.getItem("token") || "";
     try {
       setSaving(categoryId);
+      setPickError(null);
       await apiService.submitEventPick(categoryId, nomineeId, token);
 
       // Update local state
@@ -61,7 +65,7 @@ const MyPicksPage = () => {
         ];
       });
     } catch {
-      alert("Failed to save pick");
+      setPickError("Failed to save pick. Please try again.");
     } finally {
       setSaving(null);
     }
@@ -83,9 +87,7 @@ const MyPicksPage = () => {
     );
   }
 
-  const categories = [...event.categories].sort(
-    (a, b) => a.displayOrder - b.displayOrder
-  );
+  const categories = event.categories;
 
   const totalCategories = categories.length;
   const pickedCount = categories.filter(
@@ -119,6 +121,12 @@ const MyPicksPage = () => {
         </p>
       </div>
 
+      {pickError && (
+        <div className="mb-4 p-3 bg-red-500/20 text-red-400 text-sm rounded">
+          {pickError}
+        </div>
+      )}
+
       <div className="space-y-4">
         {categories.map((cat) => (
           <CategoryPickCard
@@ -151,18 +159,6 @@ const CategoryPickCard = ({
   isSaving,
   onPick,
 }: CategoryPickCardProps) => {
-  const formatNominee = (nominee: typeof category.nominees[0]) => {
-    if (category.displayMode === "person_first" && nominee.personName) {
-      return {
-        primary: nominee.personName,
-        secondary: nominee.movieOrShowName,
-      };
-    }
-    return {
-      primary: nominee.movieOrShowName,
-      secondary: nominee.personName,
-    };
-  };
 
   return (
     <div className="bg-letterboxd-bg-secondary rounded-lg border border-letterboxd-border/50 overflow-hidden">
@@ -174,7 +170,7 @@ const CategoryPickCard = ({
       <div className="p-2">
         {category.nominees.map((nominee) => {
           const isSelected = selectedNomineeId === nominee.id;
-          const { primary, secondary } = formatNominee(nominee);
+          const { primary, secondary } = formatNominee(nominee, category.displayMode);
 
           return (
             <button

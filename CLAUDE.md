@@ -3,6 +3,7 @@
 .claude/unit-tests.md
 .claude/react.md
 .claude/tailwind.md
+.claude/security.md
 
 # Code style
 

@@ -1,4 +1,4 @@
-import { eq, asc, and } from "drizzle-orm";
+import { eq, asc, and, ne } from "drizzle-orm";
 import { db } from "../db";
 import {
   events,
@@ -9,7 +9,12 @@ import {
   NewEventCategory,
   NewEventNominee,
 } from "../db/schema";
-import { dbOperation, dbMutation } from "../db/utils";
+import { dbOperation, dbMutation, dbTransaction } from "../db/utils";
+
+// Wrapper conventions:
+// - dbOperation<T>:   returns DbResult<T> with data — use for reads and writes that return data
+// - dbMutation:       returns DbResult<void> — use for writes that don't return data
+// - dbTransaction:    returns DbResult<void> within a transaction — use for multi-step writes
 
 // ===========================
 // Read Operations
@@ -188,13 +193,32 @@ export async function dbDeleteNominee(id: string) {
 }
 
 export async function dbSetWinner(nomineeId: string, isWinner: boolean) {
-  return dbMutation(async () => {
-    await db
+  return dbTransaction(async (tx) => {
+    // If setting a winner, first clear any existing winner in the same category
+    if (isWinner) {
+      const [nominee] = await tx
+        .select({ categoryId: eventNominees.categoryId })
+        .from(eventNominees)
+        .where(eq(eventNominees.id, nomineeId));
+
+      if (nominee) {
+        await tx
+          .update(eventNominees)
+          .set({ isWinner: false, updatedAt: new Date() })
+          .where(
+            and(
+              eq(eventNominees.categoryId, nominee.categoryId),
+              ne(eventNominees.id, nomineeId),
+              eq(eventNominees.isWinner, true)
+            )
+          );
+      }
+    }
+
+    // Set/unset the target nominee
+    await tx
       .update(eventNominees)
-      .set({
-        isWinner,
-        updatedAt: new Date(),
-      })
+      .set({ isWinner, updatedAt: new Date() })
       .where(eq(eventNominees.id, nomineeId));
   });
 }
