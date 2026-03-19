@@ -11,6 +11,10 @@ import HaterRankings2 from "./components/HaterRankings2";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Stats from "./components/Stats";
 import OscarsPage from "./components/OscarsPage";
+import EventsListPage from "./components/events/EventsListPage";
+import EventPage from "./components/events/EventPage";
+import EventAdminPage from "./components/events/EventAdminPage";
+import MyPicksPage from "./components/events/MyPicksPage";
 import MainLayout from "./components/MainLayout";
 
 function App() {
@@ -36,6 +40,24 @@ function App() {
           />
           <Route path="/stats" element={<Stats />} />
           <Route path="/oscars-2026" element={<OscarsPage />} />
+          <Route path="/events" element={<EventsListPage />} />
+          <Route
+            path="/events/admin"
+            element={
+              <ProtectedRoute>
+                <EventAdminPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route path="/events/:slug" element={<EventPage />} />
+          <Route
+            path="/events/:slug/my-picks"
+            element={
+              <ProtectedRoute>
+                <MyPicksPage />
+              </ProtectedRoute>
+            }
+          />
           <Route path="/login" element={<LoginPage />} />
           <Route
             path="/dashboard"

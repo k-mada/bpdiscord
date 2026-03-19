@@ -320,6 +320,55 @@ export interface SignupFormData extends LoginFormData {
 }
 
 // ===========================
+// Event Types
+// ===========================
+
+export interface EventNominee {
+  id: string;
+  categoryId: string;
+  personName: string | null;
+  movieOrShowName: string;
+  isWinner: boolean;
+}
+
+export interface EventUserPick {
+  id: string;
+  categoryId: string;
+  userId: string;
+  nomineeId: string;
+}
+
+export interface EventCategory {
+  id: string;
+  eventId: string;
+  name: string;
+  displayOrder: number;
+  displayMode: "movie_first" | "person_first";
+  nominees: EventNominee[];
+}
+
+export interface EventData {
+  id: string;
+  name: string;
+  slug: string;
+  year: number;
+  nominationsDate: string | null;
+  awardsDate: string | null;
+  status: "active" | "inactive";
+  categories: EventCategory[];
+}
+
+export interface EventSummary {
+  id: string;
+  name: string;
+  slug: string;
+  year: number;
+  nominationsDate: string | null;
+  awardsDate: string | null;
+  status: "active" | "inactive";
+}
+
+// ===========================
 // Oscars Types
 // ===========================
 

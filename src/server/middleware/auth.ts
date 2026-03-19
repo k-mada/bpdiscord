@@ -72,3 +72,16 @@ export const authorizeOwnerOrAdmin = (
     .status(403)
     .json({ error: "Access denied. You can only access your own data." });
 };
+
+export const authorizeAdmin = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  if (req.user?.user_metadata?.role === "admin") {
+    next();
+    return;
+  }
+
+  res.status(403).json({ error: "Admin access required" });
+};
