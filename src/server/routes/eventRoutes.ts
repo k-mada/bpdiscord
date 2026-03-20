@@ -3,6 +3,9 @@ import { authenticateToken, authorizeAdmin } from "../middleware/auth";
 import { validateUUIDParam } from "../middleware/validation";
 import { handleValidationErrors } from "../middleware/errorHandler";
 import {
+  getAwardShows,
+  createAwardShow,
+  updateAwardShow,
   getEvents,
   getEventBySlug,
   submitPick,
@@ -18,6 +21,9 @@ import {
 
 const router = Router();
 
+// Public — Award Shows
+router.get("/award-shows", getAwardShows);
+
 // Public
 router.get("/", getEvents);
 router.get("/:slug", getEventBySlug);
@@ -25,6 +31,10 @@ router.get("/:slug", getEventBySlug);
 // Authenticated (any logged-in user)
 router.post("/picks", authenticateToken, submitPick);
 router.get("/:slug/my-picks", authenticateToken, getMyPicks);
+
+// Admin — Award Shows
+router.post("/admin/award-shows", authenticateToken, authorizeAdmin, createAwardShow);
+router.put("/admin/award-shows/:id", authenticateToken, authorizeAdmin, ...validateUUIDParam, handleValidationErrors, updateAwardShow);
 
 // Admin (authenticateToken verifies JWT, authorizeAdmin checks role, validateUUIDParam validates :id)
 router.post("/admin/events", authenticateToken, authorizeAdmin, createEvent);

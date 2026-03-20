@@ -111,7 +111,7 @@ const MyPicksPage = () => {
           className="text-3xl font-bold text-letterboxd-text-primary tracking-tight"
           style={{ fontFamily: "'Playfair Display', serif" }}
         >
-          {event.name}
+          {event.awardShowName}
         </h1>
         <p className="text-2xl font-extralight text-letterboxd-pro mt-1">
           {event.year}

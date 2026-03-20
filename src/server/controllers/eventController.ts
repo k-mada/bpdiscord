@@ -4,6 +4,9 @@ import { ApiResponse } from "../types";
 const VALID_STATUSES = ["active", "inactive"] as const;
 const VALID_DISPLAY_MODES = ["movie_first", "person_first"] as const;
 import {
+  dbGetAwardShows,
+  dbCreateAwardShow,
+  dbUpdateAwardShow,
   dbGetEvents,
   dbGetEventBySlug,
   dbGetEventUserPicks,
@@ -16,6 +19,65 @@ import {
   dbSetWinner,
   dbUpsertUserPick,
 } from "./eventDataController";
+
+// ===========================
+// Award Show Endpoints
+// ===========================
+
+export async function getAwardShows(_req: Request, res: Response): Promise<void> {
+  const result = await dbGetAwardShows();
+
+  if (result.success && result.data) {
+    const response: ApiResponse = {
+      message: "Award shows retrieved successfully",
+      data: result.data,
+    };
+    res.json(response);
+  } else {
+    res.status(500).json({ error: result.error || "Failed to get award shows" });
+  }
+}
+
+export async function createAwardShow(req: Request, res: Response): Promise<void> {
+  const { name, slug, description } = req.body;
+  if (!name || !slug) {
+    res.status(400).json({ error: "name and slug are required" });
+    return;
+  }
+
+  const result = await dbCreateAwardShow({ name, slug, description: description || null });
+
+  if (result.success && result.data) {
+    res.status(201).json({
+      message: "Award show created successfully",
+      data: result.data,
+    });
+  } else {
+    res.status(500).json({ error: result.error || "Failed to create award show" });
+  }
+}
+
+export async function updateAwardShow(req: Request, res: Response): Promise<void> {
+  const { id } = req.params;
+  if (!id) {
+    res.status(400).json({ error: "Award show ID is required" });
+    return;
+  }
+
+  const { name, slug, description } = req.body;
+  const updateData: Record<string, unknown> = {};
+  if (name !== undefined) updateData.name = name;
+  if (slug !== undefined) updateData.slug = slug;
+  if (description !== undefined) updateData.description = description;
+
+  const result = await dbUpdateAwardShow(id, updateData);
+
+  if (result.success) {
+    res.json({ message: "Award show updated successfully" });
+  } else {
+    res.status(500).json({ error: result.error || "Failed to update award show" });
+  }
+}
 
 // ===========================
 // Public Endpoints
@@ -54,9 +116,16 @@ export async function getEventBySlug(
       res.status(404).json({ error: "Event not found" });
       return;
     }
+    // Flatten the nested awardShow relation for the client
+    const { awardShow, ...eventFields } = result.data;
     const response: ApiResponse = {
       message: "Event retrieved successfully",
-      data: result.data,
+      data: {
+        ...eventFields,
+        awardShowId: awardShow?.id ?? eventFields.awardShowId,
+        awardShowName: awardShow?.name ?? eventFields.name,
+        awardShowSlug: awardShow?.slug ?? "",
+      },
     };
     res.json(response);
   } else {
@@ -129,9 +198,9 @@ export async function getMyPicks(req: Request, res: Response): Promise<void> {
 // ===========================
 
 export async function createEvent(req: Request, res: Response): Promise<void> {
-  const { name, slug, year, nominationsDate, awardsDate, status } = req.body;
-  if (!name || !slug || !year) {
-    res.status(400).json({ error: "name, slug, and year are required" });
+  const { awardShowId, name, slug, year, editionNumber, nominationsDate, awardsDate, status } = req.body;
+  if (!awardShowId || !name || !slug || !year) {
+    res.status(400).json({ error: "awardShowId, name, slug, and year are required" });
     return;
   }
 
@@ -141,9 +210,11 @@ export async function createEvent(req: Request, res: Response): Promise<void> {
   }
 
   const result = await dbCreateEvent({
+    awardShowId,
     name,
     slug,
     year,
+    editionNumber: editionNumber ?? null,
     nominationsDate: nominationsDate ? new Date(nominationsDate) : null,
     awardsDate: awardsDate ? new Date(awardsDate) : null,
     status: status || "active",
@@ -166,7 +237,7 @@ export async function updateEvent(req: Request, res: Response): Promise<void> {
     return;
   }
 
-  const { name, slug, year, nominationsDate, awardsDate, status } = req.body;
+  const { name, slug, year, editionNumber, nominationsDate, awardsDate, status } = req.body;
 
   if (status !== undefined && !VALID_STATUSES.includes(status)) {
     res.status(400).json({ error: `status must be one of: ${VALID_STATUSES.join(", ")}` });
@@ -177,6 +248,7 @@ export async function updateEvent(req: Request, res: Response): Promise<void> {
   if (name !== undefined) updateData.name = name;
   if (slug !== undefined) updateData.slug = slug;
   if (year !== undefined) updateData.year = year;
+  if (editionNumber !== undefined) updateData.editionNumber = editionNumber;
   if (nominationsDate !== undefined)
     updateData.nominationsDate = nominationsDate
       ? new Date(nominationsDate)

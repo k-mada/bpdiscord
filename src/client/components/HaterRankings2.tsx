@@ -1,18 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { TrophyIcon } from "@heroicons/react/24/solid";
-import apiService from "../services/api";
 
 import Spinner from "./Spinner";
 import { Modal, ModalHeader, ModalBody } from "./Modal";
 import RatingDifferential from "./RatingDifferential";
-
-interface HaterRanking {
-  displayName: string;
-  username: string;
-  filmsRated: number;
-  differential: number;
-  adjustedDifferential: number;
-}
+import { useHaterRankings2 } from "../hooks/useHaterRankings";
 
 interface HaterRankingsProps {
   onBackToProfile?: () => void;
@@ -23,32 +15,8 @@ const HaterRankings2 = ({
   onBackToProfile,
   isPublic = false,
 }: HaterRankingsProps) => {
-  const [rankings, setRankings] = useState<HaterRanking[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { rankings, loading, error, refetch } = useHaterRankings2();
   const [isOpen, setIsOpen] = useState<boolean>(false);
-
-  useEffect(() => {
-    fetchHaterRankings();
-  }, []);
-
-  const fetchHaterRankings = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const response = await apiService.getHaterRankings2();
-
-      if (response.data) {
-        setRankings(response.data);
-      }
-    } catch (err) {
-      console.error("Error fetching hater rankings:", err);
-      setError("Failed to load hater rankings");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const formatRating = (rating: number): string => {
     return rating.toFixed(2);
@@ -66,7 +34,7 @@ const HaterRankings2 = ({
     return (
       <div className="text-center">
         <div className="text-red-500 mb-4">{error}</div>
-        <button onClick={fetchHaterRankings} className="btn-primary">
+        <button onClick={refetch} className="btn-primary">
           Try Again
         </button>
       </div>

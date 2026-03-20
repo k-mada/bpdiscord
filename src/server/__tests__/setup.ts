@@ -13,6 +13,11 @@ import {
   filmRatings,
   mflUserMovies,
   mflScoringTally,
+  eventUserPicks,
+  eventNominees,
+  eventCategories,
+  events,
+  awardShows,
 } from '../db/schema';
 import {
   testUsers,
@@ -27,6 +32,11 @@ import {
  */
 export async function cleanDatabase(): Promise<void> {
   // Delete in reverse order of dependencies
+  await db.delete(eventUserPicks).where(sql`1=1`);
+  await db.delete(eventNominees).where(sql`1=1`);
+  await db.delete(eventCategories).where(sql`1=1`);
+  await db.delete(events).where(sql`1=1`);
+  await db.delete(awardShows).where(sql`1=1`);
   await db.delete(mflScoringTally).where(sql`1=1`);
   await db.delete(mflUserMovies).where(sql`1=1`);
   await db.delete(filmRatings).where(sql`1=1`);

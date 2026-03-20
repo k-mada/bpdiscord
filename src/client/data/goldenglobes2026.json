@@ -1,0 +1,371 @@
+{
+  "year": 2026,
+  "categories": [
+    {
+      "order": 28,
+      "category": "Best Motion Picture - Drama",
+      "nominees": [
+        { "title": "Frankenstein", "subtitle": "" },
+        { "title": "Hamnet", "subtitle": "" },
+        { "title": "It Was Just An Accident", "subtitle": "" },
+        { "title": "The Secret Agent", "subtitle": "" },
+        { "title": "Sentimental Value", "subtitle": "" },
+        { "title": "Sinners", "subtitle": "" }
+      ],
+      "actual_winner": [{ "title": "Hamnet", "subtitle": "" }]
+    },
+    {
+      "order": 27,
+      "category": "Best Motion Picture - Musical or Comedy",
+      "nominees": [
+        { "title": "Blue Moon", "subtitle": "" },
+        { "title": "Bugonia", "subtitle": "" },
+        { "title": "Marty Supreme", "subtitle": "" },
+        { "title": "No Other Choice", "subtitle": "" },
+        { "title": "Nouvelle Vague", "subtitle": "" },
+        { "title": "One Battle After Another", "subtitle": "" }
+      ],
+      "actual_winner": [{ "title": "One Battle After Another", "subtitle": "" }]
+    },
+    {
+      "order": 26,
+      "category": "Best Director - Motion Picture",
+      "nominees": [
+        { "title": "Paul Thomas Anderson", "subtitle": "One Battle After Another" },
+        { "title": "Ryan Coogler", "subtitle": "Sinners" },
+        { "title": "Guillermo del Toro", "subtitle": "Frankenstein" },
+        { "title": "Jafar Panahi", "subtitle": "It Was Just an Accident" },
+        { "title": "Joachim Trier", "subtitle": "Sentimental Value" },
+        { "title": "Chloé Zhao", "subtitle": "Hamnet" }
+      ],
+      "actual_winner": [{ "title": "Paul Thomas Anderson", "subtitle": "One Battle After Another" }]
+    },
+    {
+      "order": 25,
+      "category": "Best Actor - Motion Picture Drama",
+      "nominees": [
+        { "title": "Joel Edgerton", "subtitle": "Train Dreams" },
+        { "title": "Oscar Isaac", "subtitle": "Frankenstein" },
+        { "title": "Dwayne Johnson", "subtitle": "The Smashing Machine" },
+        { "title": "Michael B. Jordan", "subtitle": "Sinners" },
+        { "title": "Wagner Moura", "subtitle": "The Secret Agent" },
+        { "title": "Jeremy Allen White", "subtitle": "Springsteen: Deliver Me From Nowhere" }
+      ],
+      "actual_winner": [{ "title": "Wagner Moura", "subtitle": "The Secret Agent" }]
+    },
+    {
+      "order": 24,
+      "category": "Best Actress - Motion Picture Drama",
+      "nominees": [
+        { "title": "Jessie Buckley", "subtitle": "Hamnet" },
+        { "title": "Jennifer Lawrence", "subtitle": "Die My Love" },
+        { "title": "Renate Reinsve", "subtitle": "Sentimental Value" },
+        { "title": "Julia Roberts", "subtitle": "After The Hunt" },
+        { "title": "Tessa Thompson", "subtitle": "Hedda" },
+        { "title": "Eva Victor", "subtitle": "Sorry, Baby" }
+      ],
+      "actual_winner": [{ "title": "Jessie Buckley", "subtitle": "Hamnet" }]
+    },
+    {
+      "order": 23,
+      "category": "Best Actor - Motion Picture Musical or Comedy",
+      "nominees": [
+        { "title": "Timothée Chalamet", "subtitle": "Marty Supreme" },
+        { "title": "George Clooney", "subtitle": "Jay Kelly" },
+        { "title": "Leonardo DiCaprio", "subtitle": "One Battle After Another" },
+        { "title": "Ethan Hawke", "subtitle": "Blue Moon" },
+        { "title": "Lee Byung-Hun", "subtitle": "No Other Choice" },
+        { "title": "Jesse Plemons", "subtitle": "Bugonia" }
+      ],
+      "actual_winner": [{ "title": "Timothée Chalamet", "subtitle": "Marty Supreme" }]
+    },
+    {
+      "order": 22,
+      "category": "Best Actress - Motion Picture Musical or Comedy",
+      "nominees": [
+        { "title": "Rose Byrne", "subtitle": "If I Had Legs I'd Kick You" },
+        { "title": "Cynthia Erivo", "subtitle": "Wicked: For Good" },
+        { "title": "Kate Hudson", "subtitle": "Song Sung Blue" },
+        { "title": "Chase Infiniti", "subtitle": "One Battle After Another" },
+        { "title": "Amanda Seyfried", "subtitle": "The Testament Of Ann Lee" },
+        { "title": "Emma Stone", "subtitle": "Bugonia" }
+      ],
+      "actual_winner": [{ "title": "Rose Byrne", "subtitle": "If I Had Legs I'd Kick You" }]
+    },
+    {
+      "order": 21,
+      "category": "Best Supporting Actor - Motion Picture",
+      "nominees": [
+        { "title": "Benicio Del Toro", "subtitle": "One Battle After Another" },
+        { "title": "Jacob Elordi", "subtitle": "Frankenstein" },
+        { "title": "Paul Mescal", "subtitle": "Hamnet" },
+        { "title": "Sean Penn", "subtitle": "One Battle After Another" },
+        { "title": "Adam Sandler", "subtitle": "Jay Kelly" },
+        { "title": "Stellan Skarsgård", "subtitle": "Sentimental Value" }
+      ],
+      "actual_winner": [{ "title": "Stellan Skarsgård", "subtitle": "Sentimental Value" }]
+    },
+    {
+      "order": 20,
+      "category": "Best Supporting Actress - Motion Picture",
+      "nominees": [
+        { "title": "Emily Blunt", "subtitle": "The Smashing Machine" },
+        { "title": "Elle Fanning", "subtitle": "Sentimental Value" },
+        { "title": "Ariana Grande", "subtitle": "Wicked: For Good" },
+        { "title": "Inga Ibsdotter Lilleaas", "subtitle": "Sentimental Value" },
+        { "title": "Amy Madigan", "subtitle": "Weapons" },
+        { "title": "Teyana Taylor", "subtitle": "One Battle After Another" }
+      ],
+      "actual_winner": [{ "title": "Teyana Taylor", "subtitle": "One Battle After Another" }]
+    },
+    {
+      "order": 19,
+      "category": "Best Motion Picture - Non-English Language",
+      "nominees": [
+        { "title": "It Was Just An Accident", "subtitle": "" },
+        { "title": "No Other Choice", "subtitle": "" },
+        { "title": "The Secret Agent", "subtitle": "" },
+        { "title": "Sentimental Value", "subtitle": "" },
+        { "title": "Sirāt", "subtitle": "" },
+        { "title": "The Voice of Hind Rajab", "subtitle": "" }
+      ],
+      "actual_winner": [{ "title": "The Secret Agent", "subtitle": "" }]
+    },
+    {
+      "order": 18,
+      "category": "Best Motion Picture - Animated",
+      "nominees": [
+        { "title": "Arco", "subtitle": "" },
+        { "title": "Demon Slayer", "subtitle": "" },
+        { "title": "Elio", "subtitle": "" },
+        { "title": "KPop Demon Hunters", "subtitle": "" },
+        { "title": "Little Amélie or the Character of Rain", "subtitle": "" },
+        { "title": "Zootopia 2", "subtitle": "" }
+      ],
+      "actual_winner": [{ "title": "KPop Demon Hunters", "subtitle": "" }]
+    },
+    {
+      "order": 17,
+      "category": "Best Original Score - Motion Picture",
+      "nominees": [
+        { "title": "Frankenstein", "subtitle": "Alexandre Desplat" },
+        { "title": "Sinners", "subtitle": "Ludwig Göransson" },
+        { "title": "One Battle After Another", "subtitle": "Jonny Greenwood" },
+        { "title": "Hamnet", "subtitle": "Max Richter" },
+        { "title": "F1: The Movie", "subtitle": "Hans Zimmer" },
+        { "title": "Sirāt", "subtitle": "Kangding Ray" }
+      ],
+      "actual_winner": [{ "title": "Sinners", "subtitle": "Ludwig Göransson" }]
+    },
+    {
+      "order": 16,
+      "category": "Best Song - Motion Picture",
+      "nominees": [
+        { "title": "Dream as One", "subtitle": "Avatar: Fire and Ash" },
+        { "title": "Golden", "subtitle": "KPop Demon Hunters" },
+        { "title": "I Lied to You", "subtitle": "Sinners" },
+        { "title": "No Place Like Home", "subtitle": "Wicked: For Good" },
+        { "title": "The Girl in the Bubble", "subtitle": "Wicked: For Good" },
+        { "title": "Train Dreams", "subtitle": "Train Dreams" }
+      ],
+      "actual_winner": [{ "title": "Golden", "subtitle": "KPop Demon Hunters" }]
+    },
+    {
+      "order": 15,
+      "category": "Best Screenplay - Motion Picture",
+      "nominees": [
+        { "title": "One Battle After Another", "subtitle": "Paul Thomas Anderson" },
+        { "title": "Marty Supreme", "subtitle": "" },
+        { "title": "Sinners", "subtitle": "Ryan Coogler" },
+        { "title": "It Was Just An Accident", "subtitle": "Jafar Panahi" },
+        { "title": "Sentimental Value", "subtitle": "Joachim Trier" },
+        { "title": "Hamnet", "subtitle": "" }
+      ],
+      "actual_winner": [{ "title": "One Battle After Another", "subtitle": "Paul Thomas Anderson" }]
+    },
+    {
+      "order": 14,
+      "category": "Cinematic and Box Office Achievement",
+      "nominees": [
+        { "title": "Avatar: Fire And Ash", "subtitle": "" },
+        { "title": "F1", "subtitle": "" },
+        { "title": "KPop Demon Hunters", "subtitle": "" },
+        { "title": "Mission: Impossible - The Final Reckoning", "subtitle": "" },
+        { "title": "Sinners", "subtitle": "" },
+        { "title": "Weapons", "subtitle": "" },
+        { "title": "Wicked: For Good", "subtitle": "" },
+        { "title": "Zootopia 2", "subtitle": "" }
+      ],
+      "actual_winner": [{ "title": "Sinners", "subtitle": "" }]
+    },
+    {
+      "order": 13,
+      "category": "Best Television Series - Drama",
+      "nominees": [
+        { "title": "The Diplomat", "subtitle": "" },
+        { "title": "The Pitt", "subtitle": "" },
+        { "title": "Pluribus", "subtitle": "" },
+        { "title": "Severance", "subtitle": "" },
+        { "title": "Slow Horses", "subtitle": "" },
+        { "title": "The White Lotus", "subtitle": "" }
+      ],
+      "actual_winner": [{ "title": "The Pitt", "subtitle": "" }]
+    },
+    {
+      "order": 12,
+      "category": "Best Television Series - Musical or Comedy",
+      "nominees": [
+        { "title": "Abbott Elementary", "subtitle": "" },
+        { "title": "The Bear", "subtitle": "" },
+        { "title": "Hacks", "subtitle": "" },
+        { "title": "Nobody Wants This", "subtitle": "" },
+        { "title": "Only Murders In The Building", "subtitle": "" },
+        { "title": "The Studio", "subtitle": "" }
+      ],
+      "actual_winner": [{ "title": "The Studio", "subtitle": "" }]
+    },
+    {
+      "order": 11,
+      "category": "Best Limited Series, Anthology Series or TV Movie",
+      "nominees": [
+        { "title": "Adolescence", "subtitle": "" },
+        { "title": "All Her Fault", "subtitle": "" },
+        { "title": "The Beast in Me", "subtitle": "" },
+        { "title": "Black Mirror", "subtitle": "" },
+        { "title": "Dying for Sex", "subtitle": "" },
+        { "title": "The Girlfriend", "subtitle": "" }
+      ],
+      "actual_winner": [{ "title": "Adolescence", "subtitle": "" }]
+    },
+    {
+      "order": 10,
+      "category": "Best Actor - Television Series Drama",
+      "nominees": [
+        { "title": "Sterling K. Brown", "subtitle": "Paradise" },
+        { "title": "Diego Luna", "subtitle": "Andor" },
+        { "title": "Gary Oldman", "subtitle": "Slow Horses" },
+        { "title": "Mark Ruffalo", "subtitle": "Task" },
+        { "title": "Adam Scott", "subtitle": "Severance" },
+        { "title": "Noah Wyle", "subtitle": "The Pitt" }
+      ],
+      "actual_winner": [{ "title": "Noah Wyle", "subtitle": "The Pitt" }]
+    },
+    {
+      "order": 9,
+      "category": "Best Actress - Television Series Drama",
+      "nominees": [
+        { "title": "Kathy Bates", "subtitle": "Matlock" },
+        { "title": "Britt Lower", "subtitle": "Severance" },
+        { "title": "Helen Mirren", "subtitle": "MobLand" },
+        { "title": "Bella Ramsey", "subtitle": "The Last of Us" },
+        { "title": "Keri Russell", "subtitle": "The Diplomat" },
+        { "title": "Rhea Seehorn", "subtitle": "Pluribus" }
+      ],
+      "actual_winner": [{ "title": "Rhea Seehorn", "subtitle": "Pluribus" }]
+    },
+    {
+      "order": 8,
+      "category": "Best Actor - Television Series Musical or Comedy",
+      "nominees": [
+        { "title": "Adam Brody", "subtitle": "Nobody Wants This" },
+        { "title": "Steve Martin", "subtitle": "Only Murders in the Building" },
+        { "title": "Glen Powell", "subtitle": "Chad Powers" },
+        { "title": "Seth Rogen", "subtitle": "The Studio" },
+        { "title": "Martin Short", "subtitle": "Only Murders in the Building" },
+        { "title": "Jeremy Allen White", "subtitle": "The Bear" }
+      ],
+      "actual_winner": [{ "title": "Seth Rogen", "subtitle": "The Studio" }]
+    },
+    {
+      "order": 7,
+      "category": "Best Actress - Television Series Musical or Comedy",
+      "nominees": [
+        { "title": "Kristen Bell", "subtitle": "Nobody Wants This" },
+        { "title": "Ayo Edebiri", "subtitle": "The Bear" },
+        { "title": "Selena Gomez", "subtitle": "Only Murders in the Building" },
+        { "title": "Natasha Lyonne", "subtitle": "Poker Face" },
+        { "title": "Jenna Ortega", "subtitle": "Wednesday" },
+        { "title": "Jean Smart", "subtitle": "Hacks" }
+      ],
+      "actual_winner": [{ "title": "Jean Smart", "subtitle": "Hacks" }]
+    },
+    {
+      "order": 6,
+      "category": "Best Actor - Limited Series or TV Movie",
+      "nominees": [
+        { "title": "Jacob Elordi", "subtitle": "The Narrow Road to the Deep North" },
+        { "title": "Paul Giamatti", "subtitle": "Black Mirror" },
+        { "title": "Stephen Graham", "subtitle": "Adolescence" },
+        { "title": "Charlie Hunnam", "subtitle": "Monster: The Ed Gein Story" },
+        { "title": "Jude Law", "subtitle": "Black Rabbit" },
+        { "title": "Matthew Rhys", "subtitle": "The Beast in Me" }
+      ],
+      "actual_winner": [{ "title": "Stephen Graham", "subtitle": "Adolescence" }]
+    },
+    {
+      "order": 5,
+      "category": "Best Actress - Limited Series or TV Movie",
+      "nominees": [
+        { "title": "Claire Danes", "subtitle": "The Beast in Me" },
+        { "title": "Rashida Jones", "subtitle": "Black Mirror" },
+        { "title": "Amanda Seyfried", "subtitle": "Long Bright River" },
+        { "title": "Sarah Snook", "subtitle": "All Her Fault" },
+        { "title": "Michelle Williams", "subtitle": "Dying for Sex" },
+        { "title": "Robin Wright", "subtitle": "The Girlfriend" }
+      ],
+      "actual_winner": [{ "title": "Michelle Williams", "subtitle": "Dying for Sex" }]
+    },
+    {
+      "order": 4,
+      "category": "Best Supporting Actor - Television",
+      "nominees": [
+        { "title": "Owen Cooper", "subtitle": "Adolescence" },
+        { "title": "Billy Crudup", "subtitle": "The Morning Show" },
+        { "title": "Walton Goggins", "subtitle": "The White Lotus" },
+        { "title": "Jason Isaacs", "subtitle": "The White Lotus" },
+        { "title": "Tramell Tillman", "subtitle": "Severance" },
+        { "title": "Ashley Walters", "subtitle": "Adolescence" }
+      ],
+      "actual_winner": [{ "title": "Owen Cooper", "subtitle": "Adolescence" }]
+    },
+    {
+      "order": 3,
+      "category": "Best Supporting Actress - Television",
+      "nominees": [
+        { "title": "Carrie Coon", "subtitle": "The White Lotus" },
+        { "title": "Erin Doherty", "subtitle": "Adolescence" },
+        { "title": "Hannah Einbinder", "subtitle": "Hacks" },
+        { "title": "Catherine O'Hara", "subtitle": "The Studio" },
+        { "title": "Parker Posey", "subtitle": "The White Lotus" },
+        { "title": "Aimee Lou Wood", "subtitle": "The White Lotus" }
+      ],
+      "actual_winner": [{ "title": "Erin Doherty", "subtitle": "Adolescence" }]
+    },
+    {
+      "order": 2,
+      "category": "Best Stand-Up Comedy Special",
+      "nominees": [
+        { "title": "Bill Maher: Is Anyone Else Seeing This?", "subtitle": "Bill Maher" },
+        { "title": "Brett Goldstein: The Second Best Night Of Your Life", "subtitle": "Brett Goldstein" },
+        { "title": "Kevin Hart: Acting My Age", "subtitle": "Kevin Hart" },
+        { "title": "Kumail Nanjiani: Night Thoughts", "subtitle": "Kumail Nanjiani" },
+        { "title": "Ricky Gervais: Mortality", "subtitle": "Ricky Gervais" },
+        { "title": "Sarah Silverman: Postmortem", "subtitle": "Sarah Silverman" }
+      ],
+      "actual_winner": [{ "title": "Ricky Gervais: Mortality", "subtitle": "Ricky Gervais" }]
+    },
+    {
+      "order": 1,
+      "category": "Best Podcast",
+      "nominees": [
+        { "title": "SmartLess", "subtitle": "" },
+        { "title": "Armchair Expert With Dax Shepard", "subtitle": "" },
+        { "title": "Good Hang With Amy Poehler", "subtitle": "" },
+        { "title": "The Mel Robbins Podcast", "subtitle": "" },
+        { "title": "Call Her Daddy", "subtitle": "" },
+        { "title": "Up First", "subtitle": "" }
+      ],
+      "actual_winner": [{ "title": "Good Hang With Amy Poehler", "subtitle": "" }]
+    }
+  ]
+}

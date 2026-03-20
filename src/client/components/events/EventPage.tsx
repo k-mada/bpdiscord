@@ -6,6 +6,7 @@ import { apiService } from "../../services/api";
 import NomineesModal from "./NomineesModal";
 import DesktopTable from "./DesktopTable";
 import MobileTable from "./MobileTable";
+import { getOrdinalSuffix } from "./utils";
 
 const EventPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -67,7 +68,9 @@ const EventPage = () => {
           className="text-3xl sm:text-4xl font-bold text-letterboxd-text-primary tracking-tight"
           style={{ fontFamily: "'Playfair Display', serif" }}
         >
-          {event.name}
+          {event.editionNumber
+            ? `The ${event.editionNumber}${getOrdinalSuffix(event.editionNumber)} ${event.awardShowName}`
+            : event.awardShowName}
         </h1>
         <p className="text-4xl sm:text-5xl font-extralight text-letterboxd-pro mt-1">
           {event.year}

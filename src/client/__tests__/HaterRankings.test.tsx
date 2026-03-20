@@ -1,17 +1,17 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
-import HaterRankings from "./HaterRankings";
+import HaterRankings from "../components/HaterRankings";
 import apiService from "../services/api";
 
 vi.mock("../services/api");
-vi.mock("./RatingDistributionHistogram", () => ({
+vi.mock("../components/RatingDistributionHistogram", () => ({
   default: () => <div data-testid="histogram" />,
 }));
-vi.mock("./Header", () => ({
+vi.mock("../components/Header", () => ({
   default: () => <header data-testid="header" />,
 }));
-vi.mock("./Spinner", () => ({
+vi.mock("../components/Spinner", () => ({
   default: () => <div data-testid="spinner" />,
 }));
 
