@@ -1,9 +1,14 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from './schema';
+import { resolve } from 'path';
 import dotenv from 'dotenv';
 
-dotenv.config();
+// Load .env from src/server/.env — works whether run from project root
+// (e.g. seed scripts via `npx tsx`) or when the server starts normally.
+// __dirname here is src/server/db/, so go up one level to src/server/
+dotenv.config({ path: resolve(__dirname, '..', '.env') });
+dotenv.config(); // Also try project root as fallback
 
 const isTest = process.env.NODE_ENV === 'test';
 const isProduction = process.env.NODE_ENV === 'production';

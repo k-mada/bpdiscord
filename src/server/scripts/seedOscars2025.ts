@@ -1,18 +1,15 @@
 /**
- * Seed script to populate the Events tables with Oscars 2026 data
- * from the existing oscars2026.json file.
+ * Seed script to populate the Events tables with Oscars 2025 (97th Academy Awards) data.
  *
- * Usage: source src/server/.env && npx tsx src/server/scripts/seedOscars2026.ts
- *
- * Or: DOTENV_CONFIG_PATH=src/server/.env npx tsx --require dotenv/config src/server/scripts/seedOscars2026.ts
+ * Usage: source src/server/.env && npx tsx src/server/scripts/seedOscars2025.ts
  */
 
 import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { awardShows, events, eventCategories, eventNominees } from "../db/schema";
-import oscarsData from "../../client/data/oscars2026.json";
+import oscarsData from "../../client/data/oscars2025.json";
 
-interface OscarsPrediction {
+interface OscarsNominee {
   title: string;
   subtitle: string;
 }
@@ -20,11 +17,8 @@ interface OscarsPrediction {
 interface OscarsCategory {
   order: number;
   category: string;
-  nominees: OscarsPrediction[];
-  pick_sean: OscarsPrediction;
-  pick_amanda: OscarsPrediction;
-  winner: string;
-  actual_winner: OscarsPrediction[];
+  nominees: OscarsNominee[];
+  actual_winner: OscarsNominee[];
 }
 
 // Categories where the person name is the primary display (title field = person name)
@@ -43,31 +37,30 @@ function getDisplayMode(categoryName: string): "person_first" | "movie_first" {
 }
 
 /**
- * Maps an OscarsPrediction to person/movie names based on display mode.
+ * Maps a nominee entry to person/movie names based on display mode.
  * For person_first categories: title = person name, subtitle = movie
  * For movie_first categories: title = movie name, subtitle = person (or empty)
  */
 function mapNominee(
-  prediction: OscarsPrediction,
+  nominee: OscarsNominee,
   displayMode: "person_first" | "movie_first"
 ): { personName: string | null; movieOrShowName: string } {
   if (displayMode === "person_first") {
     return {
-      personName: prediction.title || null,
-      movieOrShowName: prediction.subtitle || prediction.title,
+      personName: nominee.title || null,
+      movieOrShowName: nominee.subtitle || nominee.title,
     };
   }
-  // movie_first: title is the movie, subtitle is person (may be empty)
   return {
-    personName: prediction.subtitle || null,
-    movieOrShowName: prediction.title,
+    personName: nominee.subtitle || null,
+    movieOrShowName: nominee.title,
   };
 }
 
 async function seed() {
-  const SLUG = "oscars-2026";
+  const SLUG = "oscars-2025";
   const AWARD_SHOW_SLUG = "oscars";
-  console.log("Seeding Oscars 2026 (98th Academy Awards) data...");
+  console.log("Seeding Oscars 2025 (97th Academy Awards) data...");
 
   // Find or create the award show
   let awardShowId: string;
@@ -109,13 +102,15 @@ async function seed() {
         name: "The Oscars",
         slug: SLUG,
         year: oscarsData.year,
-        editionNumber: 98,
+        editionNumber: 97,
+        nominationsDate: new Date("2025-01-23T00:00:00Z"),
+        awardsDate: new Date("2025-03-02T00:00:00Z"),
         status: "active",
       })
       .returning();
 
     const event = result[0]!;
-    console.log(`Created event: ${event.name} (${event.id})`);
+    console.log(`Created event: ${event.name} ${event.year} (${event.id})`);
 
     const categories = oscarsData.categories as OscarsCategory[];
 
@@ -160,12 +155,7 @@ async function seed() {
   });
 
   console.log("\nSeeding complete!");
-  console.log(
-    `\nNote: User picks (Sean/Amanda) were not seeded because they require Supabase user IDs.`
-  );
-  console.log(
-    `To seed picks, update this script with actual Supabase user IDs for Sean and Amanda.`
-  );
+  console.log("  23 categories, all nominees and winners populated.");
 
   process.exit(0);
 }

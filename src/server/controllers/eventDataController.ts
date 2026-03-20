@@ -1,10 +1,12 @@
 import { eq, asc, and, ne } from "drizzle-orm";
 import { db } from "../db";
 import {
+  awardShows,
   events,
   eventCategories,
   eventNominees,
   eventUserPicks,
+  NewAwardShow,
   NewEvent,
   NewEventCategory,
   NewEventNominee,
@@ -15,6 +17,61 @@ import { dbOperation, dbMutation, dbTransaction } from "../db/utils";
 // - dbOperation<T>:   returns DbResult<T> with data — use for reads and writes that return data
 // - dbMutation:       returns DbResult<void> — use for writes that don't return data
 // - dbTransaction:    returns DbResult<void> within a transaction — use for multi-step writes
+
+// ===========================
+// Award Show Operations
+// ===========================
+
+export async function dbGetAwardShows() {
+  return dbOperation(async () => {
+    return db
+      .select()
+      .from(awardShows)
+      .orderBy(asc(awardShows.name));
+  });
+}
+
+export async function dbGetAwardShowBySlug(slug: string) {
+  return dbOperation(async () => {
+    const result = await db.query.awardShows.findFirst({
+      where: eq(awardShows.slug, slug),
+      with: {
+        events: {
+          orderBy: [asc(events.year)],
+        },
+      },
+    });
+    return result ?? null;
+  });
+}
+
+export async function dbCreateAwardShow(data: Omit<NewAwardShow, "id" | "createdAt" | "updatedAt">) {
+  return dbOperation(async () => {
+    const result = await db
+      .insert(awardShows)
+      .values({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .returning();
+    return result[0];
+  });
+}
+
+export async function dbUpdateAwardShow(
+  id: string,
+  data: Partial<Omit<NewAwardShow, "id" | "createdAt">>
+) {
+  return dbMutation(async () => {
+    await db
+      .update(awardShows)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(awardShows.id, id));
+  });
+}
 
 // ===========================
 // Read Operations
@@ -28,13 +85,18 @@ export async function dbGetEvents(status?: string) {
         name: events.name,
         slug: events.slug,
         year: events.year,
+        editionNumber: events.editionNumber,
         nominationsDate: events.nominationsDate,
         awardsDate: events.awardsDate,
         status: events.status,
         createdAt: events.createdAt,
         updatedAt: events.updatedAt,
+        awardShowId: events.awardShowId,
+        awardShowName: awardShows.name,
+        awardShowSlug: awardShows.slug,
       })
       .from(events)
+      .innerJoin(awardShows, eq(events.awardShowId, awardShows.id))
       .orderBy(asc(events.year));
 
     if (status) {
@@ -50,6 +112,7 @@ export async function dbGetEventBySlug(slug: string) {
     const result = await db.query.events.findFirst({
       where: eq(events.slug, slug),
       with: {
+        awardShow: true,
         categories: {
           orderBy: [asc(eventCategories.displayOrder)],
           with: {

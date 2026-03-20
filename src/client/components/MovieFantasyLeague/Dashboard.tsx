@@ -1,68 +1,35 @@
-import { useEffect, useState } from "react";
-import apiService from "../../services/api";
+import { useState } from "react";
 import { MFLMovieScore } from "../../types";
 import Spinner from "../Spinner";
 import MovieSelector from "./MovieSelector";
+import { useMflData } from "../../hooks/useMflData";
 
 const MovieFantasyLeague = () => {
+  const { movies, loading: initialLoading, getMovieScore } = useMflData();
   const [movieScores, setMovieScores] = useState<MFLMovieScore[]>([]);
-  const [movies, setMovies] = useState<{ title: string; filmSlug: string }[]>(
-    []
-  );
   const [selectedMovie, setSelectedMovie] = useState("");
   const [totalPoints, setTotalPoints] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const [scoreLoading, setScoreLoading] = useState(false);
 
-  const getMflData = async () => {
-    try {
-      setLoading(true);
-
-      const totalMflData = await Promise.all([
-        apiService.getMflScoringMetrics(),
-        apiService.getMflMovies(),
-      ]);
-
-      if (totalMflData) {
-        const movies = totalMflData[1].data || [];
-        setMovies(movies);
-      }
-    } catch (err) {
-      console.error("Error fetching MFL scoring metrics:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    getMflData();
-  }, []);
-
-  function handleMovieSelect(filmSlug: string) {
-    setLoading(true);
+  async function handleMovieSelect(filmSlug: string) {
     if (filmSlug !== "-1") {
-      apiService.getMflMovieScore(filmSlug).then((response) => {
-        if (response.data) {
-          const totalPoints = response.data.reduce(
-            (acc, curr) => acc + curr.pointsAwarded,
-            0
-          );
-          setSelectedMovie(filmSlug);
-          setTotalPoints(totalPoints);
+      setScoreLoading(true);
+      const scores = await getMovieScore(filmSlug);
+      const totalPoints = scores.reduce(
+        (acc, curr) => acc + curr.pointsAwarded,
+        0
+      );
+      setSelectedMovie(filmSlug);
+      setTotalPoints(totalPoints);
 
-          const sortedMovieScores = response.data.sort((a, b) => {
-            if (a.metricName < b.metricName) {
-              return -1;
-            }
-            if (a.metricName > b.metricName) {
-              return 1;
-            }
-            return 0;
-          });
-
-          setMovieScores(sortedMovieScores);
-          setLoading(false);
-        }
+      const sortedMovieScores = scores.sort((a, b) => {
+        if (a.metricName < b.metricName) return -1;
+        if (a.metricName > b.metricName) return 1;
+        return 0;
       });
+
+      setMovieScores(sortedMovieScores);
+      setScoreLoading(false);
     }
   }
 
@@ -80,13 +47,13 @@ const MovieFantasyLeague = () => {
         </a>
       </p>
       <MovieSelector movies={movies} onMovieSelect={handleMovieSelect} />
-      {loading && <Spinner />}
+      {(initialLoading || scoreLoading) && <Spinner />}
       {selectedMovie !== "-1" && movieScores.length === 0 && (
         <h3 className="text-l font-bold text-letterboxd-text-primary my-4">
           Total points: 0
         </h3>
       )}
-      {!loading && movieScores.length > 0 && (
+      {!scoreLoading && movieScores.length > 0 && (
         <div className="flex flex-col gap-2">
           <table className="data-table">
             <thead>

@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
-import apiService from "../services/api";
 import RatingDistributionHistogram from "./RatingDistributionHistogram";
 import TasteCompatibility from "./TasteCompatibility";
 import { MoviesInCommonData } from "../types";
+import { useComparison } from "../hooks/useComparison";
 
 interface Rating {
   rating: number;
@@ -20,9 +20,11 @@ interface UserData {
 }
 
 const UserComparison = () => {
-  const [usernames, setUsernames] = useState<
-    Array<{ username: string; displayName?: string }>
-  >([]);
+  const {
+    usernames,
+    getUserComplete,
+    getMoviesInCommon,
+  } = useComparison();
   const [selectedUser1, setSelectedUser1] = useState<string>("");
   const [selectedUser2, setSelectedUser2] = useState<string>("");
   const [user1Data, setUser1Data] = useState<UserData | null>(null);
@@ -34,11 +36,6 @@ const UserComparison = () => {
   const [error, setError] = useState<string | null>(null);
   const [filterNonRated, setFilterNonRated] = useState(false);
 
-  // Load usernames on component mount
-  useEffect(() => {
-    loadUsernames();
-  }, []);
-
   // Load movies in common when both users are selected
   useEffect(() => {
     if (selectedUser1 && selectedUser2 && selectedUser1 !== selectedUser2) {
@@ -48,34 +45,15 @@ const UserComparison = () => {
     }
   }, [selectedUser1, selectedUser2]);
 
-  const loadUsernames = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      // Use new database-first endpoint
-      const response = await apiService.getFilmUsers();
-      if (response.data) {
-        setUsernames(response.data);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load usernames");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const loadMoviesInCommon = async () => {
     if (!selectedUser1 || !selectedUser2) return;
 
     try {
       setLoadingMovies(true);
       setError(null);
-      const response = await apiService.getMoviesInCommon(
-        selectedUser1,
-        selectedUser2
-      );
-      if (response.data) {
-        setMoviesInCommonData(response.data);
+      const data = await getMoviesInCommon(selectedUser1, selectedUser2);
+      if (data) {
+        setMoviesInCommonData(data);
       }
     } catch (err) {
       setError(
@@ -92,18 +70,17 @@ const UserComparison = () => {
     try {
       setLoading(true);
       setError(null);
-      // Use new database-first endpoint with fallback to scraping if needed
-      const response = await apiService.getFilmUserComplete(username, true);
+      const data = await getUserComplete(username, true);
 
-      if (response.data) {
+      if (data) {
         const userData: UserData = {
-          username: response.data.username,
-          displayName: response.data.displayName,
-          followers: response.data.followers,
-          following: response.data.following,
-          numberOfLists: response.data.numberOfLists,
-          totalFilms: response.data.totalRatings,
-          ratings: response.data.ratings,
+          username: data.username,
+          displayName: data.displayName,
+          followers: data.followers,
+          following: data.following,
+          numberOfLists: data.numberOfLists,
+          totalFilms: data.totalRatings,
+          ratings: data.ratings,
         };
 
         if (isUser1) {

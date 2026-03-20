@@ -8,6 +8,7 @@ import {
   PasswordResetConfirmRequest,
   MFLScoringMetric,
   MFLMovieScore,
+  AwardShow,
   EventSummary,
   EventData,
   EventUserPick,
@@ -320,6 +321,25 @@ class ApiService {
     });
   }
   // ===========================
+  // Award Show endpoints
+  // ===========================
+
+  async getAwardShows(): Promise<ApiResponse<AwardShow[]>> {
+    return this.request<AwardShow[]>("/events/award-shows");
+  }
+
+  async createAwardShow(
+    data: { name: string; slug: string; description?: string },
+    token: string
+  ): Promise<ApiResponse<AwardShow>> {
+    return this.request<AwardShow>("/events/admin/award-shows", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(data),
+    });
+  }
+
+  // ===========================
   // Event endpoints (public)
   // ===========================
 
@@ -359,9 +379,11 @@ class ApiService {
   // Event admin endpoints
   async createEvent(
     data: {
+      awardShowId: string;
       name: string;
       slug: string;
       year: number;
+      editionNumber?: number;
       nominationsDate?: string;
       awardsDate?: string;
       status?: string;

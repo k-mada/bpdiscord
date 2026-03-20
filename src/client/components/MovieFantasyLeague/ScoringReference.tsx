@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import apiService from "../../services/api";
 import { MFLScoringMetric } from "../../types";
+import { useMflData } from "../../hooks/useMflData";
 
 const ScoringReference = () => {
+  const { scoringMetrics: rawMetrics } = useMflData();
   const [allScoringMetrics, setAllScoringMetrics] = useState<
     Record<string, MFLScoringMetric[]>
   >({});
@@ -25,19 +26,14 @@ const ScoringReference = () => {
     }, {});
   };
 
-  const getScoringReference = async () => {
-    try {
-      const response = await apiService.getMflScoringMetrics();
-      if (response.data) {
-        // group by metricName
-        const groupedScoringMetrics = groupScoringMetrics(response.data);
-        setAllScoringMetrics(groupedScoringMetrics);
-        setScoringMetrics(groupedScoringMetrics);
-      }
-    } catch (error) {
-      console.error("Error fetching scoring reference:", error);
+  // Group metrics when rawMetrics changes from the hook
+  useEffect(() => {
+    if (rawMetrics.length > 0) {
+      const grouped = groupScoringMetrics(rawMetrics);
+      setAllScoringMetrics(grouped);
+      setScoringMetrics(grouped);
     }
-  };
+  }, [rawMetrics]);
 
   const applyFilters = (
     metrics: Record<string, MFLScoringMetric[]>,
@@ -80,10 +76,6 @@ const ScoringReference = () => {
   const formatMetricName = (metricName: string) => {
     return (metricName = metricName.toLowerCase().replace(/ /g, "-"));
   };
-
-  useEffect(() => {
-    getScoringReference();
-  }, []);
 
   const handleMetricSelect = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const metricName = event.target.value;
