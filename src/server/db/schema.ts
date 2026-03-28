@@ -170,13 +170,31 @@ export const mflMovieData = pgTable('MFLMovieData', {
 });
 
 // ===========================
+// AwardShows Table
+// ===========================
+export const awardShows = pgTable('AwardShows', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  name: varchar('name').notNull().unique(),
+  slug: varchar('slug').notNull().unique(),
+  description: varchar('description'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
+});
+
+export const awardShowsRelations = relations(awardShows, ({ many }) => ({
+  events: many(events),
+}));
+
+// ===========================
 // Events Table
 // ===========================
 export const events = pgTable('Events', {
   id: uuid('id').defaultRandom().primaryKey(),
+  awardShowId: uuid('award_show_id').notNull().references(() => awardShows.id),
   name: varchar('name').notNull(),
   slug: varchar('slug').notNull().unique(),
   year: integer('year').notNull(),
+  editionNumber: integer('edition_number'),
   nominationsDate: timestamp('nominations_date', { withTimezone: true }),
   awardsDate: timestamp('awards_date', { withTimezone: true }),
   status: varchar('status', { length: 20 }).notNull().default('active'),
@@ -184,7 +202,11 @@ export const events = pgTable('Events', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });
 
-export const eventsRelations = relations(events, ({ many }) => ({
+export const eventsRelations = relations(events, ({ one, many }) => ({
+  awardShow: one(awardShows, {
+    fields: [events.awardShowId],
+    references: [awardShows.id],
+  }),
   categories: many(eventCategories),
 }));
 
@@ -287,6 +309,9 @@ export type NewMFLScoringTally = typeof mflScoringTally.$inferInsert;
 
 export type MFLMovieDataRow = typeof mflMovieData.$inferSelect;
 export type NewMFLMovieData = typeof mflMovieData.$inferInsert;
+
+export type AwardShow = typeof awardShows.$inferSelect;
+export type NewAwardShow = typeof awardShows.$inferInsert;
 
 export type Event = typeof events.$inferSelect;
 export type NewEvent = typeof events.$inferInsert;

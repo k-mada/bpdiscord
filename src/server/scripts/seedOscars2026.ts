@@ -9,7 +9,7 @@
 
 import { eq } from "drizzle-orm";
 import { db } from "../db";
-import { events, eventCategories, eventNominees } from "../db/schema";
+import { awardShows, events, eventCategories, eventNominees } from "../db/schema";
 import oscarsData from "../../client/data/oscars2026.json";
 
 interface OscarsPrediction {
@@ -66,7 +66,27 @@ function mapNominee(
 
 async function seed() {
   const SLUG = "oscars-2026";
-  console.log("Seeding Oscars 2026 data...");
+  const AWARD_SHOW_SLUG = "oscars";
+  console.log("Seeding Oscars 2026 (98th Academy Awards) data...");
+
+  // Find or create the award show
+  let awardShowId: string;
+  const existingShow = await db
+    .select({ id: awardShows.id })
+    .from(awardShows)
+    .where(eq(awardShows.slug, AWARD_SHOW_SLUG));
+
+  if (existingShow.length > 0) {
+    awardShowId = existingShow[0]!.id;
+    console.log(`Award show found (${awardShowId})`);
+  } else {
+    const [show] = await db
+      .insert(awardShows)
+      .values({ name: "The Oscars", slug: AWARD_SHOW_SLUG })
+      .returning();
+    awardShowId = show!.id;
+    console.log(`Created award show: The Oscars (${awardShowId})`);
+  }
 
   // Check if event already exists (idempotency guard)
   const existing = await db
@@ -85,9 +105,11 @@ async function seed() {
     const result = await tx
       .insert(events)
       .values({
+        awardShowId,
         name: "The Oscars",
         slug: SLUG,
         year: oscarsData.year,
+        editionNumber: 98,
         status: "active",
       })
       .returning();

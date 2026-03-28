@@ -1,0 +1,297 @@
+{
+  "year": 2025,
+  "categories": [
+    {
+      "order": 23,
+      "category": "Best Picture",
+      "nominees": [
+        { "title": "Anora", "subtitle": "" },
+        { "title": "The Brutalist", "subtitle": "" },
+        { "title": "A Complete Unknown", "subtitle": "" },
+        { "title": "Conclave", "subtitle": "" },
+        { "title": "Dune: Part Two", "subtitle": "" },
+        { "title": "Emilia Pérez", "subtitle": "" },
+        { "title": "I'm Still Here", "subtitle": "" },
+        { "title": "Nickel Boys", "subtitle": "" },
+        { "title": "The Substance", "subtitle": "" },
+        { "title": "Wicked", "subtitle": "" }
+      ],
+      "actual_winner": [{ "title": "Anora", "subtitle": "" }]
+    },
+    {
+      "order": 22,
+      "category": "Director",
+      "nominees": [
+        { "title": "Sean Baker", "subtitle": "Anora" },
+        { "title": "Brady Corbet", "subtitle": "The Brutalist" },
+        { "title": "James Mangold", "subtitle": "A Complete Unknown" },
+        { "title": "Jacques Audiard", "subtitle": "Emilia Pérez" },
+        { "title": "Coralie Fargeat", "subtitle": "The Substance" }
+      ],
+      "actual_winner": [{ "title": "Sean Baker", "subtitle": "Anora" }]
+    },
+    {
+      "order": 21,
+      "category": "Actor in a Leading Role",
+      "nominees": [
+        { "title": "Adrien Brody", "subtitle": "The Brutalist" },
+        { "title": "Timothée Chalamet", "subtitle": "A Complete Unknown" },
+        { "title": "Colman Domingo", "subtitle": "Sing Sing" },
+        { "title": "Ralph Fiennes", "subtitle": "Conclave" },
+        { "title": "Sebastian Stan", "subtitle": "The Apprentice" }
+      ],
+      "actual_winner": [
+        { "title": "Adrien Brody", "subtitle": "The Brutalist" }
+      ]
+    },
+    {
+      "order": 20,
+      "category": "Actress in a Leading Role",
+      "nominees": [
+        { "title": "Mikey Madison", "subtitle": "Anora" },
+        { "title": "Cynthia Erivo", "subtitle": "Wicked" },
+        { "title": "Karla Sofía Gascón", "subtitle": "Emilia Pérez" },
+        { "title": "Demi Moore", "subtitle": "The Substance" },
+        { "title": "Fernanda Torres", "subtitle": "I'm Still Here" }
+      ],
+      "actual_winner": [{ "title": "Mikey Madison", "subtitle": "Anora" }]
+    },
+    {
+      "order": 19,
+      "category": "Best Actor in a Supporting Role",
+      "nominees": [
+        { "title": "Kieran Culkin", "subtitle": "A Real Pain" },
+        { "title": "Yura Borisov", "subtitle": "Anora" },
+        { "title": "Edward Norton", "subtitle": "A Complete Unknown" },
+        { "title": "Guy Pearce", "subtitle": "The Brutalist" },
+        { "title": "Jeremy Strong", "subtitle": "The Apprentice" }
+      ],
+      "actual_winner": [{ "title": "Kieran Culkin", "subtitle": "A Real Pain" }]
+    },
+    {
+      "order": 18,
+      "category": "Best Actress in a Supporting Role",
+      "nominees": [
+        { "title": "Zoe Saldaña", "subtitle": "Emilia Pérez" },
+        { "title": "Monica Barbaro", "subtitle": "A Complete Unknown" },
+        { "title": "Ariana Grande", "subtitle": "Wicked" },
+        { "title": "Felicity Jones", "subtitle": "The Brutalist" },
+        { "title": "Isabella Rossellini", "subtitle": "Conclave" }
+      ],
+      "actual_winner": [{ "title": "Zoe Saldaña", "subtitle": "Emilia Pérez" }]
+    },
+    {
+      "order": 17,
+      "category": "Original Screenplay",
+      "nominees": [
+        { "title": "Anora", "subtitle": "Sean Baker" },
+        { "title": "The Brutalist", "subtitle": "Brady Corbet, Mona Fastvold" },
+        { "title": "A Real Pain", "subtitle": "Jesse Eisenberg" },
+        { "title": "September 5", "subtitle": "Moritz Binder, Tim Fehlbaum" },
+        { "title": "The Substance", "subtitle": "Coralie Fargeat" }
+      ],
+      "actual_winner": [{ "title": "Anora", "subtitle": "Sean Baker" }]
+    },
+    {
+      "order": 16,
+      "category": "Adapted Screenplay",
+      "nominees": [
+        { "title": "Conclave", "subtitle": "Peter Straughan" },
+        {
+          "title": "A Complete Unknown",
+          "subtitle": "James Mangold, Jay Cocks"
+        },
+        { "title": "Emilia Pérez", "subtitle": "Jacques Audiard" },
+        { "title": "Nickel Boys", "subtitle": "RaMell Ross, Joslyn Barnes" },
+        { "title": "Sing Sing", "subtitle": "Clint Bentley, Greg Kwedar" }
+      ],
+      "actual_winner": [{ "title": "Conclave", "subtitle": "Peter Straughan" }]
+    },
+    {
+      "order": 15,
+      "category": "Animated Feature Film",
+      "nominees": [
+        { "title": "Flow", "subtitle": "" },
+        { "title": "Inside Out 2", "subtitle": "" },
+        { "title": "Memoir of a Snail", "subtitle": "" },
+        { "title": "Wallace & Gromit: Vengeance Most Fowl", "subtitle": "" },
+        { "title": "The Wild Robot", "subtitle": "" }
+      ],
+      "actual_winner": [{ "title": "Flow", "subtitle": "" }]
+    },
+    {
+      "order": 14,
+      "category": "International Feature Film",
+      "nominees": [
+        { "title": "I'm Still Here", "subtitle": "Brazil" },
+        { "title": "The Girl with the Needle", "subtitle": "Denmark" },
+        { "title": "Emilia Pérez", "subtitle": "France" },
+        { "title": "The Seed of the Sacred Fig", "subtitle": "Germany" },
+        { "title": "Flow", "subtitle": "Latvia" }
+      ],
+      "actual_winner": [{ "title": "I'm Still Here", "subtitle": "Brazil" }]
+    },
+    {
+      "order": 13,
+      "category": "Documentary Feature Film",
+      "nominees": [
+        { "title": "No Other Land", "subtitle": "" },
+        { "title": "Black Box Diaries", "subtitle": "" },
+        { "title": "Porcelain War", "subtitle": "" },
+        { "title": "Soundtrack to a Coup d'État", "subtitle": "" },
+        { "title": "Sugarcane", "subtitle": "" }
+      ],
+      "actual_winner": [{ "title": "No Other Land", "subtitle": "" }]
+    },
+    {
+      "order": 12,
+      "category": "Documentary Short Film",
+      "nominees": [
+        { "title": "The Only Girl in the Orchestra", "subtitle": "" },
+        { "title": "Death by Numbers", "subtitle": "" },
+        { "title": "I Am Ready, Warden", "subtitle": "" },
+        { "title": "Incident", "subtitle": "" },
+        { "title": "Instruments of a Beating Heart", "subtitle": "" }
+      ],
+      "actual_winner": [
+        { "title": "The Only Girl in the Orchestra", "subtitle": "" }
+      ]
+    },
+    {
+      "order": 11,
+      "category": "Live Action Short Film",
+      "nominees": [
+        { "title": "I'm Not a Robot", "subtitle": "" },
+        { "title": "A Lien", "subtitle": "" },
+        { "title": "Anuja", "subtitle": "" },
+        { "title": "The Last Ranger", "subtitle": "" },
+        { "title": "The Man Who Could Not Remain Silent", "subtitle": "" }
+      ],
+      "actual_winner": [{ "title": "I'm Not a Robot", "subtitle": "" }]
+    },
+    {
+      "order": 10,
+      "category": "Animated Short Film",
+      "nominees": [
+        { "title": "In the Shadow of the Cypress", "subtitle": "" },
+        { "title": "Beautiful Men", "subtitle": "" },
+        { "title": "Magic Candies", "subtitle": "" },
+        { "title": "Wander to Wonder", "subtitle": "" },
+        { "title": "Yuck!", "subtitle": "" }
+      ],
+      "actual_winner": [
+        { "title": "In the Shadow of the Cypress", "subtitle": "" }
+      ]
+    },
+    {
+      "order": 9,
+      "category": "Best Score",
+      "nominees": [
+        { "title": "The Brutalist", "subtitle": "Daniel Blumberg" },
+        { "title": "Conclave", "subtitle": "Volker Bertelmann" },
+        { "title": "Emilia Pérez", "subtitle": "Clément Ducol, Camille" },
+        { "title": "Wicked", "subtitle": "John Powell, Stephen Schwartz" },
+        { "title": "The Wild Robot", "subtitle": "Kris Bowers" }
+      ],
+      "actual_winner": [
+        { "title": "The Brutalist", "subtitle": "Daniel Blumberg" }
+      ]
+    },
+    {
+      "order": 8,
+      "category": "Best Original Song",
+      "nominees": [
+        { "title": "El Mal", "subtitle": "Emilia Pérez" },
+        { "title": "The Journey", "subtitle": "The Six Triple Eight" },
+        { "title": "Like A Bird", "subtitle": "Sing Sing" },
+        { "title": "Mi Camino", "subtitle": "Emilia Pérez" },
+        { "title": "Never Too Late", "subtitle": "Elton John: Never Too Late" }
+      ],
+      "actual_winner": [{ "title": "El Mal", "subtitle": "Emilia Pérez" }]
+    },
+    {
+      "order": 7,
+      "category": "Cinematography",
+      "nominees": [
+        { "title": "The Brutalist", "subtitle": "Lol Crawley" },
+        { "title": "Dune: Part Two", "subtitle": "Greig Fraser" },
+        { "title": "Emilia Pérez", "subtitle": "Paul Guilhaume" },
+        { "title": "Maria", "subtitle": "Ed Lachman" },
+        { "title": "Nosferatu", "subtitle": "Jarin Blaschke" }
+      ],
+      "actual_winner": [{ "title": "The Brutalist", "subtitle": "Lol Crawley" }]
+    },
+    {
+      "order": 6,
+      "category": "Costume Design",
+      "nominees": [
+        { "title": "Wicked", "subtitle": "Paul Tazewell" },
+        { "title": "A Complete Unknown", "subtitle": "Arianne Phillips" },
+        { "title": "Conclave", "subtitle": "Lisy Christl" },
+        { "title": "Gladiator II", "subtitle": "Janty Yates, Dave Crossman" },
+        { "title": "Nosferatu", "subtitle": "Linda Muir" }
+      ],
+      "actual_winner": [{ "title": "Wicked", "subtitle": "Paul Tazewell" }]
+    },
+    {
+      "order": 5,
+      "category": "Film Editing",
+      "nominees": [
+        { "title": "Anora", "subtitle": "Sean Baker" },
+        { "title": "The Brutalist", "subtitle": "David Jancso" },
+        { "title": "Conclave", "subtitle": "Nick Emerson" },
+        { "title": "Emilia Pérez", "subtitle": "Juliette Welfling" },
+        { "title": "Wicked", "subtitle": "Myron Kerstein" }
+      ],
+      "actual_winner": [{ "title": "Anora", "subtitle": "Sean Baker" }]
+    },
+    {
+      "order": 4,
+      "category": "Makeup and Hairstyling",
+      "nominees": [
+        { "title": "The Substance", "subtitle": "" },
+        { "title": "A Different Man", "subtitle": "" },
+        { "title": "Emilia Pérez", "subtitle": "" },
+        { "title": "Nosferatu", "subtitle": "" },
+        { "title": "Wicked", "subtitle": "" }
+      ],
+      "actual_winner": [{ "title": "The Substance", "subtitle": "" }]
+    },
+    {
+      "order": 3,
+      "category": "Production Design",
+      "nominees": [
+        { "title": "Wicked", "subtitle": "" },
+        { "title": "The Brutalist", "subtitle": "" },
+        { "title": "Conclave", "subtitle": "" },
+        { "title": "Dune: Part Two", "subtitle": "" },
+        { "title": "Nosferatu", "subtitle": "" }
+      ],
+      "actual_winner": [{ "title": "Wicked", "subtitle": "" }]
+    },
+    {
+      "order": 2,
+      "category": "Sound",
+      "nominees": [
+        { "title": "Dune: Part Two", "subtitle": "" },
+        { "title": "A Complete Unknown", "subtitle": "" },
+        { "title": "Emilia Pérez", "subtitle": "" },
+        { "title": "Wicked", "subtitle": "" },
+        { "title": "The Wild Robot", "subtitle": "" }
+      ],
+      "actual_winner": [{ "title": "Dune: Part Two", "subtitle": "" }]
+    },
+    {
+      "order": 1,
+      "category": "Visual Effects",
+      "nominees": [
+        { "title": "Dune: Part Two", "subtitle": "" },
+        { "title": "Alien: Romulus", "subtitle": "" },
+        { "title": "Better Man", "subtitle": "" },
+        { "title": "Kingdom of the Planet of the Apes", "subtitle": "" },
+        { "title": "Wicked", "subtitle": "" }
+      ],
+      "actual_winner": [{ "title": "Dune: Part Two", "subtitle": "" }]
+    }
+  ]
+}

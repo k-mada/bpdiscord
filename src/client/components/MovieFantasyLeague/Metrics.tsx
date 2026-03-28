@@ -1,31 +1,9 @@
-import { useEffect, useState } from "react";
 import Header from "../Header";
-import apiService from "../../services/api";
-import { MFLScoringMetric } from "../../types";
 import Spinner from "../Spinner";
+import { useMflData } from "../../hooks/useMflData";
 
 const MFLMetrics = () => {
-  const [scoringMetrics, setScoringMetrics] = useState<MFLScoringMetric[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const getMflMetrics = async () => {
-    try {
-      setLoading(true);
-      apiService.getMflScoringMetrics().then((response) => {
-        if (response.data) {
-          setScoringMetrics(response.data);
-        }
-      });
-    } catch (err) {
-      console.error("Error fetching MFL scoring metrics:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    getMflMetrics();
-  }, []);
+  const { scoringMetrics, loading } = useMflData();
 
   if (loading) {
     return <Spinner />;

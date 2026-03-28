@@ -320,6 +320,17 @@ export interface SignupFormData extends LoginFormData {
 }
 
 // ===========================
+// Award Show Types
+// ===========================
+
+export interface AwardShow {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+}
+
+// ===========================
 // Event Types
 // ===========================
 
@@ -352,9 +363,13 @@ export interface EventData {
   name: string;
   slug: string;
   year: number;
+  editionNumber: number | null;
   nominationsDate: string | null;
   awardsDate: string | null;
   status: "active" | "inactive";
+  awardShowId: string;
+  awardShowName: string;
+  awardShowSlug: string;
   categories: EventCategory[];
 }
 
@@ -363,9 +378,13 @@ export interface EventSummary {
   name: string;
   slug: string;
   year: number;
+  editionNumber: number | null;
   nominationsDate: string | null;
   awardsDate: string | null;
   status: "active" | "inactive";
+  awardShowId: string;
+  awardShowName: string;
+  awardShowSlug: string;
 }
 
 // ===========================

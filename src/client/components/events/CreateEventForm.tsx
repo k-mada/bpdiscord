@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAwardShows } from "../../hooks/useAwardShows";
 import { apiService } from "../../services/api";
 
 interface CreateEventFormProps {
@@ -8,26 +9,44 @@ interface CreateEventFormProps {
 }
 
 const CreateEventForm = ({ token, onSuccess, onCancel }: CreateEventFormProps) => {
+  const { awardShows, error: awardShowsError } = useAwardShows();
+  const [awardShowId, setAwardShowId] = useState("");
   const [name, setName] = useState("");
   const [slug, setSlug] = useState("");
   const [year, setYear] = useState(new Date().getFullYear());
+  const [editionNumber, setEditionNumber] = useState("");
   const [nominationsDate, setNominationsDate] = useState("");
   const [awardsDate, setAwardsDate] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
+  const handleAwardShowChange = (id: string) => {
+    setAwardShowId(id);
+    const show = awardShows.find((s) => s.id === id);
+    if (show) {
+      setName(show.name);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!awardShowId) {
+      setFormError("Please select an award show");
+      return;
+    }
     try {
       setSubmitting(true);
       setFormError(null);
       const eventData: {
+        awardShowId: string;
         name: string;
         slug: string;
         year: number;
+        editionNumber?: number;
         nominationsDate?: string;
         awardsDate?: string;
-      } = { name, slug, year };
+      } = { awardShowId, name, slug, year };
+      if (editionNumber) eventData.editionNumber = parseInt(editionNumber);
       if (nominationsDate) eventData.nominationsDate = nominationsDate;
       if (awardsDate) eventData.awardsDate = awardsDate;
       await apiService.createEvent(eventData, token);
@@ -53,23 +72,29 @@ const CreateEventForm = ({ token, onSuccess, onCancel }: CreateEventFormProps) =
       >
         Create Event
       </h2>
-      {formError && (
+      {(formError || awardShowsError) && (
         <div className="mb-4 p-3 bg-red-500/20 text-red-400 text-sm rounded">
-          {formError}
+          {formError || awardShowsError}
         </div>
       )}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label className="block text-sm text-letterboxd-text-secondary mb-1">
-            Name
+            Award Show
           </label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
+          <select
+            value={awardShowId}
+            onChange={(e) => handleAwardShowChange(e.target.value)}
             className="input-field w-full"
             required
-          />
+          >
+            <option value="">Select an award show...</option>
+            {awardShows.map((show) => (
+              <option key={show.id} value={show.id}>
+                {show.name}
+              </option>
+            ))}
+          </select>
         </div>
         <div>
           <label className="block text-sm text-letterboxd-text-secondary mb-1">
@@ -84,17 +109,31 @@ const CreateEventForm = ({ token, onSuccess, onCancel }: CreateEventFormProps) =
             required
           />
         </div>
-        <div>
-          <label className="block text-sm text-letterboxd-text-secondary mb-1">
-            Year
-          </label>
-          <input
-            type="number"
-            value={year}
-            onChange={(e) => setYear(parseInt(e.target.value))}
-            className="input-field w-full"
-            required
-          />
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm text-letterboxd-text-secondary mb-1">
+              Year
+            </label>
+            <input
+              type="number"
+              value={year}
+              onChange={(e) => setYear(parseInt(e.target.value))}
+              className="input-field w-full"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm text-letterboxd-text-secondary mb-1">
+              Edition Number
+            </label>
+            <input
+              type="number"
+              value={editionNumber}
+              onChange={(e) => setEditionNumber(e.target.value)}
+              className="input-field w-full"
+              placeholder="e.g. 98"
+            />
+          </div>
         </div>
         <div>
           <label className="block text-sm text-letterboxd-text-secondary mb-1">

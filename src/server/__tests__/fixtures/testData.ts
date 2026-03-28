@@ -3,7 +3,16 @@
  * These provide deterministic test data for all test scenarios
  */
 
-import type { NewUser, NewUserRating, NewUserFilm, NewFilm } from '../../db/schema';
+import type {
+  NewUser,
+  NewUserRating,
+  NewUserFilm,
+  NewFilm,
+  NewAwardShow,
+  NewEvent,
+  NewEventCategory,
+  NewEventNominee,
+} from '../../db/schema';
 
 // ===========================
 // Users
@@ -138,6 +147,51 @@ export const testUserFilms: NewUserFilm[] = [
 
   // User with film not in Films table (for testing missing films)
   { lbusername: 'test_user_active', filmSlug: 'test-film-unlisted', title: 'Unlisted Test Film', rating: 3.0, liked: false },
+];
+
+// ===========================
+// Award Shows
+// ===========================
+
+export const testAwardShows: Omit<NewAwardShow, 'id' | 'createdAt' | 'updatedAt'>[] = [
+  {
+    name: 'Academy Awards',
+    slug: 'academy-awards',
+    description: 'The Oscars',
+  },
+  {
+    name: 'Golden Globes',
+    slug: 'golden-globes',
+    description: 'Hollywood Foreign Press',
+  },
+];
+
+// Note: events, categories, and nominees require FK IDs that are
+// generated at insert time, so they are created dynamically in tests.
+// These templates provide the shape for convenience.
+
+export const testEventTemplate = {
+  name: '97th Academy Awards',
+  slug: '97th-academy-awards',
+  year: 2025,
+  editionNumber: 97,
+  status: 'active',
+} satisfies Omit<NewEvent, 'id' | 'awardShowId' | 'createdAt' | 'updatedAt'>;
+
+export const testCategoryTemplates: Omit<NewEventCategory, 'id' | 'eventId' | 'createdAt' | 'updatedAt'>[] = [
+  { name: 'Best Picture', displayOrder: 1, displayMode: 'movie_first' },
+  { name: 'Best Director', displayOrder: 2, displayMode: 'person_first' },
+  { name: 'Best Actor', displayOrder: 3, displayMode: 'person_first' },
+];
+
+export const testNomineeTemplates: Omit<NewEventNominee, 'id' | 'categoryId' | 'createdAt' | 'updatedAt'>[] = [
+  { personName: null, movieOrShowName: 'Anora', isWinner: false },
+  { personName: null, movieOrShowName: 'The Brutalist', isWinner: false },
+  { personName: null, movieOrShowName: 'A Complete Unknown', isWinner: false },
+  { personName: 'Sean Baker', movieOrShowName: 'Anora', isWinner: false },
+  { personName: 'Brady Corbet', movieOrShowName: 'The Brutalist', isWinner: false },
+  { personName: 'Timothée Chalamet', movieOrShowName: 'A Complete Unknown', isWinner: false },
+  { personName: 'Adrien Brody', movieOrShowName: 'The Brutalist', isWinner: false },
 ];
 
 // ===========================

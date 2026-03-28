@@ -120,7 +120,7 @@ const EditEventView = ({
           className="text-2xl font-bold text-letterboxd-text-primary"
           style={{ fontFamily: "'Playfair Display', serif" }}
         >
-          {event.name} ({event.year})
+          {event.awardShowName} ({event.year})
         </h2>
         <p className="text-xs text-letterboxd-text-muted mt-1">
           Status: {event.status} &middot; Slug: {event.slug}

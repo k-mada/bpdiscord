@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import apiService from "../services/api";
 import { ALL_RATINGS } from "../constants";
+import { useComparison } from "../hooks/useComparison";
 
 interface Rating {
   rating: number;
@@ -13,26 +14,10 @@ interface UserData {
 }
 
 const ScraperInterface = () => {
-  // Load available users on component mount
-  useEffect(() => {
-    const loadAvailableUsers = async () => {
-      try {
-        setLoadingUsers(true);
-        const response = await apiService.getFilmUsers();
-        if (response.data) {
-          setAvailableUsers(response.data);
-        }
-      } catch (err) {
-        console.error("Failed to load available users:", err);
-        // Fallback to empty array if loading fails
-        setAvailableUsers([]);
-      } finally {
-        setLoadingUsers(false);
-      }
-    };
-
-    loadAvailableUsers();
-  }, []);
+  const {
+    usernames: availableUsers,
+    loading: loadingUsers,
+  } = useComparison();
 
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
@@ -46,12 +31,6 @@ const ScraperInterface = () => {
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(0);
   const [totalFilmsCollected, setTotalFilmsCollected] = useState<number>(0);
-
-  // Available users for dropdown
-  const [availableUsers, setAvailableUsers] = useState<
-    Array<{ username: string; displayName?: string }>
-  >([]);
-  const [loadingUsers, setLoadingUsers] = useState(true);
 
   const renderStars = (rating: number): string => {
     const fullStars = Math.floor(rating);

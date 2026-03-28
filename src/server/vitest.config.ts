@@ -16,5 +16,9 @@ export default defineConfig({
     sequence: {
       concurrent: false,
     },
+    coverage: {
+      reporter: ['text', 'lcov', 'html'],
+      reportsDirectory: './coverage',
+    },
   },
 });
