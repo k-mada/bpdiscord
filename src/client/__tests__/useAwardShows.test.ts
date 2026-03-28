@@ -1,6 +1,7 @@
 import { renderHook, waitFor, act } from "@testing-library/react";
 import { useAwardShows } from "../hooks/useAwardShows";
 import { apiService } from "../services/api";
+import { describeFetchHookLifecycle } from "./helpers/hookTestFactory";
 
 vi.mock("../services/api", () => ({
   apiService: {
@@ -29,115 +30,18 @@ describe("useAwardShows", () => {
     vi.clearAllMocks();
   });
 
-  describe("initial fetch", () => {
-    it("starts in a loading state with empty award shows", () => {
-      vi.mocked(apiService.getAwardShows).mockReturnValue(
-        new Promise(() => {})
-      );
-
-      const { result } = renderHook(() => useAwardShows());
-
-      expect(result.current.loading).toBe(true);
-      expect(result.current.awardShows).toEqual([]);
-      expect(result.current.error).toBeNull();
-    });
-
-    it("fetches award shows on mount and sets data", async () => {
-      vi.mocked(apiService.getAwardShows).mockResolvedValue({
-        data: mockAwardShows,
-      });
-
-      const { result } = renderHook(() => useAwardShows());
-
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
-
-      expect(result.current.awardShows).toEqual(mockAwardShows);
-      expect(result.current.error).toBeNull();
-      expect(apiService.getAwardShows).toHaveBeenCalledTimes(1);
-    });
-
-    it("handles undefined data gracefully", async () => {
-      vi.mocked(apiService.getAwardShows).mockResolvedValue({
-        data: undefined,
-      });
-
-      const { result } = renderHook(() => useAwardShows());
-
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
-
-      expect(result.current.awardShows).toEqual([]);
-      expect(result.current.error).toBeNull();
-    });
+  // Standard fetch-on-mount lifecycle tests
+  describeFetchHookLifecycle({
+    name: "useAwardShows",
+    useHook: () => useAwardShows(),
+    dataField: "awardShows",
+    mockFetchFn: vi.mocked(apiService.getAwardShows),
+    mockData: mockAwardShows,
+    wrapResponse: (data) => ({ data }),
+    expectedError: "Failed to load award shows",
   });
 
-  describe("error handling", () => {
-    it("sets error when API call fails", async () => {
-      vi.mocked(apiService.getAwardShows).mockRejectedValue(
-        new Error("Network error")
-      );
-
-      const { result } = renderHook(() => useAwardShows());
-
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
-
-      expect(result.current.error).toBe("Failed to load award shows");
-      expect(result.current.awardShows).toEqual([]);
-    });
-
-    it("clears previous error on successful refetch", async () => {
-      vi.mocked(apiService.getAwardShows)
-        .mockRejectedValueOnce(new Error("Network error"))
-        .mockResolvedValueOnce({ data: mockAwardShows });
-
-      const { result } = renderHook(() => useAwardShows());
-
-      await waitFor(() => {
-        expect(result.current.error).toBe("Failed to load award shows");
-      });
-
-      await act(async () => {
-        await result.current.refetch();
-      });
-
-      expect(result.current.error).toBeNull();
-      expect(result.current.awardShows).toEqual(mockAwardShows);
-    });
-  });
-
-  describe("refetch", () => {
-    it("refetches data when refetch is called", async () => {
-      const updatedShows = [...mockAwardShows, {
-        id: "uuid-3",
-        name: "The Emmys",
-        slug: "emmys",
-        description: null,
-      }];
-
-      vi.mocked(apiService.getAwardShows)
-        .mockResolvedValueOnce({ data: mockAwardShows })
-        .mockResolvedValueOnce({ data: updatedShows });
-
-      const { result } = renderHook(() => useAwardShows());
-
-      await waitFor(() => {
-        expect(result.current.awardShows).toEqual(mockAwardShows);
-      });
-
-      await act(async () => {
-        await result.current.refetch();
-      });
-
-      expect(result.current.awardShows).toEqual(updatedShows);
-      expect(apiService.getAwardShows).toHaveBeenCalledTimes(2);
-    });
-  });
-
+  // Hook-specific: createAwardShow
   describe("createAwardShow", () => {
     it("creates an award show and refreshes the list", async () => {
       const newShow = {
@@ -161,7 +65,7 @@ describe("useAwardShows", () => {
         expect(result.current.loading).toBe(false);
       });
 
-      let created: any;
+      let created: typeof newShow | undefined;
       await act(async () => {
         created = await result.current.createAwardShow(
           { name: "The Emmys", slug: "emmys" },

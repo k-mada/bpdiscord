@@ -170,18 +170,3 @@ export const BROWSER_HEADERS = {
 // User agent string
 export const USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
-
-// Star rating patterns (ordered by priority - longest first)
-export const STAR_PATTERNS = [
-  { pattern: "★★★★★", rating: 5 },
-  { pattern: "★★★★½", rating: 4.5 },
-  { pattern: "★★★★", rating: 4 },
-  { pattern: "★★★½", rating: 3.5 },
-  { pattern: "★★★", rating: 3 },
-  { pattern: "★★½", rating: 2.5 },
-  { pattern: "★★", rating: 2 },
-  { pattern: "★½", rating: 1.5 },
-  { pattern: "half-★", rating: 0.5 },
-  { pattern: "★", rating: 1 },
-  { pattern: "½", rating: 0.5 },
-];

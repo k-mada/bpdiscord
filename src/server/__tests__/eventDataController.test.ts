@@ -37,13 +37,20 @@ afterAll(async () => {
 // Helpers
 // ===========================
 
+/**
+ * Seed helpers use explicit throws instead of expect() assertions.
+ * This keeps assertions only in test cases and produces clear error
+ * messages when seeding fails, rather than confusing "expected true
+ * to be true" failures pointing at a helper function.
+ */
+
 /** Seed the two test award shows and return their IDs */
 async function seedAwardShows() {
   const r1 = await ec.dbCreateAwardShow(testAwardShows[0]);
+  if (!r1.success || !r1.data) throw new Error(`Seed failed: dbCreateAwardShow[0]: ${r1.error}`);
   const r2 = await ec.dbCreateAwardShow(testAwardShows[1]);
-  expect(r1.success).toBe(true);
-  expect(r2.success).toBe(true);
-  return [r1.data!, r2.data!] as const;
+  if (!r2.success || !r2.data) throw new Error(`Seed failed: dbCreateAwardShow[1]: ${r2.error}`);
+  return [r1.data, r2.data] as const;
 }
 
 /** Seed an award show + event and return both */
@@ -53,21 +60,25 @@ async function seedEvent() {
     ...testEventTemplate,
     awardShowId: awardShow.id,
   });
-  expect(eventResult.success).toBe(true);
-  return { awardShow, event: eventResult.data! };
+  if (!eventResult.success || !eventResult.data) {
+    throw new Error(`Seed failed: dbCreateEvent: ${eventResult.error}`);
+  }
+  return { awardShow, event: eventResult.data };
 }
 
 /** Seed award show + event + categories and return all */
 async function seedCategories() {
   const { awardShow, event } = await seedEvent();
   const categories = [];
-  for (const tmpl of testCategoryTemplates) {
+  for (let idx = 0; idx < testCategoryTemplates.length; idx++) {
     const result = await ec.dbUpsertCategory({
-      ...tmpl,
+      ...testCategoryTemplates[idx],
       eventId: event.id,
     });
-    expect(result.success).toBe(true);
-    categories.push({ ...tmpl, id: result.data!.id, eventId: event.id });
+    if (!result.success || !result.data) {
+      throw new Error(`Seed failed: dbUpsertCategory[${idx}] "${testCategoryTemplates[idx].name}": ${result.error}`);
+    }
+    categories.push({ ...testCategoryTemplates[idx], id: result.data.id, eventId: event.id });
   }
   return { awardShow, event, categories };
 }
@@ -76,50 +87,31 @@ async function seedCategories() {
 async function seedNominees() {
   const { awardShow, event, categories } = await seedCategories();
 
-  // Best Picture nominees (indices 0-2)
-  const bestPictureCat = categories[0];
+  // Map category index → nominee template indices
+  const categoryNomineeSlices: [number, number][] = [
+    [0, 3],  // Best Picture: templates 0-2
+    [3, 5],  // Best Director: templates 3-4
+    [5, 7],  // Best Actor: templates 5-6
+  ];
+
   const nominees = [];
-  for (let i = 0; i < 3; i++) {
-    const r = await ec.dbUpsertNominee({
-      ...testNomineeTemplates[i],
-      categoryId: bestPictureCat.id,
-    });
-    expect(r.success).toBe(true);
-    nominees.push({
-      ...testNomineeTemplates[i],
-      id: r.data!.id,
-      categoryId: bestPictureCat.id,
-    });
-  }
-
-  // Best Director nominees (indices 3-4)
-  const directorCat = categories[1];
-  for (let i = 3; i < 5; i++) {
-    const r = await ec.dbUpsertNominee({
-      ...testNomineeTemplates[i],
-      categoryId: directorCat.id,
-    });
-    expect(r.success).toBe(true);
-    nominees.push({
-      ...testNomineeTemplates[i],
-      id: r.data!.id,
-      categoryId: directorCat.id,
-    });
-  }
-
-  // Best Actor nominees (indices 5-6)
-  const actorCat = categories[2];
-  for (let i = 5; i < 7; i++) {
-    const r = await ec.dbUpsertNominee({
-      ...testNomineeTemplates[i],
-      categoryId: actorCat.id,
-    });
-    expect(r.success).toBe(true);
-    nominees.push({
-      ...testNomineeTemplates[i],
-      id: r.data!.id,
-      categoryId: actorCat.id,
-    });
+  for (let catIdx = 0; catIdx < categoryNomineeSlices.length; catIdx++) {
+    const [start, end] = categoryNomineeSlices[catIdx];
+    const cat = categories[catIdx];
+    for (let i = start; i < end; i++) {
+      const r = await ec.dbUpsertNominee({
+        ...testNomineeTemplates[i],
+        categoryId: cat.id,
+      });
+      if (!r.success || !r.data) {
+        throw new Error(`Seed failed: dbUpsertNominee[${i}] "${testNomineeTemplates[i].movieOrShowName}" in "${cat.name}": ${r.error}`);
+      }
+      nominees.push({
+        ...testNomineeTemplates[i],
+        id: r.data.id,
+        categoryId: cat.id,
+      });
+    }
   }
 
   return { awardShow, event, categories, nominees };

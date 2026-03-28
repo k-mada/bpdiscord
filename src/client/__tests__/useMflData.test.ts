@@ -49,11 +49,30 @@ const mockMovieScores = [
   },
 ];
 
+/** Render hook and wait for initial parallel fetch to complete */
+async function renderLoadedHook() {
+  vi.mocked(apiService.getMflScoringMetrics).mockResolvedValue({
+    data: mockScoringMetrics,
+  });
+  vi.mocked(apiService.getMflMovies).mockResolvedValue({
+    data: mockMovies,
+  });
+  const { result } = renderHook(() => useMflData());
+  await waitFor(() => expect(result.current.loading).toBe(false));
+  return result;
+}
+
 describe("useMflData", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
+  /**
+   * useMflData fetches two resources in parallel (metrics + movies), so
+   * the standard describeFetchHookLifecycle doesn't fit cleanly. We keep
+   * these initial-fetch tests inline but use renderLoadedHook() to reduce
+   * boilerplate in the hook-specific tests below.
+   */
   describe("initial fetch", () => {
     it("starts in a loading state with empty data", () => {
       vi.mocked(apiService.getMflScoringMetrics).mockReturnValue(
@@ -72,18 +91,7 @@ describe("useMflData", () => {
     });
 
     it("fetches scoring metrics and movies on mount", async () => {
-      vi.mocked(apiService.getMflScoringMetrics).mockResolvedValue({
-        data: mockScoringMetrics,
-      });
-      vi.mocked(apiService.getMflMovies).mockResolvedValue({
-        data: mockMovies,
-      });
-
-      const { result } = renderHook(() => useMflData());
-
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
+      const result = await renderLoadedHook();
 
       expect(result.current.scoringMetrics).toEqual(mockScoringMetrics);
       expect(result.current.movies).toEqual(mockMovies);
@@ -91,19 +99,10 @@ describe("useMflData", () => {
     });
 
     it("fetches metrics and movies in parallel", async () => {
-      vi.mocked(apiService.getMflScoringMetrics).mockResolvedValue({
-        data: mockScoringMetrics,
-      });
-      vi.mocked(apiService.getMflMovies).mockResolvedValue({
-        data: mockMovies,
-      });
+      await renderLoadedHook();
 
-      renderHook(() => useMflData());
-
-      await waitFor(() => {
-        expect(apiService.getMflScoringMetrics).toHaveBeenCalledTimes(1);
-        expect(apiService.getMflMovies).toHaveBeenCalledTimes(1);
-      });
+      expect(apiService.getMflScoringMetrics).toHaveBeenCalledTimes(1);
+      expect(apiService.getMflMovies).toHaveBeenCalledTimes(1);
     });
 
     it("handles undefined data gracefully", async () => {
@@ -209,74 +208,44 @@ describe("useMflData", () => {
 
   describe("getMovieScore", () => {
     it("fetches movie scores for a given film slug", async () => {
-      vi.mocked(apiService.getMflScoringMetrics).mockResolvedValue({
-        data: mockScoringMetrics,
-      });
-      vi.mocked(apiService.getMflMovies).mockResolvedValue({
-        data: mockMovies,
-      });
       vi.mocked(apiService.getMflMovieScore).mockResolvedValue({
         data: mockMovieScores,
       });
 
-      const { result } = renderHook(() => useMflData());
+      const result = await renderLoadedHook();
 
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
-
-      let scores: any;
+      let scores: typeof mockMovieScores;
       await act(async () => {
         scores = await result.current.getMovieScore("the-brutalist");
       });
 
       expect(apiService.getMflMovieScore).toHaveBeenCalledWith("the-brutalist");
-      expect(scores).toEqual(mockMovieScores);
+      expect(scores!).toEqual(mockMovieScores);
     });
 
     it("returns empty array when API returns no data", async () => {
-      vi.mocked(apiService.getMflScoringMetrics).mockResolvedValue({
-        data: mockScoringMetrics,
-      });
-      vi.mocked(apiService.getMflMovies).mockResolvedValue({
-        data: mockMovies,
-      });
       vi.mocked(apiService.getMflMovieScore).mockResolvedValue({
         data: undefined,
       });
 
-      const { result } = renderHook(() => useMflData());
+      const result = await renderLoadedHook();
 
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
-
-      let scores: any;
+      let scores: unknown[];
       await act(async () => {
         scores = await result.current.getMovieScore("unknown-film");
       });
 
-      expect(scores).toEqual([]);
+      expect(scores!).toEqual([]);
     });
   });
 
   describe("upsertMovieScore", () => {
     it("calls API with correct arguments for new score", async () => {
-      vi.mocked(apiService.getMflScoringMetrics).mockResolvedValue({
-        data: mockScoringMetrics,
-      });
-      vi.mocked(apiService.getMflMovies).mockResolvedValue({
-        data: mockMovies,
-      });
       vi.mocked(apiService.upsertMflMovieScore).mockResolvedValue({
         data: { success: true },
       });
 
-      const { result } = renderHook(() => useMflData());
-
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
+      const result = await renderLoadedHook();
 
       await act(async () => {
         await result.current.upsertMovieScore("the-brutalist", 10, 1);
@@ -291,21 +260,11 @@ describe("useMflData", () => {
     });
 
     it("calls API with scoringId for existing score update", async () => {
-      vi.mocked(apiService.getMflScoringMetrics).mockResolvedValue({
-        data: mockScoringMetrics,
-      });
-      vi.mocked(apiService.getMflMovies).mockResolvedValue({
-        data: mockMovies,
-      });
       vi.mocked(apiService.upsertMflMovieScore).mockResolvedValue({
         data: { success: true },
       });
 
-      const { result } = renderHook(() => useMflData());
-
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
+      const result = await renderLoadedHook();
 
       await act(async () => {
         await result.current.upsertMovieScore("the-brutalist", 15, 1, 42);
@@ -322,21 +281,11 @@ describe("useMflData", () => {
 
   describe("deleteScore", () => {
     it("calls API with the scoring ID", async () => {
-      vi.mocked(apiService.getMflScoringMetrics).mockResolvedValue({
-        data: mockScoringMetrics,
-      });
-      vi.mocked(apiService.getMflMovies).mockResolvedValue({
-        data: mockMovies,
-      });
       vi.mocked(apiService.deleteMflScoringMetric).mockResolvedValue({
         data: { success: true },
       });
 
-      const { result } = renderHook(() => useMflData());
-
-      await waitFor(() => {
-        expect(result.current.loading).toBe(false);
-      });
+      const result = await renderLoadedHook();
 
       await act(async () => {
         await result.current.deleteScore(42);

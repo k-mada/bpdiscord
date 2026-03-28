@@ -1,35 +1,4 @@
-import { STAR_PATTERNS } from "./constants";
-
-/**
- * Parse rating from title text containing star symbols
- */
-export const parseRatingFromTitle = (title: string | undefined): number => {
-  if (!title) return 0;
-
-  // Handle HTML entities and extract just the star rating part
-  const cleanTitle = title.replace(/&nbsp;/g, " ").trim();
-
-  // Look for star patterns in the title (check longer patterns first)
-  for (const { pattern, rating } of STAR_PATTERNS) {
-    if (cleanTitle.includes(pattern)) {
-      return rating;
-    }
-  }
-
-  return 0;
-};
-
-/**
- * Extract count from title text (handles comma-separated numbers)
- */
-export const extractRatingCount = (title: string | undefined): number => {
-  if (!title) return 0;
-  const match = title.match(/^([\d,]+)/);
-  if (!match || !match[1]) return 0;
-  // Remove commas and parse as integer
-  const numberStr = match[1].replace(/,/g, "");
-  return parseInt(numberStr, 10) || 0;
-};
+import { parseRatingFromTitle, extractRatingCount } from "../shared/utilities";
 
 /**
  * Parse numbers from text with K/M suffixes (e.g., "1.2K" -> 1200)
