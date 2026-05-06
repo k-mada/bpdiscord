@@ -12,6 +12,7 @@ import {
   primaryKey,
   uuid,
   unique,
+  index,
 } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -281,6 +282,83 @@ export const eventUserPicksRelations = relations(eventUserPicks, ({ one }) => ({
 }));
 
 // ===========================
+// ag_actors Table (TMDB-sourced actor graph)
+// ===========================
+export const agActors = pgTable('ag_actors', {
+  tmdbId: integer('tmdb_id').primaryKey(),
+  name: text('name').notNull(),
+  profilePath: text('profile_path'),
+  popularity: real('popularity'),
+  birthday: text('birthday'),
+  biography: text('biography'),
+  placeOfBirth: text('place_of_birth'),
+  fullyFetched: boolean('fully_fetched').default(false),
+  fetchedAt: timestamp('fetched_at', { withTimezone: true }).defaultNow(),
+});
+
+// ===========================
+// ag_films Table
+// ===========================
+export const agFilms = pgTable('ag_films', {
+  tmdbId: integer('tmdb_id').primaryKey(),
+  title: text('title').notNull(),
+  releaseDate: text('release_date'),
+  releaseYear: integer('release_year'),
+  posterPath: text('poster_path'),
+  posterUrl: text('poster_url'),
+  overview: text('overview'),
+  popularity: real('popularity'),
+  voteAverage: real('vote_average'),
+  genres: text('genres').array().default([]),
+  castFullyFetched: boolean('cast_fully_fetched').default(false),
+  fetchedAt: timestamp('fetched_at', { withTimezone: true }).defaultNow(),
+});
+
+// ===========================
+// ag_acted_in Table (actor <-> film edges)
+// ===========================
+// The table's primary key is (actor_tmdb_id, movie_tmdb_id). The reverse-
+// direction index is required for the path-finder's BFS, which joins on
+// movie_tmdb_id to find co-stars — without it, each recursion step would
+// seq-scan the edge table.
+export const agActedIn = pgTable(
+  'ag_acted_in',
+  {
+    actorTmdbId: integer('actor_tmdb_id')
+      .notNull()
+      .references(() => agActors.tmdbId),
+    movieTmdbId: integer('movie_tmdb_id')
+      .notNull()
+      .references(() => agFilms.tmdbId),
+    character: text('character'),
+    billingOrder: integer('billing_order'),
+  },
+  (table) => [
+    primaryKey({ columns: [table.actorTmdbId, table.movieTmdbId] }),
+    index('idx_ag_acted_in_movie_actor').on(table.movieTmdbId, table.actorTmdbId),
+  ]
+);
+
+export const agActorsRelations = relations(agActors, ({ many }) => ({
+  actedIn: many(agActedIn),
+}));
+
+export const agFilmsRelations = relations(agFilms, ({ many }) => ({
+  cast: many(agActedIn),
+}));
+
+export const agActedInRelations = relations(agActedIn, ({ one }) => ({
+  actor: one(agActors, {
+    fields: [agActedIn.actorTmdbId],
+    references: [agActors.tmdbId],
+  }),
+  film: one(agFilms, {
+    fields: [agActedIn.movieTmdbId],
+    references: [agFilms.tmdbId],
+  }),
+}));
+
+// ===========================
 // Type Exports
 // ===========================
 export type User = typeof users.$inferSelect;
@@ -324,3 +402,12 @@ export type NewEventNominee = typeof eventNominees.$inferInsert;
 
 export type EventUserPick = typeof eventUserPicks.$inferSelect;
 export type NewEventUserPick = typeof eventUserPicks.$inferInsert;
+
+export type AgActor = typeof agActors.$inferSelect;
+export type NewAgActor = typeof agActors.$inferInsert;
+
+export type AgFilm = typeof agFilms.$inferSelect;
+export type NewAgFilm = typeof agFilms.$inferInsert;
+
+export type AgActedIn = typeof agActedIn.$inferSelect;
+export type NewAgActedIn = typeof agActedIn.$inferInsert;

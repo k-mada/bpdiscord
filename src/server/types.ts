@@ -9,7 +9,10 @@ export interface ApiResponse<T = any> {
   message?: string;
   error?: string;
   count?: number;
-  details?: any[];
+  // `details` is used loosely across controllers — sometimes an array of
+  // validation errors, sometimes a partial-failure object, sometimes a
+  // debug string. Typed as `any` to reflect existing usage.
+  details?: any;
 }
 
 // ===========================
@@ -176,6 +179,7 @@ declare global {
       VERCEL_URL?: string;
       ENABLE_SCRAPER?: string;
       PUPPETEER_SKIP_CHROMIUM_DOWNLOAD?: string;
+      TMDB_READ_API_TOKEN?: string;
     }
   }
 }

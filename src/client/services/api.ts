@@ -19,7 +19,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
 class ApiService {
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
   ): Promise<ApiResponse<T>> {
     const url = `${API_BASE_URL}${endpoint}`;
     const { headers: optionHeaders, ...restOptions } = options;
@@ -37,7 +37,7 @@ class ApiService {
 
       if (!response.ok) {
         throw new Error(
-          data.error || `Request failed with status ${response.status}`
+          data.error || `Request failed with status ${response.status}`,
         );
       }
 
@@ -71,7 +71,7 @@ class ApiService {
   }
 
   async confirmPasswordReset(
-    data: PasswordResetConfirmRequest
+    data: PasswordResetConfirmRequest,
   ): Promise<ApiResponse<AuthResponse>> {
     return this.request<AuthResponse>("/auth/reset-password", {
       method: "POST",
@@ -99,7 +99,7 @@ class ApiService {
   // Scraper endpoints
   async scrapeData(
     request: ScraperRequest,
-    token: string
+    token: string,
   ): Promise<ApiResponse<any>> {
     return this.request<ApiResponse<any>>("/scraper/getData", {
       method: "POST",
@@ -112,7 +112,7 @@ class ApiService {
 
   async getUserRatings(
     username: string,
-    token: string
+    token: string,
   ): Promise<ApiResponse<any>> {
     return this.request<ApiResponse<any>>("/scraper/getUserRatings", {
       method: "POST",
@@ -126,7 +126,7 @@ class ApiService {
 
   async getAllFilms(
     username: string,
-    token: string
+    token: string,
   ): Promise<ApiResponse<any>> {
     return this.request<ApiResponse<any>>("/scraper/getAllFilms", {
       method: "POST",
@@ -148,7 +148,7 @@ class ApiService {
     ApiResponse<Array<{ username: string; displayName?: string }>>
   > {
     return this.request<Array<{ username: string; displayName?: string }>>(
-      "/comparison/usernames"
+      "/comparison/usernames",
     );
   }
 
@@ -168,7 +168,7 @@ class ApiService {
 
   async getMoviesInCommon(
     user1: string,
-    user2: string
+    user2: string,
   ): Promise<ApiResponse<any>> {
     return this.request<ApiResponse<any>>("/comparison/movies-in-common", {
       method: "POST",
@@ -189,31 +189,31 @@ class ApiService {
   // New database-first film user endpoints (no auth required)
   async getFilmUserRatings(
     username: string,
-    fallback: boolean = false
+    fallback: boolean = false,
   ): Promise<ApiResponse<any>> {
     const fallbackParam = fallback ? "?fallback=scrape" : "";
     return this.request<ApiResponse<any>>(
-      `/film-users/${username}/ratings${fallbackParam}`
+      `/film-users/${username}/ratings${fallbackParam}`,
     );
   }
 
   async getFilmUserProfile(
     username: string,
-    fallback: boolean = false
+    fallback: boolean = false,
   ): Promise<ApiResponse<any>> {
     const fallbackParam = fallback ? "?fallback=scrape" : "";
     return this.request<ApiResponse<any>>(
-      `/film-users/${username}/profile${fallbackParam}`
+      `/film-users/${username}/profile${fallbackParam}`,
     );
   }
 
   async getFilmUserComplete(
     username: string,
-    fallback: boolean = false
+    fallback: boolean = false,
   ): Promise<ApiResponse<any>> {
     const fallbackParam = fallback ? "?fallback=scrape" : "";
     return this.request<ApiResponse<any>>(
-      `/film-users/${username}/complete${fallbackParam}`
+      `/film-users/${username}/complete${fallbackParam}`,
     );
   }
 
@@ -221,14 +221,14 @@ class ApiService {
     ApiResponse<Array<{ username: string; displayName?: string }>>
   > {
     return this.request<Array<{ username: string; displayName?: string }>>(
-      "/film-users"
+      "/film-users",
     );
   }
 
   // Force scraping endpoints (auth required)
   async forceScrapeUserRatings(
     username: string,
-    token: string
+    token: string,
   ): Promise<ApiResponse<any>> {
     return this.request<ApiResponse<any>>("/scraper/getUserRatings", {
       method: "POST",
@@ -242,7 +242,7 @@ class ApiService {
 
   async forceScrapeUserProfile(
     username: string,
-    token: string
+    token: string,
   ): Promise<ApiResponse<any>> {
     return this.request<ApiResponse<any>>("/scraper/getUserProfile", {
       method: "POST",
@@ -259,7 +259,7 @@ class ApiService {
     ApiResponse<Array<{ rating: number; count: number }>>
   > {
     return this.request<Array<{ rating: number; count: number }>>(
-      "/stats/total-ratings"
+      "/stats/total-ratings",
     );
   }
 
@@ -268,7 +268,7 @@ class ApiService {
     ApiResponse<Array<{ rating: number; count: number }>>
   > {
     return this.request<Array<{ rating: number; count: number }>>(
-      "/stats/all-user-films"
+      "/stats/all-user-films",
     );
   }
 
@@ -280,10 +280,10 @@ class ApiService {
   // TODO: NEED TO STANDARDIZE MOVIE OBJECT, TOO MANY VARIATIONS
   async getMovieSwap(
     user1: string,
-    user2: string
+    user2: string,
   ): Promise<ApiResponse<{ filmSlug: string; title: string }[]>> {
     return this.request<{ filmSlug: string; title: string }[]>(
-      "/comparison/movie-swap"
+      "/comparison/movie-swap",
     );
   }
 
@@ -298,7 +298,7 @@ class ApiService {
   }
 
   async getMflMovieScore(
-    filmSlug: string
+    filmSlug: string,
   ): Promise<ApiResponse<MFLMovieScore[]>> {
     return this.request<MFLMovieScore[]>(`/mfl/movie-score/${filmSlug}`);
   }
@@ -307,7 +307,7 @@ class ApiService {
     filmSlug: string,
     pointsAwarded: number,
     metricId: number,
-    scoringId?: number
+    scoringId?: number,
   ): Promise<ApiResponse<any>> {
     return this.request<any>(`/mfl/upsert-movie-score`, {
       method: "POST",
@@ -330,7 +330,7 @@ class ApiService {
 
   async createAwardShow(
     data: { name: string; slug: string; description?: string },
-    token: string
+    token: string,
   ): Promise<ApiResponse<AwardShow>> {
     return this.request<AwardShow>("/events/admin/award-shows", {
       method: "POST",
@@ -343,9 +343,7 @@ class ApiService {
   // Event endpoints (public)
   // ===========================
 
-  async getEvents(
-    status?: string
-  ): Promise<ApiResponse<EventSummary[]>> {
+  async getEvents(status?: string): Promise<ApiResponse<EventSummary[]>> {
     const query = status ? `?status=${status}` : "";
     return this.request<EventSummary[]>(`/events${query}`);
   }
@@ -358,7 +356,7 @@ class ApiService {
   async submitEventPick(
     categoryId: string,
     nomineeId: string,
-    token: string
+    token: string,
   ): Promise<ApiResponse> {
     return this.request("/events/picks", {
       method: "POST",
@@ -369,7 +367,7 @@ class ApiService {
 
   async getMyEventPicks(
     slug: string,
-    token: string
+    token: string,
   ): Promise<ApiResponse<EventUserPick[]>> {
     return this.request<EventUserPick[]>(`/events/${slug}/my-picks`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -388,7 +386,7 @@ class ApiService {
       awardsDate?: string;
       status?: string;
     },
-    token: string
+    token: string,
   ): Promise<ApiResponse<EventData>> {
     return this.request<EventData>("/events/admin/events", {
       method: "POST",
@@ -407,7 +405,7 @@ class ApiService {
       awardsDate: string;
       status: string;
     }>,
-    token: string
+    token: string,
   ): Promise<ApiResponse> {
     return this.request(`/events/admin/events/${id}`, {
       method: "PUT",
@@ -424,7 +422,7 @@ class ApiService {
       displayOrder: number;
       displayMode?: string;
     },
-    token: string
+    token: string,
   ): Promise<ApiResponse> {
     return this.request("/events/admin/categories", {
       method: "POST",
@@ -433,10 +431,7 @@ class ApiService {
     });
   }
 
-  async deleteEventCategory(
-    id: string,
-    token: string
-  ): Promise<ApiResponse> {
+  async deleteEventCategory(id: string, token: string): Promise<ApiResponse> {
     return this.request(`/events/admin/categories/${id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
@@ -451,7 +446,7 @@ class ApiService {
       movieOrShowName: string;
       isWinner?: boolean;
     },
-    token: string
+    token: string,
   ): Promise<ApiResponse> {
     return this.request("/events/admin/nominees", {
       method: "POST",
@@ -460,10 +455,7 @@ class ApiService {
     });
   }
 
-  async deleteEventNominee(
-    id: string,
-    token: string
-  ): Promise<ApiResponse> {
+  async deleteEventNominee(id: string, token: string): Promise<ApiResponse> {
     return this.request(`/events/admin/nominees/${id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
@@ -473,12 +465,36 @@ class ApiService {
   async setEventWinner(
     nomineeId: string,
     isWinner: boolean,
-    token: string
+    token: string,
   ): Promise<ApiResponse> {
     return this.request(`/events/admin/nominees/${nomineeId}/winner`, {
       method: "PUT",
       headers: { Authorization: `Bearer ${token}` },
       body: JSON.stringify({ isWinner }),
+    });
+  }
+
+  async pathFinder(
+    actor1: string,
+    actor2: string,
+    signal?: AbortSignal,
+  ): Promise<ApiResponse> {
+    // Endpoint is public; no auth header.
+    return this.request(`/actor-graph/path-finder/${actor1}/${actor2}`, {
+      method: "GET",
+      ...(signal ? { signal } : {}),
+    });
+  }
+
+  // Combined actor + movie search backed by /api/actor-graph/search.
+  // Returns DB-cached hits first, then TMDB results for items not yet seeded.
+  async searchGraph(
+    query: string,
+    signal?: AbortSignal,
+  ): Promise<ApiResponse> {
+    return this.request(`/actor-graph/search?q=${encodeURIComponent(query)}`, {
+      method: "GET",
+      ...(signal ? { signal } : {}),
     });
   }
 }

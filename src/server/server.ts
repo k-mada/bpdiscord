@@ -13,6 +13,7 @@ import filmUserRoutes from "./routes/filmUserRoutes";
 import statsRoutes from "./routes/statsRoutes";
 import cronRoutes from "./routes/cronRoutes";
 import eventRoutes from "./routes/eventRoutes";
+import graphRoutes from "./routes/graphRoutes";
 import { globalErrorHandler } from "./middleware/errorHandler";
 import { ApiResponse } from "./types";
 import { cleanup } from "./scraperFunctions";
@@ -147,6 +148,7 @@ app.use("/api/stats", statsRoutes);
 app.use("/api/cron", cronRoutes);
 app.use("/api/mfl", mflRoutes);
 app.use("/api/events", eventRoutes);
+app.use("/api/actor-graph", graphRoutes);
 
 // Only load scraper routes in development or when explicitly enabled
 if (

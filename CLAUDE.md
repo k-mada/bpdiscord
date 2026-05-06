@@ -68,7 +68,6 @@ bpdiscord/
 #### Core Tables
 
 1. **Users** - Letterboxd user profile data
-
    - `lbusername` (primary key) - Letterboxd username
    - `display_name` - User's display name
    - `followers` - Follower count
@@ -77,7 +76,6 @@ bpdiscord/
    - `created_at`, `updated_at` - Timestamps
 
 2. **UserRatings** - Individual rating data points
-
    - `username` - Links to Users.lbusername
    - `rating` - Rating value (0.5-5.0)
    - `count` - Number of movies rated at this level
@@ -85,6 +83,30 @@ bpdiscord/
 
 3. **Films** (future use) - Individual film data
    - Film metadata and user-specific rating information
+
+4. **ag_actors** - TMDB-sourced actor nodes for the "Six Degrees" graph
+   - `tmdb_id` (primary key) - TMDB person id
+   - `name` - Actor name
+   - `profile_path`, `popularity` - Profile image + popularity score
+   - `birthday`, `biography`, `place_of_birth` - Biographical fields (only populated when fully fetched)
+   - `fully_fetched` - Set to `true` once `/person/:id?append_to_response=movie_credits` has been hydrated. Lightweight inserts (from movie cast ingestion) leave this `false`.
+   - `fetched_at` - Timestamp of last hydration
+
+5. **ag_films** - TMDB-sourced film nodes
+   - `tmdb_id` (primary key) - TMDB movie id
+   - `title`, `release_date`, `release_year` - Film identity + year
+   - `poster_path`, `poster_url` - Poster fields (poster_url is pre-composed w342)
+   - `overview`, `popularity`, `vote_average`, `genres` - Surface metadata
+   - `cast_fully_fetched` - Set to `true` once `/movie/:id?append_to_response=credits` has been hydrated. Lightweight inserts (from actor filmography ingestion) leave this `false`.
+   - `fetched_at` - Timestamp of last hydration
+
+6. **ag_acted_in** - Actor ↔ film edges (the graph itself)
+   - `actor_tmdb_id` - FK → `ag_actors.tmdb_id`
+   - `movie_tmdb_id` - FK → `ag_films.tmdb_id`
+   - `character` - Role name (nullable)
+   - `billing_order` - Cast order from TMDB; lower = more prominent. The path-finder uses this to prune long-tail credits (extras, voice roles).
+   - Primary key: (`actor_tmdb_id`, `movie_tmdb_id`)
+   - Reverse index `idx_ag_acted_in_movie_actor` on (`movie_tmdb_id`, `actor_tmdb_id`) — required by the BFS, which joins on `movie_tmdb_id` to find co-stars. Created in `supabase/migrations/20260505013813_add_ag_graph_indexes.sql` alongside `pg_trgm` GIN indexes on `ag_actors.name` / `ag_films.title` that power the search endpoint.
 
 ### Data Sources and Processing
 
@@ -152,6 +174,27 @@ Raw Letterboxd Data → Validation → Transformation → Database Storage → A
 - `POST /user-ratings` - Get specific user's ratings and profile data
 - `POST /compare` - Compare two users' rating data
 - `GET /hater-rankings` - Get all users ranked by average rating
+
+### Actor Graph Routes (`/api/actor-graph`) - Public, Cache-Through
+
+Powers the "Six Degrees of Kevin Bacon" feature. Reads from the `ag_actors` / `ag_films` / `ag_acted_in` tables; on cache miss, ingests from TMDB into the same tables inside a transaction.
+
+- `GET /path-finder/:actor1Id/:actor2Id` - Find shortest actor path via layer-by-layer BFS over co-appearances
+  - Query params: `maxDepth` (1-8, default 6), `billingCutoff` (1-50, default 15)
+  - One indexed `ag_acted_in` self-join per BFS layer; each actor expanded at most once via a global visited map (in-process, not SQL). Complexity is O(V+E) over the connected component, not O(B^D) like a recursive-CTE BFS.
+  - 404 on unknown actor, 404 on no path within `maxDepth`. A `statement_timeout` is set as a defense-in-depth ceiling but should not fire on realistic graphs (504 path is dead code under normal traffic).
+  - Rate-limited separately: **20 req / 5 min per IP** (tighter than other endpoints because BFS over an indexed graph still touches more rows per request than a single point lookup)
+- `GET /search?q=...` - Unified actor + movie search
+  - DB results (pg_trgm GIN indexes on name/title; ILIKE wildcards `%`/`_`/`\` escaped from user input) merged with TMDB `/search/person` + `/search/movie`. DB rows win on id collision; sorted by popularity desc; capped at 10 each. Either source degrades gracefully on failure: a TMDB outage still returns DB hits, and vice versa.
+  - `q` length: minimum 2, maximum 80 chars (cap prevents abusive payloads being forwarded to TMDB or used as trigram patterns).
+  - Rate-limited separately: **60 req / 5 min per IP** (chattiest endpoint, typeahead-friendly)
+- `GET /actors/:tmdbId` - Get (and hydrate if missing) an actor + their filmography
+- `GET /movies/:tmdbId` - Get (and hydrate if missing) a movie + its top-15 billed cast
+- `GET /actors/:tmdbId/costars` - Co-star list ranked by shared-movie count
+  - Query param: `limit` (1-500, default 100)
+- `GET /actors/:actor1Id/common-movies/:actor2Id` - Films both actors appeared in, ordered newest-first
+- **Ingestion rate limit** (applies to all detail endpoints above): **120 req / 5 min per IP**
+- **Auth model**: Public by design despite being cache-through writers. Writes are bounded (top-15 cast per ingestion), the source data is TMDB (itself public), and per-IP rate limiters cap abuse. If TMDB quota or DB growth becomes an issue, move behind the same JWT middleware as `/api/scraper`.
 
 ### User Routes (`/api/users`) - Protected
 
@@ -351,6 +394,17 @@ BPDiscord implements a **database-first architecture** optimized for production 
 - **Production**: Disabled unless `ENABLE_SCRAPER=true`
 - **Use Case**: Administrative data updates, new user addition
 
+#### Cache-Through Endpoints (`/api/actor-graph`)
+
+- **Purpose**: Serve the actor graph from the DB, and transparently ingest from TMDB on cache miss
+- **Authentication**: Public (TMDB is itself public; per-IP rate limiters cap abuse)
+- **Performance**: DB-only on hit; one TMDB call + one transactional upsert on miss. TMDB client uses a 5 s request timeout to align with the path-finder's per-request budget.
+- **Dependency**: Requires `TMDB_READ_API_TOKEN`; returns 503 if unset
+- **Concurrency control**: In-process request coalescing dedupes concurrent same-id ingestions within a single Node instance. Cross-instance races (Vercel parallel lambdas) fall through to `ON CONFLICT DO UPDATE` — bounded cost, no correctness impact.
+- **Hydration semantics**: Lightweight upserts (e.g. films inserted via an actor's filmography) never clobber a richer row's `fully_fetched` / `cast_fully_fetched` = true.
+- **Error handling**: This controller intentionally diverges from the codebase's `dbOperation` result-type convention. Pure-DB helpers throw on error; handlers wrap in try/catch and route everything (DB errors, `TmdbNotFoundError`, `TmdbUnavailableError`, `AxiosError`) through a single `classifyError` helper that maps to 404 / 503 / 502 / 429 / 500. `dataController` and `eventDataController` keep using `dbOperation` since they have no equivalent error-classification layer.
+- **Use Case**: Path-finder, unified search, actor/movie detail pages, co-stars, shared filmography
+
 ### Data Flow Examples
 
 #### Public User Comparison
@@ -389,6 +443,56 @@ Automatic Scraping
 Database Storage
     ↓
 Return Scraped Data
+```
+
+#### Cache-Through Ingestion (Actor Graph)
+
+```
+User Request → /api/actor-graph/actors/:tmdbId
+    ↓
+DB Lookup (ag_actors)
+    ↓
+fully_fetched=true? ── yes ──→ Return Cached Row
+    ↓ no
+TMDB GET /person/:id?append_to_response=movie_credits
+    ↓
+Transaction:
+  1. Upsert actor (fully_fetched=true)
+  2. Upsert lightweight film rows (do not touch cast_fully_fetched)
+  3. Upsert ag_acted_in edges
+    ↓
+Return Hydrated Row
+```
+
+#### Path-Finder BFS (Actor Graph)
+
+```
+User Request → /api/actor-graph/path-finder/:a1/:a2
+    ↓
+ensureActor(a1) + ensureActor(a2)   (cache-through hydration if needed)
+    ↓
+parents = Map<actorId, {prev, viaMovie}>; visited[a1] = null
+frontier = [a1]
+    ↓
+for depth in 1..maxDepth:
+  ┌──────────────────────────────────────────────────────────┐
+  │ One indexed self-join on ag_acted_in:                    │
+  │   my_cast (PK on actor_tmdb_id, movie_tmdb_id)           │
+  │   co_cast (idx_ag_acted_in_movie_actor)                  │
+  │ DISTINCT ON (co_cast.actor_tmdb_id) — one parent edge    │
+  │ per newly-discovered actor in this layer.                │
+  └──────────────────────────────────────────────────────────┘
+    ↓
+  for each row not in `parents`:
+    parents[next] = {prev, viaMovie}
+    if next == a2: foundDepth = depth; break
+  frontier = newly added actors
+    ↓
+Reconstruct path: walk parents from a2 → a1, reverse
+    ↓
+One small SELECT to hydrate actor + movie metadata
+    ↓
+Return { degrees, path: [actor, film, actor, film, ...] }
 ```
 
 ### Production Benefits
@@ -478,6 +582,7 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_key
 JWT_SECRET=your_jwt_secret
 NODE_ENV=development
 ENABLE_SCRAPER=true  # Enable scraping in production (optional)
+TMDB_READ_API_TOKEN=your_tmdb_v4_read_token  # Required for /api/actor-graph ingestion
 
 # Frontend (.env)
 # VITE_API_URL=/api  # Uses proxy in development, override for production
@@ -498,6 +603,61 @@ VITE_HOT_RELOAD=true
 2. Set up tables with appropriate RLS policies
 3. Configure service role for admin operations
 4. Set up proper indexes for performance
+
+### Database Migrations
+
+Migrations are managed via the Supabase CLI under `supabase/migrations/`. Files are timestamped (`YYYYMMDDhhmmss_*.sql`) and tracked by Supabase in `supabase_migrations.schema_migrations`.
+
+> **Drizzle vs. Supabase CLI.** `src/server/db/schema.ts` declares tables, columns, and indexes for Drizzle's query builder + type inference, but `drizzle-kit push`/`drizzle-kit migrate` is **not** part of the deploy pipeline. SQL changes must land as a `supabase/migrations/*.sql` file or they will not exist in any DB. Treat Drizzle schema declarations as documentary; the SQL migration is the source of truth.
+
+#### Layout
+
+- `supabase/migrations/20260502215921_remote_schema.sql` — baseline pulled from prod via `supabase db pull`. Never edit this re-creatively; treat it as a frozen snapshot. Drop targeted DDL via follow-up migrations.
+- `supabase/migrations/20260505013813_add_ag_graph_indexes.sql` — `pg_trgm` extension + `idx_ag_acted_in_movie_actor` reverse-direction edge index + GIN trigram indexes on `ag_actors.name` / `ag_films.title`. Required for the path-finder BFS and the search endpoint to perform.
+- `supabase/migrations/20260505015531_drop_ag_acted_in_clone.sql` — drops `ag_acted_in_clone`, a dev artifact that was captured by the initial `db pull`.
+- `supabase/.temp/` is gitignored — Supabase CLI scratch state; do not commit.
+
+#### Local workflow
+
+```bash
+supabase start                     # boot the local stack (Postgres on :54322)
+supabase status                    # show local DB URL + keys
+supabase db reset                  # rebuild local DB from all migrations
+supabase migration new <name>      # scaffold a new migration file
+```
+
+#### Verifying indexes locally
+
+```bash
+psql "$LOCAL_DB_URL" -c "\d ag_acted_in"
+# expect: idx_ag_acted_in_movie_actor on (movie_tmdb_id, actor_tmdb_id)
+
+psql "$LOCAL_DB_URL" -c "EXPLAIN SELECT 1 FROM ag_actors WHERE name ILIKE '%bacon%';"
+# expect: Bitmap Index Scan on idx_ag_actors_name_trgm
+```
+
+#### Production workflow
+
+A push to `main` that touches `supabase/migrations/**` (or the workflow file) triggers `.github/workflows/migrations.yml`:
+
+1. **`plan` job** — runs `supabase migration list --linked` and prints what's pending. No writes, no environment protection. Acts as the diff for the approver to read.
+2. **`migrate` job** — gated on `environment: production`; pauses for manual approval before running `supabase db push --linked` to apply pending migrations.
+
+The `production` GitHub environment **must be configured** in repo Settings → Environments with required reviewers — without that, the gate is a silent no-op.
+
+Required repo secrets: `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_REF`.
+
+#### One-time prod baseline repair
+
+Because the baseline `20260502215921_remote_schema.sql` was generated from `supabase db pull` against an already-populated prod, applying it would error on duplicate constraints. Mark it applied without running it:
+
+```bash
+supabase link --project-ref <ref>
+supabase migration repair --status applied 20260502215921
+supabase migration list --linked   # baseline should now show on both Local and Remote
+```
+
+This is a one-off step, not a code change. After it runs, future `supabase db push` invocations apply only newer migrations.
 
 ## Production Deployment to Vercel
 
@@ -641,6 +801,7 @@ SUPABASE_ANON_KEY=your_production_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_production_service_key
 NODE_ENV=production
 ENABLE_SCRAPER=true  # Optional: Enable scraping in production
+TMDB_READ_API_TOKEN=your_tmdb_v4_read_token  # Required for /api/actor-graph
 ```
 
 ### Deployment Verification

@@ -115,3 +115,6 @@ dist/
 .claude
 settings.local.json
 .vercel
+
+
+supabase/.temp/
