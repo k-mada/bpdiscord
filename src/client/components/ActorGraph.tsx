@@ -51,6 +51,12 @@ const ActorComboBox = ({
   onSelect,
   excludeId,
 }: ActorComboBoxProps) => {
+  // `query` is initialised from `selected` and is otherwise driven entirely
+  // by event handlers (onChange, handleSelect, handleClear). There is no
+  // useEffect mirroring `selected` → `query`: every legitimate state
+  // transition that changes either one already updates both together, and
+  // a sync effect would race with the typing path (clearing `selected` to
+  // null, which the effect would then echo back to clear `query`).
   const [query, setQuery] = useState(selected?.name ?? "");
   const [results, setResults] = useState<ActorOption[]>([]);
   const [open, setOpen] = useState(false);
@@ -58,10 +64,6 @@ const ActorComboBox = ({
   const [error, setError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
-
-  useEffect(() => {
-    setQuery(selected?.name ?? "");
-  }, [selected?.tmdbId, selected?.name]);
 
   // Debounced search — fires 200ms after the user stops typing.
   useEffect(() => {
@@ -366,6 +368,18 @@ const ActorGraph = () => {
           <PathDisplay path={pathData.path} />
         </div>
       )}
+
+      {!loading &&
+        !error &&
+        pathData &&
+        pathData.path.length === 0 &&
+        actor1 &&
+        actor2 && (
+          <div className="bg-letterboxd-bg-secondary border border-letterboxd-border text-letterboxd-text-secondary rounded-lg px-4 py-3">
+            A connection could not be found between {actor1.name} and{" "}
+            {actor2.name} within {pathData.maxDepth} degrees
+          </div>
+        )}
     </div>
   );
 };

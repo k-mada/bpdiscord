@@ -11,7 +11,8 @@
     "clean": "rimraf dist",
     "test": "vitest run --coverage",
     "test:lite": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "seed:graph": "ts-node-dev --transpile-only --exit-child --no-notify scripts/seedActorGraph.ts"
   },
   "dependencies": {
     "@sparticuz/chromium": "^138.0.2",

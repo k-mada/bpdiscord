@@ -19,7 +19,9 @@ export interface ActorPathFilmStep {
 export type ActorPathStep = ActorPathActorStep | ActorPathFilmStep;
 
 export interface ActorPath {
-  degrees: number;
+  // null when the query succeeded but no connection was found within
+  // maxDepth. In that case `path` is also empty.
+  degrees: number | null;
   fromActorId: number;
   toActorId: number;
   maxDepth: number;

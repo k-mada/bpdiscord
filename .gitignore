@@ -118,3 +118,6 @@ settings.local.json
 
 
 supabase/.temp/
+
+# Seed script failure log
+seed-failures.json

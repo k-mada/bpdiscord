@@ -9,7 +9,7 @@ import { ApiResponse } from "../types";
 // Path-finder tuning
 // ===========================
 
-const DEFAULT_MAX_DEPTH = 6;
+const DEFAULT_MAX_DEPTH = 8;
 const MAX_ALLOWED_DEPTH = 8;
 
 // Only consider the top-N billed cast members when expanding a movie's
@@ -173,12 +173,7 @@ const parseBoundedInt = (
   // Reject non-canonical inputs ("05", " 5", "5abc") — `String(n) === trimmed`
   // mirrors parsePositiveInt so path params and query params validate the
   // same way.
-  if (
-    !Number.isInteger(n) ||
-    n < min ||
-    n > max ||
-    String(n) !== trimmed
-  ) {
+  if (!Number.isInteger(n) || n < min || n > max || String(n) !== trimmed) {
     return null;
   }
   return n;
@@ -259,7 +254,7 @@ function coalesce<K, V>(
  * movie_credits from TMDB and persists actor + lightweight film nodes +
  * edges in a single transaction.
  */
-function ensureActor(tmdbId: number): Promise<ActorRow | null> {
+export function ensureActor(tmdbId: number): Promise<ActorRow | null> {
   return coalesce(inflightActor, tmdbId, () => ensureActorImpl(tmdbId));
 }
 
@@ -402,7 +397,7 @@ type MovieWithCast = FilmRow & {
  * billing order, and upserts everything in one transaction. Lightweight
  * actor rows created here never clobber a prior fully_fetched=true.
  */
-function ensureMovieWithCast(tmdbId: number): Promise<MovieWithCast | null> {
+export function ensureMovieWithCast(tmdbId: number): Promise<MovieWithCast | null> {
   return coalesce(inflightMovie, tmdbId, () => ensureMovieWithCastImpl(tmdbId));
 }
 
@@ -876,9 +871,19 @@ export async function findActorPath(
     }
 
     if (foundDepth === null) {
-      res.status(404).json({
-        error: "No path found",
-        message: `No connection between actors ${actor1Id} and ${actor2Id} within ${maxDepth} degrees (billing cutoff ${billingCutoff})`,
+      // The query succeeded; the graph just has no connection within
+      // maxDepth. That's a valid result, not an error — return 200 with
+      // an empty path so callers can render a "no connection found"
+      // message instead of treating it as a failure.
+      res.json({
+        data: {
+          degrees: null,
+          fromActorId: actor1Id,
+          toActorId: actor2Id,
+          maxDepth,
+          billingCutoff,
+          path: [],
+        },
       });
       return;
     }
