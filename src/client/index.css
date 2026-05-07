@@ -34,8 +34,8 @@
     font-family: "Be Vietnam Pro", sans-serif;
   }
   code {
-    font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
-      monospace;
+    font-family:
+      source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
   }
 
   a:hover {
@@ -79,7 +79,7 @@
 
 @layer components {
   .main-content {
-    @apply max-w-5xl mx-auto py-8 px-4 overflow-x-auto;
+    @apply max-w-5xl mx-auto py-8 px-4 overflow-x-auto h-screen;
   }
   .main-content:has(.oscars-page) {
     @apply overflow-visible;
@@ -151,7 +151,9 @@
     left: 0;
     width: 230px;
     height: 345px;
-    font: 800 2.5rem "PT Serif", serif;
+    font:
+      800 2.5rem "PT Serif",
+      serif;
     /* background-color: rgba(0, 0, 0, 0.5); */
     background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
     color: #fff;
@@ -170,7 +172,9 @@
       align-items: flex-end;
       opacity: 1;
       background: linear-gradient(to top, rgba(0, 0, 0, 1), transparent);
-      font: 800 1.5rem "PT Serif", serif;
+      font:
+        800 1.5rem "PT Serif",
+        serif;
     }
 
     &:hover {
@@ -272,7 +276,9 @@
 }
 
 .movie-count {
-  font: 800 32px "Be Vietnam Pro", sans-serif;
+  font:
+    800 32px "Be Vietnam Pro",
+    sans-serif;
   padding-left: 1rem;
 }
 

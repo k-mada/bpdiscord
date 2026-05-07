@@ -115,3 +115,9 @@ dist/
 .claude
 settings.local.json
 .vercel
+
+
+supabase/.temp/
+
+# Seed script failure log
+seed-failures.json
