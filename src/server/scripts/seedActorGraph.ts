@@ -18,6 +18,21 @@ const SPINNER_FRAMES = ["|", "/", "-", "\\"];
 // at repo root regardless of the cwd `yarn seed:graph` runs from.
 export const FAILURES_PATH = path.resolve(__dirname, "..", "..", "..", "seed-failures.json");
 
+// Returns the resolved DB host:port (no credentials) for display in preflight
+// summaries. Surfacing this before the confirmation prompt lets the user
+// notice if their .env points at prod when they meant staging.
+export function getDbHost(): string {
+  const url = process.env.DATABASE_URL;
+  if (!url) return "(DATABASE_URL not set)";
+  try {
+    const parsed = new URL(url);
+    const port = parsed.port ? `:${parsed.port}` : "";
+    return `${parsed.hostname}${port}`;
+  } catch {
+    return "(unparseable DATABASE_URL)";
+  }
+}
+
 const DEFAULT_LIMIT = 5000;
 const DEFAULT_CONCURRENCY = 10;
 const DEFAULT_START_PAGE = 1;
@@ -407,6 +422,7 @@ async function main(): Promise<void> {
 
   const args = parseArgs(process.argv.slice(2));
 
+  console.log(`Target DB:   ${getDbHost()}`);
   console.log(`Limit:       ${args.limit}`);
   console.log(`Concurrency: ${args.concurrency}`);
   console.log(`Start page:  ${args.startPage}`);
@@ -432,10 +448,7 @@ async function main(): Promise<void> {
   const filmFailures: FilmFailureRecord[] = [];
   const renderer = new LiveRenderer();
 
-  let interrupted = false;
   const shutdown = (): void => {
-    if (interrupted) return;
-    interrupted = true;
     renderer.stop();
     // On early interrupt (no failures yet), don't touch an existing file
     // from a previous run — the user may want it preserved. Only flush if
@@ -452,7 +465,6 @@ async function main(): Promise<void> {
   renderer.start(actors.length);
 
   await runWithConcurrency(actors, args.concurrency, async (actor) => {
-    if (interrupted) return;
     await seedOneActor(
       { ...actor, priorAttempts: 0 },
       renderer,
@@ -461,7 +473,6 @@ async function main(): Promise<void> {
     );
   });
 
-  if (interrupted) return;
   renderer.stop();
 
   const successfulActors = actors.length - actorFailures.length;
@@ -483,7 +494,15 @@ async function main(): Promise<void> {
 
 if (require.main === module) {
   main().catch((err) => {
-    console.error("Fatal:", err);
+    // Print only message + stack. Do NOT print the error object directly:
+    // `console.error("Fatal:", axiosError)` expands `err.config.headers` via
+    // util.inspect, which leaks the TMDB Bearer token to stdout.
+    if (err instanceof Error) {
+      console.error("Fatal:", err.message);
+      if (err.stack) console.error(err.stack);
+    } else {
+      console.error("Fatal:", String(err));
+    }
     process.exit(1);
   });
 }

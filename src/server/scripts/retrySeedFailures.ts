@@ -7,6 +7,7 @@ import {
   FilmFailureRecord,
   LiveRenderer,
   confirm,
+  getDbHost,
   parsePosInt,
   runWithConcurrency,
   seedOneActor,
@@ -128,17 +129,22 @@ const state = {
   // Always attempts=1 because the actor previously failed before reaching
   // the films loop, so the films were never tried before this run.
   newFilmFailuresAcc: [] as FilmFailureRecord[],
+  // Permanents accumulated across the run: those loaded already past the cap
+  // (skipped, never retried) plus those that hit the cap during finalize.
+  // Logged together at the end for a single clear summary.
+  permanentActorsSeen: [] as FailureRecord[],
+  permanentFilmsSeen: [] as FilmFailureRecord[],
   activeRenderer: null as LiveRenderer | null,
 };
 
-// Compute the file's final contents from current state. Used by both normal
-// completion and the SIGINT handler — same logic either way: anything in the
-// originals not yet resolved survives, with updated attempts when re-tried.
+// Compute the file's final retriable contents from current state. Newly-
+// permanent entries (those that hit MAX_ATTEMPTS this run) are pushed into
+// state.permanent*Seen so they appear in the final log alongside any that
+// were already past the cap when loaded.
 function finalize(): {
   retriableActors: FailureRecord[];
   retriableFilms: FilmFailureRecord[];
-  permanentActors: FailureRecord[];
-  permanentFilms: FilmFailureRecord[];
+  newFilmFailuresQueued: number;
 } {
   const stillActorMap = new Map(
     state.stillFailingActorsAcc.map((f) => [f.tmdbId, f]),
@@ -157,30 +163,50 @@ function finalize(): {
     if (state.resolvedFilmIds.has(orig.filmId)) continue;
     finalFilms.push(stillFilmMap.get(orig.filmId) ?? orig);
   }
-  // New film failures from phase 1 actor retries — never reached MAX_ATTEMPTS
-  // because attempts=1, so they go straight into the retriable bucket below.
-  finalFilms.push(...state.newFilmFailuresAcc);
 
-  const retriableActors = finalActors.filter((f) => f.attempts < MAX_ATTEMPTS);
-  const permanentActors = finalActors.filter((f) => f.attempts >= MAX_ATTEMPTS);
-  const retriableFilms = finalFilms.filter((f) => f.attempts < MAX_ATTEMPTS);
-  const permanentFilms = finalFilms.filter((f) => f.attempts >= MAX_ATTEMPTS);
+  // New film failures from phase 1 actor retries. Dedupe against (a) films
+  // we've already accounted for via originals/resolved — otherwise the same
+  // filmId can appear twice with different attempt counts; and (b) films
+  // already pushed in this loop — if two phase-1 actors share an un-hydrated
+  // film, coalesce dedupes the TMDB call but both seedOneActor catch blocks
+  // still fire, producing two newFilmFailuresAcc entries for the same id.
+  const accountedFilmIds = new Set<number>([
+    ...state.resolvedFilmIds,
+    ...state.originalFilmFailures.map((f) => f.filmId),
+  ]);
+  let newFilmFailuresQueued = 0;
+  for (const newFail of state.newFilmFailuresAcc) {
+    if (accountedFilmIds.has(newFail.filmId)) continue;
+    accountedFilmIds.add(newFail.filmId);
+    finalFilms.push(newFail);
+    newFilmFailuresQueued++;
+  }
 
-  return { retriableActors, retriableFilms, permanentActors, permanentFilms };
+  const retriableActors: FailureRecord[] = [];
+  for (const f of finalActors) {
+    if (f.attempts >= MAX_ATTEMPTS) state.permanentActorsSeen.push(f);
+    else retriableActors.push(f);
+  }
+  const retriableFilms: FilmFailureRecord[] = [];
+  for (const f of finalFilms) {
+    if (f.attempts >= MAX_ATTEMPTS) state.permanentFilmsSeen.push(f);
+    else retriableFilms.push(f);
+  }
+
+  return { retriableActors, retriableFilms, newFilmFailuresQueued };
 }
 
-function logPermanent(
-  permanentActors: FailureRecord[],
-  permanentFilms: FilmFailureRecord[],
-): void {
-  if (permanentActors.length === 0 && permanentFilms.length === 0) return;
+function logAllPermanent(): void {
+  const total =
+    state.permanentActorsSeen.length + state.permanentFilmsSeen.length;
+  if (total === 0) return;
   console.log(
-    `\nDropped ${permanentActors.length + permanentFilms.length} permanent failure(s) (>=${MAX_ATTEMPTS} attempts):`,
+    `\nDropped ${total} permanent failure(s) (>=${MAX_ATTEMPTS} attempts):`,
   );
-  for (const f of permanentActors) {
+  for (const f of state.permanentActorsSeen) {
     console.log(`  Actor ${f.tmdbId} (${f.name}): ${f.error}`);
   }
-  for (const f of permanentFilms) {
+  for (const f of state.permanentFilmsSeen) {
     console.log(`  Film ${f.filmId} (from actor ${f.fromActorId}): ${f.error}`);
   }
 }
@@ -207,17 +233,21 @@ async function retryActorFailures(concurrency: number): Promise<void> {
     })),
     concurrency,
     async (actor) => {
-      const before = state.stillFailingActorsAcc.length;
+      // Per-worker local buffer so we can determine recovery without racing
+      // on the shared array's length. seedOneActor pushes at most one entry
+      // (the actor-level catch); concurrent workers writing to a shared
+      // array would corrupt a length-based "did this one push?" check.
+      const localActorFailures: FailureRecord[] = [];
       await seedOneActor(
         actor,
         renderer,
-        state.stillFailingActorsAcc,
+        localActorFailures,
         state.newFilmFailuresAcc,
       );
-      // seedOneActor pushes to stillFailingActorsAcc on actor-level failure.
-      // If nothing was pushed, the actor recovered.
-      if (state.stillFailingActorsAcc.length === before) {
+      if (localActorFailures.length === 0) {
         state.resolvedActorIds.add(actor.tmdbId);
+      } else {
+        state.stillFailingActorsAcc.push(...localActorFailures);
       }
     },
   );
@@ -227,39 +257,40 @@ async function retryActorFailures(concurrency: number): Promise<void> {
 }
 
 async function retryFilmFailures(concurrency: number): Promise<void> {
-  if (state.originalFilmFailures.length === 0) return;
-
-  console.log(
-    `\nPhase 2: retrying ${state.originalFilmFailures.length} film failure(s)...`,
+  // Phase 1 may have hydrated some of these films as a side effect of
+  // recovering an actor whose filmography includes them. Filter those out so
+  // phase 2 doesn't waste a roundtrip per cached entry — and so the renderer
+  // shows a count that reflects actual work, not pre-resolved no-ops.
+  const toRetry = state.originalFilmFailures.filter(
+    (f) => !state.resolvedFilmIds.has(f.filmId),
   );
+  if (toRetry.length === 0) return;
+
+  console.log(`\nPhase 2: retrying ${toRetry.length} film failure(s)...`);
   const renderer = new LiveRenderer({
     successLabel: "Films recovered",
     remainingLabel: "Films remaining",
     failureLabel: "Still failing",
   });
   state.activeRenderer = renderer;
-  renderer.start(state.originalFilmFailures.length);
+  renderer.start(toRetry.length);
 
-  await runWithConcurrency(
-    state.originalFilmFailures,
-    concurrency,
-    async (film) => {
-      renderer.setCurrentLabel(`Hydrating film ${film.filmId}`);
-      try {
-        await withTmdbRetry(() => ensureMovieWithCast(film.filmId));
-        state.resolvedFilmIds.add(film.filmId);
-        renderer.recordSuccess();
-      } catch (err) {
-        state.stillFailingFilmsAcc.push({
-          filmId: film.filmId,
-          fromActorId: film.fromActorId,
-          error: err instanceof Error ? err.message : String(err),
-          attempts: film.attempts + 1,
-        });
-        renderer.recordFailure();
-      }
-    },
-  );
+  await runWithConcurrency(toRetry, concurrency, async (film) => {
+    renderer.setCurrentLabel(`Hydrating film ${film.filmId}`);
+    try {
+      await withTmdbRetry(() => ensureMovieWithCast(film.filmId));
+      state.resolvedFilmIds.add(film.filmId);
+      renderer.recordSuccess();
+    } catch (err) {
+      state.stillFailingFilmsAcc.push({
+        filmId: film.filmId,
+        fromActorId: film.fromActorId,
+        error: err instanceof Error ? err.message : String(err),
+        attempts: film.attempts + 1,
+      });
+      renderer.recordFailure();
+    }
+  });
 
   renderer.stop();
   state.activeRenderer = null;
@@ -272,19 +303,46 @@ async function main(): Promise<void> {
   }
 
   const args = parseArgs(process.argv.slice(2));
+
+  console.log(`Target DB: ${getDbHost()}`);
+
   const loaded = loadFailures();
-  state.originalActorFailures = loaded.actorFailures;
-  state.originalFilmFailures = loaded.filmFailures;
+
+  // Pre-partition: anything already at or past the cap gets dropped before
+  // we waste a TMDB call on it. Most common cause is a previous run that
+  // pushed an entry to attempts=MAX_ATTEMPTS and persisted it (e.g., before
+  // a process crash interrupted the file rewrite). They land in
+  // state.permanent*Seen and are surfaced via logAllPermanent below.
+  for (const f of loaded.actorFailures) {
+    if (f.attempts >= MAX_ATTEMPTS) state.permanentActorsSeen.push(f);
+    else state.originalActorFailures.push(f);
+  }
+  for (const f of loaded.filmFailures) {
+    if (f.attempts >= MAX_ATTEMPTS) state.permanentFilmsSeen.push(f);
+    else state.originalFilmFailures.push(f);
+  }
+
+  const droppedActors = state.permanentActorsSeen.length;
+  const droppedFilms = state.permanentFilmsSeen.length;
 
   console.log(`Loaded failures from ${FAILURES_PATH}:`);
-  console.log(`  Actor failures: ${state.originalActorFailures.length}`);
-  console.log(`  Film failures:  ${state.originalFilmFailures.length}`);
+  console.log(
+    `  Actor failures: ${state.originalActorFailures.length}` +
+      (droppedActors > 0 ? ` (+${droppedActors} already past cap)` : ""),
+  );
+  console.log(
+    `  Film failures:  ${state.originalFilmFailures.length}` +
+      (droppedFilms > 0 ? ` (+${droppedFilms} already past cap)` : ""),
+  );
 
   if (
     state.originalActorFailures.length === 0 &&
     state.originalFilmFailures.length === 0
   ) {
     console.log(`\nNothing to retry.`);
+    logAllPermanent();
+    // Drop the file regardless: anything left was already past the cap and
+    // we've logged it. Agent loop terminates because the file is gone.
     if (fs.existsSync(FAILURES_PATH)) fs.unlinkSync(FAILURES_PATH);
     process.exit(0);
   }
@@ -300,14 +358,10 @@ async function main(): Promise<void> {
     process.exit(0);
   }
 
-  let interrupted = false;
   const shutdown = (): void => {
-    if (interrupted) return;
-    interrupted = true;
     if (state.activeRenderer) state.activeRenderer.stop();
-    const { retriableActors, retriableFilms, permanentActors, permanentFilms } =
-      finalize();
-    logPermanent(permanentActors, permanentFilms);
+    const { retriableActors, retriableFilms } = finalize();
+    logAllPermanent();
     writeOrDeleteFailures(retriableActors, retriableFilms);
     process.exit(130);
   };
@@ -315,13 +369,9 @@ async function main(): Promise<void> {
   process.on("SIGTERM", shutdown);
 
   await retryActorFailures(args.concurrency);
-  if (interrupted) return;
-
   await retryFilmFailures(args.concurrency);
-  if (interrupted) return;
 
-  const { retriableActors, retriableFilms, permanentActors, permanentFilms } =
-    finalize();
+  const { retriableActors, retriableFilms, newFilmFailuresQueued } = finalize();
 
   const recoveredActors =
     state.originalActorFailures.length - state.stillFailingActorsAcc.length;
@@ -333,13 +383,13 @@ async function main(): Promise<void> {
   console.log(`  Actors still failing:    ${state.stillFailingActorsAcc.length}`);
   console.log(`  Films recovered:         ${recoveredFilms}`);
   console.log(`  Films still failing:     ${state.stillFailingFilmsAcc.length}`);
-  if (state.newFilmFailuresAcc.length > 0) {
+  if (newFilmFailuresQueued > 0) {
     console.log(
-      `  New film failures (queued for next retry): ${state.newFilmFailuresAcc.length}`,
+      `  New film failures (queued for next retry): ${newFilmFailuresQueued}`,
     );
   }
 
-  logPermanent(permanentActors, permanentFilms);
+  logAllPermanent();
   writeOrDeleteFailures(retriableActors, retriableFilms);
 
   process.exit(0);
@@ -347,7 +397,15 @@ async function main(): Promise<void> {
 
 if (require.main === module) {
   main().catch((err) => {
-    console.error("Fatal:", err);
+    // Print only message + stack. Do NOT print the error object directly:
+    // `console.error("Fatal:", axiosError)` expands `err.config.headers` via
+    // util.inspect, which leaks the TMDB Bearer token to stdout.
+    if (err instanceof Error) {
+      console.error("Fatal:", err.message);
+      if (err.stack) console.error(err.stack);
+    } else {
+      console.error("Fatal:", String(err));
+    }
     process.exit(1);
   });
 }
