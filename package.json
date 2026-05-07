@@ -12,6 +12,7 @@
     "dev:server": "cd src/server && yarn dev",
     "dev:client": "cd src/client && yarn dev",
     "seed:graph": "cd src/server && yarn seed:graph",
+    "seed:retry": "cd src/server && yarn seed:retry",
     "install:all": "yarn install && cd src/server && yarn install && cd ../client && yarn install",
     "clean": "rimraf src/server/dist && cd src/client && rimraf build",
     "kill-dev": "pkill -9 -f 'ts-node-dev' || true && pkill -9 -f 'vite' || true && echo 'Dev servers killed'"
