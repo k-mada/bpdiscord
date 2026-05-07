@@ -16,7 +16,7 @@ const BILLING_CUTOFF = 15;
 const SPINNER_FRAMES = ["|", "/", "-", "\\"];
 // Resolved relative to this file's source location so the failures file lands
 // at repo root regardless of the cwd `yarn seed:graph` runs from.
-const FAILURES_PATH = path.resolve(__dirname, "..", "..", "..", "seed-failures.json");
+export const FAILURES_PATH = path.resolve(__dirname, "..", "..", "..", "seed-failures.json");
 
 const DEFAULT_LIMIT = 5000;
 const DEFAULT_CONCURRENCY = 10;
@@ -30,7 +30,7 @@ type Args = {
   dryRun: boolean;
 };
 
-function parsePosInt(raw: string | undefined, name: string): number {
+export function parsePosInt(raw: string | undefined, name: string): number {
   const n = Number.parseInt(raw ?? "", 10);
   if (!Number.isInteger(n) || n <= 0) {
     console.error(`--${name} must be a positive integer (got: ${raw})`);
@@ -81,7 +81,7 @@ type PopularResult = {
 // with status 429 or 5xx; honors `Retry-After` when present, otherwise capped
 // exponential backoff. Non-retryable errors (4xx other than 429, non-Axios
 // errors) propagate immediately.
-async function withTmdbRetry<T>(
+export async function withTmdbRetry<T>(
   fn: () => Promise<T>,
   attempts = TMDB_RETRY_ATTEMPTS,
 ): Promise<T> {
@@ -150,15 +150,24 @@ async function fetchPopularActorIds(
   return [...collected.entries()].map(([tmdbId, name]) => ({ tmdbId, name }));
 }
 
-class LiveRenderer {
+export type LiveRendererOptions = {
+  successLabel?: string;
+  remainingLabel?: string;
+  failureLabel?: string;
+  doneLabel?: string;
+};
+
+export class LiveRenderer {
   private linesDrawn = 0;
   private spinIdx = 0;
-  private currentActor: { name: string; id: number } | null = null;
+  private currentLabel: string | null = null;
   private successCount = 0;
   private failureCount = 0;
   private remaining = 0;
   private interval: NodeJS.Timeout | null = null;
   private done = false;
+
+  constructor(private readonly options: LiveRendererOptions = {}) {}
 
   start(initialRemaining: number): void {
     this.remaining = initialRemaining;
@@ -166,8 +175,8 @@ class LiveRenderer {
     this.interval = setInterval(() => this.draw(), 100);
   }
 
-  setCurrent(name: string, id: number): void {
-    this.currentActor = { name, id };
+  setCurrentLabel(label: string): void {
+    this.currentLabel = label;
   }
 
   recordSuccess(): void {
@@ -195,21 +204,22 @@ class LiveRenderer {
       ? "[done]"
       : SPINNER_FRAMES[this.spinIdx++ % SPINNER_FRAMES.length];
     const label = this.done
-      ? "Done"
-      : `Fetching ${
-          this.currentActor
-            ? `${this.currentActor.name} (${this.currentActor.id})`
-            : "..."
-        }`;
+      ? this.options.doneLabel ?? "Done"
+      : this.currentLabel ?? "...";
+
+    const successLabel =
+      this.options.successLabel ?? "Actors successfully seeded";
+    const remainingLabel = this.options.remainingLabel ?? "Actors remaining";
+    const failureLabel = this.options.failureLabel ?? "Failed seedings";
 
     const lines = [
       "-------------------------------------------------",
       `-- ${label} ${spin}`,
       "-------------------------------------------------",
       "",
-      `Actors successfully seeded: ${this.successCount}`,
-      `Actors remaining: ${this.remaining}`,
-      `Failed seedings: ${this.failureCount}`,
+      `${successLabel}: ${this.successCount}`,
+      `${remainingLabel}: ${this.remaining}`,
+      `${failureLabel}: ${this.failureCount}`,
     ];
 
     if (this.linesDrawn > 0) {
@@ -220,7 +230,7 @@ class LiveRenderer {
   }
 }
 
-async function runWithConcurrency<T>(
+export async function runWithConcurrency<T>(
   items: T[],
   concurrency: number,
   worker: (item: T) => Promise<void>,
@@ -239,25 +249,31 @@ async function runWithConcurrency<T>(
   await Promise.all(tasks);
 }
 
-type FailureRecord = {
+// `attempts` tracks how many times this entry has failed across all runs.
+// The retry script drops entries that exceed a cap, which prevents an agent
+// loop ("run seed:retry until file is gone") from spinning forever on a
+// genuinely unrecoverable failure (e.g., TMDB returning 404 for a deleted id).
+export type FailureRecord = {
   tmdbId: number;
   name: string;
   error: string;
+  attempts: number;
 };
 
-type FilmFailureRecord = {
+export type FilmFailureRecord = {
   filmId: number;
   fromActorId: number;
   error: string;
+  attempts: number;
 };
 
-async function seedOneActor(
-  actor: { tmdbId: number; name: string },
+export async function seedOneActor(
+  actor: { tmdbId: number; name: string; priorAttempts: number },
   renderer: LiveRenderer,
   actorFailures: FailureRecord[],
   filmFailures: FilmFailureRecord[],
 ): Promise<void> {
-  renderer.setCurrent(actor.name, actor.tmdbId);
+  renderer.setCurrentLabel(`Fetching ${actor.name} (${actor.tmdbId})`);
   try {
     const actorRow = await withTmdbRetry(() => ensureActor(actor.tmdbId));
     if (!actorRow) {
@@ -288,11 +304,14 @@ async function seedOneActor(
       } catch (err) {
         // Per-film failures are non-fatal; the actor is still recorded as a
         // success but the failure is tracked so we can surface it in the
-        // summary and seed-failures.json.
+        // summary and seed-failures.json. attempts=1 because this is the
+        // first time this film failed (the actor previously failed before
+        // ever reaching the films loop).
         filmFailures.push({
           filmId: film.tmdbId,
           fromActorId: actor.tmdbId,
           error: err instanceof Error ? err.message : String(err),
+          attempts: 1,
         });
       }
     }
@@ -303,6 +322,7 @@ async function seedOneActor(
       tmdbId: actor.tmdbId,
       name: actor.name,
       error: err instanceof Error ? err.message : String(err),
+      attempts: actor.priorAttempts + 1,
     });
     renderer.recordFailure();
   }
@@ -336,7 +356,7 @@ async function preflight(
   console.log(`  Est. runtime:          ~${minLow}-${minHigh} min`);
 }
 
-async function confirm(message: string): Promise<boolean> {
+export async function confirm(message: string): Promise<boolean> {
   if (!process.stdin.isTTY) {
     console.error(
       "\nNon-interactive shell — confirmation prompt requires a TTY. Aborting.",
@@ -354,20 +374,29 @@ async function confirm(message: string): Promise<boolean> {
   return /^y(es)?$/i.test(answer.trim());
 }
 
-function writeFailures(
+// Single source of truth for persisting failure state. Deletes the file when
+// both lists are empty so an "agent loop until gone" pattern terminates.
+// Logs its own action (write or delete) so callers don't need to.
+export function writeOrDeleteFailures(
   actorFailures: FailureRecord[],
   filmFailures: FilmFailureRecord[],
-  totalAttempted: number,
 ): void {
+  if (actorFailures.length === 0 && filmFailures.length === 0) {
+    if (fs.existsSync(FAILURES_PATH)) {
+      fs.unlinkSync(FAILURES_PATH);
+      console.log(`No failures — removed ${FAILURES_PATH}`);
+    }
+    return;
+  }
   const payload = {
     completedAt: new Date().toISOString(),
-    totalAttempted,
     actorFailureCount: actorFailures.length,
     filmFailureCount: filmFailures.length,
     actorFailures,
     filmFailures,
   };
   fs.writeFileSync(FAILURES_PATH, JSON.stringify(payload, null, 2));
+  console.log(`Failures written to ${FAILURES_PATH}`);
 }
 
 async function main(): Promise<void> {
@@ -408,9 +437,11 @@ async function main(): Promise<void> {
     if (interrupted) return;
     interrupted = true;
     renderer.stop();
+    // On early interrupt (no failures yet), don't touch an existing file
+    // from a previous run — the user may want it preserved. Only flush if
+    // we've actually accumulated something.
     if (actorFailures.length > 0 || filmFailures.length > 0) {
-      writeFailures(actorFailures, filmFailures, actors.length);
-      console.log(`Failures written to ${FAILURES_PATH}`);
+      writeOrDeleteFailures(actorFailures, filmFailures);
     }
     process.exit(130);
   };
@@ -422,7 +453,12 @@ async function main(): Promise<void> {
 
   await runWithConcurrency(actors, args.concurrency, async (actor) => {
     if (interrupted) return;
-    await seedOneActor(actor, renderer, actorFailures, filmFailures);
+    await seedOneActor(
+      { ...actor, priorAttempts: 0 },
+      renderer,
+      actorFailures,
+      filmFailures,
+    );
   });
 
   if (interrupted) return;
@@ -440,15 +476,14 @@ async function main(): Promise<void> {
   );
   console.log(`  Film hydration failures: ${filmFailures.length}`);
 
-  if (actorFailures.length > 0 || filmFailures.length > 0) {
-    writeFailures(actorFailures, filmFailures, actors.length);
-    console.log(`  Failures written to ${FAILURES_PATH}`);
-  }
+  writeOrDeleteFailures(actorFailures, filmFailures);
 
   process.exit(0);
 }
 
-main().catch((err) => {
-  console.error("Fatal:", err);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((err) => {
+    console.error("Fatal:", err);
+    process.exit(1);
+  });
+}

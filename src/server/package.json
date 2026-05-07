@@ -12,7 +12,8 @@
     "test": "vitest run --coverage",
     "test:lite": "vitest run",
     "test:watch": "vitest",
-    "seed:graph": "ts-node-dev --transpile-only --exit-child --no-notify scripts/seedActorGraph.ts"
+    "seed:graph": "ts-node-dev --transpile-only --exit-child --no-notify scripts/seedActorGraph.ts",
+    "seed:retry": "ts-node-dev --transpile-only --exit-child --no-notify scripts/retrySeedFailures.ts"
   },
   "dependencies": {
     "@sparticuz/chromium": "^138.0.2",
