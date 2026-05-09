@@ -1,9 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { apiService } from "../services/api";
-import {
-  ActorPath,
-  ActorPathStep,
-} from "../hooks/useActorGraph";
+import { ActorPath, ActorPathStep } from "../hooks/useActorGraph";
 import Spinner from "./Spinner";
 
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w185";
@@ -89,7 +86,7 @@ const ActorComboBox = ({
       try {
         const response = await apiService.searchGraph(
           trimmed,
-          controller.signal
+          controller.signal,
         );
         if (controller.signal.aborted) return;
         const data = response.data as SearchResponseData | undefined;
@@ -188,7 +185,9 @@ const ActorComboBox = ({
           )}
           {!loading && !error && filteredResults.length === 0 && (
             <div className="px-4 py-3 text-sm text-letterboxd-text-secondary">
-              {query.trim().length < 2 ? "Type at least 2 characters" : "No matches"}
+              {query.trim().length < 2
+                ? "Type at least 2 characters"
+                : "No matches"}
             </div>
           )}
           {!loading &&
@@ -227,6 +226,7 @@ interface PathNodeCardProps {
 const PathNodeCard = ({ step }: PathNodeCardProps) => {
   const isActor = step.kind === "actor";
   const fallback = isActor ? PLACEHOLDER_ACTOR : PLACEHOLDER_MOVIE;
+  console.log(step);
   const imageUrl = isActor
     ? buildImageUrl(step.profilePath)
     : buildImageUrl(step.posterPath);
@@ -256,7 +256,7 @@ const PathNodeCard = ({ step }: PathNodeCardProps) => {
 };
 
 const PathArrow = () => (
-  <div className="flex items-center justify-center h-[165px] text-letterboxd-text-muted text-2xl shrink-0 px-1">
+  <div className="flex items-center justify-center h-[165px] text-letterboxd-text-muted text-4xl shrink-0 px-2">
     →
   </div>
 );
@@ -306,7 +306,11 @@ const ActorGraph = () => {
     setPathData(null);
 
     apiService
-      .pathFinder(String(actor1.tmdbId), String(actor2.tmdbId), controller.signal)
+      .pathFinder(
+        String(actor1.tmdbId),
+        String(actor2.tmdbId),
+        controller.signal,
+      )
       .then((response) => {
         if (controller.signal.aborted) return;
         const data = response.data as ActorPath | undefined;
@@ -361,8 +365,8 @@ const ActorGraph = () => {
           <h2 className="subheading">
             Path
             <span className="ml-2 text-sm font-normal text-letterboxd-text-secondary">
-              {pathData.degrees}{" "}
-              {pathData.degrees === 1 ? "degree" : "degrees"} of separation
+              {pathData.degrees} {pathData.degrees === 1 ? "degree" : "degrees"}{" "}
+              of separation
             </span>
           </h2>
           <PathDisplay path={pathData.path} />
