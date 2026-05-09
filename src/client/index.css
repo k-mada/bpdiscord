@@ -79,7 +79,7 @@
 
 @layer components {
   .main-content {
-    @apply max-w-5xl mx-auto py-8 px-4 overflow-x-auto h-screen;
+    @apply max-w-5xl mx-auto py-8 px-4;
   }
   .main-content:has(.oscars-page) {
     @apply overflow-visible;
@@ -135,6 +135,10 @@
     /* @apply relative w-10; */
     position: relative;
     width: 40px;
+
+    @media (max-width: 768px) {
+      width: 20px;
+    }
   }
 
   .rating-star {
