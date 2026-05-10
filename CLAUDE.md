@@ -583,6 +583,8 @@ JWT_SECRET=your_jwt_secret
 NODE_ENV=development
 ENABLE_SCRAPER=true  # Enable scraping in production (optional)
 TMDB_READ_API_TOKEN=your_tmdb_v4_read_token  # Required for /api/actor-graph ingestion
+WORKER_URL=https://moviemaestro.up.railway.app  # Required for /api/admin/refresh-rankings
+WORKER_SHARED_SECRET=shared_with_moviemaestro_service  # Required for /api/admin/refresh-rankings
 
 # Frontend (.env)
 # VITE_API_URL=/api  # Uses proxy in development, override for production
@@ -802,6 +804,8 @@ SUPABASE_SERVICE_ROLE_KEY=your_production_service_key
 NODE_ENV=production
 ENABLE_SCRAPER=true  # Optional: Enable scraping in production
 TMDB_READ_API_TOKEN=your_tmdb_v4_read_token  # Required for /api/actor-graph
+WORKER_URL=https://moviemaestro.up.railway.app  # Required for /api/admin/refresh-rankings
+WORKER_SHARED_SECRET=shared_with_moviemaestro_service  # Required for /api/admin/refresh-rankings
 ```
 
 ### Deployment Verification
