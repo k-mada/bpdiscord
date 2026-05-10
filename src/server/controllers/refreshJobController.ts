@@ -117,20 +117,31 @@ export async function dbMarkJobFailed(jobId: string, message: string): Promise<v
 // Worker handoff
 // ===========================
 
-async function callWorkerStart(jobId: string): Promise<void> {
-  const workerUrl = process.env.WORKER_URL;
-  const sharedSecret = process.env.WORKER_SHARED_SECRET;
-  if (!workerUrl || !sharedSecret) {
-    throw new Error("WORKER_URL or WORKER_SHARED_SECRET not configured");
-  }
+interface WorkerConfig {
+  url: string;
+  sharedSecret: string;
+}
 
+/**
+ * Read worker config from env. Returns null if either var is missing so the
+ * caller can fail fast BEFORE inserting a row (avoids a wasted insert/rollback
+ * cycle on misconfigured deployments).
+ */
+function getWorkerConfig(): WorkerConfig | null {
+  const url = process.env.WORKER_URL;
+  const sharedSecret = process.env.WORKER_SHARED_SECRET;
+  if (!url || !sharedSecret) return null;
+  return { url, sharedSecret };
+}
+
+async function callWorkerStart(config: WorkerConfig, jobId: string): Promise<void> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), WORKER_FETCH_TIMEOUT_MS);
   try {
-    const res = await fetch(`${workerUrl}/start`, {
+    const res = await fetch(`${config.url}/start`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${sharedSecret}`,
+        Authorization: `Bearer ${config.sharedSecret}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ job_id: jobId }),
@@ -146,14 +157,37 @@ async function callWorkerStart(jobId: string): Promise<void> {
 }
 
 // ===========================
+// Per-handler helpers
+// ===========================
+
+/**
+ * Resolve the authenticated user id, or send a 401 and return null. Defense
+ * in depth — `authenticateToken` should have already populated req.user, but
+ * we don't want a misconfigured route to write rows under a missing identity.
+ */
+function getAuthedUserId(req: Request, res: Response): string | null {
+  const id = req.user?.id;
+  if (!id) {
+    res.status(401).json({ error: "Authentication required" });
+    return null;
+  }
+  return id;
+}
+
+// ===========================
 // HTTP handlers
 // ===========================
 
 export async function triggerRefresh(req: Request, res: Response): Promise<void> {
-  const startedBy = req.user?.id;
-  if (!startedBy) {
-    // authenticateToken should have already 401'd; defense in depth.
-    res.status(401).json({ error: "Authentication required" });
+  const startedBy = getAuthedUserId(req, res);
+  if (!startedBy) return;
+
+  // Fail fast on misconfigured deployment BEFORE inserting a row, so we don't
+  // cycle a row through running → failed every trigger when env is missing.
+  const workerConfig = getWorkerConfig();
+  if (!workerConfig) {
+    console.error("triggerRefresh: WORKER_URL or WORKER_SHARED_SECRET not configured");
+    res.status(500).json({ error: "Worker not configured" });
     return;
   }
 
@@ -177,7 +211,7 @@ export async function triggerRefresh(req: Request, res: Response): Promise<void>
   const jobId = insertResult.jobId;
 
   try {
-    await callWorkerStart(jobId);
+    await callWorkerStart(workerConfig, jobId);
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
     console.error(`triggerRefresh: worker handoff failed for ${jobId}: ${message}`);
@@ -198,11 +232,8 @@ export async function triggerRefresh(req: Request, res: Response): Promise<void>
 }
 
 export async function getRefreshJob(req: Request, res: Response): Promise<void> {
-  const startedBy = req.user?.id;
-  if (!startedBy) {
-    res.status(401).json({ error: "Authentication required" });
-    return;
-  }
+  const startedBy = getAuthedUserId(req, res);
+  if (!startedBy) return;
   const id = req.params.id;
   if (!id) {
     res.status(400).json({ error: "id is required" });
@@ -218,11 +249,8 @@ export async function getRefreshJob(req: Request, res: Response): Promise<void> 
 }
 
 export async function cancelRefreshJob(req: Request, res: Response): Promise<void> {
-  const startedBy = req.user?.id;
-  if (!startedBy) {
-    res.status(401).json({ error: "Authentication required" });
-    return;
-  }
+  const startedBy = getAuthedUserId(req, res);
+  if (!startedBy) return;
   const id = req.params.id;
   if (!id) {
     res.status(400).json({ error: "id is required" });
