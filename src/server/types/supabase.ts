@@ -7,11 +7,6 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "13.0.5"
-  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -39,6 +34,318 @@ export type Database = {
   }
   public: {
     Tables: {
+      ag_acted_in: {
+        Row: {
+          actor_tmdb_id: number
+          billing_order: number | null
+          character: string | null
+          movie_tmdb_id: number
+        }
+        Insert: {
+          actor_tmdb_id: number
+          billing_order?: number | null
+          character?: string | null
+          movie_tmdb_id: number
+        }
+        Update: {
+          actor_tmdb_id?: number
+          billing_order?: number | null
+          character?: string | null
+          movie_tmdb_id?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ag_acted_in_actor_tmdb_id_fkey"
+            columns: ["actor_tmdb_id"]
+            isOneToOne: false
+            referencedRelation: "ag_actors"
+            referencedColumns: ["tmdb_id"]
+          },
+          {
+            foreignKeyName: "ag_acted_in_movie_tmdb_id_fkey"
+            columns: ["movie_tmdb_id"]
+            isOneToOne: false
+            referencedRelation: "ag_films"
+            referencedColumns: ["tmdb_id"]
+          },
+        ]
+      }
+      ag_actors: {
+        Row: {
+          biography: string | null
+          birthday: string | null
+          fetched_at: string | null
+          fully_fetched: boolean | null
+          name: string
+          place_of_birth: string | null
+          popularity: number | null
+          profile_path: string | null
+          tmdb_id: number
+        }
+        Insert: {
+          biography?: string | null
+          birthday?: string | null
+          fetched_at?: string | null
+          fully_fetched?: boolean | null
+          name: string
+          place_of_birth?: string | null
+          popularity?: number | null
+          profile_path?: string | null
+          tmdb_id: number
+        }
+        Update: {
+          biography?: string | null
+          birthday?: string | null
+          fetched_at?: string | null
+          fully_fetched?: boolean | null
+          name?: string
+          place_of_birth?: string | null
+          popularity?: number | null
+          profile_path?: string | null
+          tmdb_id?: number
+        }
+        Relationships: []
+      }
+      ag_films: {
+        Row: {
+          cast_fully_fetched: boolean | null
+          fetched_at: string | null
+          genres: string[] | null
+          overview: string | null
+          popularity: number | null
+          poster_path: string | null
+          poster_url: string | null
+          release_date: string | null
+          release_year: number | null
+          title: string
+          tmdb_id: number
+          vote_average: number | null
+        }
+        Insert: {
+          cast_fully_fetched?: boolean | null
+          fetched_at?: string | null
+          genres?: string[] | null
+          overview?: string | null
+          popularity?: number | null
+          poster_path?: string | null
+          poster_url?: string | null
+          release_date?: string | null
+          release_year?: number | null
+          title: string
+          tmdb_id: number
+          vote_average?: number | null
+        }
+        Update: {
+          cast_fully_fetched?: boolean | null
+          fetched_at?: string | null
+          genres?: string[] | null
+          overview?: string | null
+          popularity?: number | null
+          poster_path?: string | null
+          poster_url?: string | null
+          release_date?: string | null
+          release_year?: number | null
+          title?: string
+          tmdb_id?: number
+          vote_average?: number | null
+        }
+        Relationships: []
+      }
+      AwardShows: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          id: string
+          name: string
+          slug: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          slug: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          slug?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      EventCategories: {
+        Row: {
+          created_at: string | null
+          display_mode: string
+          display_order: number
+          event_id: string
+          id: string
+          name: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_mode?: string
+          display_order: number
+          event_id: string
+          id?: string
+          name: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_mode?: string
+          display_order?: number
+          event_id?: string
+          id?: string
+          name?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "EventCategories_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "Events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      EventNominees: {
+        Row: {
+          category_id: string
+          created_at: string | null
+          id: string
+          is_winner: boolean
+          movie_or_show_name: string
+          person_name: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          category_id: string
+          created_at?: string | null
+          id?: string
+          is_winner?: boolean
+          movie_or_show_name: string
+          person_name?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          category_id?: string
+          created_at?: string | null
+          id?: string
+          is_winner?: boolean
+          movie_or_show_name?: string
+          person_name?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "EventNominees_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "EventCategories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      Events: {
+        Row: {
+          award_show_id: string
+          awards_date: string | null
+          created_at: string | null
+          edition_number: number | null
+          id: string
+          name: string
+          nominations_date: string | null
+          slug: string
+          status: string
+          updated_at: string | null
+          year: number
+        }
+        Insert: {
+          award_show_id: string
+          awards_date?: string | null
+          created_at?: string | null
+          edition_number?: number | null
+          id?: string
+          name: string
+          nominations_date?: string | null
+          slug: string
+          status?: string
+          updated_at?: string | null
+          year: number
+        }
+        Update: {
+          award_show_id?: string
+          awards_date?: string | null
+          created_at?: string | null
+          edition_number?: number | null
+          id?: string
+          name?: string
+          nominations_date?: string | null
+          slug?: string
+          status?: string
+          updated_at?: string | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "Events_award_show_id_fkey"
+            columns: ["award_show_id"]
+            isOneToOne: false
+            referencedRelation: "AwardShows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      EventUserPicks: {
+        Row: {
+          category_id: string
+          created_at: string | null
+          id: string
+          nominee_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          category_id: string
+          created_at?: string | null
+          id?: string
+          nominee_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string | null
+          id?: string
+          nominee_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "EventUserPicks_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "EventCategories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "EventUserPicks_nominee_id_fkey"
+            columns: ["nominee_id"]
+            isOneToOne: false
+            referencedRelation: "EventNominees"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       FilmRatings: {
         Row: {
           created_at: string
@@ -209,6 +516,45 @@ export type Database = {
         }
         Relationships: []
       }
+      refresh_jobs: {
+        Row: {
+          errors: Json
+          finished_at: string | null
+          id: string
+          log_tail: string
+          phase: string | null
+          progress: Json
+          started_at: string
+          started_by: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          errors?: Json
+          finished_at?: string | null
+          id?: string
+          log_tail?: string
+          phase?: string | null
+          progress?: Json
+          started_at?: string
+          started_by: string
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          errors?: Json
+          finished_at?: string | null
+          id?: string
+          log_tail?: string
+          phase?: string | null
+          progress?: Json
+          started_at?: string
+          started_by?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       UserFilms: {
         Row: {
           created_at: string
@@ -349,6 +695,19 @@ export type Database = {
           films_rated: number
           lbusername: string
           normalized: number
+        }[]
+      }
+      get_mfl_movie_scores: {
+        Args: { p_film_slug: string }
+        Returns: {
+          category: string
+          film_slug: string
+          metric: string
+          metric_id: number
+          metric_name: string
+          points_awarded: number
+          scoring_condition: string
+          scoring_id: number
         }[]
       }
       get_mfl_movies: {

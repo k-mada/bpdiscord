@@ -12,8 +12,11 @@ import {
   primaryKey,
   uuid,
   unique,
+  uniqueIndex,
   index,
+  jsonb,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { relations } from 'drizzle-orm';
 
 // ===========================
@@ -359,6 +362,34 @@ export const agActedInRelations = relations(agActedIn, ({ one }) => ({
 }));
 
 // ===========================
+// refresh_jobs Table (Hater Rankings refresh pipeline state)
+// ===========================
+// One row per pipeline run orchestrated by the moviemaestro worker. The
+// partial unique index on (status) WHERE status='running' enforces single-
+// flight at the DB level — parallel INSERTs fail with a unique violation
+// that the admin endpoint catches and surfaces as 409.
+export const refreshJobs = pgTable(
+  'refresh_jobs',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    status: text('status').notNull(),
+    startedAt: timestamp('started_at', { withTimezone: true }).defaultNow().notNull(),
+    finishedAt: timestamp('finished_at', { withTimezone: true }),
+    startedBy: uuid('started_by').notNull(),
+    phase: text('phase'),
+    progress: jsonb('progress').notNull().default({}),
+    errors: jsonb('errors').notNull().default([]),
+    logTail: text('log_tail').notNull().default(''),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('refresh_jobs_one_running')
+      .on(table.status)
+      .where(sql`${table.status} = 'running'`),
+  ]
+);
+
+// ===========================
 // Type Exports
 // ===========================
 export type User = typeof users.$inferSelect;
@@ -411,3 +442,6 @@ export type NewAgFilm = typeof agFilms.$inferInsert;
 
 export type AgActedIn = typeof agActedIn.$inferSelect;
 export type NewAgActedIn = typeof agActedIn.$inferInsert;
+
+export type RefreshJob = typeof refreshJobs.$inferSelect;
+export type NewRefreshJob = typeof refreshJobs.$inferInsert;

@@ -121,3 +121,8 @@ supabase/.temp/
 
 # Seed script failure log
 seed-failures.json
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+*.db
+.beads-credential-key
