@@ -31,11 +31,11 @@ jobs:
   migrate:
     needs: plan
     runs-on: ubuntu-latest
-    # `production` must be configured in repo Settings → Environments with
+    # `Production` must be configured in repo Settings → Environments with
     # required reviewers. Without that, this is a no-op gate. With it, the
     # job pauses for manual approval before applying — protects against a
     # bad migration auto-firing on push to main.
-    environment: production
+    environment: Production
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
