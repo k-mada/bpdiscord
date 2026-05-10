@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "bpdiscord",
+  "project_id": "0ce2f30c-2629-46b8-a8f5-de4c619996e4"
+}
