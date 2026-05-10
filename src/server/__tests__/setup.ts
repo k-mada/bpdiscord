@@ -18,6 +18,7 @@ import {
   eventCategories,
   events,
   awardShows,
+  refreshJobs,
 } from '../db/schema';
 import {
   testUsers,
@@ -32,6 +33,7 @@ import {
  */
 export async function cleanDatabase(): Promise<void> {
   // Delete in reverse order of dependencies
+  await db.delete(refreshJobs).where(sql`1=1`);
   await db.delete(eventUserPicks).where(sql`1=1`);
   await db.delete(eventNominees).where(sql`1=1`);
   await db.delete(eventCategories).where(sql`1=1`);
