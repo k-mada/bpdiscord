@@ -17,6 +17,7 @@ import EventAdminPage from "./components/events/EventAdminPage";
 import MyPicksPage from "./components/events/MyPicksPage";
 import MainLayout from "./components/MainLayout";
 import ActorGraph from "./components/ActorGraph";
+import AdminRefresh from "./components/AdminRefresh";
 
 function App() {
   return (
@@ -66,6 +67,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard/refresh-films"
+            element={
+              <ProtectedRoute>
+                <AdminRefresh />
               </ProtectedRoute>
             }
           />

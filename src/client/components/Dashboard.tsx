@@ -22,6 +22,8 @@ const Dashboard = () => {
     return "User";
   };
 
+  const isAdmin = user?.user_metadata?.role === "admin";
+
   return (
     <div className="space-y-8">
       <div className="text-center">
@@ -83,6 +85,23 @@ const Dashboard = () => {
             Compare
           </button>
         </div>
+
+        {isAdmin && (
+          <div className="card hover:bg-letterboxd-bg-tertiary transition-colors">
+            <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-2">
+              Refresh user film data
+            </h3>
+            <p className="text-letterboxd-text-secondary mb-4">
+              Re-scrape every user's films and refresh Letterboxd ratings
+            </p>
+            <button
+              onClick={() => navigate("/dashboard/refresh-films")}
+              className="btn-primary w-full"
+            >
+              Open
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

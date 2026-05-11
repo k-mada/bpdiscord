@@ -411,6 +411,59 @@ export interface OscarsCategory {
 export type OscarsViewMode = "will_win" | "should_win";
 
 // ===========================
+// Refresh Job (admin: /api/admin/refresh-rankings)
+// ===========================
+
+export type RefreshJobStatus =
+  | "pending"
+  | "running"
+  | "completed"
+  | "failed"
+  | "cancelled";
+
+export type RefreshJobPhase =
+  | "user_scrape"
+  | "missing_films"
+  | "film_ratings";
+
+export interface RefreshJobProgress {
+  user_scrape?: {
+    processed: number;
+    total: number;
+    current?: string | null;
+    films_added?: number;
+  };
+  missing_films?: {
+    count: number;
+  };
+  film_ratings?: {
+    processed: number;
+    total: number;
+    current?: string | null;
+  };
+}
+
+export interface RefreshJobErrorEntry {
+  phase: string;
+  item: string | null;
+  error: string;
+  at: string;
+}
+
+export interface RefreshJob {
+  id: string;
+  status: RefreshJobStatus;
+  started_at: string;
+  finished_at: string | null;
+  started_by: string;
+  phase: RefreshJobPhase | null;
+  progress: RefreshJobProgress;
+  errors: RefreshJobErrorEntry[];
+  log_tail: string;
+  updated_at: string;
+}
+
+// ===========================
 // Constants & Enums
 // ===========================
 

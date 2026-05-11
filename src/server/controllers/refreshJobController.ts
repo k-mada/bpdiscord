@@ -203,7 +203,7 @@ export async function triggerRefresh(req: Request, res: Response): Promise<void>
   if (!insertResult.ok) {
     res.status(409).json({
       error: "Another refresh job is already running",
-      existing_job_id: insertResult.conflictWithJobId,
+      data: { existing_job_id: insertResult.conflictWithJobId },
     });
     return;
   }
@@ -228,7 +228,7 @@ export async function triggerRefresh(req: Request, res: Response): Promise<void>
     return;
   }
 
-  res.status(202).json({ job_id: jobId });
+  res.status(202).json({ data: { job_id: jobId } });
 }
 
 export async function getRefreshJob(req: Request, res: Response): Promise<void> {
@@ -245,7 +245,7 @@ export async function getRefreshJob(req: Request, res: Response): Promise<void> 
     res.status(404).json({ error: "Job not found" });
     return;
   }
-  res.json(job);
+  res.json({ data: job });
 }
 
 export async function cancelRefreshJob(req: Request, res: Response): Promise<void> {
@@ -259,7 +259,7 @@ export async function cancelRefreshJob(req: Request, res: Response): Promise<voi
 
   const outcome = await dbCancelJob(id, startedBy);
   if (outcome === "cancelled") {
-    res.json({ id, status: "cancelled" });
+    res.json({ data: { id, status: "cancelled" } });
     return;
   }
   if (outcome === "not_running") {
