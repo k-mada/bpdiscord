@@ -349,3 +349,87 @@ describe("useRefreshJob — auth", () => {
     expect(apiService.triggerRefresh).not.toHaveBeenCalled();
   });
 });
+
+// ---------------------------------------------------------------------------
+// regression tests for code-review fixes
+// ---------------------------------------------------------------------------
+
+describe("useRefreshJob — recovery", () => {
+  it("clears a stale 'Lost connection' banner once polling recovers", async () => {
+    vi.mocked(apiService.triggerRefresh).mockResolvedValue({
+      data: { job_id: JOB_ID },
+    });
+    // Five consecutive failures, then a successful poll.
+    vi.mocked(apiService.getRefreshJob)
+      .mockRejectedValueOnce(new Error("network"))
+      .mockRejectedValueOnce(new Error("network"))
+      .mockRejectedValueOnce(new Error("network"))
+      .mockRejectedValueOnce(new Error("network"))
+      .mockRejectedValueOnce(new Error("network"))
+      .mockResolvedValue({ data: jobWith("running") });
+
+    vi.useFakeTimers();
+    const { result } = renderHook(() => useRefreshJob());
+
+    await act(async () => {
+      await result.current.trigger();
+    });
+    // Drive 5 failed polls.
+    for (let i = 0; i < 5; i++) {
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2000);
+      });
+    }
+    expect(result.current.error).toMatch(/Lost connection/);
+
+    // Recovery on the 6th tick.
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(2000);
+    });
+    expect(result.current.error).toBeNull();
+  });
+});
+
+describe("useRefreshJob — mount-trigger race", () => {
+  it("does not overwrite a fresh trigger() with a stale resume fetch", async () => {
+    // Simulate the race: localStorage has a saved id whose fetch is slow,
+    // user clicks Run before the fetch resolves.
+    const STALE_JOB_ID = "00000000-0000-0000-0000-000000000000";
+    localStorage.setItem(ACTIVE_JOB_KEY, STALE_JOB_ID);
+
+    let resolveStaleFetch: (value: { data: RefreshJob }) => void;
+    const staleFetchPromise = new Promise<{ data: RefreshJob }>((resolve) => {
+      resolveStaleFetch = resolve;
+    });
+    vi.mocked(apiService.getRefreshJob)
+      .mockReturnValueOnce(
+        staleFetchPromise as ReturnType<typeof apiService.getRefreshJob>,
+      )
+      // Subsequent polls of the new job
+      .mockResolvedValue({ data: jobWith("running", { id: JOB_ID }) });
+    vi.mocked(apiService.triggerRefresh).mockResolvedValue({
+      data: { job_id: JOB_ID },
+    });
+
+    const { result } = renderHook(() => useRefreshJob());
+
+    // User clicks Run while resume fetch is in flight.
+    await act(async () => {
+      await result.current.trigger();
+    });
+    expect(result.current.job?.id).toBe(JOB_ID);
+
+    // Now the stale fetch resolves with the OLD job id.
+    await act(async () => {
+      resolveStaleFetch!({
+        data: jobWith("running", { id: STALE_JOB_ID }),
+      });
+      // Let the microtasks settle.
+      await Promise.resolve();
+    });
+
+    // The new job MUST still be the visible one — resume should have been
+    // abandoned because intervalRef was already set by trigger().
+    expect(result.current.job?.id).toBe(JOB_ID);
+  });
+});

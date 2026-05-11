@@ -52,6 +52,8 @@ export const useRefreshJob = () => {
       const response = await apiService.getRefreshJob(jobId, token);
       const fetched = response.data ?? null;
       consecutiveFailuresRef.current = 0;
+      // Clear any stale "Lost connection" banner now that we've recovered.
+      setError((prev) => (prev?.startsWith("Lost connection") ? null : prev));
       return fetched;
     } catch (e) {
       consecutiveFailuresRef.current += 1;
@@ -86,16 +88,26 @@ export const useRefreshJob = () => {
   );
 
   // Mount: resume from localStorage if there's a saved job id.
+  // Cancels itself if the user triggers a fresh job before the in-flight
+  // resume fetch resolves (would otherwise stomp the new job and leak an
+  // interval).
   useEffect(() => {
     const savedId = localStorage.getItem(ACTIVE_JOB_KEY);
     if (!savedId) return;
+    let abandoned = false;
     void (async () => {
       const fetched = await fetchJobOnce(savedId);
+      // Skip if unmounted, OR if a trigger() already started polling — that
+      // means the user clicked Run while we were resolving the resume fetch.
+      if (abandoned || intervalRef.current !== null) return;
       if (fetched === null) return;
       setJob(fetched);
       if (!isTerminal(fetched.status)) startPolling(savedId);
       else localStorage.removeItem(ACTIVE_JOB_KEY);
     })();
+    return () => {
+      abandoned = true;
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
