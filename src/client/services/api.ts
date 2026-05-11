@@ -12,6 +12,7 @@ import {
   EventSummary,
   EventData,
   EventUserPick,
+  RefreshJob,
 } from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
@@ -496,6 +497,42 @@ class ApiService {
       method: "GET",
       ...(signal ? { signal } : {}),
     });
+  }
+
+  // ===========================
+  // Refresh-films admin endpoints (auth + admin role required)
+  // ===========================
+
+  async triggerRefresh(
+    token: string,
+  ): Promise<ApiResponse<{ job_id: string }>> {
+    return this.request<{ job_id: string }>("/admin/refresh-rankings", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  }
+
+  async getRefreshJob(
+    id: string,
+    token: string,
+  ): Promise<ApiResponse<RefreshJob>> {
+    return this.request<RefreshJob>(`/admin/refresh-rankings/${id}`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  }
+
+  async cancelRefreshJob(
+    id: string,
+    token: string,
+  ): Promise<ApiResponse<{ id: string; status: "cancelled" }>> {
+    return this.request<{ id: string; status: "cancelled" }>(
+      `/admin/refresh-rankings/${id}/cancel`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
   }
 }
 
