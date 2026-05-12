@@ -136,14 +136,14 @@ export const useRefreshJob = () => {
       setJob({
         id: jobId,
         status: "running",
-        started_at: now,
-        finished_at: null,
-        started_by: "",
+        startedAt: now,
+        finishedAt: null,
+        startedBy: "",
         phase: null,
         progress: {},
         errors: [],
-        log_tail: "",
-        updated_at: now,
+        logTail: "",
+        updatedAt: now,
       });
       startPolling(jobId);
     } catch (e) {

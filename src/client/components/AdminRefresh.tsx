@@ -239,11 +239,11 @@ const AdminRefresh = () => {
               <dt className="text-letterboxd-text-secondary">Job id</dt>
               <dd className="font-mono text-xs">{job.id}</dd>
               <dt className="text-letterboxd-text-secondary">Started</dt>
-              <dd>{new Date(job.started_at).toLocaleString()}</dd>
+              <dd>{new Date(job.startedAt).toLocaleString()}</dd>
               <dt className="text-letterboxd-text-secondary">Finished</dt>
               <dd>
-                {job.finished_at
-                  ? new Date(job.finished_at).toLocaleString()
+                {job.finishedAt
+                  ? new Date(job.finishedAt).toLocaleString()
                   : "—"}
               </dd>
             </dl>
@@ -257,13 +257,13 @@ const AdminRefresh = () => {
 
           <ErrorsPanel errors={job.errors} />
 
-          {job.log_tail && (
+          {job.logTail && (
             <div className="card">
               <h2 className="text-lg font-semibold text-letterboxd-text-primary mb-2">
                 Log
               </h2>
               <pre className="text-xs font-mono whitespace-pre-wrap max-h-64 overflow-y-auto bg-letterboxd-bg-primary p-3 rounded">
-                {job.log_tail}
+                {job.logTail}
               </pre>
             </div>
           )}
