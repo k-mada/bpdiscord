@@ -450,17 +450,21 @@ export interface RefreshJobErrorEntry {
   at: string;
 }
 
+// Note on casing: top-level fields are camelCase because Drizzle (server-side
+// ORM) returns rows with JS-property names from src/server/db/schema.ts. Only
+// the underlying DB columns + jsonb contents are snake_case (those are written
+// by moviemaestro's Python supabase-py client, which uses raw column names).
 export interface RefreshJob {
   id: string;
   status: RefreshJobStatus;
-  started_at: string;
-  finished_at: string | null;
-  started_by: string;
+  startedAt: string;
+  finishedAt: string | null;
+  startedBy: string;
   phase: RefreshJobPhase | null;
   progress: RefreshJobProgress;
   errors: RefreshJobErrorEntry[];
-  log_tail: string;
-  updated_at: string;
+  logTail: string;
+  updatedAt: string;
 }
 
 // ===========================

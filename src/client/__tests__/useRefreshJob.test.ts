@@ -46,21 +46,21 @@ const installFakeLocalStorage = () => {
 const baseJob: RefreshJob = {
   id: JOB_ID,
   status: "running",
-  started_at: "2026-05-10T00:00:00Z",
-  finished_at: null,
-  started_by: "alice",
+  startedAt: "2026-05-10T00:00:00Z",
+  finishedAt: null,
+  startedBy: "alice",
   phase: "user_scrape",
   progress: { user_scrape: { processed: 1, total: 5 } },
   errors: [],
-  log_tail: "",
-  updated_at: "2026-05-10T00:00:01Z",
+  logTail: "",
+  updatedAt: "2026-05-10T00:00:01Z",
 };
 
 function jobWith(status: RefreshJobStatus, overrides: Partial<RefreshJob> = {}): RefreshJob {
   return {
     ...baseJob,
     status,
-    finished_at: status === "running" ? null : "2026-05-10T00:01:00Z",
+    finishedAt: status === "running" ? null : "2026-05-10T00:01:00Z",
     phase: status === "running" ? "user_scrape" : null,
     ...overrides,
   };
