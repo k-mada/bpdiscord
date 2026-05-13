@@ -390,6 +390,34 @@ export const refreshJobs = pgTable(
 );
 
 // ===========================
+// user_scrape_jobs Table (per-user /fetcher refresh pipeline state)
+// ===========================
+// Same lifecycle and progress shape as refresh_jobs, but scoped to one
+// Letterboxd user. The partial unique index is per-username so two users
+// can scrape in parallel; the same user can't double-trigger.
+export const userScrapeJobs = pgTable(
+  'user_scrape_jobs',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    lbusername: varchar('lbusername').notNull(),
+    status: text('status').notNull(),
+    startedAt: timestamp('started_at', { withTimezone: true }).defaultNow().notNull(),
+    finishedAt: timestamp('finished_at', { withTimezone: true }),
+    startedBy: uuid('started_by').notNull(),
+    phase: text('phase'),
+    progress: jsonb('progress').notNull().default({}),
+    errors: jsonb('errors').notNull().default([]),
+    logTail: text('log_tail').notNull().default(''),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    uniqueIndex('user_scrape_jobs_one_running_per_user')
+      .on(table.lbusername)
+      .where(sql`${table.status} = 'running'`),
+  ]
+);
+
+// ===========================
 // Type Exports
 // ===========================
 export type User = typeof users.$inferSelect;
@@ -445,3 +473,6 @@ export type NewAgActedIn = typeof agActedIn.$inferInsert;
 
 export type RefreshJob = typeof refreshJobs.$inferSelect;
 export type NewRefreshJob = typeof refreshJobs.$inferInsert;
+
+export type UserScrapeJob = typeof userScrapeJobs.$inferSelect;
+export type NewUserScrapeJob = typeof userScrapeJobs.$inferInsert;
