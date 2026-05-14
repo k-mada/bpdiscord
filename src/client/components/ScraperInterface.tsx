@@ -1,7 +1,10 @@
 import { useState } from "react";
+
 import apiService from "../services/api";
 import { ALL_RATINGS } from "../constants";
 import { useComparison } from "../hooks/useComparison";
+import { useScrapeJob } from "../hooks/useScrapeJob";
+import JobProgress from "./JobProgress";
 
 interface Rating {
   rating: number;
@@ -13,240 +16,77 @@ interface UserData {
   ratings: Rating[];
 }
 
+const renderStars = (rating: number): string => {
+  const fullStars = Math.floor(rating);
+  const hasHalfStar = rating % 1 !== 0;
+  const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+  return (
+    "★".repeat(fullStars) + (hasHalfStar ? "½" : "") + "☆".repeat(emptyStars)
+  );
+};
+
 const ScraperInterface = () => {
-  const {
-    usernames: availableUsers,
-    loading: loadingUsers,
-  } = useComparison();
+  const { usernames: availableUsers, loading: loadingUsers } = useComparison();
 
   const [username, setUsername] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [fetchStatus, setFetchStatus] = useState<string>("");
   const [userRatings, setUserRatings] = useState<UserData | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [checkLoading, setCheckLoading] = useState(false);
+  const [checkError, setCheckError] = useState<string | null>(null);
 
-  // SSE streaming states
-  const [streaming, setStreaming] = useState(false);
-  const [streamProgress, setStreamProgress] = useState<any[]>([]);
-  const [currentPage, setCurrentPage] = useState<number>(0);
-  const [totalPages, setTotalPages] = useState<number>(0);
-  const [totalFilmsCollected, setTotalFilmsCollected] = useState<number>(0);
+  // Per-user scrape job lifecycle — owns trigger/poll/cancel, localStorage
+  // resume, and terminal-state detection. The job_id is persisted across
+  // refreshes so a long scrape can be monitored from another tab.
+  const {
+    job,
+    error: jobError,
+    isTriggering,
+    isCancelling,
+    trigger,
+    cancel,
+  } = useScrapeJob();
 
-  const renderStars = (rating: number): string => {
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 !== 0;
-    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-
-    return (
-      "★".repeat(fullStars) + (hasHalfStar ? "½" : "") + "☆".repeat(emptyStars)
-    );
-  };
+  const isRunning = job?.status === "running";
+  const buttonsDisabled = checkLoading || isTriggering || isRunning;
 
   const handleCheckExistingData = async () => {
     if (!username.trim()) {
-      setError("Please enter a username");
+      setCheckError("Please select a username");
       return;
     }
-
-    setLoading(true);
-    setError(null);
+    setCheckLoading(true);
+    setCheckError(null);
     setUserRatings(null);
 
     try {
-      setFetchStatus("Checking database for existing data...");
       const response = await apiService.getFilmUserComplete(username, false);
-
       if (response.data) {
         setUserRatings({
-          username: username,
+          username,
           ratings: response.data.ratings,
         });
       }
     } catch (err) {
       if (err instanceof Error && err.message.includes("404")) {
-        setError(
-          "No data found in database. Use 'Force Scrape' to collect data.",
+        setCheckError(
+          "No data found in database. Use 'Update films' to scrape fresh data.",
         );
       } else {
-        setError(
+        setCheckError(
           err instanceof Error ? err.message : "Failed to check existing data",
         );
       }
     } finally {
-      setFetchStatus("");
-      setLoading(false);
+      setCheckLoading(false);
     }
   };
 
-  const handleStreamScraping = async () => {
+  const handleUpdateFilms = () => {
     if (!username.trim()) {
-      setError("Please enter a username");
+      setCheckError("Please select a username");
       return;
     }
-
-    setStreaming(true);
-    setError(null);
-    setUserRatings(null);
-    setStreamProgress([]);
-    setCurrentPage(0);
-    setTotalPages(0);
-    setTotalFilmsCollected(0);
-
-    try {
-      const eventSource = new EventSource(
-        `/api/scraper/stream-films/${encodeURIComponent(username)}`,
-        {
-          withCredentials: false,
-        },
-      );
-
-      eventSource.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          console.log(data);
-          // Add to progress log (excluding heartbeat events)
-          if (data.type !== "heartbeat") {
-            setStreamProgress((prev) => [...prev, data]);
-          }
-
-          switch (data.type) {
-            case "start":
-            case "init":
-              setFetchStatus(data.message);
-              break;
-
-            case "browser_launch":
-              setFetchStatus(data.message);
-              break;
-
-            case "fetching_first_page":
-              setFetchStatus(data.message);
-              break;
-
-            case "pages_found":
-              setTotalPages(data.totalPages);
-              setFetchStatus(`Found ${data.totalPages} pages to fetch`);
-              break;
-
-            case "production_limit":
-              setFetchStatus(data.message);
-              break;
-
-            case "page_loading":
-            case "page_loaded":
-            case "page_retry":
-              setFetchStatus(data.message);
-              break;
-
-            case "page_start":
-              setCurrentPage(data.currentPage);
-              setFetchStatus(
-                `Fetching page ${data.currentPage} of ${data.totalPages}...`,
-              );
-              break;
-
-            case "page_scraped":
-              setFetchStatus(
-                `Fetched ${data.filmsFromPage} films from page ${data.page}`,
-              );
-              break;
-
-            case "page_complete":
-              setTotalFilmsCollected(data.filmsCollectedSoFar);
-              setFetchStatus(
-                `Page ${data.currentPage} complete - ${data.filmsCollectedSoFar} total films`,
-              );
-              break;
-
-            case "page_error":
-              setFetchStatus(data.message);
-              break;
-
-            case "scraping_complete":
-              setFetchStatus(
-                `Fetching complete! ${data.totalFilms} films collected`,
-              );
-              break;
-
-            case "saving":
-              setFetchStatus(data.message);
-              break;
-
-            case "scraping_ratings":
-              setFetchStatus(data.message);
-              break;
-
-            case "saving_ratings":
-              setFetchStatus(data.message);
-              break;
-
-            case "ratings_complete":
-              setFetchStatus(data.message);
-              break;
-
-            case "ratings_warning":
-              setFetchStatus(data.message);
-              break;
-
-            case "complete":
-              setFetchStatus(
-                `Operation completed! ${data.data.totalFilms} films and ratings updated`,
-              );
-              eventSource.close();
-              setStreaming(false);
-              break;
-
-            case "error":
-              // Handle specific error codes
-              if (data.code === "NAVIGATION_TIMEOUT") {
-                setError(
-                  `${data.message} This is usually temporary - please try again in a few minutes.`,
-                );
-              } else if (data.code === "PRODUCTION_TIMEOUT") {
-                setError(
-                  `${data.message} The operation was automatically stopped to prevent server overload.`,
-                );
-              } else {
-                setError(data.message);
-              }
-              setFetchStatus("");
-              eventSource.close();
-              setStreaming(false);
-              break;
-
-            case "heartbeat":
-              // Keep connection alive, don't update UI
-              break;
-
-            default:
-              console.log("Unknown SSE event type:", data.type, data);
-              break;
-          }
-        } catch (parseError) {
-          console.error("Error parsing SSE data:", parseError);
-        }
-      };
-
-      eventSource.onerror = (event) => {
-        console.error("SSE Error:", event);
-        setError("Connection error during streaming");
-        setFetchStatus("");
-        eventSource.close();
-        setStreaming(false);
-      };
-
-      // Cleanup function
-      return () => {
-        eventSource.close();
-        setStreaming(false);
-      };
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : "An error occurred";
-      setError(errorMessage);
-      setFetchStatus("");
-      setStreaming(false);
-    }
+    setCheckError(null);
+    void trigger(username);
   };
 
   return (
@@ -256,7 +96,8 @@ const ScraperInterface = () => {
           Letterboxd Data Fetcher
         </h2>
         <p className="text-letterboxd-text-secondary">
-          Check database for existing data or fetch latest data from Letterboxd
+          Check what's in the database, or trigger a fresh scrape of one user's
+          Letterboxd ratings and films.
         </p>
       </div>
 
@@ -280,7 +121,7 @@ const ScraperInterface = () => {
                 id="username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                disabled={loading || streaming}
+                disabled={buttonsDisabled}
                 className="input-field w-full"
               >
                 <option value="">
@@ -299,101 +140,46 @@ const ScraperInterface = () => {
 
           <div className="flex flex-col sm:flex-row gap-4">
             <button
+              type="button"
               onClick={handleCheckExistingData}
-              disabled={loading || streaming || !username.trim()}
+              disabled={buttonsDisabled || !username.trim()}
               className="btn-secondary flex-1"
             >
-              {loading ? "Checking..." : "Check current ratings data"}
+              {checkLoading ? "Checking..." : "Check current ratings data"}
             </button>
             <button
-              onClick={handleStreamScraping}
-              disabled={loading || streaming || !username.trim()}
+              type="button"
+              onClick={handleUpdateFilms}
+              disabled={buttonsDisabled || !username.trim()}
               className="btn-primary flex-1"
             >
-              {streaming ? "Getting films..." : "Update films"}
+              {isTriggering ? "Starting..." : "Update films"}
             </button>
+            {isRunning && (
+              <button
+                type="button"
+                onClick={() => void cancel()}
+                disabled={isCancelling}
+                className="btn-secondary"
+              >
+                {isCancelling ? "Cancelling..." : "Cancel"}
+              </button>
+            )}
           </div>
-          {error && (
-            <div className="card border-red-500/30 bg-red-900/10">
-              <h3 className="text-lg font-semibold text-red-400 mb-2">Error</h3>
-              <p className="text-red-300">{error}</p>
-            </div>
-          )}
-          {fetchStatus && (
-            <div className="mt-4 p-3 bg-letterboxd-bg-primary rounded-lg border border-letterboxd-border">
-              <p className="text-letterboxd-text-secondary text-sm">
-                {fetchStatus}
-              </p>
-            </div>
-          )}
-
-          {/* Progress Bar for Streaming */}
-          {streaming && totalPages > 0 && (
-            <div className="mt-4 p-4 bg-letterboxd-bg-secondary rounded-lg border border-letterboxd-border">
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm text-letterboxd-text-secondary">
-                  <span>Page Progress</span>
-                  <span>
-                    {currentPage} / {totalPages}
-                  </span>
-                </div>
-                <div className="w-full bg-letterboxd-bg-primary rounded-full h-2">
-                  <div
-                    className="bg-letterboxd-accent h-2 rounded-full transition-all duration-300"
-                    style={{
-                      width: `${(currentPage / totalPages) * 100}%`,
-                    }}
-                  />
-                </div>
-                <div className="flex justify-between text-xs text-letterboxd-text-muted">
-                  <span>Films collected: {totalFilmsCollected}</span>
-                  <span>
-                    {Math.round((currentPage / totalPages) * 100)}% complete
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Live Progress Log */}
-          {streamProgress.length > 0 && (
-            <div className="mt-4 p-4 bg-letterboxd-bg-secondary rounded-lg border border-letterboxd-border">
-              <h4 className="text-sm font-semibold text-letterboxd-text-secondary mb-3">
-                {streaming ? "Live Progress Log" : "Operation Log"}
-              </h4>
-              <div className="max-h-80 overflow-y-auto space-y-1">
-                {streamProgress
-                  .slice()
-                  .reverse()
-                  .map((progress, index) => (
-                    <div
-                      key={index}
-                      className="text-xs text-letterboxd-text-muted p-2 bg-letterboxd-bg-primary rounded"
-                    >
-                      <span className="text-letterboxd-text-secondary font-mono">
-                        {new Date(progress.timestamp).toLocaleTimeString()}
-                      </span>
-                      {" - "}
-                      <span
-                        className={`${
-                          progress.type === "error"
-                            ? "text-red-400"
-                            : progress.type === "complete"
-                              ? "text-green-400"
-                              : "text-letterboxd-text-muted"
-                        }`}
-                      >
-                        {progress.message}
-                      </span>
-                    </div>
-                  ))}
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
-      {/* User Ratings Table */}
+      {(checkError || jobError) && (
+        <div className="card border-red-500/30 bg-red-900/10">
+          <h3 className="text-lg font-semibold text-red-400 mb-2">Error</h3>
+          <p className="text-red-300">{checkError ?? jobError}</p>
+        </div>
+      )}
+
+      {/* Live scrape job — same 3-phase progress as the admin bulk refresh. */}
+      {job && <JobProgress job={job} />}
+
+      {/* Snapshot of the user's current ratings, read from the database. */}
       {userRatings && (
         <div className="card">
           <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-4">
