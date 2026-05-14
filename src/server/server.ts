@@ -15,6 +15,7 @@ import cronRoutes from "./routes/cronRoutes";
 import eventRoutes from "./routes/eventRoutes";
 import graphRoutes from "./routes/graphRoutes";
 import adminRoutes from "./routes/adminRoutes";
+import scrapeUserRoutes from "./routes/scrapeUserRoutes";
 import { globalErrorHandler } from "./middleware/errorHandler";
 import { ApiResponse } from "./types";
 import { cleanup } from "./scraperFunctions";
@@ -151,6 +152,7 @@ app.use("/api/mfl", mflRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/actor-graph", graphRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/scrape-user", scrapeUserRoutes);
 
 // Only load scraper routes in development or when explicitly enabled
 if (
