@@ -13,6 +13,7 @@ import {
   EventData,
   EventUserPick,
   RefreshJob,
+  UserScrapeJob,
 } from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
@@ -528,6 +529,46 @@ class ApiService {
   ): Promise<ApiResponse<{ id: string; status: "cancelled" }>> {
     return this.request<{ id: string; status: "cancelled" }>(
       `/admin/refresh-rankings/${id}/cancel`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
+  }
+
+  // ===========================
+  // Scrape-user endpoints (any authenticated user)
+  // ===========================
+
+  async triggerScrapeUser(
+    username: string,
+    token: string,
+  ): Promise<ApiResponse<{ job_id: string }>> {
+    return this.request<{ job_id: string }>(
+      `/scrape-user/${encodeURIComponent(username)}`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
+  }
+
+  async getScrapeJob(
+    id: string,
+    token: string,
+  ): Promise<ApiResponse<UserScrapeJob>> {
+    return this.request<UserScrapeJob>(`/scrape-user/jobs/${id}`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  }
+
+  async cancelScrapeJob(
+    id: string,
+    token: string,
+  ): Promise<ApiResponse<{ id: string; status: "cancelled" }>> {
+    return this.request<{ id: string; status: "cancelled" }>(
+      `/scrape-user/jobs/${id}/cancel`,
       {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },

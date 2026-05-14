@@ -467,6 +467,13 @@ export interface RefreshJob {
   updatedAt: string;
 }
 
+// user_scrape_jobs row — same shape as refresh_jobs plus the target
+// Letterboxd username. Both tables drive the same 3-phase pipeline; the
+// per-user variant just scopes phase 1 + phase 2 to one user.
+export interface UserScrapeJob extends RefreshJob {
+  lbusername: string;
+}
+
 // ===========================
 // Constants & Enums
 // ===========================
