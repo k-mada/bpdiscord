@@ -6,6 +6,8 @@ import {
   AuthResponse,
   ScraperRequest,
   PasswordResetConfirmRequest,
+} from "../../shared/types";
+import {
   MFLScoringMetric,
   MFLMovieScore,
   AwardShow,

@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { ApiResponse } from "../types";
+import { ApiResponse } from "../../shared/types";
 
 const VALID_STATUSES = ["active", "inactive"] as const;
 const VALID_DISPLAY_MODES = ["movie_first", "person_first"] as const;

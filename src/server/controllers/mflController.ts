@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { ApiResponse } from "../types";
+import { ApiResponse } from "../../shared/types";
 import {
   dbGetMFLScoringMetrics,
   dbGetMFLUserScores,

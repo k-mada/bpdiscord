@@ -17,7 +17,7 @@ import graphRoutes from "./routes/graphRoutes";
 import adminRoutes from "./routes/adminRoutes";
 import scrapeUserRoutes from "./routes/scrapeUserRoutes";
 import { globalErrorHandler } from "./middleware/errorHandler";
-import { ApiResponse } from "./types";
+import { ApiResponse } from "../shared/types";
 import { cleanup } from "./scraperFunctions";
 
 // Load environment variables

@@ -2,7 +2,8 @@
 import { Request, Response } from "express";
 import { EventEmitter } from "events";
 
-import { ApiResponse, ScraperSelector } from "../types";
+import { ApiResponse } from "../../shared/types";
+import { ScraperSelector } from "../types";
 import {
   dbGetUserFilms,
   dbUpsertUserFilms,

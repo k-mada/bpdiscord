@@ -1,46 +1,13 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 
-// ===========================
-// API Response Types
-// ===========================
-
-export interface ApiResponse<T = any> {
-  data?: T;
-  message?: string;
-  error?: string;
-  count?: number;
-  // `details` is used loosely across controllers — sometimes an array of
-  // validation errors, sometimes a partial-failure object, sometimes a
-  // debug string. Typed as `any` to reflect existing usage.
-  details?: any;
-}
+// Cross-cutting API/contract types (ApiResponse, User, AuthRequest,
+// SignupRequest, AuthResponse, PasswordResetRequest,
+// PasswordResetConfirmRequest, ScraperRequest, AuthenticatedUser) live in
+// src/shared/types.ts. Import from there directly.
 
 // ===========================
-// User & Authentication Types
+// Server-side User Mutations
 // ===========================
-
-export interface User {
-  id: string;
-  name: string;
-  email: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface AuthRequest {
-  email: string;
-  password: string;
-}
-
-export interface SignupRequest extends AuthRequest {
-  name: string;
-}
-
-export interface AuthResponse {
-  message: string;
-  access_token?: string;
-  user: any;
-}
 
 export interface CreateUserRequest {
   name: string;
@@ -51,6 +18,10 @@ export interface UpdateUserRequest {
   name?: string;
   email?: string;
 }
+
+// ===========================
+// Supabase Auth
+// ===========================
 
 export interface SupabaseUser {
   id: string;
@@ -69,32 +40,8 @@ export interface AuthenticatedRequest extends Express.Request {
 }
 
 // ===========================
-// Password Reset Types
+// Scraper
 // ===========================
-
-export interface PasswordResetRequest {
-  email: string;
-}
-
-export interface PasswordResetConfirmRequest {
-  email?: string;
-  password: string;
-  token?: string;
-}
-
-// ===========================
-// Scraper Types
-// ===========================
-
-export interface ScraperRequest {
-  url: string;
-  selectors: Array<{
-    name: string;
-    css: string;
-    attributes?: string[];
-    multiple?: boolean;
-  }>;
-}
 
 export interface ScraperSelector {
   name: string;
@@ -105,7 +52,7 @@ export interface ScraperSelector {
 }
 
 // ===========================
-// Database Types
+// Letterboxd Scraping Shapes
 // ===========================
 
 export interface UserProfileData {
@@ -115,32 +62,11 @@ export interface UserProfileData {
   numberOfLists: number;
 }
 
-export interface RatingData {
-  rating: number;
-  count: number;
-}
-
-export interface UserRatingsData {
-  username: string;
-  displayName?: string;
-  followers?: number;
-  following?: number;
-  numberOfLists?: number;
-  totalRatings?: number;
-  ratings: RatingData[];
-}
-
 export interface UserFilm {
   film_slug: string;
   title: string;
   rating: number;
   liked: boolean;
-}
-
-export interface LBFilm {
-  film_slug: string;
-  rating: number;
-  rating_count: number;
 }
 
 // ===========================
