@@ -3,7 +3,7 @@ import axios, { AxiosError, AxiosInstance } from "axios";
 import { desc, eq, sql } from "drizzle-orm";
 import { db } from "../db";
 import { agActors, agFilms, agActedIn } from "../db/schema";
-import { ApiResponse } from "../types";
+import { ApiResponse } from "../../shared/types";
 
 // ===========================
 // Path-finder tuning

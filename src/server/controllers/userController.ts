@@ -1,10 +1,6 @@
 import { Request, Response } from "express";
-import {
-  CreateUserRequest,
-  UpdateUserRequest,
-  User,
-  ApiResponse,
-} from "../types";
+import { User, ApiResponse } from "../../shared/types";
+import { CreateUserRequest, UpdateUserRequest } from "../types";
 
 export class UserController {
   static async createUser(req: Request, res: Response): Promise<void> {

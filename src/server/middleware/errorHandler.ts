@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { validationResult } from 'express-validator';
-import { ApiResponse } from '../types';
+import { ApiResponse } from '../../shared/types';
 
 export const handleValidationErrors = (
   req: Request,
