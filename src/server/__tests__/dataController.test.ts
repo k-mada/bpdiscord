@@ -270,6 +270,84 @@ describe('dataController', () => {
     });
   });
 
+  describe('Top Rated Films', () => {
+    // Fixtures yield (after the is_discord filter, which drops test_user_non_discord):
+    //   popular  → active 4.0, minimal 4.5         → count 2, avg 4.25
+    //   classic  → active 5.0, minimal 5.0         → count 2, avg 5.00
+    //   divisive → active 1.5                      → count 1, avg 1.50
+    //   obscure  → active 3.5                      → count 1, avg 3.50
+    //   new      → active 4.0                      → count 1, avg 4.00
+    //   unlisted → active 3.0                      → count 1, avg 3.00
+
+    it('excludes non-discord raters from count and average', async () => {
+      const result = await dc.dbGetTopRatedUserFilms({ minRatings: 1 });
+
+      expect(result.success).toBe(true);
+      // Popular has 3 raters in fixtures (active 4.0, minimal 4.5, non_discord 2.0)
+      // but non_discord must be filtered out: count=2, avg=4.25 (not 3.5).
+      const popular = result.data!.find(f => f.film_slug === 'test-film-popular');
+      expect(popular?.rating_count).toBe(2);
+      expect(popular?.average_rating).toBeCloseTo(4.25, 2);
+    });
+
+    it('orders by average_rating desc, then rating_count desc', async () => {
+      const result = await dc.dbGetTopRatedUserFilms({ minRatings: 1 });
+
+      const slugs = result.data!.map(f => f.film_slug);
+      expect(slugs).toEqual([
+        'test-film-classic',
+        'test-film-popular',
+        'test-film-new',
+        'test-film-obscure',
+        'test-film-unlisted',
+        'test-film-divisive',
+      ]);
+    });
+
+    it('applies minRatings as a HAVING threshold', async () => {
+      const result = await dc.dbGetTopRatedUserFilms({ minRatings: 2 });
+
+      expect(result.success).toBe(true);
+      expect(result.data!.length).toBe(2);
+      const slugs = result.data!.map(f => f.film_slug).sort();
+      expect(slugs).toEqual(['test-film-classic', 'test-film-popular']);
+    });
+
+    it('honors the limit parameter', async () => {
+      const result = await dc.dbGetTopRatedUserFilms({ limit: 2, minRatings: 1 });
+
+      expect(result.success).toBe(true);
+      expect(result.data!.length).toBe(2);
+      expect(result.data![0]!.film_slug).toBe('test-film-classic');
+      expect(result.data![1]!.film_slug).toBe('test-film-popular');
+    });
+
+    it('returns empty array when no film meets the default minRatings threshold', async () => {
+      const result = await dc.dbGetTopRatedUserFilms();
+
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual([]);
+    });
+
+    it('aggregates distinct discord usernames into the users field', async () => {
+      const result = await dc.dbGetTopRatedUserFilms({ minRatings: 1 });
+      const popular = result.data!.find(f => f.film_slug === 'test-film-popular');
+
+      // STRING_AGG(DISTINCT ...) ordering is unspecified — split + sort.
+      const userList = popular!.users.split(', ').sort();
+      expect(userList).toEqual(['test_user_active', 'test_user_minimal']);
+      expect(userList).not.toContain('test_user_non_discord');
+    });
+
+    it('returns rating_count and average_rating as JS numbers (not strings)', async () => {
+      const result = await dc.dbGetTopRatedUserFilms({ minRatings: 1 });
+      const first = result.data![0]!;
+
+      expect(typeof first.rating_count).toBe('number');
+      expect(typeof first.average_rating).toBe('number');
+    });
+  });
+
   describe('Mutation Operations', () => {
     it('dbUpsertUserProfile creates new user', async () => {
       const newUser = {

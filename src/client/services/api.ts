@@ -8,6 +8,7 @@ import {
   PasswordResetConfirmRequest,
 } from "../../shared/types";
 import {
+  LBFilm,
   MFLScoringMetric,
   MFLMovieScore,
   AwardShow,
@@ -280,6 +281,17 @@ class ApiService {
   async getUserFilmsCount(): Promise<ApiResponse<number>> {
     return this.request<number>("/stats/user-films-count");
   }
+
+  // Top watched films endpoint
+  async getTopWatchedFilms(): Promise<ApiResponse<Array<LBFilm>>> {
+    return this.request<Array<LBFilm>>("/stats/top-watched-films");
+  }
+
+  // Top rated films endpoint
+  async getTopRatedUserFilms(): Promise<ApiResponse<Array<LBFilm>>> {
+    return this.request<Array<LBFilm>>("/stats/top-rated-user-films");
+  }
+
   // Movie Swap endpoint
   // TODO: NEED TO STANDARDIZE MOVIE OBJECT, TOO MANY VARIATIONS
   async getMovieSwap(
@@ -492,10 +504,7 @@ class ApiService {
 
   // Combined actor + movie search backed by /api/actor-graph/search.
   // Returns DB-cached hits first, then TMDB results for items not yet seeded.
-  async searchGraph(
-    query: string,
-    signal?: AbortSignal,
-  ): Promise<ApiResponse> {
+  async searchGraph(query: string, signal?: AbortSignal): Promise<ApiResponse> {
     return this.request(`/actor-graph/search?q=${encodeURIComponent(query)}`, {
       method: "GET",
       ...(signal ? { signal } : {}),

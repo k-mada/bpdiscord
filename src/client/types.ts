@@ -9,6 +9,17 @@ import type { AuthenticatedUser } from "../shared/types";
 // UI Data Shapes
 // ===========================
 
+export interface LBFilm {
+  count: number;
+  average_rating: number | null;
+  banner: string | null;
+  film_slug: string;
+  poster: string | null;
+  title: string | null;
+  url: string | null;
+  tmdb_link: string | null;
+}
+
 export interface Rating {
   rating: number;
   count: number;
@@ -249,10 +260,7 @@ export type RefreshJobStatus =
   | "failed"
   | "cancelled";
 
-export type RefreshJobPhase =
-  | "user_scrape"
-  | "missing_films"
-  | "film_ratings";
+export type RefreshJobPhase = "user_scrape" | "missing_films" | "film_ratings";
 
 export interface RefreshJobProgress {
   user_scrape?: {
@@ -301,4 +309,3 @@ export interface RefreshJob {
 export interface UserScrapeJob extends RefreshJob {
   lbusername: string;
 }
-
