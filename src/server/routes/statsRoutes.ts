@@ -6,37 +6,52 @@ import {
   getAllUserFilms,
   getUserFilmsCount,
   getMissingFilms,
+  getTopWatchedFilms,
+  getTopRatedUserFilms,
 } from "../controllers/statsController";
 
 const router = Router();
 
-const scraperLimiter = rateLimit({
-  windowMs: 2 * 60 * 1000, // 15 minutes
-  max: 20, // Limit each IP to 20 scraping requests per windowMs
+const statsLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 200,
+  skip: () => process.env.NODE_ENV !== "production",
   message: { error: "Too many stats requests, please try again later." },
 });
 
 router.get(
   "/total-ratings",
-  [scraperLimiter, handleValidationErrors],
+  [statsLimiter, handleValidationErrors],
   getTotalRatings,
 );
 
 router.get(
   "/all-user-films",
-  [scraperLimiter, handleValidationErrors],
+  [statsLimiter, handleValidationErrors],
   getAllUserFilms,
 );
 
 router.get(
+  "/top-watched-films",
+  [statsLimiter, handleValidationErrors],
+  getTopWatchedFilms,
+);
+
+router.get(
+  "/top-rated-user-films",
+  [statsLimiter, handleValidationErrors],
+  getTopRatedUserFilms,
+);
+
+router.get(
   "/user-films-count",
-  [scraperLimiter, handleValidationErrors],
+  [statsLimiter, handleValidationErrors],
   getUserFilmsCount,
 );
 
 router.get(
   "/get-missing-films",
-  [scraperLimiter, handleValidationErrors],
+  [statsLimiter, handleValidationErrors],
   getMissingFilms,
 );
 

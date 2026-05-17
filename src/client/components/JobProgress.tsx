@@ -1,10 +1,7 @@
 import { useState } from "react";
 
-import type {
-  RefreshJob,
-  RefreshJobPhase,
-  RefreshJobStatus,
-} from "../types";
+import type { RefreshJob, RefreshJobPhase, RefreshJobStatus } from "../types";
+import Spinner from "./Spinner";
 
 const PHASE_ORDER: Array<{ key: RefreshJobPhase; label: string }> = [
   { key: "user_scrape", label: "User film scrape" },
@@ -47,7 +44,7 @@ export function statusBadge(status: RefreshJobStatus): {
 
 function phaseRowIcon(s: PhaseRowStatus) {
   if (s === "done") return "✓";
-  if (s === "running") return "▶";
+  if (s === "running") return <Spinner />;
   return "○";
 }
 

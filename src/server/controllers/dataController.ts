@@ -529,16 +529,132 @@ export async function dbGetUserFilmsCount(): Promise<{
   error?: string;
 }> {
   return dbOperation(async () => {
-    // Counts distinct film titles watched by discord users
+    // Counts distinct films watched by discord users
     const result = await db
       .select({
-        count: sql<number>`COUNT(DISTINCT ${userFilms.title})::int`,
+        count: sql<number>`COUNT(DISTINCT ${userFilms.filmSlug})::int`,
       })
       .from(userFilms)
       .innerJoin(users, eq(userFilms.lbusername, users.lbusername))
       .where(eq(users.isDiscord, true));
 
     return result[0]?.count ?? 0;
+  });
+}
+
+export async function dbGetTopWatchedFilms(): Promise<{
+  success: boolean;
+  data?: Array<{
+    count: number;
+    film_slug: string;
+    title: string | null;
+    poster: string | null;
+    banner: string | null;
+    tmdb_link: string | null;
+    url: string | null;
+  }>;
+  error?: string;
+}> {
+  return dbOperation(async () => {
+    const result = await db
+      .select({
+        // Per-film row count in UserFilms (watch/list entries). COUNT(DISTINCT film_slug)
+        // would always be 1 here because we group by film_slug.
+        watch_count: sql<number>`count(*)::int`,
+        film_slug: userFilms.filmSlug,
+        title: films.title,
+        poster: films.poster,
+        banner: films.banner,
+        tmdb_link: films.tmdbLink,
+        url: films.url,
+      })
+      .from(userFilms)
+      .innerJoin(films, eq(userFilms.filmSlug, films.filmSlug))
+      .groupBy(
+        userFilms.filmSlug,
+        films.title,
+        films.poster,
+        films.banner,
+        films.tmdbLink,
+        films.url,
+      )
+      .orderBy(desc(sql<number>`count(*)::int`), asc(films.title))
+      .limit(24);
+
+    return result.map((r) => ({
+      count: r.watch_count,
+      film_slug: r.film_slug,
+      title: r.title,
+      poster: r.poster,
+      banner: r.banner,
+      tmdb_link: r.tmdb_link,
+      url: r.url,
+    }));
+  });
+}
+
+export async function dbGetTopRatedUserFilms(
+  options: { limit?: number; minRatings?: number } = {},
+): Promise<{
+  success: boolean;
+  data?: Array<{
+    film_slug: string;
+    title: string;
+    rating_count: number;
+    average_rating: number;
+    poster: string;
+    banner: string;
+    tmdb_link: string;
+    url: string;
+    users: string;
+  }>;
+  error?: string;
+}> {
+  const limit = options.limit ?? 25;
+  const minRatings = options.minRatings ?? 20;
+
+  return dbOperation(async () => {
+    const ratingCount = sql`COUNT(${userFilms.rating})`;
+    const averageRating = sql`ROUND(AVG(${userFilms.rating})::numeric, 2)`;
+
+    const result = await db
+      .select({
+        film_slug: userFilms.filmSlug,
+        title: sql<string | null>`MAX(${userFilms.title})`,
+        rating_count: sql<number>`${ratingCount}::int`,
+        average_rating: sql<string>`${averageRating}`,
+        poster: films.poster,
+        banner: films.banner,
+        tmdb_link: films.tmdbLink,
+        url: films.url,
+        users: sql<string>`STRING_AGG(DISTINCT ${userFilms.lbusername}, ', ')`,
+      })
+      .from(userFilms)
+      .innerJoin(users, eq(userFilms.lbusername, users.lbusername))
+      .innerJoin(films, eq(userFilms.filmSlug, films.filmSlug))
+      .where(eq(users.isDiscord, true))
+      .groupBy(
+        userFilms.filmSlug,
+        films.poster,
+        films.banner,
+        films.tmdbLink,
+        films.url,
+      )
+      .having(sql`${ratingCount} >= ${minRatings}`)
+      .orderBy(desc(averageRating), desc(ratingCount), asc(userFilms.filmSlug))
+      .limit(limit);
+
+    return result.map((r) => ({
+      film_slug: r.film_slug,
+      title: r.title ?? "",
+      rating_count: r.rating_count,
+      average_rating: toNumber(r.average_rating),
+      poster: r.poster ?? "",
+      banner: r.banner ?? "",
+      tmdb_link: r.tmdb_link ?? "",
+      url: r.url ?? "",
+      users: r.users ?? "",
+    }));
   });
 }
 
