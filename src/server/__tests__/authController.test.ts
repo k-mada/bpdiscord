@@ -20,7 +20,8 @@ import { sql } from 'drizzle-orm';
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import type { Request, Response } from 'express';
 
-import { AuthController, LBUSERNAME_FORMAT } from '../controllers/authController';
+import { AuthController } from '../controllers/authController';
+import { LBUSERNAME_FORMAT } from '../lib/lbusername';
 import { db } from '../db';
 import { appUsers, users } from '../db/schema';
 import { assertTestEnvironment, resetDatabase, closeDatabase } from './setup';

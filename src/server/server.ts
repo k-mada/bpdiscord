@@ -5,7 +5,7 @@ import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
 
 import authRoutes from "./routes/authRoutes";
-import userRoutes from "./routes/userRoutes";
+import userAdminRoutes from "./routes/userAdminRoutes";
 import mflRoutes from "./routes/mflRoutes";
 import scraperRoutes from "./routes/scraperRoutes";
 import comparisonRoutes from "./routes/comparisonRoutes";
@@ -143,7 +143,7 @@ app.use(scraperTimeout);
 
 // Routes
 app.use("/api/auth", authRoutes);
-app.use("/api/users", userRoutes);
+app.use("/api/admin/users", userAdminRoutes);
 app.use("/api/comparison", comparisonRoutes);
 app.use("/api/film-users", filmUserRoutes);
 app.use("/api/stats", statsRoutes);
