@@ -167,8 +167,14 @@ export class UserAdminController {
       }
 
       // Fast-path conflict check: if a non-null lbusername is being claimed by
-      // a different account, return 409 with the claimer's info. The unique
-      // constraint at insert is the actual gate (race-safe).
+      // a different account, return 409. The unique constraint at insert is
+      // the actual gate (race-safe).
+      //
+      // We deliberately do NOT name the existing claimer in the response.
+      // The admin can already enumerate accounts via GET /api/admin/users;
+      // baking the claimer's identity into a conflict error response inlines
+      // PII into an error path and is a pattern that ages badly if the
+      // validation is ever reused on a less-privileged surface.
       if (lbusernameUpdate !== null && lbusernameUpdate !== undefined) {
         const existing = await db
           .select({ id: appUsers.id })
@@ -181,18 +187,8 @@ export class UserAdminController {
           )
           .limit(1);
         if (existing.length > 0) {
-          let claimerEmail: string | null = null;
-          try {
-            const { data: claimerData } = await admin.auth.admin.getUserById(
-              existing[0]!.id,
-            );
-            claimerEmail = claimerData.user?.email ?? null;
-          } catch {
-            // Best-effort lookup; don't block the 409 on this.
-          }
           res.status(409).json({
             error: "This Letterboxd.com username has already been claimed.",
-            claimedBy: { id: existing[0]!.id, email: claimerEmail },
           });
           return;
         }

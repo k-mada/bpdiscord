@@ -296,39 +296,22 @@ describe('UserAdminController.update', () => {
     expect(statusCalls).toEqual([400]);
   });
 
-  it('returns 409 with claimedBy when lbusername is held by another account', async () => {
+  it('returns 409 when lbusername is held by another account', async () => {
     await seedAuthUser(OTHER_ID, 'useradmin-test-claimer@example.test');
     await seedAppUser(OTHER_ID, 'lb_taken');
     await seedAuthUser(TARGET_ID, 'useradmin-test-target@example.test');
     await seedAppUser(TARGET_ID);
 
     const sdk = installSdkMock();
-    sdk.auth.admin.getUserById.mockImplementation((id: string) => {
-      if (id === TARGET_ID) {
-        return Promise.resolve({
-          data: {
-            user: {
-              id: TARGET_ID,
-              email: 'useradmin-test-target@example.test',
-              user_metadata: { role: 'user' },
-            },
-          },
-          error: null,
-        });
-      }
-      if (id === OTHER_ID) {
-        return Promise.resolve({
-          data: {
-            user: {
-              id: OTHER_ID,
-              email: 'useradmin-test-claimer@example.test',
-              user_metadata: { role: 'user' },
-            },
-          },
-          error: null,
-        });
-      }
-      return Promise.resolve({ data: { user: null }, error: { message: 'not found' } });
+    sdk.auth.admin.getUserById.mockResolvedValue({
+      data: {
+        user: {
+          id: TARGET_ID,
+          email: 'useradmin-test-target@example.test',
+          user_metadata: { role: 'user' },
+        },
+      },
+      error: null,
     });
 
     const { req, res, statusCalls, jsonCalls } = adminReq({
@@ -339,11 +322,15 @@ describe('UserAdminController.update', () => {
 
     expect(statusCalls).toEqual([409]);
     expect(jsonCalls[0]).toMatchObject({
-      claimedBy: {
-        id: OTHER_ID,
-        email: 'useradmin-test-claimer@example.test',
-      },
+      error: expect.stringContaining('already been claimed'),
     });
+    // We deliberately do NOT expose the claimer's identity in the response.
+    // Admin can look it up via GET /api/admin/users if needed.
+    expect(jsonCalls[0]).not.toHaveProperty('claimedBy');
+    // Only the target's getUserById should have been called — not the
+    // claimer's (we removed that lookup entirely).
+    expect(sdk.auth.admin.getUserById).toHaveBeenCalledTimes(1);
+    expect(sdk.auth.admin.getUserById).toHaveBeenCalledWith(TARGET_ID);
   });
 
   it('links a new lbusername, auto-creates Users stub, enqueues scrape', async () => {
