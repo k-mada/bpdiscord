@@ -7,6 +7,10 @@ import {
 import { db } from "../db";
 import { users, appUsers, userScrapeJobs } from "../db/schema";
 import {
+  LBUSERNAME_FORMAT,
+  normalizeLbusername,
+} from "../lib/lbusername";
+import {
   SignupRequest,
   AuthRequest,
   AuthResponse,
@@ -14,16 +18,6 @@ import {
   PasswordResetRequest,
   PasswordResetConfirmRequest,
 } from "../../shared/types";
-
-// Exported for direct unit testing. Matches Letterboxd's actual username rules:
-// 2-15 chars, lowercase alphanumeric + hyphen + underscore.
-export const LBUSERNAME_FORMAT = /^[a-z0-9_-]{2,15}$/;
-
-function normalizeLbusername(raw: unknown): string | undefined {
-  if (typeof raw !== "string") return undefined;
-  const trimmed = raw.trim().toLowerCase();
-  return trimmed.length > 0 ? trimmed : undefined;
-}
 
 export class AuthController {
   static async signup(req: Request, res: Response): Promise<void> {
