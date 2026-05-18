@@ -250,7 +250,7 @@ describe('dataController', () => {
       const result = await dc.dbGetMissingFilms();
 
       expect(result.success).toBe(true);
-      expect(result.data).toContain('test-film-unlisted');
+      expect(result.data).toContain('test-film-no-data');
     });
   });
 
