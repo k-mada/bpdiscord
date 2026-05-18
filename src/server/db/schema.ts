@@ -418,10 +418,34 @@ export const userScrapeJobs = pgTable(
 );
 
 // ===========================
+// AppUsers Table
+// ===========================
+// Links Supabase Auth accounts to Letterboxd usernames. Documentary — the SQL
+// migration is the source of truth (see CLAUDE.md). The FK from `id` to
+// `auth.users(id)` lives in the migration; `auth.users` isn't in the Drizzle
+// schema so we treat `id` as a plain UUID here.
+export const appUsers = pgTable('app_users', {
+  id: uuid('id').primaryKey(),
+  lbusername: varchar('lbusername').unique(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const appUsersRelations = relations(appUsers, ({ one }) => ({
+  letterboxdProfile: one(users, {
+    fields: [appUsers.lbusername],
+    references: [users.lbusername],
+  }),
+}));
+
+// ===========================
 // Type Exports
 // ===========================
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
+
+export type AppUser = typeof appUsers.$inferSelect;
+export type NewAppUser = typeof appUsers.$inferInsert;
 
 export type UserRating = typeof userRatings.$inferSelect;
 export type NewUserRating = typeof userRatings.$inferInsert;

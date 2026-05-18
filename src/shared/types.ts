@@ -37,6 +37,7 @@ export interface AuthRequest {
 
 export interface SignupRequest extends AuthRequest {
   name: string;
+  lbusername?: string;
 }
 
 // `email` is optional to match what Supabase's auth User actually returns —
