@@ -122,6 +122,13 @@ export const testFilms: NewFilm[] = [
     url: 'https://letterboxd.com/film/test-film-new',
     poster: 'https://example.com/poster5.jpg',
   },
+  {
+    filmSlug: 'test-film-unlisted',
+    title: 'Unlisted Test Film',
+    lbRating: 3.0,
+    url: 'https://letterboxd.com/film/test-film-unlisted',
+    poster: 'https://example.com/poster6.jpg',
+  },
 ];
 
 // ===========================
@@ -145,8 +152,12 @@ export const testUserFilms: NewUserFilm[] = [
   { lbusername: 'test_user_non_discord', filmSlug: 'test-film-divisive', title: 'Divisive Test Film', rating: 4.5, liked: true },
   { lbusername: 'test_user_non_discord', filmSlug: 'test-film-obscure', title: 'Obscure Test Film', rating: 1.0, liked: false },
 
-  // User with film not in Films table (for testing missing films)
+  // Active user has watched the unlisted film too.
   { lbusername: 'test_user_active', filmSlug: 'test-film-unlisted', title: 'Unlisted Test Film', rating: 3.0, liked: false },
+
+  // Attached to the non-discord user so it doesn't affect any discord-only
+  // count assertions. Used to exercise dbGetMissingFilms.
+  { lbusername: 'test_user_non_discord', filmSlug: 'test-film-no-data', title: 'No Data Film', rating: 2.5, liked: false },
 ];
 
 // ===========================
@@ -209,7 +220,7 @@ export const expectedResults = {
   movieSwapActiveToMinimal: ['Divisive Test Film', 'New Test Film', 'Obscure Test Film', 'Unlisted Test Film'],
 
   // Missing films (in UserFilms but not in Films)
-  missingFilms: ['test-film-unlisted'],
+  missingFilms: ['test-film-no-data'],
 
   // Hater rankings order (by average rating, ascending)
   // Non-discord excluded from discord-only queries
