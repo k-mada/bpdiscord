@@ -445,6 +445,40 @@ describe('UserAdminController.update', () => {
     expect(appRow[0]?.lbusername).toBeNull();
   });
 
+  it.each([
+    ['empty string', ''],
+    ['whitespace only', '   '],
+  ])('treats %s lbusername as unlink (same as null)', async (_label, value) => {
+    await seedAuthUser(TARGET_ID, 'useradmin-test-empty@example.test');
+    await seedAppUser(TARGET_ID, 'lb_to_unlink');
+
+    const sdk = installSdkMock();
+    sdk.auth.admin.getUserById.mockResolvedValue({
+      data: {
+        user: {
+          id: TARGET_ID,
+          email: 'useradmin-test-empty@example.test',
+          user_metadata: { role: 'user' },
+        },
+      },
+      error: null,
+    });
+
+    const { req, res, statusCalls } = adminReq({
+      params: { id: TARGET_ID },
+      body: { lbusername: value },
+    });
+    await UserAdminController.update(req, res);
+
+    expect(statusCalls).toEqual([200]);
+    const appRow = await db
+      .select()
+      .from(appUsers)
+      .where(eq(appUsers.id, TARGET_ID))
+      .limit(1);
+    expect(appRow[0]?.lbusername).toBeNull();
+  });
+
   it('updates name via updateUserById merging existing user_metadata (preserves role)', async () => {
     await seedAuthUser(TARGET_ID, 'useradmin-test-name@example.test');
     await seedAppUser(TARGET_ID);
