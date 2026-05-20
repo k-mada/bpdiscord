@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LoginPage from "./components/LoginPage";
+import SignupPage from "./components/SignupPage";
 import Dashboard from "./components/Dashboard";
 import UserProfile from "./components/UserProfile";
 import ScraperInterface from "./components/ScraperInterface";
@@ -62,6 +63,7 @@ function App() {
           />
           <Route path="/actor-graph" element={<ActorGraph />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/signup" element={<SignupPage />} />
           <Route
             path="/dashboard"
             element={

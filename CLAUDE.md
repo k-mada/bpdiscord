@@ -305,14 +305,26 @@ Powers the "Six Degrees of Kevin Bacon" feature. Reads from the `ag_actors` / `a
 
 ### Authentication Flow
 
+Login and signup are on **separate routes** — `/login` and `/signup`.
+Header shows both as buttons when unauthenticated. Each page links to the
+other via a `<Link>` so users can switch without going through the header.
+
 #### Login Process
 
-1. User enters email/password on login page
+1. User enters email/password on `/login`
 2. Credentials sent to `/api/auth/login`
 3. Backend validates via Supabase Auth
 4. JWT token returned and stored in localStorage
-5. User redirected to dashboard
+5. User redirected to dashboard (or to `redirectAfterLogin` if set by ProtectedRoute)
 6. All subsequent API calls include Authorization header
+
+#### Signup Process
+
+1. User enters name/email/password on `/signup`
+2. Credentials sent to `/api/auth/signup`
+3. Backend creates the auth user, links `app_users` row, optionally enqueues a scrape (if a Letterboxd.com username was supplied — see Stage 3)
+4. **If Supabase email-confirmation is enabled**: response contains a `message` but no `access_token`. Page surfaces the message; user must confirm via email before logging in.
+5. **Otherwise**: response contains `access_token` + user; same persist-and-redirect flow as login.
 
 #### Protected Route Access
 
