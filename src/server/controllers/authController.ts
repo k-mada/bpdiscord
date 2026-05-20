@@ -95,6 +95,22 @@ export class AuthController {
         return;
       }
 
+      // Supabase returns a stub user (random UUID, empty identities array)
+      // when the email is already registered — anti-enumeration behavior.
+      // The stub UUID isn't in auth.users, so a later FK insert would 500.
+      // Detect and surface as a clean 409. Note: Supabase also normalizes
+      // Gmail plus-aliases (foo+x@gmail.com → foo@gmail.com), so this
+      // catches both literal duplicates and plus-aliased collisions.
+      if (
+        !signUpData.user.identities ||
+        signUpData.user.identities.length === 0
+      ) {
+        res.status(409).json({
+          error: "An account with this email already exists.",
+        });
+        return;
+      }
+
       const authUserId = signUpData.user.id;
 
       // Link in DB. On any failure, compensate by deleting the auth user so
