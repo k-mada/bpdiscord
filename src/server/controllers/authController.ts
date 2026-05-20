@@ -19,6 +19,31 @@ import {
   PasswordResetConfirmRequest,
 } from "../../shared/types";
 
+// Cleans up the most-hit Supabase Auth error messages before surfacing them
+// to clients. Supabase's defaults enumerate every valid character ("Password
+// should contain at least one character of each: abcdefghij…") which is
+// verbose UX. Falls back to the original message when we don't have a mapping.
+// Exported for direct unit testing.
+export function humanizeSupabaseAuthError(msg: string | undefined): string {
+  if (!msg) return "Signup failed";
+  const lower = msg.toLowerCase();
+
+  if (lower.includes("password should contain at least one character")) {
+    return "Password must include a lowercase letter, an uppercase letter, and a number.";
+  }
+  if (lower.includes("password should be at least")) {
+    const lengthMatch = msg.match(/at least (\d+)/i);
+    return lengthMatch
+      ? `Password must be at least ${lengthMatch[1]} characters.`
+      : "Password is too short.";
+  }
+  if (lower.includes("user already registered")) {
+    return "An account with this email already exists.";
+  }
+
+  return msg;
+}
+
 export class AuthController {
   static async signup(req: Request, res: Response): Promise<void> {
     try {
@@ -67,7 +92,7 @@ export class AuthController {
       if (signUpError || !signUpData.user) {
         res
           .status(400)
-          .json({ error: signUpError?.message ?? "Signup failed" });
+          .json({ error: humanizeSupabaseAuthError(signUpError?.message) });
         return;
       }
 

@@ -20,7 +20,7 @@ import { sql } from 'drizzle-orm';
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import type { Request, Response } from 'express';
 
-import { AuthController } from '../controllers/authController';
+import { AuthController, humanizeSupabaseAuthError } from '../controllers/authController';
 import { LBUSERNAME_FORMAT } from '../lib/lbusername';
 import { db } from '../db';
 import { appUsers, users } from '../db/schema';
@@ -167,6 +167,42 @@ describe('LBUSERNAME_FORMAT regex', () => {
 
   it.each(invalid)('rejects %j', (input) => {
     expect(LBUSERNAME_FORMAT.test(input)).toBe(false);
+  });
+});
+
+describe('humanizeSupabaseAuthError', () => {
+  it('rewrites the verbose "password should contain at least one character" message', () => {
+    const supabaseMsg =
+      'Password should contain at least one character of each: abcdefghijklmnopqrstuvwxyz, ABCDEFGHIJKLMNOPQRSTUVWXYZ, 0123456789.';
+    expect(humanizeSupabaseAuthError(supabaseMsg)).toBe(
+      'Password must include a lowercase letter, an uppercase letter, and a number.',
+    );
+  });
+
+  it('rewrites min-length messages while preserving the length Supabase reports', () => {
+    expect(humanizeSupabaseAuthError('Password should be at least 6 characters.')).toBe(
+      'Password must be at least 6 characters.',
+    );
+  });
+
+  it('rewrites min-length messages with a generic fallback when no length is parseable', () => {
+    expect(humanizeSupabaseAuthError('Password should be at least short.')).toBe(
+      'Password is too short.',
+    );
+  });
+
+  it('rewrites duplicate-email errors', () => {
+    expect(humanizeSupabaseAuthError('User already registered')).toBe(
+      'An account with this email already exists.',
+    );
+  });
+
+  it('falls through to the original message for unmapped errors', () => {
+    expect(humanizeSupabaseAuthError('Some new Supabase error')).toBe('Some new Supabase error');
+  });
+
+  it('returns a generic message when input is undefined', () => {
+    expect(humanizeSupabaseAuthError(undefined)).toBe('Signup failed');
   });
 });
 
