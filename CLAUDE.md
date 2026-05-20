@@ -35,6 +35,9 @@ bpdiscord/
 ├── src/
 │   ├── client/           # Vite + React frontend application
 │   │   ├── components/   # React components
+│   │   │   └── ui/       # Primitive components (Input, etc.) — owned, no third-party UI lib
+│   │   ├── hooks/        # Custom React hooks
+│   │   ├── lib/          # Client-side utilities (cn() etc.)
 │   │   ├── services/     # API client services
 │   │   ├── types.ts      # Client-specific TypeScript types
 │   │   ├── vite.config.js # Vite configuration with proxy
