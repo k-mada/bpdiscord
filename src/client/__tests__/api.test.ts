@@ -210,13 +210,6 @@ describe("ApiService", () => {
       expectFetch("/auth/forgot-password", "POST");
       expectBody({ email: "a@b.com" });
     });
-
-    it("confirmPasswordReset sends reset data", async () => {
-      const data = { token: "t", password: "new-pw" };
-      await apiService.confirmPasswordReset(data);
-      expectFetch("/auth/reset-password", "POST");
-      expectBody(data);
-    });
   });
 
   // -------------------------------------------------------------------------

@@ -152,8 +152,7 @@ Raw Letterboxd Data → Validation → Transformation → Database Storage → A
 
 - `POST /signup` - User registration
 - `POST /login` - User authentication
-- `POST /logout` - Session termination
-- `POST /password-reset` - Password reset initiation
+- `POST /forgot-password` - Send a password reset email (Supabase delivers the link)
 
 ### Film User Routes (`/api/film-users`) - Public, Database-First
 

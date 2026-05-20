@@ -41,10 +41,4 @@ router.post(
   AuthController.requestPasswordReset
 );
 
-router.post(
-  "/reset-password",
-  [passwordResetLimiter, handleValidationErrors],
-  AuthController.confirmPasswordReset
-);
-
 export default router;

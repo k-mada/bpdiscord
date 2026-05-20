@@ -70,12 +70,6 @@ export interface PasswordResetRequest {
   email: string;
 }
 
-export interface PasswordResetConfirmRequest {
-  email?: string;
-  password: string;
-  token?: string;
-}
-
 // ===========================
 // Scraper
 // ===========================

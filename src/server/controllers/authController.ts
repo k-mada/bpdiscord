@@ -16,7 +16,6 @@ import {
   AuthResponse,
   ApiResponse,
   PasswordResetRequest,
-  PasswordResetConfirmRequest,
 } from "../../shared/types";
 
 // Cleans up the most-hit Supabase Auth error messages before surfacing them
@@ -316,39 +315,4 @@ export class AuthController {
     }
   }
 
-  static async confirmPasswordReset(
-    req: Request,
-    res: Response
-  ): Promise<void> {
-    try {
-      const { password }: PasswordResetConfirmRequest = req.body;
-
-      const supabase = createSupabaseClient();
-      const { data, error } = await supabase.auth.updateUser({
-        password: password,
-      });
-
-      if (error) {
-        const response: ApiResponse = { error: error.message };
-        res.status(400).json(response);
-        return;
-      }
-
-      const authResponse: AuthResponse = {
-        message: "Password updated successfully",
-        user: data.user!,
-      };
-
-      const response: ApiResponse<AuthResponse> = {
-        message: "Password updated successfully",
-        data: authResponse,
-      };
-
-      res.json(response);
-    } catch (err) {
-      console.error("Password reset confirmation error:", err);
-      const response: ApiResponse = { error: "Internal server error" };
-      res.status(500).json(response);
-    }
-  }
 }
