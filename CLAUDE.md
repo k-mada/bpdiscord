@@ -325,6 +325,22 @@ other via a `<Link>` so users can switch without going through the header.
 4. **If Supabase email-confirmation is enabled**: response contains a `message` but no `access_token`. Page surfaces the message; user must confirm via email before logging in.
 5. **Otherwise**: response contains `access_token` + user; same persist-and-redirect flow as login.
 
+#### Password Reset
+
+Unlike login/signup (server-mediated), reset is **client-direct via the Supabase JS SDK** because the recovery email link points at the client URL — the recovery code arrives in the browser, not the server. See `src/client/lib/supabase.ts`.
+
+1. User clicks "Forgot your password?" on `/login`, enters email on the PasswordReset form
+2. `POST /api/auth/forgot-password` → server calls `supabase.auth.resetPasswordForEmail` → Supabase emails the user
+3. Email link points at `${CLIENT_URL}/reset-password#access_token=…&type=recovery&…`
+4. User clicks link → lands on `/reset-password`
+5. `ResetPasswordPage` mounts; the Supabase JS SDK auto-extracts the recovery code from the URL hash and establishes an **in-memory** session (`persistSession: false`)
+6. Page checks `getSession()`; if no session → "Invalid or expired link" error
+7. User enters new password + confirm → page calls `supabase.auth.updateUser({ password })`
+8. On success: **sign out the recovery session** (we don't want the email-link click alone to grant an authenticated session), navigate to `/login` with a success banner
+9. User logs in normally with the new password
+
+Requires `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` env vars on the client.
+
 #### Protected Route Access
 
 1. Component checks for token in localStorage
@@ -603,6 +619,8 @@ WORKER_SHARED_SECRET=shared_with_moviemaestro_service  # Required for /api/admin
 # Frontend (.env)
 # VITE_API_URL=/api  # Uses proxy in development, override for production
 VITE_HOT_RELOAD=true
+VITE_SUPABASE_URL=https://your-project.supabase.co     # Required for /reset-password page
+VITE_SUPABASE_ANON_KEY=your-anon-key                   # Required for /reset-password page
 ```
 
 ### Vite Development Benefits

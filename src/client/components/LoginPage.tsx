@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import PasswordReset from "./PasswordReset";
 import apiService from "../services/api";
 import { AuthRequest } from "../../shared/types";
-import { Subheading } from "./Subheading";
 import { Input } from "./ui/Input";
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [formData, setFormData] = useState<AuthRequest>({
     email: "",
@@ -16,6 +16,9 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loginRequired, setLoginRequired] = useState<boolean>(false);
+  const resetSuccess = Boolean(
+    (location.state as { resetSuccess?: boolean } | null)?.resetSuccess,
+  );
 
   useEffect(() => {
     const redirectPath = localStorage.getItem("redirectAfterLogin");
@@ -72,6 +75,14 @@ const LoginPage = () => {
           <h2 className="text-2xl font-semibold text-letterboxd-text-primary mb-6 text-center">
             Log in to your account
           </h2>
+
+          {resetSuccess && (
+            <div className="mb-4 p-3 bg-green-900/20 border border-green-600/30 rounded-md">
+              <p className="text-green-300 text-sm text-center">
+                Password updated. Please log in with your new password.
+              </p>
+            </div>
+          )}
 
           {loginRequired && (
             <div className="mb-4 p-3 bg-yellow-900/20 border border-yellow-600/30 rounded-md">
