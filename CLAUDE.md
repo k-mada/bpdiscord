@@ -20,7 +20,7 @@ BPDiscord is a full-stack TypeScript web application that scrapes and analyzes L
 
 ### Technology Stack
 
-- **Frontend**: Vite + React 18 + TypeScript, Tailwind CSS
+- **Frontend**: Vite + React 19 + TypeScript, Tailwind CSS
 - **Backend**: Express.js + TypeScript, Puppeteer for web scraping
 - **Database**: Supabase (PostgreSQL)
 - **Authentication**: JWT tokens via Supabase Auth
@@ -945,6 +945,22 @@ bd close <id>         # Complete work
 - Use `bd` for ALL task tracking — do NOT use TodoWrite, TaskCreate, or markdown TODO lists
 - Run `bd prime` for detailed command reference and session close protocol
 - Use `bd remember` for persistent knowledge — do NOT use MEMORY.md files
+
+## Keeping CLAUDE.md in sync
+
+CLAUDE.md is the source-of-truth for engineers (and AI agents) starting on the project. Doc-code drift is a real cost — e.g. the React 18 / React 19 mismatch caught during Stage 3 planning, where the docs said 18 but the codebase was already on 19.
+
+**Practice**: before opening any PR, check whether the changes affect anything documented here. If yes, update CLAUDE.md as part of the **same PR**. Doc and code ship together.
+
+**What to watch for**:
+
+- Stack versions (React, Tailwind, Drizzle, etc.) — bump in docs when bumped in `package.json`
+- Tables / schemas / FKs / RLS policies — update the schema section
+- Route topology — add, remove, or rename `/api/*` endpoints in the routes section
+- Env vars — add to the env vars list when new ones become required
+- Conventions — testing patterns, deploy steps, error handling, etc.
+
+If a change doesn't touch any documented surface, no doc update is needed — but the check itself should be a routine habit at PR time.
 
 ## Session Completion
 
