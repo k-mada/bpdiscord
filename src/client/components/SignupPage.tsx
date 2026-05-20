@@ -60,18 +60,11 @@ const SignupPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-letterboxd-bg-primary flex items-center justify-center px-4">
+    <div className="min-h-screen bg-letterboxd-bg-primary flex items-start mt-10 justify-center px-4">
       <div className="w-full max-w-md">
-        <header className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-letterboxd-text-primary mb-2">
-            The Big Picture Discord
-          </h1>
-          <Subheading />
-        </header>
-
         <div className="card">
           <h2 className="text-2xl font-semibold text-letterboxd-text-primary mb-6 text-center">
-            Sign Up
+            Create an account
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -137,13 +130,13 @@ const SignupPage = () => {
 
             {error && (
               <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
-                <p className="text-red-400 text-sm">{error}</p>
+                <p className="text-red-400 text-sm mb-0">{error}</p>
               </div>
             )}
 
             {message && (
               <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4">
-                <p className="text-green-400 text-sm">{message}</p>
+                <p className="text-green-400 text-sm p-0">{message}</p>
               </div>
             )}
 

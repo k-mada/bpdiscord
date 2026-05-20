@@ -66,18 +66,11 @@ const LoginPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-letterboxd-bg-primary flex items-center justify-center px-4">
+    <div className="min-h-screen bg-letterboxd-bg-primary flex items-start mt-10 justify-center px-4">
       <div className="w-full max-w-md">
-        <header className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-letterboxd-text-primary mb-2">
-            The Big Picture Discord
-          </h1>
-          <Subheading />
-        </header>
-
         <div className="card">
           <h2 className="text-2xl font-semibold text-letterboxd-text-primary mb-6 text-center">
-            Login
+            Log in to your account
           </h2>
 
           {loginRequired && (

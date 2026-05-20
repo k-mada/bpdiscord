@@ -25,11 +25,11 @@ const PasswordReset = ({ onBackToLogin }: PasswordResetProps) => {
       const response = await apiService.requestPasswordReset(email);
       setSuccess(
         response.message ||
-          "Password reset email sent. Please check your email."
+          "Password reset email sent. Please check your email.",
       );
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to send reset email"
+        err instanceof Error ? err.message : "Failed to send reset email",
       );
     } finally {
       setLoading(false);
@@ -74,16 +74,14 @@ const PasswordReset = ({ onBackToLogin }: PasswordResetProps) => {
   return (
     <div className="min-h-screen bg-letterboxd-bg-primary flex items-center justify-center px-4">
       <div className="w-full max-w-md">
-        <header className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-letterboxd-text-primary mb-2">
-            Password Reset
-          </h1>
-          <p className="text-letterboxd-text-secondary">
-            {isRequestMode
-              ? "Enter your email to receive a reset link"
-              : "Enter your new password and reset token"}
-          </p>
-        </header>
+        <h2 className="text-2xl font-semibold text-letterboxd-text-primary mb-6 text-center">
+          Password Reset
+        </h2>
+        <p className="text-letterboxd-text-secondary text-center">
+          {isRequestMode
+            ? "Enter your email to receive a reset link"
+            : "Enter your new password and reset token"}
+        </p>
 
         <div className="card">
           {isRequestMode ? (
