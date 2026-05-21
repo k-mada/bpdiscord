@@ -197,6 +197,20 @@ describe('humanizeSupabaseAuthError', () => {
     );
   });
 
+  it('rewrites the rate-limit "for security purposes" message, preserving seconds', () => {
+    const supabaseMsg = 'For security purposes, you can only request this after 50 seconds.';
+    expect(humanizeSupabaseAuthError(supabaseMsg)).toBe(
+      'Too many signup attempts. Please wait 50 seconds and try again.',
+    );
+  });
+
+  it('rewrites the rate-limit message with a generic fallback when seconds are not parseable', () => {
+    const supabaseMsg = 'For security purposes, you can only request this after a while.';
+    expect(humanizeSupabaseAuthError(supabaseMsg)).toBe(
+      'Too many signup attempts. Please wait a moment and try again.',
+    );
+  });
+
   it('falls through to the original message for unmapped errors', () => {
     expect(humanizeSupabaseAuthError('Some new Supabase error')).toBe('Some new Supabase error');
   });

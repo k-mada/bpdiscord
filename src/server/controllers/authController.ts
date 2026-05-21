@@ -39,6 +39,12 @@ export function humanizeSupabaseAuthError(msg: string | undefined): string {
   if (lower.includes("user already registered")) {
     return "An account with this email already exists.";
   }
+  if (lower.includes("for security purposes, you can only request this after")) {
+    const secondsMatch = msg.match(/after (\d+) seconds?/i);
+    return secondsMatch
+      ? `Too many signup attempts. Please wait ${secondsMatch[1]} seconds and try again.`
+      : "Too many signup attempts. Please wait a moment and try again.";
+  }
 
   return msg;
 }
