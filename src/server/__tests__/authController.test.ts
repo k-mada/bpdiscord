@@ -211,6 +211,12 @@ describe('humanizeSupabaseAuthError', () => {
     );
   });
 
+  it('rewrites the email rate limit message', () => {
+    expect(humanizeSupabaseAuthError('email rate limit exceeded')).toBe(
+      'Our email service is rate-limited right now. Please try again in a few minutes, or contact an admin if this persists.',
+    );
+  });
+
   it('falls through to the original message for unmapped errors', () => {
     expect(humanizeSupabaseAuthError('Some new Supabase error')).toBe('Some new Supabase error');
   });

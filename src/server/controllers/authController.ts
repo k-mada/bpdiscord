@@ -45,6 +45,9 @@ export function humanizeSupabaseAuthError(msg: string | undefined): string {
       ? `Too many signup attempts. Please wait ${secondsMatch[1]} seconds and try again.`
       : "Too many signup attempts. Please wait a moment and try again.";
   }
+  if (lower.includes("email rate limit exceeded")) {
+    return "Our email service is rate-limited right now. Please try again in a few minutes, or contact an admin if this persists.";
+  }
 
   return msg;
 }
