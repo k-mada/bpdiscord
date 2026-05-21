@@ -5,7 +5,6 @@ import {
   SignupRequest,
   AuthResponse,
   ScraperRequest,
-  PasswordResetConfirmRequest,
 } from "../../shared/types";
 import {
   LBFilm,
@@ -72,15 +71,6 @@ class ApiService {
     return this.request("/auth/forgot-password", {
       method: "POST",
       body: JSON.stringify({ email }),
-    });
-  }
-
-  async confirmPasswordReset(
-    data: PasswordResetConfirmRequest,
-  ): Promise<ApiResponse<AuthResponse>> {
-    return this.request<AuthResponse>("/auth/reset-password", {
-      method: "POST",
-      body: JSON.stringify(data),
     });
   }
 

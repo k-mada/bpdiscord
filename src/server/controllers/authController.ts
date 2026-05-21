@@ -16,8 +16,41 @@ import {
   AuthResponse,
   ApiResponse,
   PasswordResetRequest,
-  PasswordResetConfirmRequest,
 } from "../../shared/types";
+
+// Cleans up the most-hit Supabase Auth error messages before surfacing them
+// to clients. Supabase's defaults enumerate every valid character ("Password
+// should contain at least one character of each: abcdefghij…") which is
+// verbose UX. Falls back to the original message when we don't have a mapping.
+// Exported for direct unit testing.
+export function humanizeSupabaseAuthError(msg: string | undefined): string {
+  if (!msg) return "Signup failed";
+  const lower = msg.toLowerCase();
+
+  if (lower.includes("password should contain at least one character")) {
+    return "Password must include a lowercase letter, an uppercase letter, and a number.";
+  }
+  if (lower.includes("password should be at least")) {
+    const lengthMatch = msg.match(/at least (\d+)/i);
+    return lengthMatch
+      ? `Password must be at least ${lengthMatch[1]} characters.`
+      : "Password is too short.";
+  }
+  if (lower.includes("user already registered")) {
+    return "An account with this email already exists.";
+  }
+  if (lower.includes("for security purposes, you can only request this after")) {
+    const secondsMatch = msg.match(/after (\d+) seconds?/i);
+    return secondsMatch
+      ? `Too many signup attempts. Please wait ${secondsMatch[1]} seconds and try again.`
+      : "Too many signup attempts. Please wait a moment and try again.";
+  }
+  if (lower.includes("email rate limit exceeded")) {
+    return "Our email service is rate-limited right now. Please try again in a few minutes, or contact an admin if this persists.";
+  }
+
+  return msg;
+}
 
 export class AuthController {
   static async signup(req: Request, res: Response): Promise<void> {
@@ -67,7 +100,23 @@ export class AuthController {
       if (signUpError || !signUpData.user) {
         res
           .status(400)
-          .json({ error: signUpError?.message ?? "Signup failed" });
+          .json({ error: humanizeSupabaseAuthError(signUpError?.message) });
+        return;
+      }
+
+      // Supabase returns a stub user (random UUID, empty identities array)
+      // when the email is already registered — anti-enumeration behavior.
+      // The stub UUID isn't in auth.users, so a later FK insert would 500.
+      // Detect and surface as a clean 409. Note: Supabase also normalizes
+      // Gmail plus-aliases (foo+x@gmail.com → foo@gmail.com), so this
+      // catches both literal duplicates and plus-aliased collisions.
+      if (
+        !signUpData.user.identities ||
+        signUpData.user.identities.length === 0
+      ) {
+        res.status(409).json({
+          error: "An account with this email already exists.",
+        });
         return;
       }
 
@@ -291,39 +340,4 @@ export class AuthController {
     }
   }
 
-  static async confirmPasswordReset(
-    req: Request,
-    res: Response
-  ): Promise<void> {
-    try {
-      const { password }: PasswordResetConfirmRequest = req.body;
-
-      const supabase = createSupabaseClient();
-      const { data, error } = await supabase.auth.updateUser({
-        password: password,
-      });
-
-      if (error) {
-        const response: ApiResponse = { error: error.message };
-        res.status(400).json(response);
-        return;
-      }
-
-      const authResponse: AuthResponse = {
-        message: "Password updated successfully",
-        user: data.user!,
-      };
-
-      const response: ApiResponse<AuthResponse> = {
-        message: "Password updated successfully",
-        data: authResponse,
-      };
-
-      res.json(response);
-    } catch (err) {
-      console.error("Password reset confirmation error:", err);
-      const response: ApiResponse = { error: "Internal server error" };
-      res.status(500).json(response);
-    }
-  }
 }

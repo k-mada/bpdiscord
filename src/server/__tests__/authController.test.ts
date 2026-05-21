@@ -20,7 +20,7 @@ import { sql } from 'drizzle-orm';
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import type { Request, Response } from 'express';
 
-import { AuthController } from '../controllers/authController';
+import { AuthController, humanizeSupabaseAuthError } from '../controllers/authController';
 import { LBUSERNAME_FORMAT } from '../lib/lbusername';
 import { db } from '../db';
 import { appUsers, users } from '../db/schema';
@@ -167,6 +167,62 @@ describe('LBUSERNAME_FORMAT regex', () => {
 
   it.each(invalid)('rejects %j', (input) => {
     expect(LBUSERNAME_FORMAT.test(input)).toBe(false);
+  });
+});
+
+describe('humanizeSupabaseAuthError', () => {
+  it('rewrites the verbose "password should contain at least one character" message', () => {
+    const supabaseMsg =
+      'Password should contain at least one character of each: abcdefghijklmnopqrstuvwxyz, ABCDEFGHIJKLMNOPQRSTUVWXYZ, 0123456789.';
+    expect(humanizeSupabaseAuthError(supabaseMsg)).toBe(
+      'Password must include a lowercase letter, an uppercase letter, and a number.',
+    );
+  });
+
+  it('rewrites min-length messages while preserving the length Supabase reports', () => {
+    expect(humanizeSupabaseAuthError('Password should be at least 6 characters.')).toBe(
+      'Password must be at least 6 characters.',
+    );
+  });
+
+  it('rewrites min-length messages with a generic fallback when no length is parseable', () => {
+    expect(humanizeSupabaseAuthError('Password should be at least short.')).toBe(
+      'Password is too short.',
+    );
+  });
+
+  it('rewrites duplicate-email errors', () => {
+    expect(humanizeSupabaseAuthError('User already registered')).toBe(
+      'An account with this email already exists.',
+    );
+  });
+
+  it('rewrites the rate-limit "for security purposes" message, preserving seconds', () => {
+    const supabaseMsg = 'For security purposes, you can only request this after 50 seconds.';
+    expect(humanizeSupabaseAuthError(supabaseMsg)).toBe(
+      'Too many signup attempts. Please wait 50 seconds and try again.',
+    );
+  });
+
+  it('rewrites the rate-limit message with a generic fallback when seconds are not parseable', () => {
+    const supabaseMsg = 'For security purposes, you can only request this after a while.';
+    expect(humanizeSupabaseAuthError(supabaseMsg)).toBe(
+      'Too many signup attempts. Please wait a moment and try again.',
+    );
+  });
+
+  it('rewrites the email rate limit message', () => {
+    expect(humanizeSupabaseAuthError('email rate limit exceeded')).toBe(
+      'Our email service is rate-limited right now. Please try again in a few minutes, or contact an admin if this persists.',
+    );
+  });
+
+  it('falls through to the original message for unmapped errors', () => {
+    expect(humanizeSupabaseAuthError('Some new Supabase error')).toBe('Some new Supabase error');
+  });
+
+  it('returns a generic message when input is undefined', () => {
+    expect(humanizeSupabaseAuthError(undefined)).toBe('Signup failed');
   });
 });
 

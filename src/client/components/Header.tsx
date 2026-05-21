@@ -91,12 +91,20 @@ const Header = () => {
               Logout
             </button>
           ) : (
-            <button
-              onClick={() => navigateTo("/login")}
-              className="btn-primary"
-            >
-              Login
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => navigateTo("/login")}
+                className="btn-secondary"
+              >
+                Login
+              </button>
+              <button
+                onClick={() => navigateTo("/signup")}
+                className="btn-primary"
+              >
+                Sign Up
+              </button>
+            </div>
           )}
         </div>
 
@@ -169,18 +177,26 @@ const Header = () => {
               Data Fetcher
             </button>
 
-            <div className="pt-2 border-t border-letterboxd-border">
+            <div className="pt-2 border-t border-letterboxd-border space-y-2">
               {isAuthenticated ? (
                 <button onClick={handleLogout} className="btn-secondary w-full">
                   Logout
                 </button>
               ) : (
-                <button
-                  onClick={() => navigateTo("/login")}
-                  className="btn-primary w-full"
-                >
-                  Login
-                </button>
+                <>
+                  <button
+                    onClick={() => navigateTo("/login")}
+                    className="btn-secondary w-full"
+                  >
+                    Login
+                  </button>
+                  <button
+                    onClick={() => navigateTo("/signup")}
+                    className="btn-primary w-full"
+                  >
+                    Sign Up
+                  </button>
+                </>
               )}
             </div>
           </div>
