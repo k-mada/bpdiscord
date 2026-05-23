@@ -905,6 +905,18 @@ This deployment architecture provides production-ready scalability while maintai
 
 This application demonstrates modern full-stack development practices with TypeScript, combining web scraping capabilities with a polished user interface for data analysis and comparison.
 
+## Git workflow — never commit directly to main
+
+**All code changes must land on `main` via a pull request from a feature branch. Direct commits or pushes to `main` are not allowed under any circumstances.**
+
+If the user asks for changes while the local branch is `main`:
+
+1. **First**, create a new branch — e.g. `git checkout -b <topic>` — using a short kebab-case name. If there's a beads issue, include its short code (e.g. `feat/scrape-removal-bpdiscord-5rn`).
+2. Make the changes, commit, and `git push -u origin <branch>` on the new branch.
+3. Open a pull request with `gh pr create`. Reference the beads issue in the PR body.
+4. **Do not** `git push` to `main` even if the working branch is `main`. If you realise you've committed on `main` by mistake, before pushing: create the branch from `HEAD`, then reset `main` back to `origin/main` (`git branch <topic>` + `git reset --hard origin/main`), then push the new branch.
+
+This rule has no exceptions — not for tiny fixes, not for "obvious" changes, not for docs-only commits. PR-only workflow is enforced because (a) it preserves the review trail visible in `git log` (every recent commit references a PR), (b) it keeps CI gates intact, and (c) it gives the user a chance to catch problems before they hit `main`.
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:ca08a54f -->
 ## Beads Issue Tracker
