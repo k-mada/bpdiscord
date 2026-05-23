@@ -1,8 +1,6 @@
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
-import dotenv from "dotenv";
+import "../loadEnv";
 
-// Load environment variables immediately
-dotenv.config();
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
   throw new Error("Missing required Supabase environment variables");

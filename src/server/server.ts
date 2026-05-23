@@ -1,8 +1,11 @@
+// .env loading must happen before any module that reads process.env at
+// import time (e.g. config/database, db/index). Side-effect import.
+import "./loadEnv";
+
 import express, { Request, Response } from "express";
 import cors from "cors";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
-import dotenv from "dotenv";
 
 import authRoutes from "./routes/authRoutes";
 import userAdminRoutes from "./routes/userAdminRoutes";
@@ -16,13 +19,6 @@ import adminRoutes from "./routes/adminRoutes";
 import scrapeUserRoutes from "./routes/scrapeUserRoutes";
 import { globalErrorHandler } from "./middleware/errorHandler";
 import { ApiResponse } from "../shared/types";
-
-// Load environment variables
-// In production, environment variables should be set via system environment
-// or deployment platform (Heroku, Vercel, etc.)
-if (process.env.NODE_ENV !== "production") {
-  dotenv.config();
-}
 
 const app = express();
 const PORT: number = parseInt(process.env.PORT || "3001", 10);

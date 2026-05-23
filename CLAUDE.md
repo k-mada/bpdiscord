@@ -553,25 +553,85 @@ yarn dev:client
 yarn build
 ```
 
-### Environment Variables
+### Local smoke testing
+
+For PR smoke tests (any change that touches the API or auth flow), run the
+backend against the local Supabase stack instead of prod. This prevents
+accidental writes to the real database during testing.
+
+**One-time bootstrap** (idempotent):
 
 ```bash
-# Backend (.env)
-SUPABASE_URL=your_supabase_url
-SUPABASE_ANON_KEY=your_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_service_key
-JWT_SECRET=your_jwt_secret
-NODE_ENV=development
-TMDB_READ_API_TOKEN=your_tmdb_v4_read_token  # Required for /api/actor-graph ingestion
-WORKER_URL=https://moviemaestro.up.railway.app  # Required for /api/scrape-user + /api/admin/refresh-rankings
-WORKER_SHARED_SECRET=shared_with_moviemaestro_service  # Required for /api/scrape-user + /api/admin/refresh-rankings
-
-# Frontend (.env)
-# VITE_API_URL=/api  # Uses proxy in development, override for production
-VITE_HOT_RELOAD=true
-VITE_SUPABASE_URL=https://your-project.supabase.co     # Required for /reset-password page
-VITE_SUPABASE_ANON_KEY=your-anon-key                   # Required for /reset-password page
+supabase start            # bring up local Postgres + Auth + Studio on :54321
+yarn setup:local          # writes src/server/.env.local + src/client/.env.local
+                          # from `supabase status -o env`, then seeds an admin
+                          # user via the service-role key
 ```
+
+The setup script populates:
+
+- `src/server/.env.local` (gitignored) — local Supabase URL / keys / DB URL.
+  Loaded by `loadEnv.ts` *before* `.env`, so any keys defined here override
+  the prod-pointing values in `.env`.
+- `src/client/.env.local` (gitignored) — picked up automatically by Vite.
+
+After setup, the seeded admin lives in **local** Supabase only:
+
+- email: `admin@local.test`
+- password: `dev-admin-pw`
+- role: `admin` (in `user_metadata`)
+
+Override with `yarn setup:local --email <x> --password <y> --name <z>
+--lbusername <n>`. Pass `--force` to overwrite existing `.env.local` files.
+
+**Run the stack:**
+
+```bash
+yarn dev:local            # same as `yarn dev` — both pick up .env.local
+                          # automatically. The breadcrumb at startup:
+                          #   [env] .env.local + .env → LOCAL http://127.0.0.1:54321
+                          # confirms local mode.
+```
+
+**Smoke loop:** log in at `http://localhost:5173/login` as the seeded admin,
+then exercise whichever feature the PR touched. Console + server logs
+together give a clean signal — no Vercel deploys, no risk to prod data.
+
+**Returning to prod-pointing:** delete `src/server/.env.local` and
+`src/client/.env.local`. The breadcrumb at startup will switch to:
+
+```
+[env] .env only → REMOTE https://<project>.supabase.co
+```
+
+**Known limitation**: `WORKER_URL` is unset in `.env.local` by design (the
+moviemaestro worker only runs in prod). `/api/scrape-user/*` and
+`/api/admin/refresh-rankings` return 500 *"Worker not configured"* in local
+mode — test worker scenarios in a staging deploy or against prod with a
+non-prod Letterboxd username.
+
+**Test DB caveat**: the smoke-seeded admin user lives in the same local
+Supabase instance the test suite uses. Run `yarn test` *before* `yarn
+setup:local` for a clean test run, or accept the failures on shared state.
+A proper isolation fix is tracked in `bpdiscord-141`.
+
+### Environment Variables
+
+See `src/server/.env.example`, `src/server/.env.local.example`, and
+`src/client/.env.example` for the canonical template. Copy the relevant
+file to `.env` (or `.env.local` for smoke mode) and fill in values.
+
+Server vars used at runtime: `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
+`SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`, `DATABASE_URL_TEST`,
+`JWT_SECRET`, `PORT`, `NODE_ENV`, `WORKER_URL`, `WORKER_SHARED_SECRET`,
+`TMDB_READ_API_TOKEN`, `CLIENT_URL`.
+
+Client vars used at runtime: `VITE_API_URL` (optional, for non-proxied
+prod builds), `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`.
+
+`src/server/.env.local` and `src/client/.env.local` are gitignored
+overrides loaded *before* `.env` (server: by `loadEnv.ts`; client: by Vite
+convention). Used for local smoke testing; see the section above.
 
 ### Vite Development Benefits
 
