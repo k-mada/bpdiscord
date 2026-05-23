@@ -584,6 +584,18 @@ After setup, the seeded admin lives in **local** Supabase only:
 Override with `yarn setup:local --email <x> --password <y> --name <z>
 --lbusername <n>`. Pass `--force` to overwrite existing `.env.local` files.
 
+The setup also seeds **fixture data** so the homepage / stats /
+comparison / hater-rankings pages render meaningful content instead of
+empty tables: 5 fake Discord users (smoke-alice, smoke-bob, etc.),
+20 films, ~75 UserFilms rows with a realistic ratings spread. Fixtures
+live in `src/server/scripts/fixtures/localSmokeData.ts` and are
+idempotent (upsert on natural keys). Skip with `--no-fixtures`.
+
+**Known fixture limitation**: the "Highest rated movies (20+ ratings)"
+section on the homepage stays empty in smoke mode — its threshold needs
+≥20 ratings per film, which is impossible with 5 fake users. All other
+sections populate fully.
+
 **Run the stack:**
 
 ```bash

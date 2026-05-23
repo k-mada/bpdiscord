@@ -27,7 +27,13 @@ import { execSync } from "child_process";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { resolve } from "path";
 
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
+
+import {
+  FIXTURE_FILMS,
+  FIXTURE_USERS,
+  FIXTURE_USER_FILMS,
+} from "./fixtures/localSmokeData";
 
 interface CliFlags {
   force: boolean;
@@ -35,6 +41,7 @@ interface CliFlags {
   password: string;
   name: string;
   lbusername: string | null;
+  withFixtures: boolean;
 }
 
 const DEFAULT_EMAIL = "admin@local.test";
@@ -48,6 +55,7 @@ function parseFlags(argv: string[]): CliFlags {
     password: DEFAULT_PASSWORD,
     name: DEFAULT_NAME,
     lbusername: null,
+    withFixtures: true,
   };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -56,9 +64,10 @@ function parseFlags(argv: string[]): CliFlags {
     else if (a === "--password") flags.password = argv[++i]!;
     else if (a === "--name") flags.name = argv[++i]!;
     else if (a === "--lbusername") flags.lbusername = argv[++i]!;
+    else if (a === "--no-fixtures") flags.withFixtures = false;
     else if (a === "--help" || a === "-h") {
       console.log(
-        `\nUsage: yarn setup:local [options]\n\nOptions:\n  --force            Overwrite existing .env.local files\n  --email <addr>     Admin email (default: ${DEFAULT_EMAIL})\n  --password <pw>    Admin password (default: ${DEFAULT_PASSWORD})\n  --name <str>       Admin display name (default: "${DEFAULT_NAME}")\n  --lbusername <s>   Optional Letterboxd username to link to the admin\n  --help, -h         Show this message\n`,
+        `\nUsage: yarn setup:local [options]\n\nOptions:\n  --force            Overwrite existing .env.local files\n  --email <addr>     Admin email (default: ${DEFAULT_EMAIL})\n  --password <pw>    Admin password (default: ${DEFAULT_PASSWORD})\n  --name <str>       Admin display name (default: "${DEFAULT_NAME}")\n  --lbusername <s>   Optional Letterboxd username to link to the admin\n  --no-fixtures      Skip seeding fixture Users/Films/UserFilms\n  --help, -h         Show this message\n`,
       );
       process.exit(0);
     }
@@ -301,6 +310,68 @@ async function seedAdmin(
   }
 }
 
+/**
+ * Seed Letterboxd-side fixtures (Users + Films + UserFilms) so the homepage
+ * stats / comparison / hater rankings pages have content to render. Idempotent
+ * via ON CONFLICT DO UPDATE on every table's natural key.
+ *
+ * "Highest rated movies (20+ ratings)" stays empty by design — that threshold
+ * would require ≥20 users, which is more fixture noise than it's worth.
+ * Documented in CLAUDE.md.
+ */
+async function seedFixtures(admin: SupabaseClient): Promise<void> {
+  const usersPayload = FIXTURE_USERS.map((u) => ({
+    lbusername: u.lbusername,
+    display_name: u.display_name,
+    followers: u.followers,
+    following: u.following,
+    number_of_lists: u.number_of_lists,
+    is_discord: true,
+    updated_at: new Date().toISOString(),
+  }));
+  const { error: usersErr } = await admin
+    .from("Users")
+    .upsert(usersPayload, { onConflict: "lbusername" });
+  if (usersErr) {
+    console.error(`✗ Users upsert failed: ${usersErr.message}`);
+    process.exit(1);
+  }
+  console.log(`  ✓ Users (${FIXTURE_USERS.length} rows)`);
+
+  const filmsPayload = FIXTURE_FILMS.map((f) => ({
+    film_slug: f.film_slug,
+    title: f.title,
+    lb_rating: f.lb_rating,
+    poster: f.poster,
+    updated_at: new Date().toISOString(),
+  }));
+  const { error: filmsErr } = await admin
+    .from("Films")
+    .upsert(filmsPayload, { onConflict: "film_slug" });
+  if (filmsErr) {
+    console.error(`✗ Films upsert failed: ${filmsErr.message}`);
+    process.exit(1);
+  }
+  console.log(`  ✓ Films (${FIXTURE_FILMS.length} rows)`);
+
+  const userFilmsPayload = FIXTURE_USER_FILMS.map((uf) => ({
+    lbusername: uf.lbusername,
+    film_slug: uf.film_slug,
+    title: uf.title,
+    rating: uf.rating,
+    liked: uf.liked,
+    updated_at: new Date().toISOString(),
+  }));
+  const { error: ufErr } = await admin
+    .from("UserFilms")
+    .upsert(userFilmsPayload, { onConflict: "lbusername,film_slug" });
+  if (ufErr) {
+    console.error(`✗ UserFilms upsert failed: ${ufErr.message}`);
+    process.exit(1);
+  }
+  console.log(`  ✓ UserFilms (${FIXTURE_USER_FILMS.length} rows)`);
+}
+
 async function main() {
   const flags = parseFlags(process.argv.slice(2));
 
@@ -313,6 +384,16 @@ async function main() {
 
   console.log("\n→ Seeding admin user…");
   await seedAdmin(env, flags);
+
+  if (flags.withFixtures) {
+    console.log("\n→ Seeding fixtures (Discord users + films)…");
+    const admin = createClient(env.API_URL, env.SERVICE_ROLE_KEY, {
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+    await seedFixtures(admin);
+  } else {
+    console.log("\n· Skipping fixtures (--no-fixtures)");
+  }
 
   console.log(`\n✅ Local smoke ready.\n`);
   console.log(`Next:`);
