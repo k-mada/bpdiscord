@@ -5,25 +5,58 @@ import { SignupRequest } from "../../shared/types";
 import { Subheading } from "./Subheading";
 import { Input } from "./ui/Input";
 
+// Mirrors LBUSERNAME_FORMAT in src/server/lib/lbusername.ts. UX-only pre-check
+// before round-trip; server remains the source of truth.
+const LBUSERNAME_FORMAT = /^[a-z0-9_-]{2,15}$/;
+const LBUSERNAME_FORMAT_MESSAGE =
+  "2–15 characters; lowercase letters, numbers, hyphens, underscores only.";
+
 const SignupPage = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState<SignupRequest>({
+  const [formData, setFormData] = useState<
+    Required<Pick<SignupRequest, "name" | "email" | "password">> & {
+      lbusername: string;
+    }
+  >({
     name: "",
     email: "",
     password: "",
+    lbusername: "",
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lbError, setLbError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setLbError(null);
     setMessage(null);
 
+    const trimmedLb = formData.lbusername.trim().toLowerCase();
+
+    // Empty is fine — field is optional. Only validate when the user typed
+    // something.
+    if (trimmedLb.length > 0 && !LBUSERNAME_FORMAT.test(trimmedLb)) {
+      setLbError(LBUSERNAME_FORMAT_MESSAGE);
+      setLoading(false);
+      return;
+    }
+
+    // Build the payload without the lbusername key when empty, so the server
+    // sees `undefined` (skip the linking flow entirely) rather than an empty
+    // string (which would trip its format check).
+    const payload: SignupRequest = {
+      name: formData.name,
+      email: formData.email,
+      password: formData.password,
+      ...(trimmedLb ? { lbusername: trimmedLb } : {}),
+    };
+
     try {
-      const response = await apiService.signup(formData);
+      const response = await apiService.signup(payload);
 
       if (response.data?.access_token) {
         localStorage.setItem("token", response.data.access_token);
@@ -46,7 +79,14 @@ const SignupPage = () => {
         setError("Account created, but no session was issued. Please log in.");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Signup failed");
+      const raw = err instanceof Error ? err.message : "Signup failed";
+      // Route the lbusername-claim conflict to the field-level error so it
+      // appears next to the offending input, not the form-level banner.
+      if (/already been claimed/i.test(raw)) {
+        setLbError(raw);
+      } else {
+        setError(raw);
+      }
     } finally {
       setLoading(false);
     }
@@ -57,6 +97,9 @@ const SignupPage = () => {
       ...formData,
       [e.target.name]: e.target.value,
     });
+    if (e.target.name === "lbusername" && lbError) {
+      setLbError(null);
+    }
   };
 
   return (
@@ -126,6 +169,42 @@ const SignupPage = () => {
                 className="w-full"
                 placeholder="Enter your password"
               />
+            </div>
+
+            <div>
+              <label
+                htmlFor="lbusername"
+                className="block text-sm font-medium text-letterboxd-text-secondary mb-2"
+              >
+                Letterboxd.com username
+              </label>
+              <Input
+                type="text"
+                id="lbusername"
+                name="lbusername"
+                value={formData.lbusername}
+                onChange={handleInputChange}
+                disabled={loading}
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+                aria-invalid={lbError ? true : undefined}
+                aria-describedby="lbusername-help"
+                className="w-full"
+                placeholder="e.g. davidehrlich"
+              />
+              <p
+                id="lbusername-help"
+                className="text-xs text-letterboxd-text-muted mt-1"
+              >
+                Optional — link your Letterboxd account now or have an admin
+                assign it later. We'll fetch your data automatically.
+              </p>
+              {lbError && (
+                <p role="alert" className="text-xs text-red-400 mt-1">
+                  {lbError}
+                </p>
+              )}
             </div>
 
             {error && (

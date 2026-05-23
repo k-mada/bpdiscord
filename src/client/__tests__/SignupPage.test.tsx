@@ -24,12 +24,15 @@ describe("SignupPage", () => {
     installFakeLocalStorage();
   });
 
-  it("renders name + email + password fields (no lbusername yet)", () => {
+  it("renders name + email + password + Letterboxd.com username fields", () => {
     renderPage();
     expect(screen.getByLabelText("Name")).toBeInTheDocument();
     expect(screen.getByLabelText("Email")).toBeInTheDocument();
     expect(screen.getByLabelText("Password")).toBeInTheDocument();
-    expect(screen.queryByLabelText(/letterboxd/i)).not.toBeInTheDocument();
+    expect(screen.getByLabelText("Letterboxd.com username")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Optional — link your Letterboxd account now/),
+    ).toBeInTheDocument();
   });
 
   it("renders the Login link to /login", () => {
@@ -38,7 +41,7 @@ describe("SignupPage", () => {
     expect(link).toHaveAttribute("href", "/login");
   });
 
-  it("submits via apiService.signup and persists token + user when present", async () => {
+  it("submits without lbusername when the field is left blank", async () => {
     vi.mocked(apiService.signup).mockResolvedValue({
       data: {
         message: "ok",
@@ -61,6 +64,99 @@ describe("SignupPage", () => {
       email: "u@example.test",
       password: "secret",
     });
+  });
+
+  it("trims, lowercases, and includes lbusername when provided", async () => {
+    vi.mocked(apiService.signup).mockResolvedValue({
+      data: {
+        message: "ok",
+        access_token: "fake-token",
+        user: { id: "u1", email: "u@example.test" } as never,
+      },
+    });
+
+    renderPage();
+    await userEvent.type(screen.getByLabelText("Name"), "New User");
+    await userEvent.type(screen.getByLabelText("Email"), "u@example.test");
+    await userEvent.type(screen.getByLabelText("Password"), "secret");
+    await userEvent.type(
+      screen.getByLabelText("Letterboxd.com username"),
+      "  DavidEhrlich  ",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Sign Up" }));
+
+    await waitFor(() =>
+      expect(apiService.signup).toHaveBeenCalledWith({
+        name: "New User",
+        email: "u@example.test",
+        password: "secret",
+        lbusername: "davidehrlich",
+      }),
+    );
+  });
+
+  it("blocks submission and shows an inline error on invalid lbusername format", async () => {
+    renderPage();
+    await userEvent.type(screen.getByLabelText("Name"), "x");
+    await userEvent.type(screen.getByLabelText("Email"), "x@example.test");
+    await userEvent.type(screen.getByLabelText("Password"), "secret");
+    await userEvent.type(
+      screen.getByLabelText("Letterboxd.com username"),
+      "!!!",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Sign Up" }));
+
+    expect(apiService.signup).not.toHaveBeenCalled();
+    expect(
+      screen.getByText(/2.15 characters/),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Letterboxd.com username")).toHaveAttribute(
+      "aria-invalid",
+      "true",
+    );
+  });
+
+  it("routes a 409-claimed-conflict to the inline lbusername error", async () => {
+    vi.mocked(apiService.signup).mockRejectedValue(
+      new Error("This Letterboxd.com username has already been claimed."),
+    );
+
+    renderPage();
+    await userEvent.type(screen.getByLabelText("Name"), "Late");
+    await userEvent.type(screen.getByLabelText("Email"), "late@example.test");
+    await userEvent.type(screen.getByLabelText("Password"), "secret");
+    await userEvent.type(
+      screen.getByLabelText("Letterboxd.com username"),
+      "popular-name",
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Sign Up" }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/already been claimed/),
+      ).toBeInTheDocument();
+    });
+    expect(localStorage.getItem("token")).toBeNull();
+  });
+
+  it("clears the inline lbusername error when the user edits the field", async () => {
+    renderPage();
+    await userEvent.type(
+      screen.getByLabelText("Letterboxd.com username"),
+      "!!!",
+    );
+    await userEvent.type(screen.getByLabelText("Name"), "x");
+    await userEvent.type(screen.getByLabelText("Email"), "x@example.test");
+    await userEvent.type(screen.getByLabelText("Password"), "secret");
+    await userEvent.click(screen.getByRole("button", { name: "Sign Up" }));
+
+    expect(screen.getByText(/2.15 characters/)).toBeInTheDocument();
+
+    await userEvent.type(
+      screen.getByLabelText("Letterboxd.com username"),
+      "a",
+    );
+    expect(screen.queryByText(/2.15 characters/)).not.toBeInTheDocument();
   });
 
   it("surfaces server message when signup returns no access_token (e.g. email confirmation flow)", async () => {
