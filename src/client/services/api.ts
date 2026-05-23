@@ -15,6 +15,9 @@ import {
   EventUserPick,
   RefreshJob,
   UserScrapeJob,
+  AccountView,
+  AccountUpdateRequest,
+  AccountUpdateResponse,
 } from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
@@ -485,6 +488,39 @@ class ApiService {
         headers: { Authorization: `Bearer ${token}` },
       },
     );
+  }
+
+  // ===========================
+  // Admin account management (admin role required server-side)
+  // ===========================
+
+  async getAccounts(token: string): Promise<ApiResponse<AccountView[]>> {
+    return this.request<AccountView[]>("/admin/users", {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  }
+
+  async updateAccount(
+    id: string,
+    patch: AccountUpdateRequest,
+    token: string,
+  ): Promise<ApiResponse<AccountUpdateResponse>> {
+    return this.request<AccountUpdateResponse>(`/admin/users/${id}`, {
+      method: "PUT",
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(patch),
+    });
+  }
+
+  async deleteAccount(
+    id: string,
+    token: string,
+  ): Promise<ApiResponse<{ id: string; deleted: true }>> {
+    return this.request<{ id: string; deleted: true }>(`/admin/users/${id}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
   }
 }
 

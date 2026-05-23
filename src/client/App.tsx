@@ -20,6 +20,7 @@ import MyPicksPage from "./components/events/MyPicksPage";
 import MainLayout from "./components/MainLayout";
 import ActorGraph from "./components/ActorGraph";
 import AdminRefresh from "./components/AdminRefresh";
+import UserAdmin from "./components/admin/UserAdmin";
 
 function App() {
   return (
@@ -79,6 +80,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <AdminRefresh />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute>
+                <UserAdmin />
               </ProtectedRoute>
             }
           />
