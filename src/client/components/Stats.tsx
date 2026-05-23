@@ -50,7 +50,10 @@ const Dashboard = () => {
       <h3 className="subheading">Most watched movies</h3>
       <ul className="film-list-small movie-poster-fade-in">
         {topWatchedFilms.map((movie, index: number) => (
-          <li style={{ animationDelay: `${index * 0.2 + 0.5}s` }}>
+          <li
+            key={movie.film_slug}
+            style={{ animationDelay: `${index * 0.2 + 0.5}s` }}
+          >
             <div>
               <img
                 src={movie.poster?.replace("0-230-0-345", "0-70-0-105") ?? ""}
@@ -64,7 +67,10 @@ const Dashboard = () => {
 
       <ul className="film-list movie-poster-fade-in">
         {topRatedUserFilms.map((movie, index) => (
-          <li style={{ animationDelay: `${index * 0.3 + 0.5}s` }}>
+          <li
+            key={movie.film_slug}
+            style={{ animationDelay: `${index * 0.3 + 0.5}s` }}
+          >
             <div>
               <img src={movie.poster ?? ""} alt={movie.title ?? ""} />
               <span className="rating-overlay">

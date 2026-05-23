@@ -1,14 +1,8 @@
+import '../loadEnv';
+
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import * as schema from './schema';
-import { resolve } from 'path';
-import dotenv from 'dotenv';
-
-// Load .env from src/server/.env — works whether run from project root
-// (e.g. seed scripts via `npx tsx`) or when the server starts normally.
-// __dirname here is src/server/db/, so go up one level to src/server/
-dotenv.config({ path: resolve(__dirname, '..', '.env') });
-dotenv.config(); // Also try project root as fallback
 
 const isTest = process.env.NODE_ENV === 'test';
 const isProduction = process.env.NODE_ENV === 'production';
@@ -23,6 +17,14 @@ if (!databaseUrl) {
   throw new Error(`Missing ${envVar} environment variable`);
 }
 
+// Local Postgres (Supabase started via `supabase start` or any 127.0.0.1
+// / localhost / docker-internal host) doesn't speak TLS. The hosted
+// Supabase pooler does and requires it. Detect by URL so the test path
+// and the local-smoke path don't need to remember to flip NODE_ENV.
+const isLocalDatabase = /(?:^|@)(127\.0\.0\.1|localhost|host\.docker\.internal)(?::|\/)/.test(
+  databaseUrl,
+);
+
 // Create postgres client with proper connection pool settings
 const client = postgres(databaseUrl, {
   // Connection pool size
@@ -36,9 +38,8 @@ const client = postgres(databaseUrl, {
   // Connection timeout after 10 seconds
   connect_timeout: 10,
 
-  // SSL configuration (required for Supabase pooler)
-  // Only disable SSL for local test databases
-  ssl: isTest ? false : 'require',
+  // SSL: required by hosted Supabase, unavailable on the local stack.
+  ssl: isTest || isLocalDatabase ? false : 'require',
 
   // Prepare statements for better performance
   prepare: true,
