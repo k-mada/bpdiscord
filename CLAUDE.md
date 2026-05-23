@@ -555,25 +555,32 @@ yarn build
 
 ### Local smoke testing
 
-For PR smoke tests (any change that touches the API or auth flow), run the
-backend against the local Supabase stack instead of prod. This prevents
-accidental writes to the real database during testing.
+`yarn dev` always points at the **prod** Supabase — that's the day-to-day
+workflow with real data. The local smoke environment exists only for PR
+testing and is **explicit opt-in**: you have to invoke `yarn dev:local`
+to use it. File presence alone never switches the mode.
 
 **One-time bootstrap** (idempotent):
 
 ```bash
 supabase start            # bring up local Postgres + Auth + Studio on :54321
-yarn setup:local          # writes src/server/.env.local + src/client/.env.local
+yarn setup:local          # writes src/server/.env.smoke + src/client/.env.smoke
                           # from `supabase status -o env`, then seeds an admin
-                          # user via the service-role key
+                          # user + fixture Discord users / films / ratings
 ```
 
 The setup script populates:
 
-- `src/server/.env.local` (gitignored) — local Supabase URL / keys / DB URL.
-  Loaded by `loadEnv.ts` *before* `.env`, so any keys defined here override
-  the prod-pointing values in `.env`.
-- `src/client/.env.local` (gitignored) — picked up automatically by Vite.
+- `src/server/.env.smoke` (gitignored) — local Supabase URL / keys / DB URL.
+  Loaded by `loadEnv.ts` *before* `.env` **only when `SMOKE_LOCAL=1` is set**
+  (i.e. when running `yarn dev:local`).
+- `src/client/.env.smoke` (gitignored) — loaded by Vite **only when running
+  with `--mode smoke`** (i.e. via `yarn dev:client:local`).
+
+The deliberate non-collision with `.env.local` is so Vite's
+"always-auto-load `.env.local`" convention can't silently point normal
+dev at the local stack. Setup deletes any legacy `.env.local` files
+from prior versions for the same reason.
 
 After setup, the seeded admin lives in **local** Supabase only:
 
@@ -582,7 +589,8 @@ After setup, the seeded admin lives in **local** Supabase only:
 - role: `admin` (in `user_metadata`)
 
 Override with `yarn setup:local --email <x> --password <y> --name <z>
---lbusername <n>`. Pass `--force` to overwrite existing `.env.local` files.
+--lbusername <n>`. Pass `--force` to overwrite existing `.env.smoke`
+files.
 
 The setup also seeds **fixture data** so the homepage / stats /
 comparison / hater-rankings pages render meaningful content instead of
@@ -599,39 +607,39 @@ sections populate fully.
 **Run the stack:**
 
 ```bash
-yarn dev:local            # same as `yarn dev` — both pick up .env.local
-                          # automatically. The breadcrumb at startup:
-                          #   [env] .env.local + .env → LOCAL http://127.0.0.1:54321
-                          # confirms local mode.
+yarn dev          # PROD Supabase — normal workflow with real data
+yarn dev:local    # LOCAL Supabase — smoke environment with fixtures
 ```
 
-**Smoke loop:** log in at `http://localhost:5173/login` as the seeded admin,
-then exercise whichever feature the PR touched. Console + server logs
-together give a clean signal — no Vercel deploys, no risk to prod data.
-
-**Returning to prod-pointing:** delete `src/server/.env.local` and
-`src/client/.env.local`. The breadcrumb at startup will switch to:
+The server's startup breadcrumb confirms which mode you're in:
 
 ```
-[env] .env only → REMOTE https://<project>.supabase.co
+[env] .env only             → REMOTE https://bvadmlitqvahdatjtpgz.supabase.co
+[env] .env.smoke + .env     → LOCAL  http://127.0.0.1:54321
 ```
 
-**Known limitation**: `WORKER_URL` is unset in `.env.local` by design (the
+**Smoke loop:** log in at `http://localhost:5173/login` as the seeded
+admin, then exercise whichever feature the PR touched. Console + server
+logs together give a clean signal — no Vercel deploys, no risk to prod data.
+
+**Known limitation**: `WORKER_URL` is unset in `.env.smoke` by design (the
 moviemaestro worker only runs in prod). `/api/scrape-user/*` and
-`/api/admin/refresh-rankings` return 500 *"Worker not configured"* in local
-mode — test worker scenarios in a staging deploy or against prod with a
-non-prod Letterboxd username.
+`/api/admin/refresh-rankings` return 500 *"Worker not configured"* in
+smoke mode — test worker scenarios in a staging deploy or against prod
+with a non-prod Letterboxd username.
 
-**Test DB caveat**: the smoke-seeded admin user lives in the same local
+**Test DB caveat**: the smoke-seeded fixtures live in the same local
 Supabase instance the test suite uses. Run `yarn test` *before* `yarn
-setup:local` for a clean test run, or accept the failures on shared state.
-A proper isolation fix is tracked in `bpdiscord-141`.
+setup:local` for a clean test run, or accept the failures on shared
+state. A proper isolation fix is tracked in `bpdiscord-141`.
 
 ### Environment Variables
 
-See `src/server/.env.example`, `src/server/.env.local.example`, and
-`src/client/.env.example` for the canonical template. Copy the relevant
-file to `.env` (or `.env.local` for smoke mode) and fill in values.
+See `src/server/.env.example`, `src/server/.env.smoke.example`, and
+`src/client/.env.example` / `src/client/.env.smoke.example` for the
+canonical templates. Copy `.env.example` to `.env` for normal dev; run
+`yarn setup:local` to auto-populate the `.env.smoke` files for the
+smoke environment.
 
 Server vars used at runtime: `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
 `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`, `DATABASE_URL_TEST`,
@@ -641,9 +649,10 @@ Server vars used at runtime: `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
 Client vars used at runtime: `VITE_API_URL` (optional, for non-proxied
 prod builds), `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`.
 
-`src/server/.env.local` and `src/client/.env.local` are gitignored
-overrides loaded *before* `.env` (server: by `loadEnv.ts`; client: by Vite
-convention). Used for local smoke testing; see the section above.
+`.env.smoke` files are loaded **only in smoke mode** (server: when
+`SMOKE_LOCAL=1`; client: when Vite is started with `--mode smoke`).
+Both happen via `yarn dev:local`. See the section above for the full
+opt-in story.
 
 ### Vite Development Benefits
 

@@ -147,15 +147,23 @@ function writeEnvFiles(env: SupabaseStatusEnv, force: boolean): void {
   const serverDir = resolve(projectRoot, "src", "server");
   const clientDir = resolve(projectRoot, "src", "client");
 
-  const serverTpl = resolve(serverDir, ".env.local.example");
-  const serverOut = resolve(serverDir, ".env.local");
-  const clientTpl = resolve(clientDir, ".env.local.example");
-  const clientOut = resolve(clientDir, ".env.local");
+  const serverTpl = resolve(serverDir, ".env.smoke.example");
+  const serverOut = resolve(serverDir, ".env.smoke");
+  const clientTpl = resolve(clientDir, ".env.smoke.example");
+  const clientOut = resolve(clientDir, ".env.smoke");
 
-  // Templates use the literal string __from_supabase_status__ as a
-  // placeholder. We need a per-line replacement so the right key lands
-  // on the right line — replace ANON_KEY first, then SERVICE_ROLE_KEY.
-  // The simplest robust way: do line-level substitutions.
+  // Migration: previous setup wrote .env.local. Vite would silently
+  // auto-load those even in normal `yarn dev` mode, pointing dev at the
+  // local stack against the user's intent. Detect and rename.
+  const legacyServer = resolve(serverDir, ".env.local");
+  const legacyClient = resolve(clientDir, ".env.local");
+  for (const p of [legacyServer, legacyClient]) {
+    if (existsSync(p)) {
+      console.log(`  ! found legacy ${p} — deleting (replaced by .env.smoke)`);
+      execSync(`rm -f "${p}"`);
+    }
+  }
+
   const serverContent = readFileSync(serverTpl, "utf8")
     .replace(
       /^SUPABASE_ANON_KEY=.*$/m,
@@ -181,7 +189,7 @@ function writeEnvFiles(env: SupabaseStatusEnv, force: boolean): void {
       ? "skipped"
       : (writeFileSync(serverOut, serverContent), "wrote");
   console.log(
-    `  ${serverStatus === "wrote" ? "✓" : "·"} src/server/.env.local — ${serverStatus}`,
+    `  ${serverStatus === "wrote" ? "✓" : "·"} src/server/.env.smoke — ${serverStatus}`,
   );
 
   const clientStatus =
@@ -189,12 +197,12 @@ function writeEnvFiles(env: SupabaseStatusEnv, force: boolean): void {
       ? "skipped"
       : (writeFileSync(clientOut, clientContent), "wrote");
   console.log(
-    `  ${clientStatus === "wrote" ? "✓" : "·"} src/client/.env.local — ${clientStatus}`,
+    `  ${clientStatus === "wrote" ? "✓" : "·"} src/client/.env.smoke — ${clientStatus}`,
   );
 
   if ((serverStatus === "skipped" || clientStatus === "skipped") && !force) {
     console.log(
-      "    (re-run with --force to overwrite existing .env.local files)",
+      "    (re-run with --force to overwrite existing .env.smoke files)",
     );
   }
   // Suppress unused-var lint after the IIFE-style writeFileSync trick above.
@@ -379,7 +387,7 @@ async function main() {
   const env = readSupabaseStatus();
   console.log(`  ✓ ${env.API_URL}`);
 
-  console.log("\n→ Writing .env.local files…");
+  console.log("\n→ Writing .env.smoke files…");
   writeEnvFiles(env, flags.force);
 
   console.log("\n→ Seeding admin user…");
