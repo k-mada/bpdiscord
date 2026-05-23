@@ -309,3 +309,34 @@ export interface RefreshJob {
 export interface UserScrapeJob extends RefreshJob {
   lbusername: string;
 }
+
+// ===========================
+// Admin: account management (GET/PUT/DELETE /api/admin/users)
+// ===========================
+
+// Merged shape returned by GET /api/admin/users — auth.users (email, name)
+// joined with app_users (lbusername, timestamps) by id. See server-side
+// userAdminController.mergeAccount for the canonical mapping.
+export interface AccountView {
+  id: string;
+  email: string | null;
+  name: string | null;
+  lbusername: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+}
+
+// PUT /api/admin/users/:id request body. Each field is optional — omit to
+// leave unchanged. `lbusername: null` explicitly unlinks. Server enforces
+// the Letterboxd.com username format on non-null values.
+export interface AccountUpdateRequest {
+  email?: string;
+  name?: string;
+  lbusername?: string | null;
+}
+
+// PUT response — same as AccountView, plus `requiresReauth: true` when an
+// admin updates their own email (their JWT rotated server-side).
+export interface AccountUpdateResponse extends AccountView {
+  requiresReauth?: boolean;
+}

@@ -102,6 +102,23 @@ const Dashboard = () => {
             </button>
           </div>
         )}
+
+        {isAdmin && (
+          <div className="card hover:bg-letterboxd-bg-tertiary transition-colors">
+            <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-2">
+              User management
+            </h3>
+            <p className="text-letterboxd-text-secondary mb-4">
+              List, edit, and unlink user accounts
+            </p>
+            <button
+              onClick={() => navigate("/admin/users")}
+              className="btn-primary w-full"
+            >
+              Open
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

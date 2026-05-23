@@ -284,6 +284,21 @@ Powers the "Six Degrees of Kevin Bacon" feature. Reads from the `ag_actors` / `a
 - Update profile settings
 - Account management (logout, delete account)
 
+#### 6. User Management (`/admin/users`) — Admin only
+
+**Purpose**: Admin surface for listing, editing, and deleting accounts. Also linking/unlinking Letterboxd.com usernames to accounts post-signup.
+
+**Page-level admin gate**: mirrors `Dashboard.tsx`'s `user.user_metadata.role === 'admin'` check. Non-admins see a 403 card with a "Back to dashboard" button. The real gate is server-side (`authorizeAdmin` middleware on `/api/admin/users/*`); this client-side check is UX only.
+
+**Interface (`src/client/components/admin/UserAdmin.tsx`)**:
+
+- Table of accounts: email, name, Letterboxd link (`https://letterboxd.com/<username>` when set, `(unlinked)` otherwise), created date, edit button.
+- Edit opens a `<Modal>` with email/name/lbusername fields. The lbusername field uses a `<datalist>` populated by `useUnclaimedLbUsernames` — the intersection of `GET /api/film-users` (all known Letterboxd users) minus `GET /api/admin/users` lbusernames (already claimed). The currently-edited account's own lbusername is intentionally included even though it's "claimed", so the field's current value remains a valid option.
+- Save sends a minimal patch — only fields that actually changed. `lbusername: null` explicitly unlinks; an unchanged form returns to the list without an API call.
+- 409 conflict (claimed elsewhere) is surfaced inline in the modal so the admin can amend without losing context. Conflicting account's identity is *not* named in the error response (PII boundary — even though the admin can list all accounts).
+- Delete: confirm-in-place ("Sure? [Yes, delete] [No]") to avoid an extra modal. Disabled when editing your own account (forced to use Supabase Studio for self-deletion; the FK cascade would invalidate the in-flight JWT mid-request).
+- If an admin edits *their own* email, the server returns `requiresReauth: true` and the page clears the token + redirects to `/login` (their old JWT just rotated).
+
 ### Authentication Flow
 
 Login and signup are on **separate routes** — `/login` and `/signup`.
