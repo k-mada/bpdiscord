@@ -54,26 +54,3 @@ export const validateSignup: ValidationChain[] = [
     .isLength({ min: 6 })
     .withMessage('Password must be at least 6 characters long'),
 ];
-
-export const validateScraperRequest: ValidationChain[] = [
-  body('usernames')
-    .isArray()
-    .withMessage('usernames must be an array of usernames'),
-  body('selectors')
-    .isArray({ min: 1 })
-    .withMessage('Selectors must be a non-empty array'),
-  body('selectors.*.name')
-    .isString()
-    .notEmpty()
-    .withMessage('Selector name is required'),
-  body('selectors.*.css')
-    .isString()
-    .notEmpty()
-    .withMessage('CSS selector is required'),
-  body('selectors.*.attribute')
-    .optional()
-    .isString(),
-  body('selectors.*.multiple')
-    .optional()
-    .isBoolean(),
-];

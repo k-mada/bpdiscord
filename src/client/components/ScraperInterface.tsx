@@ -58,7 +58,7 @@ const ScraperInterface = () => {
     setUserRatings(null);
 
     try {
-      const response = await apiService.getFilmUserComplete(username, false);
+      const response = await apiService.getFilmUserComplete(username);
       if (response.data) {
         setUserRatings({
           username,

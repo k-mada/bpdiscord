@@ -1,9 +1,7 @@
 import { Request, Response } from "express";
 import {
   dbGetUserRatings,
-  dbUpsertUserRatings,
   dbGetUserProfile,
-  dbUpsertUserProfile,
   dbGetAllUsernames,
   dbGetFilmsByUser,
 } from "./dataController";
@@ -51,18 +49,11 @@ export async function getFilmRatings(
   }
 }
 
-/**
- *  Get user ratings from database. if fallback is true, scrape the data from Letterboxd.
- * @param req
- * @param res
- * @returns
- */
 export async function getUserRatings(
   req: Request,
   res: Response
 ): Promise<void> {
   const { username } = req.params;
-  const { fallback } = req.query;
 
   if (!username) {
     res.status(400).json({ error: "Username is required" });
@@ -93,57 +84,10 @@ export async function getUserRatings(
       return;
     }
 
-    // Handle fallback to scraping if requested
-    if (fallback === "scrape") {
-      console.log(
-        `No data in database, falling back to scraping for ${username}`
-      );
-
-      // Import scraper functions dynamically to avoid circular dependencies
-      const { scrapeUserRatings } = await import("../scraperFunctions");
-
-      try {
-        const scrapedRatings = await scrapeUserRatings(username);
-
-        // Save to database
-        const insertResult = await dbUpsertUserRatings(
-          username,
-          scrapedRatings
-        );
-        if (!insertResult.success) {
-          console.warn(
-            "Failed to save scraped ratings to database:",
-            insertResult.error
-          );
-        }
-
-        res.json({
-          message: "User ratings scraped and stored successfully",
-          data: {
-            username,
-            ratings: scrapedRatings,
-            timestamp: new Date().toISOString(),
-            source: "scraped_fallback",
-            success: true,
-          },
-        });
-        return;
-      } catch (scrapeError) {
-        console.error("Fallback scraping failed:", scrapeError);
-        res.status(500).json({
-          error: `Scraping fallback failed: ${
-            scrapeError instanceof Error ? scrapeError.message : "Unknown error"
-          }`,
-        });
-        return;
-      }
-    }
-
-    // No data found and no fallback requested
     res.status(404).json({
       error: `No ratings found in database for user: ${username}`,
       message:
-        "Use query parameter ?fallback=scrape to automatically scrape data, or use the scraper endpoints to fetch data first",
+        "Trigger a refresh from /fetcher (or admin refresh-rankings) to populate.",
     });
   } catch (error) {
     console.error("Error in getUserRatings:", error);
@@ -161,7 +105,6 @@ export async function getUserProfile(
   res: Response
 ): Promise<void> {
   const { username } = req.params;
-  const { fallback } = req.query;
 
   if (!username) {
     res.status(400).json({ error: "Username is required" });
@@ -189,59 +132,10 @@ export async function getUserProfile(
       return;
     }
 
-    // Handle fallback to scraping if requested
-    if (fallback === "scrape") {
-      console.log(
-        `No profile in database, falling back to scraping for ${username}`
-      );
-
-      // Import scraper functions dynamically to avoid circular dependencies
-      const { scrapeUserProfileData } = await import("../scraperFunctions");
-
-      try {
-        const scrapedProfile = await scrapeUserProfileData(username);
-
-        // Save to database
-        const insertResult = await dbUpsertUserProfile(
-          username,
-          scrapedProfile
-        );
-        if (!insertResult.success) {
-          console.warn(
-            "Failed to save scraped profile to database:",
-            insertResult.error
-          );
-        }
-
-        res.json({
-          message: "User profile scraped and stored successfully",
-          data: {
-            username,
-            displayName: scrapedProfile.displayName,
-            followers: scrapedProfile.followers,
-            following: scrapedProfile.following,
-            numberOfLists: scrapedProfile.numberOfLists,
-            source: "scraped_fallback",
-            success: true,
-          },
-        });
-        return;
-      } catch (scrapeError) {
-        console.error("Fallback scraping failed:", scrapeError);
-        res.status(500).json({
-          error: `Scraping fallback failed: ${
-            scrapeError instanceof Error ? scrapeError.message : "Unknown error"
-          }`,
-        });
-        return;
-      }
-    }
-
-    // No data found and no fallback requested
     res.status(404).json({
       error: `No profile found in database for user: ${username}`,
       message:
-        "Use query parameter ?fallback=scrape to automatically scrape data, or use the scraper endpoints to fetch data first",
+        "Trigger a refresh from /fetcher (or admin refresh-rankings) to populate.",
     });
   } catch (error) {
     console.error("Error in getUserProfile:", error);
@@ -259,7 +153,6 @@ export async function getUserComplete(
   res: Response
 ): Promise<void> {
   const { username } = req.params;
-  const { fallback } = req.query;
 
   if (!username) {
     res.status(400).json({ error: "Username is required" });
@@ -269,10 +162,7 @@ export async function getUserComplete(
   console.log(`Retrieving complete user data from database for: ${username}`);
 
   try {
-    // Get profile data
     const profileResult = await dbGetUserProfile(username);
-
-    // Get ratings data
     const ratingsResult = await dbGetUserRatings(username);
 
     const hasProfile = profileResult.success && profileResult.data;
@@ -281,7 +171,6 @@ export async function getUserComplete(
       ratingsResult.data &&
       ratingsResult.data.length > 0;
 
-    // If we have both profile and ratings, return them
     if (hasProfile && hasRatings) {
       const ratings = ratingsResult.data!.map((item: any) => ({
         rating: item.rating,
@@ -310,96 +199,6 @@ export async function getUserComplete(
       return;
     }
 
-    // Handle fallback to scraping if requested and missing data
-    if (fallback === "scrape") {
-      console.log(
-        `Missing data in database, falling back to scraping for ${username}`
-      );
-
-      // Import scraper functions dynamically to avoid circular dependencies
-      const { scrapeUserProfileData, scrapeUserRatings } = await import(
-        "../scraperFunctions"
-      );
-
-      try {
-        let profileData = profileResult.data;
-        let ratingsData = hasRatings
-          ? ratingsResult.data!.map((item: any) => ({
-              rating: item.rating,
-              count: item.count,
-            }))
-          : [];
-
-        // Scrape profile if missing
-        if (!hasProfile) {
-          const scrapedProfile = await scrapeUserProfileData(username);
-          const insertResult = await dbUpsertUserProfile(
-            username,
-            scrapedProfile
-          );
-          if (!insertResult.success) {
-            console.warn(
-              "Failed to save scraped profile to database:",
-              insertResult.error
-            );
-          }
-          profileData = {
-            username,
-            displayName: scrapedProfile.displayName,
-            followers: scrapedProfile.followers,
-            following: scrapedProfile.following,
-            numberOfLists: scrapedProfile.numberOfLists,
-          };
-        }
-
-        // Scrape ratings if missing
-        if (!hasRatings) {
-          const scrapedRatings = await scrapeUserRatings(username);
-          const insertResult = await dbUpsertUserRatings(
-            username,
-            scrapedRatings
-          );
-          if (!insertResult.success) {
-            console.warn(
-              "Failed to save scraped ratings to database:",
-              insertResult.error
-            );
-          }
-          ratingsData = scrapedRatings;
-        }
-
-        const totalRatings = ratingsData.reduce(
-          (sum: number, rating: any) => sum + rating.count,
-          0
-        );
-
-        res.json({
-          message: "Complete user data retrieved (with scraping fallback)",
-          data: {
-            username: profileData!.username || username,
-            displayName: profileData!.displayName,
-            followers: profileData!.followers,
-            following: profileData!.following,
-            numberOfLists: profileData!.numberOfLists,
-            totalRatings,
-            ratings: ratingsData,
-            source: hasProfile && hasRatings ? "database" : "mixed_fallback",
-            success: true,
-          },
-        });
-        return;
-      } catch (scrapeError) {
-        console.error("Fallback scraping failed:", scrapeError);
-        res.status(500).json({
-          error: `Scraping fallback failed: ${
-            scrapeError instanceof Error ? scrapeError.message : "Unknown error"
-          }`,
-        });
-        return;
-      }
-    }
-
-    // No complete data found and no fallback requested
     const missingData = [];
     if (!hasProfile) missingData.push("profile");
     if (!hasRatings) missingData.push("ratings");
@@ -408,7 +207,7 @@ export async function getUserComplete(
       error: `Incomplete user data in database for user: ${username}`,
       missing: missingData,
       message:
-        "Use query parameter ?fallback=scrape to automatically scrape missing data, or use the scraper endpoints to fetch data first",
+        "Trigger a refresh from /fetcher (or admin refresh-rankings) to populate.",
     });
   } catch (error) {
     console.error("Error in getUserComplete:", error);

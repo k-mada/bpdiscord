@@ -213,38 +213,7 @@ describe("ApiService", () => {
   });
 
   // -------------------------------------------------------------------------
-  // Scraper endpoints (POST + auth + username body)
-  // -------------------------------------------------------------------------
-
-  describe.each([
-    ["getUserRatings", "/scraper/getUserRatings"],
-    ["getAllFilms", "/scraper/getAllFilms"],
-    ["forceScrapeUserRatings", "/scraper/getUserRatings"],
-    ["forceScrapeUserProfile", "/scraper/getUserProfile"],
-  ] as const)("%s", (method, expectedUrl) => {
-    it(`calls POST ${expectedUrl} with auth and username`, async () => {
-      await (apiService as any)[method](USERNAME, TOKEN);
-      expectFetch(expectedUrl, "POST");
-      expectAuth(TOKEN);
-      expectBody({ username: USERNAME });
-    });
-  });
-
-  describe("scrapeData", () => {
-    it("calls POST /scraper/getData with auth and request body", async () => {
-      const request = {
-        url: "https://letterboxd.com/alice",
-        selectors: [".data"],
-      };
-      await apiService.scrapeData(request as any, TOKEN);
-      expectFetch("/scraper/getData", "POST");
-      expectAuth(TOKEN);
-      expectBody(request);
-    });
-  });
-
-  // -------------------------------------------------------------------------
-  // Film-user endpoints with optional fallback param
+  // Film-user endpoints (database-first, no scrape fallback)
   // -------------------------------------------------------------------------
 
   describe.each([
@@ -254,16 +223,6 @@ describe("ApiService", () => {
   ] as const)("%s", (method, segment) => {
     it(`calls GET /film-users/${USERNAME}/${segment}`, async () => {
       await (apiService as any)[method](USERNAME);
-      expectFetch(`/film-users/${USERNAME}/${segment}`);
-    });
-
-    it("appends ?fallback=scrape when fallback is true", async () => {
-      await (apiService as any)[method](USERNAME, true);
-      expectFetch(`/film-users/${USERNAME}/${segment}?fallback=scrape`);
-    });
-
-    it("omits fallback param when false", async () => {
-      await (apiService as any)[method](USERNAME, false);
       expectFetch(`/film-users/${USERNAME}/${segment}`);
     });
   });

@@ -69,17 +69,3 @@ export interface AuthResponse {
 export interface PasswordResetRequest {
   email: string;
 }
-
-// ===========================
-// Scraper
-// ===========================
-
-export interface ScraperRequest {
-  url: string;
-  selectors: Array<{
-    name: string;
-    css: string;
-    attributes?: string[];
-    multiple?: boolean;
-  }>;
-}

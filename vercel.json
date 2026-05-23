@@ -13,12 +13,6 @@
       }
     }
   ],
-  "crons": [
-    {
-      "path": "/api/cron/refresh-all-users",
-      "schedule": "0 2 * * *"
-    }
-  ],
   "routes": [
     {
       "src": "/api/(.*)",
@@ -38,7 +32,6 @@
     }
   ],
   "env": {
-    "NODE_ENV": "production",
-    "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD": "true"
+    "NODE_ENV": "production"
   }
 }

@@ -14,17 +14,17 @@
 
 ## Overview
 
-BPDiscord is a full-stack TypeScript web application that scrapes and analyzes Letterboxd user rating data. It provides user comparison features, hater rankings, and comprehensive rating statistics through a modern React frontend and Express.js backend.
+BPDiscord is a full-stack TypeScript web application that analyzes Letterboxd user rating data. It provides user comparison features, hater rankings, and comprehensive rating statistics through a modern React frontend and Express.js backend. Scraping is handled by a separate **moviemaestro** Python worker (deployed on Railway) and is **not** performed in this Node process — see [Scraping pipeline](#scraping-pipeline-moviemaestro-worker) below.
 
 ## Architecture
 
 ### Technology Stack
 
 - **Frontend**: Vite + React 19 + TypeScript, Tailwind CSS
-- **Backend**: Express.js + TypeScript, Puppeteer for web scraping
+- **Backend**: Express.js + TypeScript
 - **Database**: Supabase (PostgreSQL)
 - **Authentication**: JWT tokens via Supabase Auth
-- **Web Scraping**: Puppeteer + Cheerio for HTML parsing
+- **Scraping**: External worker service (moviemaestro on Railway) — Node server never touches Letterboxd directly
 - **Package Manager**: Yarn (consistent across all projects)
 - **Development**: Vite proxy for CORS-free development
 
@@ -48,12 +48,14 @@ bpdiscord/
 │   ├── server/           # Express.js backend
 │   │   ├── config/       # Database and configuration
 │   │   ├── controllers/  # Business logic controllers
-│   │   │   ├── filmUserController.ts # Database-first operations
-│   │   │   └── scraperController.ts  # Force-scraping operations
+│   │   │   ├── filmUserController.ts     # Database-first read endpoints
+│   │   │   ├── userScrapeJobController.ts # /fetcher per-user refresh (delegates to moviemaestro)
+│   │   │   └── refreshJobController.ts    # Admin bulk refresh (delegates to moviemaestro)
 │   │   ├── middleware/   # Authentication, validation, error handling
 │   │   ├── routes/       # API route definitions
 │   │   │   ├── filmUserRoutes.ts     # Database-first endpoints
-│   │   │   └── scraperRoutes.ts      # Force-scraping endpoints
+│   │   │   ├── scrapeUserRoutes.ts   # Per-user job trigger / poll / cancel
+│   │   │   └── adminRoutes.ts        # Admin bulk refresh job trigger / poll / cancel
 │   │   ├── types.ts      # Server-specific TypeScript types
 │   │   ├── tsconfig.json # Server-specific TypeScript configuration
 │   │   ├── package.json  # Server dependencies
@@ -111,40 +113,19 @@ bpdiscord/
    - Primary key: (`actor_tmdb_id`, `movie_tmdb_id`)
    - Reverse index `idx_ag_acted_in_movie_actor` on (`movie_tmdb_id`, `actor_tmdb_id`) — required by the BFS, which joins on `movie_tmdb_id` to find co-stars. Created in `supabase/migrations/20260505013813_add_ag_graph_indexes.sql` alongside `pg_trgm` GIN indexes on `ag_actors.name` / `ag_films.title` that power the search endpoint.
 
-### Data Sources and Processing
+### Scraping pipeline (moviemaestro worker)
 
-#### 1. Web Scraping Pipeline
+All Letterboxd scraping is performed by the **moviemaestro** Python service deployed on Railway (`WORKER_URL=https://moviemaestro.up.railway.app`). The Node server **does not** run Puppeteer, Cheerio, or any browser. The role of this server in a refresh is:
 
-```
-Letterboxd Profile URL
-    ↓ (Puppeteer)
-HTML Content
-    ↓ (Cheerio parsing)
-Structured Data
-    ↓ (Data validation)
-Database Storage
-```
+1. Insert a row into `user_scrape_jobs` (per-user refresh) or `refresh_jobs` (admin bulk refresh) with `status='running'`. A partial unique index makes the insert single-flight.
+2. POST `{job_id, ...}` to the moviemaestro worker with `Authorization: Bearer ${WORKER_SHARED_SECRET}`. 10s fetch timeout.
+3. Return `202 {job_id}` to the client. The client polls `GET /api/scrape-user/jobs/:id` (or `/api/admin/refresh-rankings/:id`) every 2s.
+4. Moviemaestro scrapes Letterboxd with `letterboxdpy`, writes to `Users` / `UserRatings` / `UserFilms` / `Films` directly using the Supabase service-role key, and updates the job row's `status` / `phase` / `progress` / `errors` as it progresses.
+5. Terminal states (`completed` / `failed` / `cancelled`) stop the client's polling loop.
 
-**Scraping Process:**
+If the worker handoff fails (502, timeout, etc.), the controller rolls back the job row to `status='failed'` so the partial unique index releases and the next trigger can succeed.
 
-- Uses Puppeteer for automated browser interactions
-- Targets specific CSS selectors for rating histogram data
-- Extracts follower/following counts and user profile information
-- Implements retry mechanisms and error handling
-- Validates scraped data before database insertion
-
-#### 2. Data Processing Flow
-
-```
-Raw Letterboxd Data → Validation → Transformation → Database Storage → API Response
-```
-
-**Key Processing Steps:**
-
-- **Profile Data Extraction**: Display name, followers, following, lists
-- **Rating Histogram Parsing**: Extracts count for each 0.5-5.0 rating level
-- **Data Normalization**: Converts various number formats (e.g., "1.2K" → 1200)
-- **Database Upserts**: Updates existing data or inserts new records
+**Why this architecture:** Puppeteer in a Vercel serverless function is fragile (cold-start time, memory limits, Chromium binary), and the previous in-Node implementation was responsible for the majority of the server's complexity and most of its production failures. Offloading to a long-lived Python worker means scraping runs on hardware that's actually sized for it, and the Node tier stays a thin orchestration layer.
 
 ## API Endpoints
 
@@ -157,18 +138,29 @@ Raw Letterboxd Data → Validation → Transformation → Database Storage → A
 ### Film User Routes (`/api/film-users`) - Public, Database-First
 
 - `GET /` - Get all users with display names
-- `GET /:username/ratings` - Get user's ratings (database only)
-- `GET /:username/profile` - Get user's profile (database only)
-- `GET /:username/complete` - Get complete user data (database only)
-- **Fallback Parameter**: Add `?fallback=scrape` to any endpoint to scrape if data missing
+- `GET /:username/ratings` - Get user's ratings (404 if absent)
+- `GET /:username/profile` - Get user's profile (404 if absent)
+- `GET /:username/complete` - Get complete user data (404 if absent)
 
-### Scraper Routes (`/api/scraper`) - Protected, Force-Scraping Only
+These are pure DB reads. To populate missing data, trigger a refresh via `/api/scrape-user` (any logged-in user) or `/api/admin/refresh-rankings` (admin). The legacy `?fallback=scrape` parameter was removed when the in-Node Puppeteer pipeline was retired.
 
-- `POST /getUserRatings` - Force scrape user's rating distribution
-- `POST /getUserProfile` - Force scrape complete user profile + ratings
-- `POST /getAllFilms` - Force scrape user's complete film list
-- `POST /getData` - Generic data scraping with custom selectors
-- **Production**: Disabled unless `ENABLE_SCRAPER=true` environment variable set
+### Scrape User Routes (`/api/scrape-user`) - Authenticated
+
+Per-user refresh jobs that delegate to the moviemaestro worker. See [Scraping pipeline](#scraping-pipeline-moviemaestro-worker).
+
+- `POST /:username` - Trigger a refresh for a Letterboxd user → `202 {job_id}` or `409` if one is already running for that username
+- `GET /jobs/:id` - Poll a job's status (own-job only — other users' job rows return 404)
+- `POST /jobs/:id/cancel` - Cancel a running job (own-job only)
+
+Rate-limited: trigger 10 req / 5 min per username; poll 120 req / 60 s per IP (2 req/s sustained).
+
+### Admin Refresh Routes (`/api/admin/refresh-rankings`) - Admin only
+
+Bulk refresh of all Discord users' data, same delegation pattern as `/api/scrape-user`.
+
+- `POST /` - Trigger a bulk refresh → `202 {job_id}` or `409` if one is already running
+- `GET /:id` - Poll job status
+- `POST /:id/cancel` - Cancel
 
 ### Comparison Routes (`/api/comparison`) - Public
 
@@ -196,7 +188,7 @@ Powers the "Six Degrees of Kevin Bacon" feature. Reads from the `ag_actors` / `a
   - Query param: `limit` (1-500, default 100)
 - `GET /actors/:actor1Id/common-movies/:actor2Id` - Films both actors appeared in, ordered newest-first
 - **Ingestion rate limit** (applies to all detail endpoints above): **120 req / 5 min per IP**
-- **Auth model**: Public by design despite being cache-through writers. Writes are bounded (top-15 cast per ingestion), the source data is TMDB (itself public), and per-IP rate limiters cap abuse. If TMDB quota or DB growth becomes an issue, move behind the same JWT middleware as `/api/scraper`.
+- **Auth model**: Public by design despite being cache-through writers. Writes are bounded (top-15 cast per ingestion), the source data is TMDB (itself public), and per-IP rate limiters cap abuse. If TMDB quota or DB growth becomes an issue, gate these behind the same JWT middleware as `/api/scrape-user`.
 
 ### User Routes (`/api/users`) - Protected
 
@@ -270,26 +262,17 @@ Powers the "Six Degrees of Kevin Bacon" feature. Reads from the `ag_actors` / `a
 
 **Purpose**: Interface for accessing and scraping Letterboxd data
 
-**Enhanced Interface**:
+**Interface (`src/client/components/ScraperInterface.tsx`)**:
 
-1. User enters Letterboxd username
-2. Two operation modes available:
-   - **"Check Database"**: Uses database-first endpoints (`/api/film-users`)
-   - **"Force Scrape"**: Uses force-scraping endpoints (`/api/scraper`)
-3. Database operations show data source (database vs scraped vs fallback)
-4. Real-time feedback during all operations
-5. Results displayed with detailed metadata
-6. Error handling for invalid users or scraping failures
+1. User picks a Letterboxd username from a dropdown sourced from the Users table.
+2. Two buttons:
+   - **"Check current ratings data"** — read-only DB lookup via `GET /api/film-users/:username/complete`. 404 if no data exists, with a hint to use Update films.
+   - **"Update films"** — triggers a refresh job via `POST /api/scrape-user/:username`. The hook (`useScrapeJob`) persists `job_id` in localStorage so a page refresh resumes the same job, polls `GET /api/scrape-user/jobs/:id` every 2s, and renders `<JobProgress>` (the same component the admin bulk refresh uses).
+   - When a job is running, a third "Cancel" button appears (`POST /api/scrape-user/jobs/:id/cancel`).
 
-**Technical Process**:
+**Job lifecycle**: pending → running (`phase` advances through moviemaestro's scrape phases) → `completed` / `failed` / `cancelled`. The partial unique index `user_scrape_jobs_one_running_per_user` ensures the same Letterboxd username can't be double-triggered; concurrent refreshes of different users are fine.
 
-- **Database-First**: Queries existing data, optional fallback to scraping
-- **Force-Scraping**: Always scrapes fresh data from Letterboxd
-- Validates Letterboxd username format
-- Launches Puppeteer browser instance (scraping mode only)
-- Extracts data using CSS selectors
-- Validates extracted data
-- Stores in database with upsert logic
+**Auth model**: requires a valid JWT (any logged-in user), not admin. Per-username rate limit: 10 req / 5 min.
 
 #### 5. User Profile (`/dashboard/profile`)
 
@@ -299,7 +282,6 @@ Powers the "Six Degrees of Kevin Bacon" feature. Reads from the `ag_actors` / `a
 
 - View account information
 - Update profile settings
-- View personal scraping history
 - Account management (logout, delete account)
 
 ### Authentication Flow
@@ -378,51 +360,31 @@ const rankings = users
   .sort((a, b) => a.averageRating - b.averageRating);
 ```
 
-### Number Parsing (Handles K/M suffixes)
-
-```typescript
-const parseNumberFromText = (text: string): number => {
-  const cleanText = text.replace(/,/g, "").toLowerCase();
-
-  if (cleanText.includes("k")) {
-    return Math.round(parseFloat(cleanText.replace("k", "")) * 1000);
-  }
-  if (cleanText.includes("m")) {
-    return Math.round(parseFloat(cleanText.replace("m", "")) * 1000000);
-  }
-
-  return parseInt(cleanText, 10) || 0;
-};
-```
-
 ## Database-First Architecture
 
 ### Design Philosophy
 
-BPDiscord implements a **database-first architecture** optimized for production deployment:
+BPDiscord implements a **database-first architecture**:
 
-1. **Primary Access**: Database queries for maximum performance and reliability
-2. **Fallback Scraping**: Optional scraping when data is missing
-3. **Force Scraping**: Explicit scraping for data updates
-4. **Production Optimization**: Scraping disabled by default in production
+1. **Read path**: all client-facing endpoints are database queries — no synchronous calls to Letterboxd, no Puppeteer, no fallback scraping in the request lifecycle.
+2. **Write path**: refresh jobs are async, delegated to the moviemaestro worker. The Node server is a thin orchestrator (insert row, POST to worker, return job id).
+3. **TMDB cache-through**: `/api/actor-graph` is the one exception — it writes on cache miss, but only to TMDB-backed tables, and writes are bounded per request.
 
 ### API Architecture Separation
 
 #### Database-First Endpoints (`/api/film-users`)
 
-- **Purpose**: Fast, reliable access to existing data
-- **Authentication**: Public (no authentication required)
-- **Performance**: Optimized database queries with indexes
-- **Fallback**: Optional `?fallback=scrape` parameter
-- **Use Case**: Public pages, user comparisons, rankings
+- **Purpose**: Fast, reliable read access to scraped Letterboxd data
+- **Authentication**: Public (no auth required)
+- **Performance**: Optimized DB queries with indexes
+- **Behavior on miss**: 404 with a hint to trigger a refresh job via `/api/scrape-user`
 
-#### Force-Scraping Endpoints (`/api/scraper`)
+#### Job-Based Refresh Endpoints (`/api/scrape-user`, `/api/admin/refresh-rankings`)
 
-- **Purpose**: Fresh data extraction from Letterboxd
-- **Authentication**: Protected (requires JWT token)
-- **Performance**: Slower due to browser automation
-- **Production**: Disabled unless `ENABLE_SCRAPER=true`
-- **Use Case**: Administrative data updates, new user addition
+- **Purpose**: Trigger scraping work on the moviemaestro worker, poll job state, cancel running jobs
+- **Authentication**: JWT-protected (per-user: any logged-in user; bulk: admin role required)
+- **Performance**: 202-async by design; client polls every 2s and renders `<JobProgress>`
+- **Single-flight**: partial unique indexes on `user_scrape_jobs` / `refresh_jobs` make concurrent triggers safe (409 with `existing_job_id` returned to the caller)
 
 #### Cache-Through Endpoints (`/api/actor-graph`)
 
@@ -447,32 +409,22 @@ Database Query (fast)
 Return Cached Data
 ```
 
-#### Admin Data Update
+#### Per-User Refresh (`/api/scrape-user`)
 
 ```
-Admin Request → /api/scraper/getUserProfile + JWT
+Client → POST /api/scrape-user/:username + JWT
     ↓
-Puppeteer Browser Launch
+INSERT user_scrape_jobs (status='running', lbusername)
+    ↓ (partial unique index → 409 if one already running for username)
+POST WORKER_URL/scrape-user {job_id, lbusername}
+    ↓ (10s fetch timeout; on failure: mark job 'failed', return 502)
+Return 202 {job_id}
     ↓
-Letterboxd Scraping
+Client polls GET /api/scrape-user/jobs/:id every 2s
     ↓
-Database Upsert
+moviemaestro updates row's status/phase/progress directly
     ↓
-Return Fresh Data
-```
-
-#### Fallback Pattern
-
-```
-User Request → /api/film-users/:username/complete?fallback=scrape
-    ↓
-Database Query → No Data Found
-    ↓
-Automatic Scraping
-    ↓
-Database Storage
-    ↓
-Return Scraped Data
+Terminal status → client stops polling
 ```
 
 #### Cache-Through Ingestion (Actor Graph)
@@ -542,12 +494,12 @@ Return { degrees, path: [actor, film, actor, film, ...] }
 - Service role key for admin operations (bypasses RLS)
 - Protected routes require valid authentication
 
-### Web Scraping Security
+### Worker Handoff Security
 
-- Puppeteer browser automation for data extraction
-- Rate limiting on scraping endpoints (20 requests per 15 minutes)
-- User agent rotation and realistic headers
-- Error handling for blocked requests
+- `WORKER_SHARED_SECRET` Bearer token on every server → moviemaestro call
+- Job rows scoped by `started_by` — one user can't read or cancel another's job
+- Partial unique indexes prevent concurrent duplicate work at the DB level
+- 10s fetch timeout on the worker handoff; failures roll back the job row to `failed`
 
 ### API Security
 
@@ -573,12 +525,11 @@ Return { degrees, path: [actor, film, actor, film, ...] }
 - Detailed logging for debugging
 - Graceful degradation for external service failures
 
-### Scraping Error Recovery
+### Job-Based Refresh Error Recovery
 
-- Multiple page load strategies (networkidle2, domcontentloaded, load)
-- Retry mechanisms for failed scraping attempts
-- Validation of scraped data before processing
-- Fallback selectors for HTML structure changes
+- Worker-handoff failures (timeout, non-2xx) trigger a row-level `markJobFailed` so the partial unique index releases for the next trigger
+- Per-phase error entries are appended to `errors[]` on the job row so the UI can surface specific failures without losing the running phase context
+- Cancellation is cooperative: the API sets `status='cancelled'`; the worker checks this between phases
 
 ## Development & Deployment
 
@@ -611,10 +562,9 @@ SUPABASE_ANON_KEY=your_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_key
 JWT_SECRET=your_jwt_secret
 NODE_ENV=development
-ENABLE_SCRAPER=true  # Enable scraping in production (optional)
 TMDB_READ_API_TOKEN=your_tmdb_v4_read_token  # Required for /api/actor-graph ingestion
-WORKER_URL=https://moviemaestro.up.railway.app  # Required for /api/admin/refresh-rankings
-WORKER_SHARED_SECRET=shared_with_moviemaestro_service  # Required for /api/admin/refresh-rankings
+WORKER_URL=https://moviemaestro.up.railway.app  # Required for /api/scrape-user + /api/admin/refresh-rankings
+WORKER_SHARED_SECRET=shared_with_moviemaestro_service  # Required for /api/scrape-user + /api/admin/refresh-rankings
 
 # Frontend (.env)
 # VITE_API_URL=/api  # Uses proxy in development, override for production
@@ -773,8 +723,7 @@ BPDiscord is configured for seamless Vercel deployment with both frontend and ba
     }
   ],
   "env": {
-    "NODE_ENV": "production",
-    "PUPPETEER_SKIP_CHROMIUM_DOWNLOAD": "true"
+    "NODE_ENV": "production"
   }
 }
 ```
@@ -834,10 +783,9 @@ SUPABASE_URL=your_production_supabase_url
 SUPABASE_ANON_KEY=your_production_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_production_service_key
 NODE_ENV=production
-ENABLE_SCRAPER=true  # Optional: Enable scraping in production
 TMDB_READ_API_TOKEN=your_tmdb_v4_read_token  # Required for /api/actor-graph
-WORKER_URL=https://moviemaestro.up.railway.app  # Required for /api/admin/refresh-rankings
-WORKER_SHARED_SECRET=shared_with_moviemaestro_service  # Required for /api/admin/refresh-rankings
+WORKER_URL=https://moviemaestro.up.railway.app  # Required for /api/scrape-user + /api/admin/refresh-rankings
+WORKER_SHARED_SECRET=shared_with_moviemaestro_service  # Required for /api/scrape-user + /api/admin/refresh-rankings
 ```
 
 ### Deployment Verification
@@ -884,7 +832,7 @@ This deployment architecture provides production-ready scalability while maintai
 
 ### Development Issues
 
-1. **Scraping Failures**: Often due to Letterboxd changes or rate limiting
+1. **Refresh Job Failures**: Inspect the `errors[]` column on the relevant `user_scrape_jobs` / `refresh_jobs` row, and check moviemaestro's logs on Railway. Letterboxd changes / rate limits surface there.
 2. **Authentication Errors**: Check token expiration and Supabase configuration
 3. **Database Connection Issues**: Verify Supabase credentials and network access
 4. **CORS Errors**: Ensure frontend URL is in allowed origins (now includes :5173, :5174)

@@ -40,36 +40,6 @@ export interface AuthenticatedRequest extends Express.Request {
 }
 
 // ===========================
-// Scraper
-// ===========================
-
-export interface ScraperSelector {
-  name: string;
-  css: string;
-  attributes?: string[];
-  multiple?: boolean;
-  getInnerText?: (element: Element) => string;
-}
-
-// ===========================
-// Letterboxd Scraping Shapes
-// ===========================
-
-export interface UserProfileData {
-  displayName: string;
-  followers: number;
-  following: number;
-  numberOfLists: number;
-}
-
-export interface UserFilm {
-  film_slug: string;
-  title: string;
-  rating: number;
-  liked: boolean;
-}
-
-// ===========================
 // Global Type Extensions
 // ===========================
 
@@ -80,13 +50,6 @@ declare global {
       user?: SupabaseUser;
       supabase?: SupabaseClient;
     }
-  }
-}
-
-// DOM types for Puppeteer
-declare global {
-  interface Element {
-    innerText: string;
   }
 }
 
@@ -103,9 +66,9 @@ declare global {
       NODE_ENV?: "development" | "production" | "test";
       FRONTEND_URL?: string;
       VERCEL_URL?: string;
-      ENABLE_SCRAPER?: string;
-      PUPPETEER_SKIP_CHROMIUM_DOWNLOAD?: string;
       TMDB_READ_API_TOKEN?: string;
+      WORKER_URL?: string;
+      WORKER_SHARED_SECRET?: string;
     }
   }
 }

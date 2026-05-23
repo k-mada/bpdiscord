@@ -7,18 +7,15 @@ import dotenv from "dotenv";
 import authRoutes from "./routes/authRoutes";
 import userAdminRoutes from "./routes/userAdminRoutes";
 import mflRoutes from "./routes/mflRoutes";
-import scraperRoutes from "./routes/scraperRoutes";
 import comparisonRoutes from "./routes/comparisonRoutes";
 import filmUserRoutes from "./routes/filmUserRoutes";
 import statsRoutes from "./routes/statsRoutes";
-import cronRoutes from "./routes/cronRoutes";
 import eventRoutes from "./routes/eventRoutes";
 import graphRoutes from "./routes/graphRoutes";
 import adminRoutes from "./routes/adminRoutes";
 import scrapeUserRoutes from "./routes/scrapeUserRoutes";
 import { globalErrorHandler } from "./middleware/errorHandler";
 import { ApiResponse } from "../shared/types";
-import { cleanup } from "./scraperFunctions";
 
 // Load environment variables
 // In production, environment variables should be set via system environment
@@ -115,17 +112,6 @@ const limiter = rateLimit({
 app.use("/api/", limiter);
 app.use(express.json({ limit: "10mb" }));
 
-// Custom timeout middleware for scraper routes
-const scraperTimeout = (req: Request, res: Response, next: any) => {
-  // Only apply extended timeout for scraper routes
-  if (req.path.startsWith("/api/scraper")) {
-    // Set 15 minute timeout for scraper operations
-    req.setTimeout(15 * 60 * 1000); // 15 minutes
-    res.setTimeout(15 * 60 * 1000); // 15 minutes
-  }
-  next();
-};
-
 // Health check endpoint
 app.get("/api/health", (req: Request, res: Response): void => {
   const response: ApiResponse = {
@@ -138,37 +124,17 @@ app.get("/api/health", (req: Request, res: Response): void => {
   res.json(response);
 });
 
-// Apply timeout middleware before routes
-app.use(scraperTimeout);
-
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/admin/users", userAdminRoutes);
 app.use("/api/comparison", comparisonRoutes);
 app.use("/api/film-users", filmUserRoutes);
 app.use("/api/stats", statsRoutes);
-app.use("/api/cron", cronRoutes);
 app.use("/api/mfl", mflRoutes);
 app.use("/api/events", eventRoutes);
 app.use("/api/actor-graph", graphRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/scrape-user", scrapeUserRoutes);
-
-// Only load scraper routes in development or when explicitly enabled
-if (
-  // process.env.NODE_ENV !== "production" ||
-  process.env.ENABLE_SCRAPER === "true"
-) {
-  app.use("/api/scraper", scraperRoutes);
-} else {
-  // Return 503 for scraper endpoints in production
-  app.use("/api/scraper", (req, res) => {
-    res.status(503).json({
-      error: "Scraping functionality disabled in production",
-      message: "Use the database-first endpoints at /api/film-users instead",
-    });
-  });
-}
 
 // Error handling middleware
 app.use(globalErrorHandler);
@@ -177,16 +143,6 @@ app.use(globalErrorHandler);
 app.use((req: Request, res: Response): void => {
   const response: ApiResponse = { error: "Route not found" };
   res.status(404).json(response);
-});
-
-process.on("SIGTERM", async () => {
-  await cleanup();
-  process.exit(0);
-});
-
-process.on("SIGINT", async () => {
-  await cleanup();
-  process.exit(0);
 });
 
 // Start server
