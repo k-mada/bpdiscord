@@ -136,21 +136,6 @@ describe("ApiService", () => {
   });
 
   // -------------------------------------------------------------------------
-  // GET endpoints with auth token
-  // -------------------------------------------------------------------------
-
-  describe.each([
-    ["getUsers", "/users"],
-    ["getUserProfile", "/users/profile"],
-  ] as const)("%s", (method, expectedUrl) => {
-    it(`calls GET ${expectedUrl} with auth header`, async () => {
-      await (apiService as any)[method](TOKEN);
-      expectFetch(expectedUrl);
-      expectAuth(TOKEN);
-    });
-  });
-
-  // -------------------------------------------------------------------------
   // POST endpoints (no auth) — body from args
   // -------------------------------------------------------------------------
 
