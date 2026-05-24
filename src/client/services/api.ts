@@ -1,6 +1,5 @@
 import {
   ApiResponse,
-  User,
   AuthRequest,
   SignupRequest,
   AuthResponse,
@@ -73,23 +72,6 @@ class ApiService {
     return this.request("/auth/forgot-password", {
       method: "POST",
       body: JSON.stringify({ email }),
-    });
-  }
-
-  // User endpoints
-  async getUsers(token: string): Promise<ApiResponse<User[]>> {
-    return this.request<User[]>("/users", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-  }
-
-  async getUserProfile(token: string): Promise<ApiResponse<User>> {
-    return this.request<User>("/users/profile", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
     });
   }
 
