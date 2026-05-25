@@ -169,12 +169,12 @@ export async function dbGetAllUsernames(): Promise<{
     // Single query with LEFT JOIN to get usernames and display names together
     const result = await db
       .selectDistinct({
-        username: userRatings.username,
+        username: users.lbusername,
         displayName: users.displayName,
       })
-      .from(userRatings)
-      .leftJoin(users, eq(userRatings.username, users.lbusername))
-      .orderBy(asc(userRatings.username));
+      .from(users)
+      .where(eq(users.isDiscord, true))
+      .orderBy(asc(users.lbusername));
 
     return result.map((r) => ({
       username: r.username,
