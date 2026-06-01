@@ -14,7 +14,9 @@ const UserFilmsCount = () => {
           {error}
         </p>
       ) : (
-        <span className="text-3xl font-bold movie-count">{data}</span>
+        <span data-testid="user-films-count" className="ml-5 text-3xl font-bold">
+          {data}
+        </span>
       )}
     </div>
   );

@@ -4,8 +4,8 @@ import {
   dbGetAllUserFilms,
   dbGetUserFilmsCount,
   dbGetMissingFilms,
-  dbGetTopWatchedFilms,
-  dbGetTopRatedUserFilms,
+  dbGetTopUserFilms,
+  TopUserFilmsOrder,
 } from "./dataController";
 
 export async function getTotalRatings(
@@ -36,7 +36,10 @@ export async function getTopWatchedFilms(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const result = await dbGetTopWatchedFilms();
+  const result = await dbGetTopUserFilms({
+    orderBy: TopUserFilmsOrder.MostWatched,
+    limit: 24,
+  });
   res.json(result);
 }
 
@@ -52,6 +55,9 @@ export async function getTopRatedUserFilms(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const result = await dbGetTopRatedUserFilms();
+  const result = await dbGetTopUserFilms({
+    orderBy: TopUserFilmsOrder.HighestRated,
+    minRatings: 20,
+  });
   res.json(result);
 }

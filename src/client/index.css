@@ -145,6 +145,12 @@
     color: rgb(0 172 28 / var(--tw-bg-opacity, 1));
   }
 
+  .rating-overlay-text {
+    font:
+      800 1rem "PT Serif",
+      serif;
+  }
+
   .rating-overlay {
     /* @apply absolute top-0 left-0 w-full h-full flex items-center justify-center bg-letterboxd-bg-secondary rounded-md; */
     position: absolute;
@@ -183,6 +189,14 @@
 
     &:hover {
       opacity: 1;
+    }
+
+    &.rating-overlay-small {
+      width: 70px;
+      height: 105px;
+      font:
+        800 1rem "PT Serif",
+        serif;
     }
   }
 
@@ -279,11 +293,14 @@
   }
 }
 
-.movie-count {
+.movie-counter-text {
+  @apply text-red-500;
+}
+
+.movie-stats {
   font:
-    800 32px "Be Vietnam Pro",
+    800 1.4rem "PT Serif",
     sans-serif;
-  padding-left: 1rem;
 }
 
 @keyframes fadeIn {

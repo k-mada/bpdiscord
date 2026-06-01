@@ -127,3 +127,4 @@ seed-failures.json
 .dolt/
 *.db
 .beads-credential-key
+.yarn/install-state.gz

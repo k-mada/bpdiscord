@@ -10,14 +10,15 @@ import type { AuthenticatedUser } from "../shared/types";
 // ===========================
 
 export interface LBFilm {
-  count: number;
-  average_rating: number | null;
-  banner: string | null;
   film_slug: string;
-  poster: string | null;
-  title: string | null;
-  url: string | null;
-  tmdb_link: string | null;
+  title: string;
+  watch_count: number;
+  rating_count: number;
+  average_rating: number;
+  poster: string;
+  banner: string;
+  tmdb_link: string;
+  url: string;
 }
 
 export interface Rating {

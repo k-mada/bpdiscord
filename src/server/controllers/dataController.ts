@@ -546,6 +546,9 @@ export async function dbGetTopWatchedFilms(): Promise<{
   success: boolean;
   data?: Array<{
     count: number;
+    rating_count: number;
+    watch_count: number;
+    average_rating: number;
     film_slug: string;
     title: string | null;
     poster: string | null;
@@ -556,12 +559,17 @@ export async function dbGetTopWatchedFilms(): Promise<{
   error?: string;
 }> {
   return dbOperation(async () => {
+    const ratingCount = sql<number>`COUNT(${userFilms.rating})::int`;
+    const averageRating = sql`ROUND(AVG(${userFilms.rating})::numeric, 2)`;
+
     const result = await db
       .select({
         // Per-film row count in UserFilms (watch/list entries). COUNT(DISTINCT film_slug)
         // would always be 1 here because we group by film_slug.
         watch_count: sql<number>`count(*)::int`,
+        rating_count: ratingCount,
         film_slug: userFilms.filmSlug,
+        average_rating: sql<string>`${averageRating}`,
         title: films.title,
         poster: films.poster,
         banner: films.banner,
@@ -582,11 +590,14 @@ export async function dbGetTopWatchedFilms(): Promise<{
       .limit(24);
 
     return result.map((r) => ({
-      count: r.watch_count,
-      film_slug: r.film_slug,
-      title: r.title,
-      poster: r.poster,
+      average_rating: toNumber(r.average_rating),
       banner: r.banner,
+      count: r.watch_count, // deprecate
+      film_slug: r.film_slug,
+      watch_count: r.watch_count,
+      poster: r.poster,
+      rating_count: r.rating_count,
+      title: r.title,
       tmdb_link: r.tmdb_link,
       url: r.url,
     }));
@@ -654,6 +665,92 @@ export async function dbGetTopRatedUserFilms(
       tmdb_link: r.tmdb_link ?? "",
       url: r.url ?? "",
       users: r.users ?? "",
+    }));
+  });
+}
+
+export enum TopUserFilmsOrder {
+  HighestRated = "highest_rated",
+  MostWatched = "most_watched",
+}
+
+export async function dbGetTopUserFilms(
+  options: {
+    orderBy?: TopUserFilmsOrder;
+    limit?: number;
+    minRatings?: number;
+  } = {},
+): Promise<{
+  success: boolean;
+  data?: Array<{
+    film_slug: string;
+    title: string;
+    watch_count: number;
+    rating_count: number;
+    average_rating: number;
+    poster: string;
+    banner: string;
+    tmdb_link: string;
+    url: string;
+  }>;
+  error?: string;
+}> {
+  const orderBy = options.orderBy ?? TopUserFilmsOrder.MostWatched;
+  const limit = options.limit ?? 25;
+  const minRatings = options.minRatings ?? 0;
+
+  return dbOperation(async () => {
+    const watchCount = sql<number>`COUNT(*)::int`;
+    const ratingCount = sql<number>`COUNT(${userFilms.rating})::int`;
+    const averageRating = sql`ROUND(AVG(${userFilms.rating})::numeric, 2)`;
+
+    const orderClause =
+      orderBy === TopUserFilmsOrder.HighestRated
+        ? [desc(averageRating), desc(ratingCount), asc(userFilms.filmSlug)]
+        : [desc(watchCount), asc(films.title)];
+
+    const base = db
+      .select({
+        film_slug: userFilms.filmSlug,
+        title: films.title,
+        watch_count: watchCount,
+        rating_count: ratingCount,
+        average_rating: sql<string>`${averageRating}`,
+        poster: films.poster,
+        banner: films.banner,
+        tmdb_link: films.tmdbLink,
+        url: films.url,
+      })
+      .from(userFilms)
+      .innerJoin(users, eq(userFilms.lbusername, users.lbusername))
+      .innerJoin(films, eq(userFilms.filmSlug, films.filmSlug))
+      .where(eq(users.isDiscord, true))
+      .groupBy(
+        userFilms.filmSlug,
+        films.title,
+        films.poster,
+        films.banner,
+        films.tmdbLink,
+        films.url,
+      );
+
+    const filtered =
+      minRatings > 0
+        ? base.having(sql`${ratingCount} >= ${minRatings}`)
+        : base;
+
+    const result = await filtered.orderBy(...orderClause).limit(limit);
+
+    return result.map((r) => ({
+      film_slug: r.film_slug,
+      title: r.title ?? "",
+      watch_count: r.watch_count,
+      rating_count: r.rating_count,
+      average_rating: toNumber(r.average_rating),
+      poster: r.poster ?? "",
+      banner: r.banner ?? "",
+      tmdb_link: r.tmdb_link ?? "",
+      url: r.url ?? "",
     }));
   });
 }

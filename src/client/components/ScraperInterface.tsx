@@ -5,7 +5,7 @@ import { ALL_RATINGS } from "../constants";
 import { useComparison } from "../hooks/useComparison";
 import { useScrapeJob } from "../hooks/useScrapeJob";
 import JobProgress from "./JobProgress";
-
+import RatingDistributionHistogram from "./RatingDistributionHistogram";
 interface Rating {
   rating: number;
   count: number;
@@ -100,7 +100,6 @@ const ScraperInterface = () => {
           Letterboxd ratings and films.
         </p>
       </div>
-
       <div className="card">
         <div className="space-y-4">
           <div>
@@ -168,69 +167,21 @@ const ScraperInterface = () => {
           </div>
         </div>
       </div>
-
       {(checkError || jobError) && (
         <div className="card border-red-500/30 bg-red-900/10">
           <h3 className="text-lg font-semibold text-red-400 mb-2">Error</h3>
           <p className="text-red-300">{checkError ?? jobError}</p>
         </div>
       )}
-
       {/* Live scrape job — same 3-phase progress as the admin bulk refresh. */}
       {job && <JobProgress job={job} />}
-
       {/* Snapshot of the user's current ratings, read from the database. */}
       {userRatings && (
-        <div className="card">
-          <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-4">
-            User Ratings for {userRatings.username}
-          </h3>
-
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-letterboxd-border">
-                  <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
-                    Rating
-                  </th>
-                  <th className="text-left py-3 px-4 text-letterboxd-text-secondary font-medium">
-                    Count
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {ALL_RATINGS.map((rating) => {
-                  const ratingItem = userRatings.ratings.find(
-                    (r) => r.rating === rating,
-                  );
-                  const count = ratingItem ? ratingItem.count : 0;
-
-                  return (
-                    <tr
-                      key={rating}
-                      className="border-b border-letterboxd-border/50"
-                    >
-                      <td className="py-3 px-4 text-letterboxd-text-primary">
-                        <span className="text-letterboxd-accent">
-                          {renderStars(rating)}
-                        </span>
-                      </td>
-                      <td className="py-3 px-4 text-letterboxd-text-primary">
-                        {count}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="mt-4 p-4 bg-letterboxd-bg-primary rounded-lg">
-            <p className="text-sm text-letterboxd-text-muted">
-              Total films rated:{" "}
-              {userRatings.ratings.reduce((sum, r) => sum + r.count, 0)}
-            </p>
-          </div>
+        <div className="m-auto">
+          <RatingDistributionHistogram
+            distribution={userRatings.ratings}
+            size="md"
+          />
         </div>
       )}
     </div>

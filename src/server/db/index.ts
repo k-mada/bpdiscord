@@ -1,11 +1,11 @@
-import '../loadEnv';
+import "../loadEnv";
 
-import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
-import * as schema from './schema';
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
+import * as schema from "./schema";
 
-const isTest = process.env.NODE_ENV === 'test';
-const isProduction = process.env.NODE_ENV === 'production';
+const isTest = process.env.NODE_ENV === "test";
+const isProduction = process.env.NODE_ENV === "production";
 
 // Use test database URL if in test mode, otherwise use main database
 const databaseUrl = isTest
@@ -13,7 +13,7 @@ const databaseUrl = isTest
   : process.env.DATABASE_URL;
 
 if (!databaseUrl) {
-  const envVar = isTest ? 'DATABASE_URL_TEST' : 'DATABASE_URL';
+  const envVar = isTest ? "DATABASE_URL_TEST" : "DATABASE_URL";
   throw new Error(`Missing ${envVar} environment variable`);
 }
 
@@ -21,9 +21,10 @@ if (!databaseUrl) {
 // / localhost / docker-internal host) doesn't speak TLS. The hosted
 // Supabase pooler does and requires it. Detect by URL so the test path
 // and the local-smoke path don't need to remember to flip NODE_ENV.
-const isLocalDatabase = /(?:^|@)(127\.0\.0\.1|localhost|host\.docker\.internal)(?::|\/)/.test(
-  databaseUrl,
-);
+const isLocalDatabase =
+  /(?:^|@)(127\.0\.0\.1|localhost|host\.docker\.internal)(?::|\/)/.test(
+    databaseUrl,
+  );
 
 // Create postgres client with proper connection pool settings
 const client = postgres(databaseUrl, {
@@ -39,7 +40,7 @@ const client = postgres(databaseUrl, {
   connect_timeout: 10,
 
   // SSL: required by hosted Supabase, unavailable on the local stack.
-  ssl: isTest || isLocalDatabase ? false : 'require',
+  ssl: isTest || isLocalDatabase ? false : "require",
 
   // Prepare statements for better performance
   prepare: true,
@@ -56,8 +57,8 @@ const shutdown = async () => {
   await client.end();
 };
 
-process.on('SIGTERM', shutdown);
-process.on('SIGINT', shutdown);
+process.on("SIGTERM", shutdown);
+process.on("SIGINT", shutdown);
 
 // Re-export schema for convenience
-export * from './schema';
+export * from "./schema";
