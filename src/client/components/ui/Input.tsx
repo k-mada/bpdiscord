@@ -10,12 +10,12 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 // their own className. .input-field still exists in index.css for legacy
 // callers (cleanup in bpdiscord-3h2).
 const baseClasses =
-  "bg-letterboxd-bg-secondary border border-letterboxd-border rounded-lg " +
-  "px-4 py-3 text-letterboxd-text-primary placeholder-letterboxd-text-muted " +
+  "bg-letterboxd-bg-secondary border border-letterboxd-border rounded-md " +
+  "px-4 py-3 text-letterboxd-input-text placeholder-letterboxd-text-muted " +
   "focus:outline-none focus:ring-2 focus:ring-letterboxd-accent focus:border-transparent " +
   "transition-all duration-200 " +
   "disabled:opacity-50 disabled:cursor-not-allowed " +
-  "aria-invalid:border-red-500 aria-invalid:focus:ring-red-500";
+  "aria-invalid:border-red-500 aria-invalid:focus:ring-red-500 focus:bg-white";
 
 export function Input({ className, ref, ...props }: InputProps) {
   return <input ref={ref} className={cn(baseClasses, className)} {...props} />;

@@ -3,10 +3,15 @@ import apiService from "../services/api";
 import RatingDistributionHistogram from "./RatingDistributionHistogram";
 import UserFilmsCount from "./UserFilmsCount";
 import type { LBFilm } from "../types";
+import { useRatingsDistribution } from "../hooks/useRatingsDistribution";
+import Spinner from "./Spinner";
+import MovieList from "./MovieList";
 
 const Dashboard = () => {
   const [topWatchedFilms, setTopWatchedFilms] = useState<LBFilm[]>([]);
   const [topRatedUserFilms, setTopRatedUserFilms] = useState<LBFilm[]>([]);
+
+  const { data: allRatings, loading } = useRatingsDistribution();
 
   const getTopWatchedFilms = async () => {
     try {
@@ -21,7 +26,6 @@ const Dashboard = () => {
     try {
       const topRatedUserFilms = await apiService.getTopRatedUserFilms();
       setTopRatedUserFilms(topRatedUserFilms.data || []);
-      console.log("topRatedUserFilms", topRatedUserFilms.data);
     } catch (error) {
       console.error("Error fetching top rated user films:", error);
     }
@@ -42,44 +46,25 @@ const Dashboard = () => {
         </p>
       </div>
       <UserFilmsCount />
-
-      <h3 className="subheading">How we rated of our movies:</h3>
+      <h3 className="subheading">How we rated all of our movies:</h3>
       <div className="flex mb-4 justify-center">
-        <RatingDistributionHistogram size="md" />
+        {loading ? (
+          <Spinner />
+        ) : (
+          <RatingDistributionHistogram size="md" distribution={allRatings} />
+        )}
       </div>
-      <h3 className="subheading">Most watched movies</h3>
-      <ul className="film-list-small movie-poster-fade-in">
-        {topWatchedFilms.map((movie, index: number) => (
-          <li
-            key={movie.film_slug}
-            style={{ animationDelay: `${index * 0.2 + 0.5}s` }}
-          >
-            <div>
-              <img
-                src={movie.poster?.replace("0-230-0-345", "0-70-0-105") ?? ""}
-                alt={movie.title ?? ""}
-              />
-            </div>
-          </li>
-        ))}
-      </ul>
-      <h3 className="subheading">Highest rated movies (20+ ratings)</h3>
+      <div className="flex flex-row justify-between max-md:justify-center max-md:flex-col m-auto w-[100%]">
+        <div className="flex-1 mr-2">
+          <h3 className="subheading">Our highest rated movies (20+ ratings)</h3>
+          <MovieList movies={topRatedUserFilms} showRating={true} size="sm" />
+        </div>
 
-      <ul className="film-list movie-poster-fade-in">
-        {topRatedUserFilms.map((movie, index) => (
-          <li
-            key={movie.film_slug}
-            style={{ animationDelay: `${index * 0.3 + 0.5}s` }}
-          >
-            <div>
-              <img src={movie.poster ?? ""} alt={movie.title ?? ""} />
-              <span className="rating-overlay">
-                ★{movie.average_rating ?? 0}
-              </span>
-            </div>
-          </li>
-        ))}
-      </ul>
+        <div className="flex-1 ml-2">
+          <h3 className="subheading">Our most watched movies</h3>
+          <MovieList size="sm" movies={topWatchedFilms} showCount={true} />
+        </div>
+      </div>
     </div>
   );
 };

@@ -65,7 +65,7 @@ describe("UserFilmsCount", () => {
       });
 
       // The count span should not be in the document while the error is shown.
-      expect(document.querySelector(".movie-count")).not.toBeInTheDocument();
+      expect(document.querySelector(".movie-stats")).not.toBeInTheDocument();
     });
   });
 

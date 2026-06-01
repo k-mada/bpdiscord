@@ -1,20 +1,17 @@
 import { ALL_RATINGS } from "../constants";
 import Tooltip from "./Tooltip";
-import { useRatingsDistribution } from "../hooks/useRatingsDistribution";
-import Spinner from "./Spinner";
+
 interface RatingDistributionHistogramProps {
-  // distribution: Array<{ rating: number; count: number }>;
+  distribution: Array<{ rating: number; count: number }>;
   size?: string;
   className?: string;
 }
 
 const RatingDistributionHistogram = ({
-  // distribution,
+  distribution,
   size = "sm",
   className = "",
 }: RatingDistributionHistogramProps) => {
-  const { data: distribution, loading, error } = useRatingsDistribution();
-
   if (!distribution || distribution.length === 0) {
     return (
       <span className="text-letterboxd-text-secondary text-xs">No data</span>
@@ -26,18 +23,6 @@ const RatingDistributionHistogram = ({
 
   // Create a map for easy access and ensure we have all ratings from 0.5 to 5
   const distributionMap = new Map(distribution.map((d) => [d.rating, d.count]));
-
-  if (loading) {
-    return <Spinner />;
-  }
-
-  if (error) {
-    return (
-      <span className="text-letterboxd-text-secondary text-xs">
-        Error: {error}
-      </span>
-    );
-  }
 
   return (
     <div className={`histogram-${size} ${className}`}>

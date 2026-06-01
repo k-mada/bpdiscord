@@ -54,12 +54,12 @@ const Header = () => {
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-4">
-          <button
+          {/* <button
             onClick={() => navigateTo("/mfl")}
             className={getNavButtonClass("/mfl")}
           >
             MFL
-          </button>
+          </button> */}
           <button
             onClick={() => navigateTo("/compare")}
             className={getNavButtonClass("/compare")}
@@ -139,7 +139,7 @@ const Header = () => {
             <button
               onClick={() => navigateTo("/compare")}
               className={`block w-full text-left py-2 ${getNavButtonClass(
-                "/compare"
+                "/compare",
               )}`}
             >
               Compare
@@ -147,7 +147,7 @@ const Header = () => {
             <button
               onClick={() => navigateTo("/hater-rankings")}
               className={`block w-full text-left py-2 ${getNavButtonClass(
-                "/hater-rankings"
+                "/hater-rankings",
               )}`}
             >
               Hater Rankings
@@ -155,7 +155,7 @@ const Header = () => {
             <button
               onClick={() => navigateTo("/dashboard")}
               className={`block w-full text-left py-2 ${getNavButtonClass(
-                "/dashboard"
+                "/dashboard",
               )}`}
             >
               Dashboard
@@ -163,7 +163,7 @@ const Header = () => {
             <button
               onClick={() => navigateTo("/profile")}
               className={`block w-full text-left py-2 ${getNavButtonClass(
-                "/profile"
+                "/profile",
               )}`}
             >
               Profile
@@ -171,7 +171,7 @@ const Header = () => {
             <button
               onClick={() => navigateTo("/fetcher")}
               className={`block w-full text-left py-2 ${getNavButtonClass(
-                "/fetcher"
+                "/fetcher",
               )}`}
             >
               Data Fetcher
