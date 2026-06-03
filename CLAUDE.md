@@ -10,996 +10,144 @@
 - Use ES modules (import/export) syntax, not commonJS (require)
 - Destructure imports when possible (e.g. import { foo } from 'bar')
 
-# BPDiscord Application Documentation
+# BPDiscord
 
-## Overview
+Full-stack TypeScript app that analyzes Letterboxd rating data. React 19 + Vite client, Express + TypeScript server, Supabase Postgres, JWT auth via Supabase. Yarn workspaces. Vite dev proxy fronts the API.
 
-BPDiscord is a full-stack TypeScript web application that analyzes Letterboxd user rating data. It provides user comparison features, hater rankings, and comprehensive rating statistics through a modern React frontend and Express.js backend. Scraping is handled by a separate **moviemaestro** Python worker (deployed on Railway) and is **not** performed in this Node process — see [Scraping pipeline](#scraping-pipeline-moviemaestro-worker) below.
+Scraping is **not** in this Node process — it runs in a separate Python worker (**moviemaestro**, deployed on Railway). This server is a thin orchestrator that inserts a job row and POSTs to the worker.
 
-## Architecture
+## Scraping pipeline (moviemaestro worker)
 
-### Technology Stack
+All Letterboxd scraping is performed by moviemaestro (`WORKER_URL=https://moviemaestro.up.railway.app`). The Node server **does not** run Puppeteer, Cheerio, or any browser. A refresh works like:
 
-- **Frontend**: Vite + React 19 + TypeScript, Tailwind CSS
-- **Backend**: Express.js + TypeScript
-- **Database**: Supabase (PostgreSQL)
-- **Authentication**: JWT tokens via Supabase Auth
-- **Scraping**: External worker service (moviemaestro on Railway) — Node server never touches Letterboxd directly
-- **Package Manager**: Yarn (consistent across all projects)
-- **Development**: Vite proxy for CORS-free development
-
-### Project Structure
-
-```
-bpdiscord/
-├── src/
-│   ├── client/           # Vite + React frontend application
-│   │   ├── components/   # React components
-│   │   │   └── ui/       # Primitive components (Input, etc.) — owned, no third-party UI lib
-│   │   ├── hooks/        # Custom React hooks
-│   │   ├── lib/          # Client-side utilities (cn() etc.)
-│   │   ├── services/     # API client services
-│   │   ├── types.ts      # Client-specific TypeScript types
-│   │   ├── vite.config.js # Vite configuration with proxy
-│   │   ├── tailwind.config.js # Tailwind CSS configuration
-│   │   ├── tsconfig.json # Client-specific TypeScript configuration
-│   │   ├── package.json  # Client dependencies
-│   │   └── build/        # Vite build output
-│   ├── server/           # Express.js backend
-│   │   ├── config/       # Database and configuration
-│   │   ├── controllers/  # Business logic controllers
-│   │   │   ├── filmUserController.ts     # Database-first read endpoints
-│   │   │   ├── userScrapeJobController.ts # /fetcher per-user refresh (delegates to moviemaestro)
-│   │   │   └── refreshJobController.ts    # Admin bulk refresh (delegates to moviemaestro)
-│   │   ├── middleware/   # Authentication, validation, error handling
-│   │   ├── routes/       # API route definitions
-│   │   │   ├── filmUserRoutes.ts     # Database-first endpoints
-│   │   │   ├── scrapeUserRoutes.ts   # Per-user job trigger / poll / cancel
-│   │   │   └── adminRoutes.ts        # Admin bulk refresh job trigger / poll / cancel
-│   │   ├── types.ts      # Server-specific TypeScript types
-│   │   ├── tsconfig.json # Server-specific TypeScript configuration
-│   │   ├── package.json  # Server dependencies
-│   │   └── dist/         # TypeScript compilation output
-├── package.json          # Root orchestration + shared dependencies
-├── tsconfig.json         # Root TypeScript configuration
-├── vercel.json           # Deployment configuration
-└── yarn.lock             # Lockfile for consistent dependencies
-```
-
-## Data Flow Architecture
-
-### Database Schema
-
-#### Core Tables
-
-1. **Users** - Letterboxd user profile data
-   - `lbusername` (primary key) - Letterboxd username
-   - `display_name` - User's display name
-   - `followers` - Follower count
-   - `following` - Following count
-   - `number_of_lists` - Number of lists created
-   - `created_at`, `updated_at` - Timestamps
-
-2. **UserRatings** - Individual rating data points
-   - `username` - Links to Users.lbusername
-   - `rating` - Rating value (0.5-5.0)
-   - `count` - Number of movies rated at this level
-   - Primary key: (`username`, `rating`)
-
-3. **Films** (future use) - Individual film data
-   - Film metadata and user-specific rating information
-
-4. **ag_actors** - TMDB-sourced actor nodes for the "Six Degrees" graph
-   - `tmdb_id` (primary key) - TMDB person id
-   - `name` - Actor name
-   - `profile_path`, `popularity` - Profile image + popularity score
-   - `birthday`, `biography`, `place_of_birth` - Biographical fields (only populated when fully fetched)
-   - `fully_fetched` - Set to `true` once `/person/:id?append_to_response=movie_credits` has been hydrated. Lightweight inserts (from movie cast ingestion) leave this `false`.
-   - `fetched_at` - Timestamp of last hydration
-
-5. **ag_films** - TMDB-sourced film nodes
-   - `tmdb_id` (primary key) - TMDB movie id
-   - `title`, `release_date`, `release_year` - Film identity + year
-   - `poster_path`, `poster_url` - Poster fields (poster_url is pre-composed w342)
-   - `overview`, `popularity`, `vote_average`, `genres` - Surface metadata
-   - `cast_fully_fetched` - Set to `true` once `/movie/:id?append_to_response=credits` has been hydrated. Lightweight inserts (from actor filmography ingestion) leave this `false`.
-   - `fetched_at` - Timestamp of last hydration
-
-6. **ag_acted_in** - Actor ↔ film edges (the graph itself)
-   - `actor_tmdb_id` - FK → `ag_actors.tmdb_id`
-   - `movie_tmdb_id` - FK → `ag_films.tmdb_id`
-   - `character` - Role name (nullable)
-   - `billing_order` - Cast order from TMDB; lower = more prominent. The path-finder uses this to prune long-tail credits (extras, voice roles).
-   - Primary key: (`actor_tmdb_id`, `movie_tmdb_id`)
-   - Reverse index `idx_ag_acted_in_movie_actor` on (`movie_tmdb_id`, `actor_tmdb_id`) — required by the BFS, which joins on `movie_tmdb_id` to find co-stars. Created in `supabase/migrations/20260505013813_add_ag_graph_indexes.sql` alongside `pg_trgm` GIN indexes on `ag_actors.name` / `ag_films.title` that power the search endpoint.
-
-### Scraping pipeline (moviemaestro worker)
-
-All Letterboxd scraping is performed by the **moviemaestro** Python service deployed on Railway (`WORKER_URL=https://moviemaestro.up.railway.app`). The Node server **does not** run Puppeteer, Cheerio, or any browser. The role of this server in a refresh is:
-
-1. Insert a row into `user_scrape_jobs` (per-user refresh) or `refresh_jobs` (admin bulk refresh) with `status='running'`. A partial unique index makes the insert single-flight.
-2. POST `{job_id, ...}` to the moviemaestro worker with `Authorization: Bearer ${WORKER_SHARED_SECRET}`. 10s fetch timeout.
-3. Return `202 {job_id}` to the client. The client polls `GET /api/scrape-user/jobs/:id` (or `/api/admin/refresh-rankings/:id`) every 2s.
-4. Moviemaestro scrapes Letterboxd with `letterboxdpy`, writes to `Users` / `UserRatings` / `UserFilms` / `Films` directly using the Supabase service-role key, and updates the job row's `status` / `phase` / `progress` / `errors` as it progresses.
+1. Insert a row into `user_scrape_jobs` (per-user) or `refresh_jobs` (admin bulk) with `status='running'`. A partial unique index makes the insert single-flight.
+2. POST `{job_id, ...}` to moviemaestro with `Authorization: Bearer ${WORKER_SHARED_SECRET}`. 10s fetch timeout.
+3. Return `202 {job_id}` to the client; the client polls `GET /api/scrape-user/jobs/:id` (or `/api/admin/refresh-rankings/:id`) every 2s.
+4. moviemaestro scrapes Letterboxd with `letterboxdpy`, writes to `Users` / `UserRatings` / `UserFilms` / `Films` directly using the Supabase service-role key, and updates the job row's `status` / `phase` / `progress` / `errors` as it progresses.
 5. Terminal states (`completed` / `failed` / `cancelled`) stop the client's polling loop.
 
 If the worker handoff fails (502, timeout, etc.), the controller rolls back the job row to `status='failed'` so the partial unique index releases and the next trigger can succeed.
 
-**Why this architecture:** Puppeteer in a Vercel serverless function is fragile (cold-start time, memory limits, Chromium binary), and the previous in-Node implementation was responsible for the majority of the server's complexity and most of its production failures. Offloading to a long-lived Python worker means scraping runs on hardware that's actually sized for it, and the Node tier stays a thin orchestration layer.
+**Why this architecture:** Puppeteer in a Vercel serverless function is fragile (cold-start, memory limits, Chromium binary), and the previous in-Node implementation was responsible for most of the server's complexity and production failures. Offloading to a long-lived Python worker means scraping runs on hardware sized for it, and the Node tier stays a thin orchestration layer.
 
-## API Endpoints
+**Worker handoff security**: `WORKER_SHARED_SECRET` Bearer token on every server→worker call. Job rows scoped by `started_by`; partial unique indexes prevent concurrent duplicate work at the DB level.
 
-### Authentication Routes (`/api/auth`)
+## Database schema — non-obvious bits
 
-- `POST /signup` - User registration
-- `POST /login` - User authentication
-- `POST /forgot-password` - Send a password reset email (Supabase delivers the link)
+Tables `Users`, `UserRatings`, `Films`, `UserFilms` are straightforward — see `src/server/db/schema.ts` and `supabase/migrations/` for columns.
 
-### Film User Routes (`/api/film-users`) - Public, Database-First
+The **actor-graph** tables have semantics that aren't obvious from the columns:
 
-- `GET /` - Get all users with display names
-- `GET /:username/ratings` - Get user's ratings (404 if absent)
-- `GET /:username/profile` - Get user's profile (404 if absent)
-- `GET /:username/complete` - Get complete user data (404 if absent)
+- **`ag_actors`** / **`ag_films`** — both carry a `fully_fetched` / `cast_fully_fetched` flag. Lightweight inserts (e.g. a film discovered via an actor's filmography, or an actor discovered via a movie's cast) leave the flag `false`. Only a full `/person/:id?append_to_response=movie_credits` or `/movie/:id?append_to_response=credits` hydrates the row and sets it `true`. **Never let a lightweight upsert clobber a richer row's flag back to false.**
+- **`ag_acted_in`** — actor↔film edges. `billing_order` (lower = more prominent) is used by the path-finder to prune long-tail credits (extras, voice roles). The reverse-direction index `idx_ag_acted_in_movie_actor` on `(movie_tmdb_id, actor_tmdb_id)` is required by the BFS, which joins on `movie_tmdb_id` to find co-stars. Created in `supabase/migrations/20260505013813_add_ag_graph_indexes.sql` alongside `pg_trgm` GIN indexes on `ag_actors.name` / `ag_films.title` that power the search endpoint.
 
-These are pure DB reads. To populate missing data, trigger a refresh via `/api/scrape-user` (any logged-in user) or `/api/admin/refresh-rankings` (admin). The legacy `?fallback=scrape` parameter was removed when the in-Node Puppeteer pipeline was retired.
+## API surface
 
-### Scrape User Routes (`/api/scrape-user`) - Authenticated
+Routes are defined under `src/server/routes/`. Quick map:
 
-Per-user refresh jobs that delegate to the moviemaestro worker. See [Scraping pipeline](#scraping-pipeline-moviemaestro-worker).
+- `/api/auth` — signup / login / forgot-password (server-mediated)
+- `/api/film-users` — **public, DB-only reads** of Letterboxd data. 404 on miss (hint user to trigger a refresh). No fallback scraping; the legacy `?fallback=scrape` query param was removed when Puppeteer was retired.
+- `/api/scrape-user` — **JWT-authed** per-user refresh job (trigger / poll / cancel). Delegates to moviemaestro. Per-username rate limit 10 req / 5 min; poll 120 req / 60s per IP.
+- `/api/admin/refresh-rankings` — **admin only** bulk refresh, same delegation pattern.
+- `/api/comparison` — public read endpoints powering the compare + hater-rankings pages.
+- `/api/actor-graph` — public, **cache-through to TMDB** for the Six-Degrees feature:
+  - `path-finder/:a1/:a2` — layer-by-layer BFS over `ag_acted_in` (one indexed self-join per layer, global visited map; O(V+E) over the connected component). Rate-limited tighter: 20 req / 5 min per IP.
+  - `search?q=...` — merges DB hits (pg_trgm GIN, ILIKE wildcards `%`/`_`/`\` escaped) with TMDB `/search/person`+`/search/movie`. Either source degrades gracefully on the other's failure. `q` length clamped 2–80. Rate-limited 60 req / 5 min per IP.
+  - `actors/:id`, `movies/:id`, `actors/:id/costars`, `actors/:a1/common-movies/:a2` — cache-through; ingestion rate-limited 120 req / 5 min per IP.
+  - Public despite being cache-through writers: writes are bounded (top-15 cast per ingestion), source is TMDB (itself public), per-IP rate limiters cap abuse. Requires `TMDB_READ_API_TOKEN` (503 if unset).
+- `/api/users` — JWT-protected CRUD for app accounts (admin-only for list/edit/delete of others).
 
-- `POST /:username` - Trigger a refresh for a Letterboxd user → `202 {job_id}` or `409` if one is already running for that username
-- `GET /jobs/:id` - Poll a job's status (own-job only — other users' job rows return 404)
-- `POST /jobs/:id/cancel` - Cancel a running job (own-job only)
+### Actor-graph controller error handling
 
-Rate-limited: trigger 10 req / 5 min per username; poll 120 req / 60 s per IP (2 req/s sustained).
+Diverges from the rest of the codebase. Pure-DB helpers throw; handlers wrap in try/catch and route everything (DB errors, `TmdbNotFoundError`, `TmdbUnavailableError`, `AxiosError`) through `classifyError` → 404 / 503 / 502 / 429 / 500. `dataController` and `eventDataController` keep using the `dbOperation` result type. Don't try to unify these.
 
-### Admin Refresh Routes (`/api/admin/refresh-rankings`) - Admin only
+### Cross-instance ingestion races
 
-Bulk refresh of all Discord users' data, same delegation pattern as `/api/scrape-user`.
+In-process request coalescing dedupes concurrent same-id ingestions within a single Node instance. Cross-instance races (e.g. Vercel parallel lambdas) fall through to `ON CONFLICT DO UPDATE` — bounded cost, no correctness impact.
 
-- `POST /` - Trigger a bulk refresh → `202 {job_id}` or `409` if one is already running
-- `GET /:id` - Poll job status
-- `POST /:id/cancel` - Cancel
+## Database-first architecture
 
-### Comparison Routes (`/api/comparison`) - Public
+1. **Read path** — all client-facing endpoints are DB queries. No synchronous calls to Letterboxd, no Puppeteer, no fallback scraping in the request lifecycle.
+2. **Write path** — refresh jobs are async, delegated to moviemaestro. The Node server is a thin orchestrator.
+3. **TMDB cache-through** — `/api/actor-graph` is the one exception. Writes on cache miss, but only to TMDB-backed tables, and bounded per request.
 
-- `GET /usernames` - Get list of available users with display names
-- `POST /user-ratings` - Get specific user's ratings and profile data
-- `POST /compare` - Compare two users' rating data
-- `GET /hater-rankings` - Get all users ranked by average rating
+## Authentication — non-obvious bits
 
-### Actor Graph Routes (`/api/actor-graph`) - Public, Cache-Through
+- **Login / signup** are on **separate routes** (`/login` and `/signup`), not a single combined page.
+- **Password reset is client-direct via the Supabase JS SDK** (not server-mediated like login/signup). The recovery email link lands in the browser, not on the server, so:
+  1. `POST /api/auth/forgot-password` → server calls `supabase.auth.resetPasswordForEmail` → Supabase emails the user
+  2. Email link → `/reset-password#access_token=...&type=recovery`
+  3. SDK auto-extracts the code from the URL hash and establishes an **in-memory** session (`persistSession: false`)
+  4. After `updateUser({ password })` succeeds, **sign out the recovery session** before navigating to `/login` — we don't want an email-link click alone to grant an authenticated session
+  - Requires `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` on the client.
+- **Admin editing own email** → server returns `requiresReauth: true`; the page clears the token and redirects to `/login` (the old JWT just rotated).
+- **Admin user table** unclaimed-lbusername datalist is the intersection of `GET /api/film-users` minus `GET /api/admin/users` lbusernames. The currently-edited account's own lbusername is intentionally included even though it's "claimed" so the current value stays valid.
+- **Admin self-delete is disabled** in the UI (forced to use Supabase Studio; the FK cascade would invalidate the in-flight JWT mid-request).
+- The page-level admin gate (`user.user_metadata.role === 'admin'`) is **UX only**. The real gate is the server-side `authorizeAdmin` middleware.
 
-Powers the "Six Degrees of Kevin Bacon" feature. Reads from the `ag_actors` / `ag_films` / `ag_acted_in` tables; on cache miss, ingests from TMDB into the same tables inside a transaction.
-
-- `GET /path-finder/:actor1Id/:actor2Id` - Find shortest actor path via layer-by-layer BFS over co-appearances
-  - Query params: `maxDepth` (1-8, default 6), `billingCutoff` (1-50, default 15)
-  - One indexed `ag_acted_in` self-join per BFS layer; each actor expanded at most once via a global visited map (in-process, not SQL). Complexity is O(V+E) over the connected component, not O(B^D) like a recursive-CTE BFS.
-  - 404 on unknown actor, 404 on no path within `maxDepth`. A `statement_timeout` is set as a defense-in-depth ceiling but should not fire on realistic graphs (504 path is dead code under normal traffic).
-  - Rate-limited separately: **20 req / 5 min per IP** (tighter than other endpoints because BFS over an indexed graph still touches more rows per request than a single point lookup)
-- `GET /search?q=...` - Unified actor + movie search
-  - DB results (pg_trgm GIN indexes on name/title; ILIKE wildcards `%`/`_`/`\` escaped from user input) merged with TMDB `/search/person` + `/search/movie`. DB rows win on id collision; sorted by popularity desc; capped at 10 each. Either source degrades gracefully on failure: a TMDB outage still returns DB hits, and vice versa.
-  - `q` length: minimum 2, maximum 80 chars (cap prevents abusive payloads being forwarded to TMDB or used as trigram patterns).
-  - Rate-limited separately: **60 req / 5 min per IP** (chattiest endpoint, typeahead-friendly)
-- `GET /actors/:tmdbId` - Get (and hydrate if missing) an actor + their filmography
-- `GET /movies/:tmdbId` - Get (and hydrate if missing) a movie + its top-15 billed cast
-- `GET /actors/:tmdbId/costars` - Co-star list ranked by shared-movie count
-  - Query param: `limit` (1-500, default 100)
-- `GET /actors/:actor1Id/common-movies/:actor2Id` - Films both actors appeared in, ordered newest-first
-- **Ingestion rate limit** (applies to all detail endpoints above): **120 req / 5 min per IP**
-- **Auth model**: Public by design despite being cache-through writers. Writes are bounded (top-15 cast per ingestion), the source data is TMDB (itself public), and per-IP rate limiters cap abuse. If TMDB quota or DB growth becomes an issue, gate these behind the same JWT middleware as `/api/scrape-user`.
-
-### User Routes (`/api/users`) - Protected
-
-- `GET /` - Get all users
-- `GET /me` - Get current user profile
-- `GET /:id` - Get specific user
-- `PUT /:id` - Update user profile
-- `DELETE /:id` - Delete user account
-
-## User Experience Flow
-
-### Public Routes (No Authentication Required)
-
-#### 1. User Comparison (`/compare`)
-
-**Purpose**: Compare rating statistics between any two Letterboxd users
-
-**Flow**:
-
-1. User visits public comparison page
-2. Two dropdown menus populated with available users (showing display names)
-3. User selects two different users to compare
-4. System fetches both users' data (ratings + profile info)
-5. Displays two sections:
-   - **Profile Comparison Table**: Total films, followers, following, lists
-   - **Rating Distribution Table**: Side-by-side rating counts with percentages
-6. Visual highlighting shows which user has higher counts for each metric
-7. Summary section shows aggregate statistics
-
-**Data Sources**:
-
-- UserRatings table for rating data
-- Users table for profile information
-
-#### 2. Hater Rankings (`/hater-rankings`)
-
-**Purpose**: Rank all users by average rating (lowest = biggest "hater")
-
-**Flow**:
-
-1. User visits hater rankings page
-2. System calculates average ratings for all users
-3. Displays sortable table with:
-   - Rank position (with trophy icon for #1)
-   - Display name/username
-   - Total movies rated
-   - Average rating (formatted to 2 decimals)
-   - Rating distribution histogram (visual bars)
-4. Rankings sorted ascending (lowest average = biggest hater)
-5. Visual histogram shows distribution across 0.5-5.0 rating scale
-
-**Calculations**:
-
-- Average rating = Σ(rating × count) / Σ(count) for each user
-- Distribution bars scaled relative to maximum count
-
-### Protected Routes (Authentication Required)
-
-#### 3. Dashboard (`/dashboard`)
-
-**Purpose**: Main authenticated user interface
-
-**Navigation Structure**:
-
-- **Profile** (`/dashboard/profile`) - User profile management
-- **Data Fetcher** (`/dashboard/fetcher`) - Scraping interface
-- **Compare** (`/compare`) - Enhanced user comparison
-- **Hater Rankings** (`/dashboard/hater-rankings`) - Private rankings view
-
-#### 4. Data Fetcher (`/dashboard/fetcher`)
-
-**Purpose**: Interface for accessing and scraping Letterboxd data
-
-**Interface (`src/client/components/ScraperInterface.tsx`)**:
-
-1. User picks a Letterboxd username from a dropdown sourced from the Users table.
-2. Two buttons:
-   - **"Check current ratings data"** — read-only DB lookup via `GET /api/film-users/:username/complete`. 404 if no data exists, with a hint to use Update films.
-   - **"Update films"** — triggers a refresh job via `POST /api/scrape-user/:username`. The hook (`useScrapeJob`) persists `job_id` in localStorage so a page refresh resumes the same job, polls `GET /api/scrape-user/jobs/:id` every 2s, and renders `<JobProgress>` (the same component the admin bulk refresh uses).
-   - When a job is running, a third "Cancel" button appears (`POST /api/scrape-user/jobs/:id/cancel`).
-
-**Job lifecycle**: pending → running (`phase` advances through moviemaestro's scrape phases) → `completed` / `failed` / `cancelled`. The partial unique index `user_scrape_jobs_one_running_per_user` ensures the same Letterboxd username can't be double-triggered; concurrent refreshes of different users are fine.
-
-**Auth model**: requires a valid JWT (any logged-in user), not admin. Per-username rate limit: 10 req / 5 min.
-
-#### 5. User Profile (`/dashboard/profile`)
-
-**Purpose**: Manage user account and view personal statistics
-
-**Features**:
-
-- View account information
-- Update profile settings
-- Account management (logout, delete account)
-
-#### 6. User Management (`/admin/users`) — Admin only
-
-**Purpose**: Admin surface for listing, editing, and deleting accounts. Also linking/unlinking Letterboxd.com usernames to accounts post-signup.
-
-**Page-level admin gate**: mirrors `Dashboard.tsx`'s `user.user_metadata.role === 'admin'` check. Non-admins see a 403 card with a "Back to dashboard" button. The real gate is server-side (`authorizeAdmin` middleware on `/api/admin/users/*`); this client-side check is UX only.
-
-**Interface (`src/client/components/admin/UserAdmin.tsx`)**:
-
-- Table of accounts: email, name, Letterboxd link (`https://letterboxd.com/<username>` when set, `(unlinked)` otherwise), created date, edit button.
-- Edit opens a `<Modal>` with email/name/lbusername fields. The lbusername field uses a `<datalist>` populated by `useUnclaimedLbUsernames` — the intersection of `GET /api/film-users` (all known Letterboxd users) minus `GET /api/admin/users` lbusernames (already claimed). The currently-edited account's own lbusername is intentionally included even though it's "claimed", so the field's current value remains a valid option.
-- Save sends a minimal patch — only fields that actually changed. `lbusername: null` explicitly unlinks; an unchanged form returns to the list without an API call.
-- 409 conflict (claimed elsewhere) is surfaced inline in the modal so the admin can amend without losing context. Conflicting account's identity is *not* named in the error response (PII boundary — even though the admin can list all accounts).
-- Delete: confirm-in-place ("Sure? [Yes, delete] [No]") to avoid an extra modal. Disabled when editing your own account (forced to use Supabase Studio for self-deletion; the FK cascade would invalidate the in-flight JWT mid-request).
-- If an admin edits *their own* email, the server returns `requiresReauth: true` and the page clears the token + redirects to `/login` (their old JWT just rotated).
-
-### Authentication Flow
-
-Login and signup are on **separate routes** — `/login` and `/signup`.
-Header shows both as buttons when unauthenticated. Each page links to the
-other via a `<Link>` so users can switch without going through the header.
-
-#### Login Process
-
-1. User enters email/password on `/login`
-2. Credentials sent to `/api/auth/login`
-3. Backend validates via Supabase Auth
-4. JWT token returned and stored in localStorage
-5. User redirected to dashboard (or to `redirectAfterLogin` if set by ProtectedRoute)
-6. All subsequent API calls include Authorization header
-
-#### Signup Process
-
-1. User enters name/email/password on `/signup`
-2. Credentials sent to `/api/auth/signup`
-3. Backend creates the auth user, links `app_users` row, optionally enqueues a scrape (if a Letterboxd.com username was supplied — see Stage 3)
-4. **If Supabase email-confirmation is enabled**: response contains a `message` but no `access_token`. Page surfaces the message; user must confirm via email before logging in.
-5. **Otherwise**: response contains `access_token` + user; same persist-and-redirect flow as login.
-
-#### Password Reset
-
-Unlike login/signup (server-mediated), reset is **client-direct via the Supabase JS SDK** because the recovery email link points at the client URL — the recovery code arrives in the browser, not the server. See `src/client/lib/supabase.ts`.
-
-1. User clicks "Forgot your password?" on `/login`, enters email on the PasswordReset form
-2. `POST /api/auth/forgot-password` → server calls `supabase.auth.resetPasswordForEmail` → Supabase emails the user
-3. Email link points at `${CLIENT_URL}/reset-password#access_token=…&type=recovery&…`
-4. User clicks link → lands on `/reset-password`
-5. `ResetPasswordPage` mounts; the Supabase JS SDK auto-extracts the recovery code from the URL hash and establishes an **in-memory** session (`persistSession: false`)
-6. Page checks `getSession()`; if no session → "Invalid or expired link" error
-7. User enters new password + confirm → page calls `supabase.auth.updateUser({ password })`
-8. On success: **sign out the recovery session** (we don't want the email-link click alone to grant an authenticated session), navigate to `/login` with a success banner
-9. User logs in normally with the new password
-
-Requires `VITE_SUPABASE_URL` + `VITE_SUPABASE_ANON_KEY` env vars on the client.
-
-#### Protected Route Access
-
-1. Component checks for token in localStorage
-2. If no token, redirects to login page
-3. Token included in API request headers
-4. Backend middleware validates token
-5. Request proceeds if valid, returns 401 if invalid
-
-## Data Processing Algorithms
-
-### Rating Distribution Calculation
-
-```typescript
-// Calculate average rating for user
-const averageRating =
-  ratings.reduce((sum, item) => sum + item.rating * item.count, 0) /
-  ratings.reduce((sum, item) => sum + item.count, 0);
-
-// Calculate percentage distribution
-const percentage = (count / totalRatings) * 100;
-```
-
-### Hater Rankings Algorithm
-
-```typescript
-// Sort users by average rating (ascending = biggest haters first)
-const rankings = users
-  .map((user) => ({
-    username: user.username,
-    displayName: user.displayName,
-    averageRating: calculateAverage(user.ratings),
-    totalRatings: calculateTotal(user.ratings),
-    ratingDistribution: user.ratings.sort((a, b) => a.rating - b.rating),
-  }))
-  .sort((a, b) => a.averageRating - b.averageRating);
-```
-
-## Database-First Architecture
-
-### Design Philosophy
-
-BPDiscord implements a **database-first architecture**:
-
-1. **Read path**: all client-facing endpoints are database queries — no synchronous calls to Letterboxd, no Puppeteer, no fallback scraping in the request lifecycle.
-2. **Write path**: refresh jobs are async, delegated to the moviemaestro worker. The Node server is a thin orchestrator (insert row, POST to worker, return job id).
-3. **TMDB cache-through**: `/api/actor-graph` is the one exception — it writes on cache miss, but only to TMDB-backed tables, and writes are bounded per request.
-
-### API Architecture Separation
-
-#### Database-First Endpoints (`/api/film-users`)
-
-- **Purpose**: Fast, reliable read access to scraped Letterboxd data
-- **Authentication**: Public (no auth required)
-- **Performance**: Optimized DB queries with indexes
-- **Behavior on miss**: 404 with a hint to trigger a refresh job via `/api/scrape-user`
-
-#### Job-Based Refresh Endpoints (`/api/scrape-user`, `/api/admin/refresh-rankings`)
-
-- **Purpose**: Trigger scraping work on the moviemaestro worker, poll job state, cancel running jobs
-- **Authentication**: JWT-protected (per-user: any logged-in user; bulk: admin role required)
-- **Performance**: 202-async by design; client polls every 2s and renders `<JobProgress>`
-- **Single-flight**: partial unique indexes on `user_scrape_jobs` / `refresh_jobs` make concurrent triggers safe (409 with `existing_job_id` returned to the caller)
-
-#### Cache-Through Endpoints (`/api/actor-graph`)
-
-- **Purpose**: Serve the actor graph from the DB, and transparently ingest from TMDB on cache miss
-- **Authentication**: Public (TMDB is itself public; per-IP rate limiters cap abuse)
-- **Performance**: DB-only on hit; one TMDB call + one transactional upsert on miss. TMDB client uses a 5 s request timeout to align with the path-finder's per-request budget.
-- **Dependency**: Requires `TMDB_READ_API_TOKEN`; returns 503 if unset
-- **Concurrency control**: In-process request coalescing dedupes concurrent same-id ingestions within a single Node instance. Cross-instance races (Vercel parallel lambdas) fall through to `ON CONFLICT DO UPDATE` — bounded cost, no correctness impact.
-- **Hydration semantics**: Lightweight upserts (e.g. films inserted via an actor's filmography) never clobber a richer row's `fully_fetched` / `cast_fully_fetched` = true.
-- **Error handling**: This controller intentionally diverges from the codebase's `dbOperation` result-type convention. Pure-DB helpers throw on error; handlers wrap in try/catch and route everything (DB errors, `TmdbNotFoundError`, `TmdbUnavailableError`, `AxiosError`) through a single `classifyError` helper that maps to 404 / 503 / 502 / 429 / 500. `dataController` and `eventDataController` keep using `dbOperation` since they have no equivalent error-classification layer.
-- **Use Case**: Path-finder, unified search, actor/movie detail pages, co-stars, shared filmography
-
-### Data Flow Examples
-
-#### Public User Comparison
-
-```
-User Request → /api/film-users/:username/complete
-    ↓
-Database Query (fast)
-    ↓
-Return Cached Data
-```
-
-#### Per-User Refresh (`/api/scrape-user`)
-
-```
-Client → POST /api/scrape-user/:username + JWT
-    ↓
-INSERT user_scrape_jobs (status='running', lbusername)
-    ↓ (partial unique index → 409 if one already running for username)
-POST WORKER_URL/scrape-user {job_id, lbusername}
-    ↓ (10s fetch timeout; on failure: mark job 'failed', return 502)
-Return 202 {job_id}
-    ↓
-Client polls GET /api/scrape-user/jobs/:id every 2s
-    ↓
-moviemaestro updates row's status/phase/progress directly
-    ↓
-Terminal status → client stops polling
-```
-
-#### Cache-Through Ingestion (Actor Graph)
-
-```
-User Request → /api/actor-graph/actors/:tmdbId
-    ↓
-DB Lookup (ag_actors)
-    ↓
-fully_fetched=true? ── yes ──→ Return Cached Row
-    ↓ no
-TMDB GET /person/:id?append_to_response=movie_credits
-    ↓
-Transaction:
-  1. Upsert actor (fully_fetched=true)
-  2. Upsert lightweight film rows (do not touch cast_fully_fetched)
-  3. Upsert ag_acted_in edges
-    ↓
-Return Hydrated Row
-```
-
-#### Path-Finder BFS (Actor Graph)
-
-```
-User Request → /api/actor-graph/path-finder/:a1/:a2
-    ↓
-ensureActor(a1) + ensureActor(a2)   (cache-through hydration if needed)
-    ↓
-parents = Map<actorId, {prev, viaMovie}>; visited[a1] = null
-frontier = [a1]
-    ↓
-for depth in 1..maxDepth:
-  ┌──────────────────────────────────────────────────────────┐
-  │ One indexed self-join on ag_acted_in:                    │
-  │   my_cast (PK on actor_tmdb_id, movie_tmdb_id)           │
-  │   co_cast (idx_ag_acted_in_movie_actor)                  │
-  │ DISTINCT ON (co_cast.actor_tmdb_id) — one parent edge    │
-  │ per newly-discovered actor in this layer.                │
-  └──────────────────────────────────────────────────────────┘
-    ↓
-  for each row not in `parents`:
-    parents[next] = {prev, viaMovie}
-    if next == a2: foundDepth = depth; break
-  frontier = newly added actors
-    ↓
-Reconstruct path: walk parents from a2 → a1, reverse
-    ↓
-One small SELECT to hydrate actor + movie metadata
-    ↓
-Return { degrees, path: [actor, film, actor, film, ...] }
-```
-
-### Production Benefits
-
-1. **Serverless Compatibility**: No memory-intensive scraping by default
-2. **Fast Response Times**: Database queries return in milliseconds
-3. **Cost Optimization**: Reduced compute usage and function timeouts
-4. **Reliability**: No dependency on external site stability
-5. **Scalability**: Database can handle high concurrent loads
-
-## Security Features
-
-### Authentication & Authorization
-
-- JWT token-based authentication via Supabase
-- Row Level Security (RLS) policies on database tables
-- Service role key for admin operations (bypasses RLS)
-- Protected routes require valid authentication
-
-### Worker Handoff Security
-
-- `WORKER_SHARED_SECRET` Bearer token on every server → moviemaestro call
-- Job rows scoped by `started_by` — one user can't read or cancel another's job
-- Partial unique indexes prevent concurrent duplicate work at the DB level
-- 10s fetch timeout on the worker handoff; failures roll back the job row to `failed`
-
-### API Security
-
-- Helmet.js for security headers
-- CORS configuration for frontend domains
-- Express rate limiting (100 requests per 15 minutes)
-- Input validation on all endpoints
-- SQL injection prevention via parameterized queries
-
-## Error Handling
-
-### Frontend Error Boundaries
-
-- Global error handling for React components
-- User-friendly error messages
-- Fallback UI states for failed operations
-- Retry mechanisms for failed API calls
-
-### Backend Error Handling
-
-- Global error middleware for Express
-- Structured error responses with consistent format
-- Detailed logging for debugging
-- Graceful degradation for external service failures
-
-### Job-Based Refresh Error Recovery
-
-- Worker-handoff failures (timeout, non-2xx) trigger a row-level `markJobFailed` so the partial unique index releases for the next trigger
-- Per-phase error entries are appended to `errors[]` on the job row so the UI can surface specific failures without losing the running phase context
-- Cancellation is cooperative: the API sets `status='cancelled'`; the worker checks this between phases
-
-## Development & Deployment
-
-### Development Setup
+## Development
 
 ```bash
-# Install all dependencies
 yarn install:all
-
-# Start both server and client concurrently (recommended)
-yarn dev
-
-# Or start individually:
-# Backend development server
-yarn dev:server
-
-# Frontend development server (separate terminal)
-yarn dev:client
-
-# Build for production
+yarn dev          # PROD Supabase — normal workflow with real data
+yarn dev:local    # LOCAL Supabase — smoke environment with fixtures
 yarn build
 ```
 
+Env-var templates: `src/server/.env.example`, `src/server/.env.smoke.example`, `src/client/.env.example`, `src/client/.env.smoke.example`.
+
 ### Local smoke testing
 
-`yarn dev` always points at the **prod** Supabase — that's the day-to-day
-workflow with real data. The local smoke environment exists only for PR
-testing and is **explicit opt-in**: you have to invoke `yarn dev:local`
-to use it. File presence alone never switches the mode.
+`yarn dev` always points at the **prod** Supabase — that's the day-to-day workflow. The local smoke environment exists only for PR testing and is **explicit opt-in**. File presence alone never switches the mode.
 
 **One-time bootstrap** (idempotent):
 
 ```bash
-supabase start            # bring up local Postgres + Auth + Studio on :54321
+supabase start            # local Postgres + Auth + Studio on :54321
 yarn setup:local          # writes src/server/.env.smoke + src/client/.env.smoke
                           # from `supabase status -o env`, then seeds an admin
                           # user + fixture Discord users / films / ratings
 ```
 
-The setup script populates:
+- `src/server/.env.smoke` (gitignored) — loaded by `loadEnv.ts` *before* `.env` **only when `SMOKE_LOCAL=1`** (i.e. `yarn dev:local`).
+- `src/client/.env.smoke` (gitignored) — loaded by Vite **only when started with `--mode smoke`** (i.e. `yarn dev:client:local`).
 
-- `src/server/.env.smoke` (gitignored) — local Supabase URL / keys / DB URL.
-  Loaded by `loadEnv.ts` *before* `.env` **only when `SMOKE_LOCAL=1` is set**
-  (i.e. when running `yarn dev:local`).
-- `src/client/.env.smoke` (gitignored) — loaded by Vite **only when running
-  with `--mode smoke`** (i.e. via `yarn dev:client:local`).
+The deliberate non-collision with `.env.local` is so Vite's "always-auto-load `.env.local`" convention can't silently point normal dev at the local stack. Setup deletes legacy `.env.local` files for the same reason.
 
-The deliberate non-collision with `.env.local` is so Vite's
-"always-auto-load `.env.local`" convention can't silently point normal
-dev at the local stack. Setup deletes any legacy `.env.local` files
-from prior versions for the same reason.
+Seeded admin lives in **local** Supabase only:
+- email: `admin@local.test` / password: `dev-admin-pw` / role: `admin`
+- override with `yarn setup:local --email <x> --password <y> --name <z> --lbusername <n> [--force]`
 
-After setup, the seeded admin lives in **local** Supabase only:
+Fixtures: 5 fake Discord users, 20 films, ~75 UserFilms. Idempotent upsert. Skip with `--no-fixtures`. **Known limitation**: the "Highest rated movies (20+ ratings)" homepage section stays empty — its threshold is impossible with 5 fake users.
 
-- email: `admin@local.test`
-- password: `dev-admin-pw`
-- role: `admin` (in `user_metadata`)
-
-Override with `yarn setup:local --email <x> --password <y> --name <z>
---lbusername <n>`. Pass `--force` to overwrite existing `.env.smoke`
-files.
-
-The setup also seeds **fixture data** so the homepage / stats /
-comparison / hater-rankings pages render meaningful content instead of
-empty tables: 5 fake Discord users (smoke-alice, smoke-bob, etc.),
-20 films, ~75 UserFilms rows with a realistic ratings spread. Fixtures
-live in `src/server/scripts/fixtures/localSmokeData.ts` and are
-idempotent (upsert on natural keys). Skip with `--no-fixtures`.
-
-**Known fixture limitation**: the "Highest rated movies (20+ ratings)"
-section on the homepage stays empty in smoke mode — its threshold needs
-≥20 ratings per film, which is impossible with 5 fake users. All other
-sections populate fully.
-
-**Run the stack:**
-
-```bash
-yarn dev          # PROD Supabase — normal workflow with real data
-yarn dev:local    # LOCAL Supabase — smoke environment with fixtures
-```
-
-The server's startup breadcrumb confirms which mode you're in:
-
+Server startup breadcrumb confirms which mode:
 ```
 [env] .env only             → REMOTE https://bvadmlitqvahdatjtpgz.supabase.co
 [env] .env.smoke + .env     → LOCAL  http://127.0.0.1:54321
 ```
 
-**Smoke loop:** log in at `http://localhost:5173/login` as the seeded
-admin, then exercise whichever feature the PR touched. Console + server
-logs together give a clean signal — no Vercel deploys, no risk to prod data.
+**Known limitation**: `WORKER_URL` is unset in `.env.smoke` by design. `/api/scrape-user/*` and `/api/admin/refresh-rankings` return 500 *"Worker not configured"* in smoke mode — test worker scenarios in staging or against prod with a non-prod Letterboxd username.
 
-**Known limitation**: `WORKER_URL` is unset in `.env.smoke` by design (the
-moviemaestro worker only runs in prod). `/api/scrape-user/*` and
-`/api/admin/refresh-rankings` return 500 *"Worker not configured"* in
-smoke mode — test worker scenarios in a staging deploy or against prod
-with a non-prod Letterboxd username.
+**Test DB caveat**: smoke-seeded fixtures live in the same local Supabase instance the test suite uses. Run `yarn test` *before* `yarn setup:local` for a clean test run. Isolation fix tracked in `bpdiscord-141`.
 
-**Test DB caveat**: the smoke-seeded fixtures live in the same local
-Supabase instance the test suite uses. Run `yarn test` *before* `yarn
-setup:local` for a clean test run, or accept the failures on shared
-state. A proper isolation fix is tracked in `bpdiscord-141`.
+## Database migrations
 
-### Environment Variables
+Managed via the Supabase CLI under `supabase/migrations/`. Files are timestamped (`YYYYMMDDhhmmss_*.sql`) and tracked in `supabase_migrations.schema_migrations`.
 
-See `src/server/.env.example`, `src/server/.env.smoke.example`, and
-`src/client/.env.example` / `src/client/.env.smoke.example` for the
-canonical templates. Copy `.env.example` to `.env` for normal dev; run
-`yarn setup:local` to auto-populate the `.env.smoke` files for the
-smoke environment.
+> **Drizzle vs. Supabase CLI.** `src/server/db/schema.ts` declares tables, columns, and indexes for Drizzle's query builder + type inference, but `drizzle-kit push`/`drizzle-kit migrate` is **not** part of the deploy pipeline. SQL changes must land as a `supabase/migrations/*.sql` file or they won't exist in any DB. Treat Drizzle schema declarations as documentary; the SQL migration is the source of truth.
 
-Server vars used at runtime: `SUPABASE_URL`, `SUPABASE_ANON_KEY`,
-`SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`, `DATABASE_URL_TEST`,
-`JWT_SECRET`, `PORT`, `NODE_ENV`, `WORKER_URL`, `WORKER_SHARED_SECRET`,
-`TMDB_READ_API_TOKEN`, `CLIENT_URL`.
+Layout notes:
+- `20260502215921_remote_schema.sql` — baseline from `supabase db pull`. Never edit re-creatively; treat as a frozen snapshot. Drop targeted DDL via follow-ups.
+- `20260505013813_add_ag_graph_indexes.sql` — `pg_trgm` extension + reverse-direction edge index + GIN trigram indexes. Required for path-finder + search perf.
+- `20260505015531_drop_ag_acted_in_clone.sql` — drops a dev artifact captured by the initial `db pull`.
 
-Client vars used at runtime: `VITE_API_URL` (optional, for non-proxied
-prod builds), `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`.
+Local: `supabase start`, `supabase status`, `supabase db reset`, `supabase migration new <name>`.
 
-`.env.smoke` files are loaded **only in smoke mode** (server: when
-`SMOKE_LOCAL=1`; client: when Vite is started with `--mode smoke`).
-Both happen via `yarn dev:local`. See the section above for the full
-opt-in story.
-
-### Vite Development Benefits
-
-- **Fast HMR**: Hot module replacement for instant updates
-- **Proxy Configuration**: CORS-free API calls via `/api` proxy to `:3001`
-- **Environment Variables**: Use `VITE_` prefix instead of `REACT_APP_`
-- **Build Speed**: Significantly faster than Create React App
-- **Modern Tooling**: ESBuild for lightning-fast TypeScript compilation
-
-### Database Setup
-
-1. Create Supabase project
-2. Set up tables with appropriate RLS policies
-3. Configure service role for admin operations
-4. Set up proper indexes for performance
-
-### Database Migrations
-
-Migrations are managed via the Supabase CLI under `supabase/migrations/`. Files are timestamped (`YYYYMMDDhhmmss_*.sql`) and tracked by Supabase in `supabase_migrations.schema_migrations`.
-
-> **Drizzle vs. Supabase CLI.** `src/server/db/schema.ts` declares tables, columns, and indexes for Drizzle's query builder + type inference, but `drizzle-kit push`/`drizzle-kit migrate` is **not** part of the deploy pipeline. SQL changes must land as a `supabase/migrations/*.sql` file or they will not exist in any DB. Treat Drizzle schema declarations as documentary; the SQL migration is the source of truth.
-
-#### Layout
-
-- `supabase/migrations/20260502215921_remote_schema.sql` — baseline pulled from prod via `supabase db pull`. Never edit this re-creatively; treat it as a frozen snapshot. Drop targeted DDL via follow-up migrations.
-- `supabase/migrations/20260505013813_add_ag_graph_indexes.sql` — `pg_trgm` extension + `idx_ag_acted_in_movie_actor` reverse-direction edge index + GIN trigram indexes on `ag_actors.name` / `ag_films.title`. Required for the path-finder BFS and the search endpoint to perform.
-- `supabase/migrations/20260505015531_drop_ag_acted_in_clone.sql` — drops `ag_acted_in_clone`, a dev artifact that was captured by the initial `db pull`.
-- `supabase/.temp/` is gitignored — Supabase CLI scratch state; do not commit.
-
-#### Local workflow
-
-```bash
-supabase start                     # boot the local stack (Postgres on :54322)
-supabase status                    # show local DB URL + keys
-supabase db reset                  # rebuild local DB from all migrations
-supabase migration new <name>      # scaffold a new migration file
-```
-
-#### Verifying indexes locally
-
-```bash
-psql "$LOCAL_DB_URL" -c "\d ag_acted_in"
-# expect: idx_ag_acted_in_movie_actor on (movie_tmdb_id, actor_tmdb_id)
-
-psql "$LOCAL_DB_URL" -c "EXPLAIN SELECT 1 FROM ag_actors WHERE name ILIKE '%bacon%';"
-# expect: Bitmap Index Scan on idx_ag_actors_name_trgm
-```
-
-#### Production workflow
-
-A push to `main` that touches `supabase/migrations/**` (or the workflow file) triggers `.github/workflows/migrations.yml`:
-
-1. **`plan` job** — runs `supabase migration list --linked` and prints what's pending. No writes, no environment protection. Acts as the diff for the approver to read.
-2. **`migrate` job** — gated on `environment: production`; pauses for manual approval before running `supabase db push --linked` to apply pending migrations.
-
-The `production` GitHub environment **must be configured** in repo Settings → Environments with required reviewers — without that, the gate is a silent no-op.
+Production: a push to `main` touching `supabase/migrations/**` triggers `.github/workflows/migrations.yml` — a `plan` job (`supabase migration list --linked`) followed by a manual-approval `migrate` job gated on the `production` GitHub environment. **That environment must have required reviewers configured** in repo Settings → Environments, otherwise the gate is a silent no-op.
 
 Required repo secrets: `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_REF`.
 
-#### One-time prod baseline repair
-
-Because the baseline `20260502215921_remote_schema.sql` was generated from `supabase db pull` against an already-populated prod, applying it would error on duplicate constraints. Mark it applied without running it:
-
-```bash
-supabase link --project-ref <ref>
-supabase migration repair --status applied 20260502215921
-supabase migration list --linked   # baseline should now show on both Local and Remote
-```
-
-This is a one-off step, not a code change. After it runs, future `supabase db push` invocations apply only newer migrations.
-
-## Production Deployment to Vercel
-
-### Full-Stack Deployment Architecture
-
-BPDiscord is configured for seamless Vercel deployment with both frontend and backend components. This setup enables true full-stack deployment from a single repository while maintaining proper separation and build processes.
-
-### Critical Configuration Requirements
-
-#### 1. Build Script Separation
-
-**Root `package.json` Build Script**
-
-```json
-{
-  "scripts": {
-    "build": "cd src/server && tsc"
-  }
-}
-```
-
-**Critical**: Root build script must ONLY build the server. Vercel handles client building separately via `@vercel/static-build`.
-
-#### 2. TypeScript Configuration Isolation
-
-**Server-Specific `tsconfig.json` (`src/server/tsconfig.json`)**
-
-```json
-{
-  "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./",
-    "target": "ES2020",
-    "module": "commonjs"
-  },
-  "include": ["./**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts"]
-}
-```
-
-**Purpose**: Prevents server TypeScript compilation from interfering with client files and causing build artifacts.
-
-#### 3. Vercel Configuration
-
-**Complete `vercel.json` Setup**
-
-```json
-{
-  "version": 2,
-  "builds": [
-    {
-      "src": "src/server/server.ts",
-      "use": "@vercel/node"
-    },
-    {
-      "src": "src/client/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "build"
-      }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "dest": "/src/server/server.ts"
-    },
-    {
-      "src": "/assets/(.*)",
-      "dest": "/src/client/assets/$1"
-    },
-    {
-      "src": "/(favicon\\.ico|manifest\\.json|logo.*\\.png|robots\\.txt)",
-      "dest": "/src/client/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/src/client/index.html"
-    }
-  ],
-  "env": {
-    "NODE_ENV": "production"
-  }
-}
-```
-
-### Route Processing Order
-
-Routes are processed sequentially and must be ordered correctly:
-
-1. **API Routes** (`/api/(.*)`) → Route to server function
-2. **Asset Routes** (`/assets/(.*)`) → Serve static assets (CSS, JS, images)
-3. **Static Files** → Serve favicon, manifest, logos, robots.txt
-4. **Catch-All** (`/(.*)`) → Route to React app for SPA client-side routing
-
-### Deployment Process Flow
-
-```
-1. Root Build → TypeScript compiles server only (src/server/dist/)
-2. Client Build → Vercel runs @vercel/static-build (src/client/build/)
-3. Function Creation → Server becomes serverless function
-4. Static Deployment → Client files served from correct paths
-5. Route Configuration → Requests routed to appropriate destinations
-```
-
-### Common Deployment Issues and Solutions
-
-#### Problem: 404 Errors on All Routes
-
-**Cause**: Routes pointing to incorrect file locations
-**Solution**: Ensure routes match deployment structure (`/src/client/index.html`)
-
-#### Problem: Static Assets Return 401/404 Errors
-
-**Cause**: Asset requests routed to server instead of static files
-**Solution**: Add specific asset routes before catch-all route
-
-#### Problem: Build Conflicts and Mysterious Files
-
-**Cause**: Multiple build processes or conflicting configurations
-**Solutions**:
-
-- Remove any `vercel.json` files from subdirectories
-- Ensure server has dedicated `tsconfig.json`
-- Root build script handles server only
-- Let Vercel manage client build independently
-
-#### Problem: TypeScript Compilation Errors
-
-**Cause**: Root TypeScript config trying to compile client files
-**Solution**: Create isolated server `tsconfig.json` with proper `include`/`exclude`
-
-### Production Environment Variables
-
-Configure in Vercel dashboard:
-
-```bash
-SUPABASE_URL=your_production_supabase_url
-SUPABASE_ANON_KEY=your_production_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_production_service_key
-NODE_ENV=production
-TMDB_READ_API_TOKEN=your_tmdb_v4_read_token  # Required for /api/actor-graph
-WORKER_URL=https://moviemaestro.up.railway.app  # Required for /api/scrape-user + /api/admin/refresh-rankings
-WORKER_SHARED_SECRET=shared_with_moviemaestro_service  # Required for /api/scrape-user + /api/admin/refresh-rankings
-```
-
-### Deployment Verification
-
-1. **Build Logs**: Clean compilation without conflicts
-2. **File Structure**: Static files in expected locations (`src/client/`)
-3. **Route Testing**:
-   - API calls work (`/api/*`)
-   - Static assets load (`/assets/*`, `/favicon.ico`)
-   - SPA routing functional (`/*`)
-4. **No Build Artifacts**: Clean deployment without mysterious files
-
-### Performance Optimizations for Production
-
-- **Serverless Functions**: API routes become auto-scaling functions
-- **Edge CDN**: Static files served from global edge locations
-- **Build Caching**: Vercel caches builds for faster deployments
-- **Asset Optimization**: Automatic compression and optimization
-- **Database Connection Pooling**: Supabase handles connection management
-
-This deployment architecture provides production-ready scalability while maintaining development simplicity.
-
-## Future Enhancements
-
-### Planned Features
-
-- **Film-level Analysis**: Individual movie rating comparisons
-- **Trend Analysis**: Rating patterns over time
-- **Social Features**: Follow users, rating notifications
-- **Export Functionality**: CSV/JSON data exports
-- **Advanced Filtering**: Filter by genre, year, rating range
-- **Caching Layer**: Redis for improved performance
-- **Real-time Updates**: WebSocket connections for live data
-
-### Technical Improvements
-
-- **Microservices Architecture**: Separate scraping service
-- **Queue System**: Background job processing for scraping
-- **CDN Integration**: Static asset optimization
-- **Monitoring**: Application performance monitoring
-- **Testing**: Comprehensive unit and integration tests
-
-## Troubleshooting
-
-### Development Issues
-
-1. **Refresh Job Failures**: Inspect the `errors[]` column on the relevant `user_scrape_jobs` / `refresh_jobs` row, and check moviemaestro's logs on Railway. Letterboxd changes / rate limits surface there.
-2. **Authentication Errors**: Check token expiration and Supabase configuration
-3. **Database Connection Issues**: Verify Supabase credentials and network access
-4. **CORS Errors**: Ensure frontend URL is in allowed origins (now includes :5173, :5174)
-5. **Vite Build Errors**: Check Tailwind content paths and environment variables
-6. **Process Not Defined**: Use `import.meta.env.VITE_*` instead of `process.env.REACT_APP_*`
-7. **Yarn Lock Conflicts**: Delete `package-lock.json` files if mixing npm/yarn
-
-### Deployment Issues (Vercel)
-
-#### 404 Not Found on Deployment
-
-**Symptoms**: Site returns 404 for all routes after successful build
-**Causes**:
-
-- Routes in `vercel.json` pointing to wrong file locations
-- Incorrect build output structure
-  **Solutions**:
-- Verify routes point to `/src/client/index.html`
-- Check deployment file structure matches route configuration
-- Ensure static build completes successfully
-
-#### Static Assets Return 401/404 Errors
-
-**Symptoms**: HTML loads but CSS, JS, images fail to load
-**Causes**:
-
-- Asset requests being routed to server function instead of static files
-- Missing or incorrect asset route configuration
-  **Solutions**:
-- Add specific asset routes before catch-all route in `vercel.json`
-- Verify asset paths match actual build output structure
-- Test asset routes independently
-
-#### Build Conflicts and Mysterious Files
-
-**Symptoms**: Unexpected files in deployment output, build failures
-**Causes**:
-
-- Multiple `vercel.json` files creating conflicts
-- Root TypeScript config compiling client files
-- Root build script building both server and client
-  **Solutions**:
-- Remove any `vercel.json` files from subdirectories
-- Create server-specific `tsconfig.json` in `src/server/`
-- Update root build script to only compile server
-- Let Vercel handle client build via `@vercel/static-build`
-
-#### TypeScript Compilation Errors
-
-**Symptoms**: Build fails with TypeScript errors from client files
-**Causes**:
-
-- Root `tsconfig.json` trying to compile entire `src/` directory
-- Missing isolation between server and client TypeScript configs
-  **Solutions**:
-- Create dedicated `src/server/tsconfig.json`
-- Update server config to only include server files
-- Exclude client directory from server compilation
-
-### Debug Information
-
-- Enable verbose logging in development
-- Check browser network tab for API call details
-- Verify database records after scraping operations
-- Monitor Supabase logs for authentication issues
-- Review Vercel build logs for deployment issues
-- Test routes individually using browser dev tools
-
----
-
-This application demonstrates modern full-stack development practices with TypeScript, combining web scraping capabilities with a polished user interface for data analysis and comparison.
+**One-time prod baseline repair** (already done; documented for reference): because the baseline was generated from `supabase db pull` against a populated prod, applying it would error on duplicate constraints. It was marked applied without running via `supabase migration repair --status applied 20260502215921`.
 
 ## Git workflow — never commit directly to main
 
@@ -1012,14 +160,11 @@ If the user asks for changes while the local branch is `main`:
 3. Open a pull request with `gh pr create`. Reference the beads issue in the PR body.
 4. **Do not** `git push` to `main` even if the working branch is `main`. If you realise you've committed on `main` by mistake, before pushing: create the branch from `HEAD`, then reset `main` back to `origin/main` (`git branch <topic>` + `git reset --hard origin/main`), then push the new branch.
 
-This rule has no exceptions — not for tiny fixes, not for "obvious" changes, not for docs-only commits. PR-only workflow is enforced because (a) it preserves the review trail visible in `git log` (every recent commit references a PR), (b) it keeps CI gates intact, and (c) it gives the user a chance to catch problems before they hit `main`.
+This rule has no exceptions — not for tiny fixes, not for "obvious" changes, not for docs-only commits. PR-only workflow is enforced because (a) it preserves the review trail visible in `git log`, (b) it keeps CI gates intact, and (c) it gives the user a chance to catch problems before they hit `main`.
 
-<!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:ca08a54f -->
-## Beads Issue Tracker
+## Beads issue tracker
 
 This project uses **bd (beads)** for issue tracking. Run `bd prime` to see full workflow context and commands.
-
-### Quick Reference
 
 ```bash
 bd ready              # Find available work
@@ -1028,51 +173,34 @@ bd update <id> --claim  # Claim work
 bd close <id>         # Complete work
 ```
 
-### Rules
-
 - Use `bd` for ALL task tracking — do NOT use TodoWrite, TaskCreate, or markdown TODO lists
 - Run `bd prime` for detailed command reference and session close protocol
 - Use `bd remember` for persistent knowledge — do NOT use MEMORY.md files
 
 ## Keeping CLAUDE.md in sync
 
-CLAUDE.md is the source-of-truth for engineers (and AI agents) starting on the project. Doc-code drift is a real cost — e.g. the React 18 / React 19 mismatch caught during Stage 3 planning, where the docs said 18 but the codebase was already on 19.
+CLAUDE.md is the source-of-truth for engineers (and AI agents) starting on the project. Doc-code drift is a real cost — e.g. a React 18 / React 19 mismatch caught during Stage 3 planning, where the docs said 18 but the codebase was already on 19.
 
-**Practice**: before opening any PR, check whether the changes affect anything documented here. If yes, update CLAUDE.md as part of the **same PR**. Doc and code ship together.
+Before opening any PR, check whether the changes affect anything documented here. If yes, update CLAUDE.md as part of the **same PR**.
 
-**What to watch for**:
+Watch for: stack versions (React, Tailwind, Drizzle, etc.), table/schema/FK/RLS changes, route topology, new required env vars, convention changes.
 
-- Stack versions (React, Tailwind, Drizzle, etc.) — bump in docs when bumped in `package.json`
-- Tables / schemas / FKs / RLS policies — update the schema section
-- Route topology — add, remove, or rename `/api/*` endpoints in the routes section
-- Env vars — add to the env vars list when new ones become required
-- Conventions — testing patterns, deploy steps, error handling, etc.
+## Session completion
 
-If a change doesn't touch any documented surface, no doc update is needed — but the check itself should be a routine habit at PR time.
+**When ending a work session**, complete ALL steps below. Work is NOT complete until `git push` succeeds.
 
-## Session Completion
-
-**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
-
-**MANDATORY WORKFLOW:**
-
-1. **File issues for remaining work** - Create issues for anything that needs follow-up
-2. **Run quality gates** (if code changed) - Tests, linters, builds
-3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
+1. File issues for remaining work
+2. Run quality gates (tests, linters, builds) if code changed
+3. Update issue status — close finished work, update in-progress items
+4. **Push to remote** (mandatory):
    ```bash
    git pull --rebase
    bd dolt push
    git push
    git status  # MUST show "up to date with origin"
    ```
-5. **Clean up** - Clear stashes, prune remote branches
-6. **Verify** - All changes committed AND pushed
-7. **Hand off** - Provide context for next session
+5. Clean up — clear stashes, prune remote branches
+6. Verify — all changes committed AND pushed
+7. Hand off — provide context for next session
 
-**CRITICAL RULES:**
-- Work is NOT complete until `git push` succeeds
-- NEVER stop before pushing - that leaves work stranded locally
-- NEVER say "ready to push when you are" - YOU must push
-- If push fails, resolve and retry until it succeeds
-<!-- END BEADS INTEGRATION -->
+**Critical:** work is NOT complete until `git push` succeeds. If push fails, resolve and retry until it succeeds.
