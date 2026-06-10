@@ -113,6 +113,7 @@ export const films = pgTable('Films', {
   poster: varchar('poster'),
   banner: varchar('banner'),
   title: varchar('title'),
+  releaseYear: integer('release_year'),
 });
 
 // ===========================

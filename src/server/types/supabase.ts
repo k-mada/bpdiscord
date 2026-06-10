@@ -7,30 +7,10 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "13.0.5"
   }
   public: {
     Tables: {
@@ -150,6 +130,35 @@ export type Database = {
           vote_average?: number | null
         }
         Relationships: []
+      }
+      app_users: {
+        Row: {
+          created_at: string
+          id: string
+          lbusername: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          lbusername?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lbusername?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "app_users_lbusername_users_fkey"
+            columns: ["lbusername"]
+            isOneToOne: true
+            referencedRelation: "Users"
+            referencedColumns: ["lbusername"]
+          },
+        ]
       }
       AwardShows: {
         Row: {
@@ -377,6 +386,7 @@ export type Database = {
           film_slug: string
           lb_rating: number | null
           poster: string | null
+          release_year: number | null
           title: string | null
           tmdb_link: string | null
           updated_at: string | null
@@ -388,6 +398,7 @@ export type Database = {
           film_slug: string
           lb_rating?: number | null
           poster?: string | null
+          release_year?: number | null
           title?: string | null
           tmdb_link?: string | null
           updated_at?: string | null
@@ -399,6 +410,7 @@ export type Database = {
           film_slug?: string
           lb_rating?: number | null
           poster?: string | null
+          release_year?: number | null
           title?: string | null
           tmdb_link?: string | null
           updated_at?: string | null
@@ -545,6 +557,48 @@ export type Database = {
           errors?: Json
           finished_at?: string | null
           id?: string
+          log_tail?: string
+          phase?: string | null
+          progress?: Json
+          started_at?: string
+          started_by?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_scrape_jobs: {
+        Row: {
+          errors: Json
+          finished_at: string | null
+          id: string
+          lbusername: string
+          log_tail: string
+          phase: string | null
+          progress: Json
+          started_at: string
+          started_by: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          errors?: Json
+          finished_at?: string | null
+          id?: string
+          lbusername: string
+          log_tail?: string
+          phase?: string | null
+          progress?: Json
+          started_at?: string
+          started_by: string
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          errors?: Json
+          finished_at?: string | null
+          id?: string
+          lbusername?: string
           log_tail?: string
           phase?: string | null
           progress?: Json
@@ -718,6 +772,10 @@ export type Database = {
         }[]
       }
       get_missing_films: { Args: never; Returns: string[] }
+      get_missing_films_for_user: {
+        Args: { p_lbusername: string }
+        Returns: string[]
+      }
       get_movie_swap: {
         Args: { user1: string; user2: string }
         Returns: {
@@ -737,6 +795,16 @@ export type Database = {
         Returns: {
           count: number
           rating: number
+        }[]
+      }
+      get_top_rated_films: {
+        Args: { min_ratings?: number; result_limit?: number }
+        Returns: {
+          average_rating: number
+          film_slug: string
+          rating_count: number
+          title: string
+          users: string
         }[]
       }
       get_user_films_count: { Args: never; Returns: number }
@@ -868,9 +936,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },
