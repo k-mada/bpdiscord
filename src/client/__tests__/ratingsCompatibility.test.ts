@@ -108,6 +108,19 @@ describe("computeCompatibility", () => {
       expect(res.pearson).toBeNull();
       expect(res.mad).toBeNull();
     });
+
+    it("rejects non-finite ratings (NaN, Infinity) instead of poisoning the math", () => {
+      const films: RatedFilm[] = [
+        { user1_rating: NaN, user2_rating: 4 },
+        { user1_rating: 3, user2_rating: Infinity },
+        { user1_rating: 5, user2_rating: 4 },
+        { user1_rating: 4, user2_rating: 3 },
+      ];
+      const res = computeCompatibility(films);
+      expect(res.sampleSize).toBe(2);
+      expect(res.pearson).not.toBeNaN();
+      expect(res.mad).not.toBeNaN();
+    });
   });
 
   describe("MIN_RELIABLE_SAMPLE", () => {

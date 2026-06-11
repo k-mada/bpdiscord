@@ -32,11 +32,17 @@ const TasteCompatibility = ({
   const { pearson, mad, sampleSize } = computeCompatibility(moviesInCommon);
 
   // Center-anchored bar: fills right for positive correlation, left for
-  // negative. 100% Pearson → fills exactly half the bar (from the center
-  // out to one edge).
+  // negative. 100% Pearson → fills exactly half the bar (center to one
+  // edge). Minimum 2% width when non-null so low correlations (~±0.05)
+  // still render as visible rather than disappearing entirely.
+  const rawWidthPct = pearson === null ? 0 : Math.abs(pearson) * 50;
+  const barWidthPct = pearson === null ? 0 : Math.max(rawWidthPct, 2);
   const barLeftPct =
-    pearson === null ? 50 : pearson >= 0 ? 50 : 50 + pearson * 50;
-  const barWidthPct = pearson === null ? 0 : Math.abs(pearson) * 50;
+    pearson === null
+      ? 50
+      : pearson >= 0
+        ? 50
+        : 50 - barWidthPct;
   const isNegative = pearson !== null && pearson < 0;
   const lowSample = sampleSize > 0 && sampleSize < MIN_RELIABLE_SAMPLE;
 

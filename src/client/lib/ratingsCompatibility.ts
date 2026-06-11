@@ -40,8 +40,16 @@ export interface CompatibilityResult {
 export const MIN_RELIABLE_SAMPLE = 10;
 
 export function computeCompatibility(films: RatedFilm[]): CompatibilityResult {
+  // Reject non-finite ratings up front — NaN/Infinity would silently
+  // poison every downstream calculation. Anything outside (0, ∞) is
+  // also treated as "unrated" via the > 0 guard below, but defending
+  // explicitly here is cheaper than chasing a mysterious NaN later.
   const bothRated = films.filter(
-    (f) => f.user1_rating > 0 && f.user2_rating > 0,
+    (f) =>
+      Number.isFinite(f.user1_rating) &&
+      Number.isFinite(f.user2_rating) &&
+      f.user1_rating > 0 &&
+      f.user2_rating > 0,
   );
   const n = bothRated.length;
 
@@ -66,9 +74,8 @@ export function computeCompatibility(films: RatedFilm[]): CompatibilityResult {
     sumAbsDiff += Math.abs(f.user1_rating - f.user2_rating);
   }
 
-  // sqrt(a * b) over sqrt(a) * sqrt(b): one sqrt, less accumulated FP error.
-  // The product overflows only if either variance exceeds ~1e154, which
-  // can't happen for star ratings.
+  // sqrt(a * b) instead of sqrt(a) * sqrt(b) — one sqrt is fewer ops.
+  // FP overflow can't happen for star ratings (variances stay under ~1e5).
   const denominator = Math.sqrt(sumSqDev1 * sumSqDev2);
   const pearson = denominator === 0 ? null : numerator / denominator;
   const mad = sumAbsDiff / n;
@@ -78,8 +85,9 @@ export function computeCompatibility(films: RatedFilm[]): CompatibilityResult {
 
 /**
  * Coarse human-readable label for a Pearson value. Thresholds are chosen for
- * UX legibility, not statistical rigor — they roughly correspond to "small,"
- * "medium," and "large" effect sizes in social-science conventions (Cohen).
+ * UX legibility, not statistical rigor — calibrated to what a typical
+ * Letterboxd user pair actually produces (most fall between 0.2 and 0.6),
+ * so "Aligned" reads as the common case and "Strongly aligned" stays rare.
  */
 export function getPearsonLabel(pearson: number): string {
   if (pearson >= 0.7) return "Strongly aligned";
