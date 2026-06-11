@@ -83,20 +83,37 @@ export function computeCompatibility(films: RatedFilm[]): CompatibilityResult {
   return { pearson, mad, sampleSize: n };
 }
 
+export type PearsonZone = "aligned" | "independent" | "opposite";
+
 /**
- * Three-zone label matching the spectrum visualization's thirds. The
- * spectrum bar shows the continuous position; the label just confirms
- * which zone the marker is in. Granularity comes from the bar, not the
- * label.
+ * Zone identifier for a Pearson value. Single source of truth for the
+ * threshold logic — UI uses this to pick colors, to derive the display
+ * label, and (eventually) anywhere else that needs to branch on zone.
  *
  * Thresholds at ±1/3 partition the Pearson range [-1, +1] into three
- * equal zones, so the label flip exactly tracks the marker crossing a
- * third of the bar.
+ * equal zones, so the zone boundary aligns exactly with the marker
+ * crossing a third of the bar.
+ */
+export function getPearsonZone(pearson: number): PearsonZone {
+  if (pearson >= 1 / 3) return "aligned";
+  if (pearson <= -1 / 3) return "opposite";
+  return "independent";
+}
+
+const ZONE_LABELS: Record<PearsonZone, string> = {
+  aligned: "Aligned",
+  independent: "Independent",
+  opposite: "Opposite",
+};
+
+/**
+ * Capitalized human-readable label matching the spectrum's zone labels.
+ * The spectrum bar shows the continuous position; the label just confirms
+ * which zone the marker is in. Granularity comes from the bar, not the
+ * label.
  */
 export function getPearsonLabel(pearson: number): string {
-  if (pearson >= 1 / 3) return "Aligned";
-  if (pearson <= -1 / 3) return "Opposite";
-  return "Independent";
+  return ZONE_LABELS[getPearsonZone(pearson)];
 }
 
 /**

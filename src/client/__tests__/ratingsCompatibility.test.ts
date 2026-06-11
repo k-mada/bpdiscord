@@ -1,6 +1,7 @@
 import {
   computeCompatibility,
   getPearsonLabel,
+  getPearsonZone,
   formatSignedPercent,
   pearsonToBarPosition,
   MIN_RELIABLE_SAMPLE,
@@ -132,19 +133,40 @@ describe("computeCompatibility", () => {
   });
 });
 
+describe("getPearsonZone", () => {
+  it.each([
+    [1.0, "aligned"],
+    [0.5, "aligned"],
+    [1 / 3, "aligned"], // boundary
+    [0.3, "independent"],
+    [0, "independent"],
+    [-0.3, "independent"],
+    [-1 / 3, "opposite"], // boundary
+    [-0.5, "opposite"],
+    [-1.0, "opposite"],
+  ])("zone for %f is %s", (value, expected) => {
+    expect(getPearsonZone(value)).toBe(expected);
+  });
+});
+
 describe("getPearsonLabel", () => {
   it.each([
-    [1.0, "Aligned"],
     [0.5, "Aligned"],
-    [1 / 3, "Aligned"], // boundary
-    [0.3, "Independent"],
     [0, "Independent"],
-    [-0.3, "Independent"],
-    [-1 / 3, "Opposite"], // boundary
     [-0.5, "Opposite"],
-    [-1.0, "Opposite"],
   ])("labels %f as %s", (value, expected) => {
     expect(getPearsonLabel(value)).toBe(expected);
+  });
+
+  it("stays in sync with getPearsonZone (single source of truth)", () => {
+    // If someone changes the zone thresholds in only one place, this test
+    // catches the drift.
+    const samples = [-1, -0.5, -1 / 3, -0.1, 0, 0.1, 1 / 3, 0.5, 1];
+    for (const p of samples) {
+      const zone = getPearsonZone(p);
+      const label = getPearsonLabel(p);
+      expect(label.toLowerCase()).toBe(zone);
+    }
   });
 });
 

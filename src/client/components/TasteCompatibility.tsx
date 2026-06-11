@@ -2,9 +2,11 @@ import React from "react";
 import {
   computeCompatibility,
   getPearsonLabel,
+  getPearsonZone,
   formatSignedPercent,
   pearsonToBarPosition,
   MIN_RELIABLE_SAMPLE,
+  type PearsonZone,
 } from "../lib/ratingsCompatibility";
 import type { MovieInCommon } from "../types";
 import Tooltip from "./Tooltip";
@@ -26,11 +28,11 @@ interface TasteCompatibilityProps {
 const TOOLTIP_EXPLANATION =
   "when one of you rates a film higher than your usual, the other tends to do the same — that's alignment. when you react in opposite directions — one loves it, the other hates it — that's opposition. independent means your reactions don't predict each other; you watch the same films but on different wavelengths.";
 
-function getMarkerColorClass(pearson: number): string {
-  if (pearson >= 1 / 3) return "bg-green-400";
-  if (pearson <= -1 / 3) return "bg-red-400";
-  return "bg-letterboxd-text-muted";
-}
+const ZONE_MARKER_COLOR: Record<PearsonZone, string> = {
+  aligned: "bg-green-400",
+  opposite: "bg-red-400",
+  independent: "bg-letterboxd-text-muted",
+};
 
 const TasteCompatibility = ({
   user1Data,
@@ -46,7 +48,10 @@ const TasteCompatibility = ({
 
   const markerPositionPct =
     pearson === null ? 50 : pearsonToBarPosition(pearson);
-  const markerColorClass = pearson === null ? "bg-letterboxd-text-muted" : getMarkerColorClass(pearson);
+  const markerColorClass =
+    pearson === null
+      ? ZONE_MARKER_COLOR.independent
+      : ZONE_MARKER_COLOR[getPearsonZone(pearson)];
 
   return (
     <div className="card">
@@ -68,28 +73,29 @@ const TasteCompatibility = ({
         <div className="text-right">Aligned</div>
       </div>
 
-      {/* Spectrum bar with tick marker */}
+      {/* Spectrum bar with tick marker.
+        * role=img (not progressbar): this is a position-on-a-continuum
+        * visualization, not progress toward a goal. aria-label carries
+        * the full description for screen readers.
+        */}
       <div
         className="relative h-2 rounded-full bg-gradient-to-r from-red-400/15 via-letterboxd-text-muted/20 to-green-400/15"
-        role="progressbar"
-        aria-label="Taste correlation spectrum"
-        aria-valuemin={-100}
-        aria-valuemax={100}
-        aria-valuenow={pearson === null ? 0 : Math.round(pearson * 100)}
-        aria-valuetext={
+        role="img"
+        aria-label={
           pearson === null
-            ? "Not enough rating variation to compute"
-            : `${formatSignedPercent(pearson)} — ${getPearsonLabel(pearson)}`
+            ? "Taste compatibility: not enough rating variation to compute"
+            : `Taste compatibility: ${formatSignedPercent(pearson)}, ${getPearsonLabel(pearson)}`
         }
       >
         {/* Tick marks at the zone boundaries (1/3 and 2/3) */}
         <div className="absolute top-0 bottom-0 left-1/3 w-px bg-letterboxd-text-muted/30" />
         <div className="absolute top-0 bottom-0 left-2/3 w-px bg-letterboxd-text-muted/30" />
-        {/* Marker */}
+        {/* Marker. translate-x-1/2 centers it on its left edge regardless
+          * of its width — no magic px offset to keep in sync. */}
         {pearson !== null && (
           <div
-            className={`absolute top-1/2 -translate-y-1/2 w-1.5 h-5 rounded-sm transition-all duration-500 ${markerColorClass}`}
-            style={{ left: `calc(${markerPositionPct}% - 3px)` }}
+            className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-5 rounded-sm transition-all duration-500 ${markerColorClass}`}
+            style={{ left: `${markerPositionPct}%` }}
           />
         )}
       </div>
