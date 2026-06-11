@@ -23,119 +23,86 @@ interface TasteCompatibilityProps {
   moviesInCommon: MovieInCommon[];
 }
 
+interface CompatibilityResult {
+  pearson: number | null;
+  mad: number | null;
+  sampleSize: number;
+}
+
+// Below this many shared rated films, Pearson is too jumpy to be meaningful —
+// a single film can flip the sign. UI warns the user when we're under this.
+const MIN_RELIABLE_SAMPLE = 10;
+
+function computeCompatibility(movies: MovieInCommon[]): CompatibilityResult {
+  const bothRated = movies.filter(
+    (m) => m.user1_rating > 0 && m.user2_rating > 0,
+  );
+  const n = bothRated.length;
+
+  if (n === 0) {
+    return { pearson: null, mad: null, sampleSize: 0 };
+  }
+
+  const mean1 = bothRated.reduce((s, m) => s + m.user1_rating, 0) / n;
+  const mean2 = bothRated.reduce((s, m) => s + m.user2_rating, 0) / n;
+
+  let numerator = 0;
+  let sumSqDev1 = 0;
+  let sumSqDev2 = 0;
+  let sumAbsDiff = 0;
+
+  for (const m of bothRated) {
+    const d1 = m.user1_rating - mean1;
+    const d2 = m.user2_rating - mean2;
+    numerator += d1 * d2;
+    sumSqDev1 += d1 * d1;
+    sumSqDev2 += d2 * d2;
+    sumAbsDiff += Math.abs(m.user1_rating - m.user2_rating);
+  }
+
+  // Zero variance on either side: user gave the same rating to every shared
+  // film in this sample. Pearson is undefined; MAD is still meaningful.
+  const denominator = Math.sqrt(sumSqDev1) * Math.sqrt(sumSqDev2);
+  const pearson = denominator === 0 ? null : numerator / denominator;
+  const mad = sumAbsDiff / n;
+
+  return { pearson, mad, sampleSize: n };
+}
+
+function getPearsonLabel(pearson: number): string {
+  if (pearson >= 0.7) return "Strongly aligned";
+  if (pearson >= 0.4) return "Aligned";
+  if (pearson >= 0.1) return "Somewhat aligned";
+  if (pearson >= -0.1) return "Mixed";
+  if (pearson >= -0.4) return "Diverging";
+  return "Opposite";
+}
+
+function formatSignedPercent(value: number): string {
+  const pct = Math.round(value * 100);
+  if (pct === 0) return "0%";
+  return pct > 0 ? `+${pct}%` : `${pct}%`;
+}
+
 const TasteCompatibility = ({
   user1Data,
   user2Data,
   moviesInCommon,
 }: TasteCompatibilityProps) => {
-  const calculateCosineSimilarity = (movies: MovieInCommon[]): {
-    similarity: number;
-    ratedMoviesCount: number;
-    totalMoviesCount: number;
-    imputation: 'none' | 'weighted';
-    weightedDataPoints: number;
-  } => {
-    if (movies.length === 0) {
-      return { similarity: 0, ratedMoviesCount: 0, totalMoviesCount: 0, imputation: 'none', weightedDataPoints: 0 };
-    }
-
-    // Separate movies by rating status
-    const ratedByBoth = movies.filter(m => m.user1_rating > 0 && m.user2_rating > 0);
-    const ratedByUser1Only = movies.filter(m => m.user1_rating > 0 && m.user2_rating === 0);
-    const ratedByUser2Only = movies.filter(m => m.user1_rating === 0 && m.user2_rating > 0);
-
-    // If no movies rated by both users, fall back to basic calculation
-    if (ratedByBoth.length === 0) {
-      return { similarity: 0, ratedMoviesCount: 0, totalMoviesCount: movies.length, imputation: 'none', weightedDataPoints: 0 };
-    }
-
-    // Calculate average ratings for imputation
-    const user1Ratings = ratedByBoth.map(m => m.user1_rating).concat(ratedByUser1Only.map(m => m.user1_rating));
-    const user2Ratings = ratedByBoth.map(m => m.user2_rating).concat(ratedByUser2Only.map(m => m.user2_rating));
-
-    const user1Average = user1Ratings.reduce((sum, r) => sum + r, 0) / user1Ratings.length;
-    const user2Average = user2Ratings.reduce((sum, r) => sum + r, 0) / user2Ratings.length;
-
-    // Confidence-based weights
-    const WEIGHT_ACTUAL = 1.0;      // Full confidence for actual ratings
-    const WEIGHT_IMPUTED = 0.6;     // Reduced confidence for imputed ratings
-
-    // Create comprehensive rating vectors with imputation
-    const vector1: number[] = [];
-    const vector2: number[] = [];
-    const weights: number[] = [];
-
-    // Add movies rated by both users (full confidence)
-    ratedByBoth.forEach(movie => {
-      vector1.push(movie.user1_rating);
-      vector2.push(movie.user2_rating);
-      weights.push(WEIGHT_ACTUAL);
-    });
-
-    // Add movies rated by user1 only (impute user2's rating with reduced confidence)
-    ratedByUser1Only.forEach(movie => {
-      vector1.push(movie.user1_rating);
-      vector2.push(user2Average); // Imputation
-      weights.push(WEIGHT_IMPUTED);
-    });
-
-    // Add movies rated by user2 only (impute user1's rating with reduced confidence)
-    ratedByUser2Only.forEach(movie => {
-      vector1.push(user1Average); // Imputation
-      vector2.push(movie.user2_rating);
-      weights.push(WEIGHT_IMPUTED);
-    });
-
-    // Calculate weighted cosine similarity
-    let weightedDotProduct = 0;
-    let weightedNorm1 = 0;
-    let weightedNorm2 = 0;
-    let totalWeight = 0;
-
-    for (let i = 0; i < vector1.length; i++) {
-      const weight = weights[i];
-      weightedDotProduct += weight * vector1[i] * vector2[i];
-      weightedNorm1 += weight * vector1[i] * vector1[i];
-      weightedNorm2 += weight * vector2[i] * vector2[i];
-      totalWeight += weight;
-    }
-
-    if (weightedNorm1 === 0 || weightedNorm2 === 0 || totalWeight === 0) {
-      return {
-        similarity: 0,
-        ratedMoviesCount: ratedByBoth.length,
-        totalMoviesCount: movies.length,
-        imputation: 'weighted',
-        weightedDataPoints: totalWeight
-      };
-    }
-
-    const similarity = weightedDotProduct / (Math.sqrt(weightedNorm1) * Math.sqrt(weightedNorm2));
-
-    return {
-      similarity,
-      ratedMoviesCount: ratedByBoth.length,
-      totalMoviesCount: movies.length,
-      imputation: ratedByUser1Only.length > 0 || ratedByUser2Only.length > 0 ? 'weighted' : 'none',
-      weightedDataPoints: Math.round(totalWeight * 10) / 10 // Round to 1 decimal place
-    };
-  };
-
-  const getSimilarityLabel = (similarity: number): string => {
-    if (similarity >= 0.9) return "Nearly Identical Taste";
-    if (similarity >= 0.75) return "Very Similar Taste";
-    if (similarity >= 0.5) return "Somewhat Similar";
-    if (similarity >= 0.25) return "Different Taste";
-    return "Opposite Taste";
-  };
-
   if (!user1Data || !user2Data || !moviesInCommon.length) {
     return null;
   }
 
-  const result = calculateCosineSimilarity(moviesInCommon);
-  const percentage = Math.round(result.similarity * 100);
-  const label = getSimilarityLabel(result.similarity);
+  const { pearson, mad, sampleSize } = computeCompatibility(moviesInCommon);
+
+  // Center-anchored bar: fills right for positive correlation, left for
+  // negative. 100% Pearson → fills exactly half the bar (from the center
+  // to one edge).
+  const barLeftPct =
+    pearson === null ? 50 : pearson >= 0 ? 50 : 50 + pearson * 50;
+  const barWidthPct = pearson === null ? 0 : Math.abs(pearson) * 50;
+  const isNegative = pearson !== null && pearson < 0;
+  const lowSample = sampleSize > 0 && sampleSize < MIN_RELIABLE_SAMPLE;
 
   return (
     <div className="card">
@@ -145,37 +112,56 @@ const TasteCompatibility = ({
             🎯 Taste Compatibility
           </h4>
           <div className="text-sm text-letterboxd-text-secondary">
-            {user1Data.displayName || user1Data.username} vs {user2Data.displayName || user2Data.username}
+            {user1Data.displayName || user1Data.username} vs{" "}
+            {user2Data.displayName || user2Data.username}
           </div>
         </div>
 
         <div className="flex-1 max-w-md">
-          {/* Similarity Bar */}
+          {/* Center-anchored correlation bar */}
           <div className="mb-2">
             <div className="flex items-center gap-3">
-              <div className="flex-1 bg-letterboxd-bg-primary rounded-full h-3 overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-letterboxd-accent to-green-400 transition-all duration-500"
-                  style={{ width: `${percentage}%` }}
-                />
+              <div className="relative flex-1 bg-letterboxd-bg-primary rounded-full h-3 overflow-hidden">
+                <div className="absolute left-1/2 top-0 bottom-0 w-px bg-letterboxd-text-muted/40" />
+                {pearson !== null && (
+                  <div
+                    className={`absolute top-0 bottom-0 h-full transition-all duration-500 ${
+                      isNegative
+                        ? "bg-gradient-to-l from-letterboxd-accent to-red-400"
+                        : "bg-gradient-to-r from-letterboxd-accent to-green-400"
+                    }`}
+                    style={{
+                      left: `${barLeftPct}%`,
+                      width: `${barWidthPct}%`,
+                    }}
+                  />
+                )}
               </div>
-              <span className="text-lg font-bold text-letterboxd-text-primary min-w-[45px]">
-                {percentage}%
+              <span className="text-lg font-bold text-letterboxd-text-primary min-w-[55px] text-right">
+                {pearson === null ? "—" : formatSignedPercent(pearson)}
               </span>
             </div>
           </div>
 
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
             <div className="text-sm font-medium text-letterboxd-accent">
-              "{label}"
+              {pearson === null
+                ? "Not enough rating variation"
+                : `"${getPearsonLabel(pearson)}"`}
             </div>
-            <div className="text-xs text-letterboxd-text-muted">
-              Based on {result.ratedMoviesCount} movies rated by both
-              {result.imputation === 'weighted' && result.totalMoviesCount > result.ratedMoviesCount &&
-                ` (+${result.totalMoviesCount - result.ratedMoviesCount} additional movies)`
-              }
+            <div className="text-xs text-letterboxd-text-muted text-right">
+              {mad !== null && (
+                <div>{mad.toFixed(2)}★ apart on average</div>
+              )}
+              <div>{sampleSize} films in common</div>
             </div>
           </div>
+
+          {lowSample && (
+            <div className="text-xs text-amber-400 mt-2">
+              Small sample — interpret with caution.
+            </div>
+          )}
         </div>
       </div>
     </div>

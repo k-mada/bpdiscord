@@ -123,6 +123,9 @@ supabase/.temp/
 # Seed script failure log
 seed-failures.json
 
+# Backfill script failure log
+backfill-film-years-failures.json
+
 # Beads / Dolt files (added by bd init)
 .dolt/
 *.db
