@@ -1,4 +1,3 @@
-import React from "react";
 import {
   computeCompatibility,
   getPearsonLabel,
@@ -12,6 +11,7 @@ import {
 } from "../lib/ratingsCompatibility";
 import type { MovieInCommon } from "../types";
 import Tooltip from "./Tooltip";
+import StarRating from "./StarRating";
 
 interface UserHeader {
   username: string;
@@ -57,8 +57,8 @@ const AnchorFilm = ({ film, label, user1Name, user2Name }: AnchorFilmProps) => {
     film.letterboxd_url ?? `https://letterboxd.com/film/${film.film_slug}`;
 
   return (
-    <div className="flex flex-col items-center w-[120px]">
-      <div className="font-letterboxdBody text-lg font-semibold text-letterboxd-text-primary mb-3 text-center">
+    <div className="flex flex-col items-center">
+      <div className="text-lg font-semibold text-letterboxd-text-primary mb-3 text-center">
         {label}
       </div>
 
@@ -72,13 +72,10 @@ const AnchorFilm = ({ film, label, user1Name, user2Name }: AnchorFilmProps) => {
           <img
             src={posterUrl}
             alt={film.title}
-            className="w-full border rounded-t-md border-slate-500 border-b-0"
+            className="w-full border rounded-md border-slate-500"
           />
         ) : (
-          // Title-text fallback for films where the Films row isn't yet
-          // backfilled. 2:3 aspect ratio so the column doesn't shift
-          // depending on which film qualified.
-          <div className="flex aspect-[2/3] w-full items-center justify-center bg-slate-700 border rounded-t-md border-slate-500 border-b-0 p-2 font-letterboxdBody">
+          <div className="flex aspect-[2/3] w-full items-center justify-center bg-slate-700 border rounded-md border-slate-500 p-2">
             <div className="text-center text-xs text-letterboxd-text-primary">
               {film.title}
               {film.year !== null && (
@@ -90,20 +87,17 @@ const AnchorFilm = ({ film, label, user1Name, user2Name }: AnchorFilmProps) => {
           </div>
         )}
       </a>
-
-      {/* Right-aligned text in a full-width box → ratings naturally stack
-        * vertically on the right edge regardless of username length. */}
-      <div className="w-full p-2 text-right border rounded-b-md border-t-0 border-slate-500 bg-slate-800 font-letterboxdBody text-sm space-y-0.5">
+      <div className="w-full mt-2 p-2 px-12 text-center border rounded-md  border-slate-500 bg-slate-800 text-sm space-y-0.5">
         <div>
           <span className="text-letterboxd-text-muted">{user1Name}:</span>{" "}
           <span className="text-letterboxd-text-primary font-semibold tabular-nums">
-            {formatRating(film.user1_rating)}
+            <StarRating rating={film.user1_rating} />
           </span>
         </div>
         <div>
           <span className="text-letterboxd-text-muted">{user2Name}:</span>{" "}
           <span className="text-letterboxd-text-primary font-semibold tabular-nums">
-            {formatRating(film.user2_rating)}
+            <StarRating rating={film.user2_rating} />
           </span>
         </div>
       </div>
@@ -163,10 +157,10 @@ const TasteCompatibility = ({
       </div>
 
       {/* Spectrum bar with tick marker.
-        * role=img (not progressbar): this is a position-on-a-continuum
-        * visualization, not progress toward a goal. aria-label carries
-        * the full description for screen readers.
-        */}
+       * role=img (not progressbar): this is a position-on-a-continuum
+       * visualization, not progress toward a goal. aria-label carries
+       * the full description for screen readers.
+       */}
       <div
         className="relative h-2 rounded-full bg-gradient-to-r from-red-400/15 via-letterboxd-text-muted/20 to-green-400/15"
         role="img"
@@ -180,7 +174,7 @@ const TasteCompatibility = ({
         <div className="absolute top-0 bottom-0 left-1/3 w-px bg-letterboxd-text-muted/30" />
         <div className="absolute top-0 bottom-0 left-2/3 w-px bg-letterboxd-text-muted/30" />
         {/* Marker. translate-x-1/2 centers it on its left edge regardless
-          * of its width — no magic px offset to keep in sync. */}
+         * of its width — no magic px offset to keep in sync. */}
         {pearson !== null && (
           <div
             className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-5 rounded-sm transition-all duration-500 ${markerColorClass}`}
@@ -222,7 +216,7 @@ const TasteCompatibility = ({
             {darling && (
               <AnchorFilm
                 film={darling}
-                label="Shared darling"
+                label="Shared fave"
                 user1Name={user1Data.displayName || user1Data.username}
                 user2Name={user2Data.displayName || user2Data.username}
               />
