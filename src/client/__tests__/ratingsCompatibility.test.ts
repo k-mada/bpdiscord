@@ -4,6 +4,10 @@ import {
   getPearsonZone,
   formatSignedPercent,
   pearsonToBarPosition,
+  findSharedDarling,
+  findBiggestFight,
+  DARLING_MIN_RATING,
+  FIGHT_MIN_GAP,
   MIN_RELIABLE_SAMPLE,
   type RatedFilm,
 } from "../lib/ratingsCompatibility";
@@ -185,6 +189,127 @@ describe("pearsonToBarPosition", () => {
     // 1/3 of Pearson range maps to 2/3 of the bar (= 66.67%) and -1/3 to 1/3.
     expect(pearsonToBarPosition(1 / 3)).toBeCloseTo(200 / 3, 5);
     expect(pearsonToBarPosition(-1 / 3)).toBeCloseTo(100 / 3, 5);
+  });
+});
+
+interface NamedFilm extends RatedFilm {
+  title: string;
+}
+
+const namedPair = (
+  entries: Array<[string, number, number]>,
+): NamedFilm[] =>
+  entries.map(([title, r1, r2]) => ({
+    title,
+    user1_rating: r1,
+    user2_rating: r2,
+  }));
+
+describe("findSharedDarling", () => {
+  it("picks the film both users love most, tightest agreement preferred", () => {
+    const films = namedPair([
+      ["Movie A", 5, 5], // perfect joint love
+      ["Movie B", 5, 3.5], // high avg, big gap
+      ["Movie C", 4, 4], // moderate
+    ]);
+    expect(findSharedDarling(films)?.title).toBe("Movie A");
+  });
+
+  it("prefers smaller gap when averages are equal", () => {
+    const films = namedPair([
+      ["Movie A", 5, 4], // avg 4.5, gap 1
+      ["Movie B", 4.5, 4.5], // avg 4.5, gap 0
+    ]);
+    expect(findSharedDarling(films)?.title).toBe("Movie B");
+  });
+
+  it("returns null when no film qualifies (no shared love)", () => {
+    const films = namedPair([
+      ["Movie A", 3, 3], // below threshold
+      ["Movie B", 4, 2], // user2 below threshold
+      ["Movie C", 2, 5], // user1 below threshold
+    ]);
+    expect(findSharedDarling(films)).toBeNull();
+  });
+
+  it("returns null for empty input", () => {
+    expect(findSharedDarling([])).toBeNull();
+  });
+
+  it("uses 3.5 as the qualifying threshold (matches Letterboxd 'liked it')", () => {
+    const films = namedPair([
+      ["Boundary low", 3, 4], // user1 below threshold
+      ["Boundary at", 3.5, 3.5], // exactly at threshold, both qualify
+    ]);
+    expect(findSharedDarling(films)?.title).toBe("Boundary at");
+    expect(DARLING_MIN_RATING).toBe(3.5);
+  });
+
+  it("ignores non-finite ratings", () => {
+    const films: NamedFilm[] = [
+      { title: "Bad", user1_rating: NaN, user2_rating: 5 },
+      { title: "Good", user1_rating: 5, user2_rating: 5 },
+    ];
+    expect(findSharedDarling(films)?.title).toBe("Good");
+  });
+
+  it("preserves caller's full object shape (generic over T)", () => {
+    interface FilmWithSlug extends RatedFilm {
+      slug: string;
+    }
+    const films: FilmWithSlug[] = [
+      { slug: "darling", user1_rating: 5, user2_rating: 5 },
+    ];
+    const result = findSharedDarling(films);
+    expect(result?.slug).toBe("darling");
+  });
+});
+
+describe("findBiggestFight", () => {
+  it("picks the film with the largest rating gap", () => {
+    const films = namedPair([
+      ["Mild", 4, 3], // gap 1
+      ["Real", 5, 2], // gap 3
+      ["Polarized", 4.5, 1], // gap 3.5
+    ]);
+    expect(findBiggestFight(films)?.title).toBe("Polarized");
+  });
+
+  it("requires gap >= FIGHT_MIN_GAP — gaps below threshold don't count", () => {
+    const films = namedPair([
+      ["Close 1", 4, 3], // gap 1
+      ["Close 2", 4.5, 3.5], // gap 1
+      ["Close 3", 3, 3.5], // gap 0.5
+    ]);
+    expect(findBiggestFight(films)).toBeNull();
+    expect(FIGHT_MIN_GAP).toBe(2);
+  });
+
+  it("matches at exactly the FIGHT_MIN_GAP boundary", () => {
+    const films = namedPair([
+      ["At threshold", 4, 2], // gap exactly 2
+    ]);
+    expect(findBiggestFight(films)?.title).toBe("At threshold");
+  });
+
+  it("returns null for empty input", () => {
+    expect(findBiggestFight([])).toBeNull();
+  });
+
+  it("ignores films either user hasn't rated (rating 0)", () => {
+    const films = namedPair([
+      ["Unrated", 5, 0], // user2 hasn't rated
+      ["Fight", 4, 2], // legitimate fight
+    ]);
+    expect(findBiggestFight(films)?.title).toBe("Fight");
+  });
+
+  it("ignores non-finite ratings", () => {
+    const films: NamedFilm[] = [
+      { title: "Bad", user1_rating: Infinity, user2_rating: 1 },
+      { title: "Fight", user1_rating: 5, user2_rating: 2 },
+    ];
+    expect(findBiggestFight(films)?.title).toBe("Fight");
   });
 });
 

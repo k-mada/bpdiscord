@@ -5,6 +5,8 @@ import {
   getPearsonZone,
   formatSignedPercent,
   pearsonToBarPosition,
+  findSharedDarling,
+  findBiggestFight,
   MIN_RELIABLE_SAMPLE,
   type PearsonZone,
 } from "../lib/ratingsCompatibility";
@@ -35,6 +37,58 @@ const ZONE_MARKER_COLOR: Record<PearsonZone, string> = {
   independent: "bg-letterboxd-text-muted",
 };
 
+function formatRating(r: number): string {
+  // Drop trailing zero on integers (3 not 3.0), keep half-star precision.
+  return r % 1 === 0 ? r.toFixed(0) : r.toFixed(1);
+}
+
+interface AnchorFilmProps {
+  film: MovieInCommon;
+  label: string;
+  emoji: string;
+}
+
+const AnchorFilm = ({ film, label, emoji }: AnchorFilmProps) => {
+  const titleContent = (
+    <>
+      {film.title}
+      {film.year !== undefined && (
+        <span className="text-letterboxd-text-muted font-normal">
+          {" "}
+          ({film.year})
+        </span>
+      )}
+    </>
+  );
+
+  return (
+    <div className="flex items-baseline justify-between gap-3">
+      <div className="text-sm min-w-0">
+        <span className="text-letterboxd-text-muted">
+          {emoji} {label}:
+        </span>{" "}
+        {film.letterboxd_url ? (
+          <a
+            href={film.letterboxd_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-letterboxd-text-primary hover:text-letterboxd-accent font-medium truncate"
+          >
+            {titleContent}
+          </a>
+        ) : (
+          <span className="text-letterboxd-text-primary font-medium">
+            {titleContent}
+          </span>
+        )}
+      </div>
+      <div className="text-sm text-letterboxd-text-primary font-medium whitespace-nowrap tabular-nums">
+        {formatRating(film.user1_rating)}/{formatRating(film.user2_rating)}
+      </div>
+    </div>
+  );
+};
+
 const TasteCompatibility = ({
   user1Data,
   user2Data,
@@ -46,6 +100,18 @@ const TasteCompatibility = ({
 
   const { pearson, mad, sampleSize } = computeCompatibility(moviesInCommon);
   const lowSample = sampleSize > 0 && sampleSize < MIN_RELIABLE_SAMPLE;
+
+  const darling = findSharedDarling(moviesInCommon);
+  // Edge case: the only "fight" candidate might also qualify as the darling
+  // (e.g. 5/3.5 — both above 3.5, gap exactly 2). Suppress the fight in
+  // that case; showing the same film twice with conflicting framing reads
+  // weirdly.
+  const rawFight = findBiggestFight(moviesInCommon);
+  const fight =
+    rawFight && darling && rawFight.film_slug === darling.film_slug
+      ? null
+      : rawFight;
+  const hasAnchors = darling !== null || fight !== null;
 
   const markerPositionPct =
     pearson === null ? 50 : pearsonToBarPosition(pearson);
@@ -127,6 +193,17 @@ const TasteCompatibility = ({
           {mad !== null && ` · ${mad.toFixed(2)}★ apart on average`}
         </div>
       </div>
+
+      {hasAnchors && (
+        <div className="mt-4 pt-4 border-t border-letterboxd-border space-y-2">
+          {darling && (
+            <AnchorFilm film={darling} label="Shared darling" emoji="🌟" />
+          )}
+          {fight && (
+            <AnchorFilm film={fight} label="Biggest fight" emoji="⚔️" />
+          )}
+        </div>
+      )}
 
       {lowSample && (
         <div className="text-xs text-amber-400 mt-3 text-center">

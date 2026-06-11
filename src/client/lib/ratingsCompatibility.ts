@@ -134,3 +134,86 @@ export function formatSignedPercent(value: number): string {
   if (pct === 0) return "0%";
   return pct > 0 ? `+${pct}%` : `${pct}%`;
 }
+
+// ===========================
+// Anchor films — concrete callouts that tell a story the numbers can't.
+// Generic over T so callers can pass MovieInCommon (or any extension of
+// RatedFilm) and get the full object back, not just the ratings.
+// ===========================
+
+/**
+ * Minimum rating both users must give a film for it to qualify as a
+ * "shared darling." Without this gate, a pair whose all-shared-films
+ * sit at 2.5/2.5 would surface that as a "darling" — which reads
+ * absurd. 3.5★ matches Letterboxd's "I liked it" threshold (above the
+ * neutral midpoint).
+ */
+export const DARLING_MIN_RATING = 3.5;
+
+/**
+ * Minimum rating gap for a film to qualify as a "biggest fight." Below
+ * this it's not really a disagreement; just rounding.
+ */
+export const FIGHT_MIN_GAP = 2;
+
+function isValidRatingPair(f: RatedFilm): boolean {
+  return (
+    Number.isFinite(f.user1_rating) &&
+    Number.isFinite(f.user2_rating) &&
+    f.user1_rating > 0 &&
+    f.user2_rating > 0
+  );
+}
+
+/**
+ * The film both users love most, tightest agreement preferred. Picks the
+ * film maximizing `(avg_rating) - (rating_gap)` over the both-rated set
+ * where both ratings are ≥ DARLING_MIN_RATING. Returns null if no film
+ * qualifies (the pair has no shared "love").
+ *
+ * The score balances "rated high" against "rated similarly" — a 5/5 wins
+ * over a 5/3.5 (same average, smaller gap).
+ *
+ * Tiebreak is the first-occurrence order in the input array (deterministic
+ * given a stable input from the API).
+ */
+export function findSharedDarling<T extends RatedFilm>(films: T[]): T | null {
+  const candidates = films.filter(
+    (f) =>
+      isValidRatingPair(f) &&
+      f.user1_rating >= DARLING_MIN_RATING &&
+      f.user2_rating >= DARLING_MIN_RATING,
+  );
+  if (candidates.length === 0) return null;
+
+  const score = (f: RatedFilm): number =>
+    (f.user1_rating + f.user2_rating) / 2 -
+    Math.abs(f.user1_rating - f.user2_rating);
+
+  return candidates.reduce((best, current) =>
+    score(current) > score(best) ? current : best,
+  );
+}
+
+/**
+ * The film both users disagree on most, restricted to gaps ≥ FIGHT_MIN_GAP
+ * (below that it's just rounding, not a fight). Returns null if no film
+ * qualifies.
+ *
+ * Tiebreak is the first-occurrence order in the input array.
+ */
+export function findBiggestFight<T extends RatedFilm>(films: T[]): T | null {
+  const candidates = films.filter(
+    (f) =>
+      isValidRatingPair(f) &&
+      Math.abs(f.user1_rating - f.user2_rating) >= FIGHT_MIN_GAP,
+  );
+  if (candidates.length === 0) return null;
+
+  return candidates.reduce((best, current) =>
+    Math.abs(current.user1_rating - current.user2_rating) >
+    Math.abs(best.user1_rating - best.user2_rating)
+      ? current
+      : best,
+  );
+}
