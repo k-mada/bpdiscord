@@ -849,6 +849,9 @@ export async function dbGetMoviesInCommon(
     film_slug: string;
     user1_rating: number;
     user2_rating: number;
+    poster: string | null;
+    year: number | null;
+    letterboxd_url: string | null;
   }>;
   count?: number;
   error?: string;
@@ -874,16 +877,22 @@ export async function dbGetMoviesInCommon(
       .where(eq(userFilms.lbusername, user2))
       .as("uf2");
 
-    // Single query with JOIN to find common films
+    // LEFT JOIN with Films so we can surface poster/year/url to the UI.
+    // Films row may not exist for slugs the worker hasn't backfilled yet —
+    // null fallbacks keep the row in the result.
     const result = await db
       .select({
         title: uf1.title,
         film_slug: uf1.filmSlug,
         user1_rating: uf1.rating,
         user2_rating: uf2.rating,
+        poster: films.poster,
+        year: films.releaseYear,
+        letterboxd_url: films.url,
       })
       .from(uf1)
       .innerJoin(uf2, eq(uf1.filmSlug, uf2.filmSlug))
+      .leftJoin(films, eq(uf1.filmSlug, films.filmSlug))
       .orderBy(asc(uf1.title));
 
     return result.map((r) => ({
@@ -891,6 +900,9 @@ export async function dbGetMoviesInCommon(
       film_slug: r.film_slug,
       user1_rating: r.user1_rating ?? 0,
       user2_rating: r.user2_rating ?? 0,
+      poster: r.poster ?? null,
+      year: r.year ?? null,
+      letterboxd_url: r.letterboxd_url ?? null,
     }));
   });
 }
