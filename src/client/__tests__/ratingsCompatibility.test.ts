@@ -2,6 +2,7 @@ import {
   computeCompatibility,
   getPearsonLabel,
   formatSignedPercent,
+  pearsonToBarPosition,
   MIN_RELIABLE_SAMPLE,
   type RatedFilm,
 } from "../lib/ratingsCompatibility";
@@ -133,20 +134,35 @@ describe("computeCompatibility", () => {
 
 describe("getPearsonLabel", () => {
   it.each([
-    [1.0, "Strongly aligned"],
-    [0.7, "Strongly aligned"], // boundary
+    [1.0, "Aligned"],
     [0.5, "Aligned"],
-    [0.4, "Aligned"], // boundary
-    [0.2, "Somewhat aligned"],
-    [0.1, "Somewhat aligned"], // boundary
-    [0, "Mixed"],
-    [-0.1, "Mixed"], // boundary
-    [-0.2, "Diverging"],
-    [-0.4, "Diverging"], // boundary
+    [1 / 3, "Aligned"], // boundary
+    [0.3, "Independent"],
+    [0, "Independent"],
+    [-0.3, "Independent"],
+    [-1 / 3, "Opposite"], // boundary
     [-0.5, "Opposite"],
     [-1.0, "Opposite"],
   ])("labels %f as %s", (value, expected) => {
     expect(getPearsonLabel(value)).toBe(expected);
+  });
+});
+
+describe("pearsonToBarPosition", () => {
+  it.each([
+    [-1, 0],
+    [-0.5, 25],
+    [0, 50],
+    [0.5, 75],
+    [1, 100],
+  ])("maps %f to %f%%", (pearson, expectedPct) => {
+    expect(pearsonToBarPosition(pearson)).toBeCloseTo(expectedPct, 5);
+  });
+
+  it("places zone-boundary Pearson values at the bar's thirds", () => {
+    // 1/3 of Pearson range maps to 2/3 of the bar (= 66.67%) and -1/3 to 1/3.
+    expect(pearsonToBarPosition(1 / 3)).toBeCloseTo(200 / 3, 5);
+    expect(pearsonToBarPosition(-1 / 3)).toBeCloseTo(100 / 3, 5);
   });
 });
 

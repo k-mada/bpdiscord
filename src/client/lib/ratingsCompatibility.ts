@@ -84,18 +84,28 @@ export function computeCompatibility(films: RatedFilm[]): CompatibilityResult {
 }
 
 /**
- * Coarse human-readable label for a Pearson value. Thresholds are chosen for
- * UX legibility, not statistical rigor — calibrated to what a typical
- * Letterboxd user pair actually produces (most fall between 0.2 and 0.6),
- * so "Aligned" reads as the common case and "Strongly aligned" stays rare.
+ * Three-zone label matching the spectrum visualization's thirds. The
+ * spectrum bar shows the continuous position; the label just confirms
+ * which zone the marker is in. Granularity comes from the bar, not the
+ * label.
+ *
+ * Thresholds at ±1/3 partition the Pearson range [-1, +1] into three
+ * equal zones, so the label flip exactly tracks the marker crossing a
+ * third of the bar.
  */
 export function getPearsonLabel(pearson: number): string {
-  if (pearson >= 0.7) return "Strongly aligned";
-  if (pearson >= 0.4) return "Aligned";
-  if (pearson >= 0.1) return "Somewhat aligned";
-  if (pearson >= -0.1) return "Mixed";
-  if (pearson >= -0.4) return "Diverging";
-  return "Opposite";
+  if (pearson >= 1 / 3) return "Aligned";
+  if (pearson <= -1 / 3) return "Opposite";
+  return "Independent";
+}
+
+/**
+ * Maps Pearson [-1, +1] to a position on the spectrum bar [0%, 100%].
+ * 0% = far-left (Opposite), 50% = center (Independent), 100% = far-right
+ * (Aligned).
+ */
+export function pearsonToBarPosition(pearson: number): number {
+  return ((pearson + 1) / 2) * 100;
 }
 
 /**

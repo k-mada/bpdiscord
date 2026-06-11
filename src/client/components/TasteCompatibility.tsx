@@ -3,12 +3,12 @@ import {
   computeCompatibility,
   getPearsonLabel,
   formatSignedPercent,
+  pearsonToBarPosition,
   MIN_RELIABLE_SAMPLE,
 } from "../lib/ratingsCompatibility";
 import type { MovieInCommon } from "../types";
+import Tooltip from "./Tooltip";
 
-// Narrower than the global UserData — this component only needs identity
-// fields for the header. Pass-through compatible with the global type.
 interface UserHeader {
   username: string;
   displayName?: string;
@@ -18,6 +18,18 @@ interface TasteCompatibilityProps {
   user1Data: UserHeader | null;
   user2Data: UserHeader | null;
   moviesInCommon: MovieInCommon[];
+}
+
+// Layman explanation. Deliberately avoids the words "correlation," "Pearson,"
+// "deviation," etc. The Tooltip component lowercases its content, so written
+// as a continuous sentence.
+const TOOLTIP_EXPLANATION =
+  "when one of you rates a film higher than your usual, the other tends to do the same — that's alignment. when you react in opposite directions — one loves it, the other hates it — that's opposition. independent means your reactions don't predict each other; you watch the same films but on different wavelengths.";
+
+function getMarkerColorClass(pearson: number): string {
+  if (pearson >= 1 / 3) return "bg-green-400";
+  if (pearson <= -1 / 3) return "bg-red-400";
+  return "bg-letterboxd-text-muted";
 }
 
 const TasteCompatibility = ({
@@ -30,91 +42,90 @@ const TasteCompatibility = ({
   }
 
   const { pearson, mad, sampleSize } = computeCompatibility(moviesInCommon);
-
-  // Center-anchored bar: fills right for positive correlation, left for
-  // negative. 100% Pearson → fills exactly half the bar (center to one
-  // edge). Minimum 2% width when non-null so low correlations (~±0.05)
-  // still render as visible rather than disappearing entirely.
-  const rawWidthPct = pearson === null ? 0 : Math.abs(pearson) * 50;
-  const barWidthPct = pearson === null ? 0 : Math.max(rawWidthPct, 2);
-  const barLeftPct =
-    pearson === null
-      ? 50
-      : pearson >= 0
-        ? 50
-        : 50 - barWidthPct;
-  const isNegative = pearson !== null && pearson < 0;
   const lowSample = sampleSize > 0 && sampleSize < MIN_RELIABLE_SAMPLE;
+
+  const markerPositionPct =
+    pearson === null ? 50 : pearsonToBarPosition(pearson);
+  const markerColorClass = pearson === null ? "bg-letterboxd-text-muted" : getMarkerColorClass(pearson);
 
   return (
     <div className="card">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex-1">
-          <h4 className="text-xl font-semibold text-letterboxd-text-primary mb-2 flex items-center gap-2">
+      {/* Header row */}
+      <div className="flex items-start justify-between gap-2 mb-4">
+        <div>
+          <h4 className="text-xl font-semibold text-letterboxd-text-primary flex items-center gap-2">
             🎯 Taste Compatibility
           </h4>
-          <div className="text-sm text-letterboxd-text-secondary">
+          <div className="text-sm text-letterboxd-text-secondary mt-1">
             {user1Data.displayName || user1Data.username} vs{" "}
             {user2Data.displayName || user2Data.username}
           </div>
         </div>
+        <Tooltip content={TOOLTIP_EXPLANATION}>
+          <span
+            className="text-letterboxd-text-muted hover:text-letterboxd-text-primary cursor-help text-base"
+            aria-label="What does this mean?"
+            tabIndex={0}
+          >
+            ⓘ
+          </span>
+        </Tooltip>
+      </div>
 
-        <div className="flex-1 max-w-md">
-          <div className="mb-2">
-            <div className="flex items-center gap-3">
-              <div
-                className="relative flex-1 bg-letterboxd-bg-primary rounded-full h-3 overflow-hidden"
-                role="progressbar"
-                aria-label="Taste correlation"
-                aria-valuemin={-100}
-                aria-valuemax={100}
-                aria-valuenow={pearson === null ? 0 : Math.round(pearson * 100)}
-                aria-valuetext={
-                  pearson === null
-                    ? "Not enough rating variation"
-                    : `${formatSignedPercent(pearson)} — ${getPearsonLabel(pearson)}`
-                }
-              >
-                <div className="absolute left-1/2 top-0 bottom-0 w-px bg-letterboxd-text-muted/40" />
-                {pearson !== null && (
-                  <div
-                    className={`absolute top-0 bottom-0 h-full transition-all duration-500 ${
-                      isNegative
-                        ? "bg-gradient-to-l from-letterboxd-accent to-red-400"
-                        : "bg-gradient-to-r from-letterboxd-accent to-green-400"
-                    }`}
-                    style={{
-                      left: `${barLeftPct}%`,
-                      width: `${barWidthPct}%`,
-                    }}
-                  />
-                )}
-              </div>
-              <span className="text-lg font-bold text-letterboxd-text-primary min-w-[55px] text-right">
-                {pearson === null ? "—" : formatSignedPercent(pearson)}
-              </span>
-            </div>
-          </div>
+      {/* Zone labels */}
+      <div className="grid grid-cols-3 text-xs text-letterboxd-text-muted mb-1.5">
+        <div className="text-left">Opposite</div>
+        <div className="text-center">Independent</div>
+        <div className="text-right">Aligned</div>
+      </div>
 
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-            <div className="text-sm font-medium text-letterboxd-accent">
-              {pearson === null
-                ? "Not enough rating variation"
-                : `"${getPearsonLabel(pearson)}"`}
-            </div>
-            <div className="text-xs text-letterboxd-text-muted text-right">
-              {mad !== null && <div>{mad.toFixed(2)}★ apart on average</div>}
-              <div>{sampleSize} films in common</div>
-            </div>
-          </div>
+      {/* Spectrum bar with tick marker */}
+      <div
+        className="relative h-2 rounded-full bg-gradient-to-r from-red-400/15 via-letterboxd-text-muted/20 to-green-400/15"
+        role="progressbar"
+        aria-label="Taste correlation spectrum"
+        aria-valuemin={-100}
+        aria-valuemax={100}
+        aria-valuenow={pearson === null ? 0 : Math.round(pearson * 100)}
+        aria-valuetext={
+          pearson === null
+            ? "Not enough rating variation to compute"
+            : `${formatSignedPercent(pearson)} — ${getPearsonLabel(pearson)}`
+        }
+      >
+        {/* Tick marks at the zone boundaries (1/3 and 2/3) */}
+        <div className="absolute top-0 bottom-0 left-1/3 w-px bg-letterboxd-text-muted/30" />
+        <div className="absolute top-0 bottom-0 left-2/3 w-px bg-letterboxd-text-muted/30" />
+        {/* Marker */}
+        {pearson !== null && (
+          <div
+            className={`absolute top-1/2 -translate-y-1/2 w-1.5 h-5 rounded-sm transition-all duration-500 ${markerColorClass}`}
+            style={{ left: `calc(${markerPositionPct}% - 3px)` }}
+          />
+        )}
+      </div>
 
-          {lowSample && (
-            <div className="text-xs text-amber-400 mt-2">
-              Small sample — interpret with caution.
-            </div>
-          )}
+      {/* Headline number + label */}
+      <div className="mt-4 text-center">
+        <div className="text-3xl font-bold text-letterboxd-text-primary leading-none">
+          {pearson === null ? "—" : formatSignedPercent(pearson)}
+        </div>
+        <div className="text-sm font-medium text-letterboxd-accent mt-1">
+          {pearson === null
+            ? "Not enough rating variation"
+            : getPearsonLabel(pearson)}
+        </div>
+        <div className="text-xs text-letterboxd-text-muted mt-2">
+          {sampleSize} films in common
+          {mad !== null && ` · ${mad.toFixed(2)}★ apart on average`}
         </div>
       </div>
+
+      {lowSample && (
+        <div className="text-xs text-amber-400 mt-3 text-center">
+          Small sample — interpret with caution.
+        </div>
+      )}
     </div>
   );
 };
