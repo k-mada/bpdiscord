@@ -50,16 +50,15 @@ interface AnchorFilmProps {
 }
 
 const AnchorFilm = ({ film, label, user1Name, user2Name }: AnchorFilmProps) => {
-  // Letterboxd CDN URL embeds the requested dimensions. Rewrite the default
-  // 230x345 to a smaller 150x225 — same ratio, less bandwidth, plenty of
-  // resolution at the ~120px display width. Same trick MovieList uses.
+  // Letterboxd CDN URL embeds the requested dimensions. Same trick MovieList
+  // uses — request a smaller asset for less bandwidth.
   const posterUrl = film.poster?.replace("0-230-0-345", "0-150-0-225") ?? null;
   const href =
     film.letterboxd_url ?? `https://letterboxd.com/film/${film.film_slug}`;
 
   return (
-    <div className="flex flex-col items-center text-center w-[120px]">
-      <div className="text-sm font-semibold text-letterboxd-text-primary mb-2">
+    <div className="flex flex-col items-center w-full max-w-[230px]">
+      <div className="font-letterboxdBody text-xl font-semibold text-letterboxd-text-primary mb-3 text-center">
         {label}
       </div>
 
@@ -67,18 +66,20 @@ const AnchorFilm = ({ film, label, user1Name, user2Name }: AnchorFilmProps) => {
         href={href}
         target="_blank"
         rel="noopener noreferrer"
-        className="block w-[120px] h-[180px]"
+        className="block w-full"
       >
         {posterUrl ? (
           <img
             src={posterUrl}
             alt={film.title}
-            className="w-full h-full object-cover rounded border border-letterboxd-border"
+            className="w-full border rounded-t-md border-slate-500 border-b-0"
           />
         ) : (
-          // Fallback for films where the worker hasn't filled poster yet.
-          <div className="flex w-full h-full items-center justify-center bg-letterboxd-bg-primary border border-letterboxd-border rounded p-2">
-            <div className="text-xs text-letterboxd-text-primary font-medium">
+          // Title-text fallback for films where the Films row isn't yet
+          // backfilled. 2:3 aspect ratio so the column layout doesn't shift
+          // depending on which film qualified.
+          <div className="flex aspect-[2/3] w-full items-center justify-center bg-slate-700 border rounded-t-md border-slate-500 border-b-0 p-3 font-letterboxdBody">
+            <div className="text-center text-letterboxd-text-primary">
               {film.title}
               {film.year !== null && (
                 <div className="text-letterboxd-text-muted mt-1">
@@ -90,16 +91,16 @@ const AnchorFilm = ({ film, label, user1Name, user2Name }: AnchorFilmProps) => {
         )}
       </a>
 
-      <div className="mt-3 text-xs text-letterboxd-text-secondary space-y-0.5">
-        <div>
+      <div className="w-full p-2 text-center border rounded-b-md border-t-0 border-slate-500 bg-slate-800 font-letterboxdBody space-y-0.5">
+        <div className="truncate">
           <span className="text-letterboxd-text-muted">{user1Name}:</span>{" "}
-          <span className="text-letterboxd-text-primary font-medium tabular-nums">
+          <span className="text-letterboxd-text-primary font-semibold tabular-nums">
             {formatRating(film.user1_rating)}
           </span>
         </div>
-        <div>
+        <div className="truncate">
           <span className="text-letterboxd-text-muted">{user2Name}:</span>{" "}
-          <span className="text-letterboxd-text-primary font-medium tabular-nums">
+          <span className="text-letterboxd-text-primary font-semibold tabular-nums">
             {formatRating(film.user2_rating)}
           </span>
         </div>
@@ -214,8 +215,8 @@ const TasteCompatibility = ({
       </div>
 
       {hasAnchors && (
-        <div className="mt-5 pt-5 border-t border-letterboxd-border">
-          <div className="flex justify-center gap-6 sm:gap-10">
+        <div className="mt-6 pt-6 border-t border-letterboxd-border">
+          <div className="flex flex-wrap justify-center gap-6 sm:gap-10">
             {darling && (
               <AnchorFilm
                 film={darling}
