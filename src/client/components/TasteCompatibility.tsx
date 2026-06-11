@@ -51,25 +51,14 @@ const TasteCompatibility = ({
   return (
     <div className="card">
       {/* Header row */}
-      <div className="flex items-start justify-between gap-2 mb-4">
-        <div>
-          <h4 className="text-xl font-semibold text-letterboxd-text-primary flex items-center gap-2">
-            🎯 Taste Compatibility
-          </h4>
-          <div className="text-sm text-letterboxd-text-secondary mt-1">
-            {user1Data.displayName || user1Data.username} vs{" "}
-            {user2Data.displayName || user2Data.username}
-          </div>
+      <div className="mb-4">
+        <h4 className="text-xl font-semibold text-letterboxd-text-primary flex items-center gap-2">
+          🎯 Taste Compatibility
+        </h4>
+        <div className="text-sm text-letterboxd-text-secondary mt-1">
+          {user1Data.displayName || user1Data.username} vs{" "}
+          {user2Data.displayName || user2Data.username}
         </div>
-        <Tooltip content={TOOLTIP_EXPLANATION}>
-          <span
-            className="text-letterboxd-text-muted hover:text-letterboxd-text-primary cursor-help text-base"
-            aria-label="What does this mean?"
-            tabIndex={0}
-          >
-            ⓘ
-          </span>
-        </Tooltip>
       </div>
 
       {/* Zone labels */}
@@ -110,10 +99,21 @@ const TasteCompatibility = ({
         <div className="text-3xl font-bold text-letterboxd-text-primary leading-none">
           {pearson === null ? "—" : formatSignedPercent(pearson)}
         </div>
-        <div className="text-sm font-medium text-letterboxd-accent mt-1">
-          {pearson === null
-            ? "Not enough rating variation"
-            : getPearsonLabel(pearson)}
+        <div className="flex items-center justify-center gap-1.5 mt-1">
+          <div className="text-sm font-medium text-letterboxd-accent">
+            {pearson === null
+              ? "Not enough rating variation"
+              : getPearsonLabel(pearson)}
+          </div>
+          <Tooltip content={TOOLTIP_EXPLANATION}>
+            <span
+              className="text-letterboxd-text-muted hover:text-letterboxd-text-primary cursor-help text-sm"
+              aria-label="What does this mean?"
+              tabIndex={0}
+            >
+              ⓘ
+            </span>
+          </Tooltip>
         </div>
         <div className="text-xs text-letterboxd-text-muted mt-2">
           {sampleSize} films in common
