@@ -22,11 +22,12 @@ interface TasteCompatibilityProps {
   moviesInCommon: MovieInCommon[];
 }
 
-// Layman explanation. Deliberately avoids the words "correlation," "Pearson,"
-// "deviation," etc. The Tooltip component lowercases its content, so written
-// as a continuous sentence.
+// Layman explanation. Deliberately avoids "correlation," "Pearson," etc.
+// Framed around predictability so the three zones are clearly distinct:
+// Aligned and Opposite are both predictable (just in opposite directions);
+// Independent is the noise zone where neither rule applies.
 const TOOLTIP_EXPLANATION =
-  "when one of you rates a film higher than your usual, the other tends to do the same — that's alignment. when you react in opposite directions — one loves it, the other hates it — that's opposition. independent means your reactions don't predict each other; you watch the same films but on different wavelengths.";
+  "higher means you tend to react the same way to the same films. lower means you tend to react in opposite directions — when one of you loves it, the other reliably hates it. the middle means there's no pattern: sometimes you agree, sometimes you don't, but you can't predict it from each other.";
 
 const ZONE_MARKER_COLOR: Record<PearsonZone, string> = {
   aligned: "bg-green-400",
