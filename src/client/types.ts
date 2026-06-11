@@ -83,8 +83,9 @@ export interface MovieInCommon {
   film_slug: string;
   user1_rating: number;
   user2_rating: number;
-  year?: number;
-  letterboxd_url?: string;
+  poster: string | null;
+  year: number | null;
+  letterboxd_url: string | null;
 }
 
 export interface MoviesInCommonData {

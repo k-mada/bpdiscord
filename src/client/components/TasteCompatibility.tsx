@@ -45,45 +45,64 @@ function formatRating(r: number): string {
 interface AnchorFilmProps {
   film: MovieInCommon;
   label: string;
-  emoji: string;
+  user1Name: string;
+  user2Name: string;
 }
 
-const AnchorFilm = ({ film, label, emoji }: AnchorFilmProps) => {
-  const titleContent = (
-    <>
-      {film.title}
-      {film.year !== undefined && (
-        <span className="text-letterboxd-text-muted font-normal">
-          {" "}
-          ({film.year})
-        </span>
-      )}
-    </>
-  );
+const AnchorFilm = ({ film, label, user1Name, user2Name }: AnchorFilmProps) => {
+  // Letterboxd CDN URL embeds the requested dimensions. Rewrite the default
+  // 230x345 to a smaller 150x225 — same ratio, less bandwidth, plenty of
+  // resolution at the ~120px display width. Same trick MovieList uses.
+  const posterUrl = film.poster?.replace("0-230-0-345", "0-150-0-225") ?? null;
+  const href =
+    film.letterboxd_url ?? `https://letterboxd.com/film/${film.film_slug}`;
 
   return (
-    <div className="flex items-baseline justify-between gap-3">
-      <div className="text-sm min-w-0">
-        <span className="text-letterboxd-text-muted">
-          {emoji} {label}:
-        </span>{" "}
-        {film.letterboxd_url ? (
-          <a
-            href={film.letterboxd_url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-letterboxd-text-primary hover:text-letterboxd-accent font-medium truncate"
-          >
-            {titleContent}
-          </a>
-        ) : (
-          <span className="text-letterboxd-text-primary font-medium">
-            {titleContent}
-          </span>
-        )}
+    <div className="flex flex-col items-center text-center w-[120px]">
+      <div className="text-sm font-semibold text-letterboxd-text-primary mb-2">
+        {label}
       </div>
-      <div className="text-sm text-letterboxd-text-primary font-medium whitespace-nowrap tabular-nums">
-        {formatRating(film.user1_rating)}/{formatRating(film.user2_rating)}
+
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block w-[120px] h-[180px]"
+      >
+        {posterUrl ? (
+          <img
+            src={posterUrl}
+            alt={film.title}
+            className="w-full h-full object-cover rounded border border-letterboxd-border"
+          />
+        ) : (
+          // Fallback for films where the worker hasn't filled poster yet.
+          <div className="flex w-full h-full items-center justify-center bg-letterboxd-bg-primary border border-letterboxd-border rounded p-2">
+            <div className="text-xs text-letterboxd-text-primary font-medium">
+              {film.title}
+              {film.year !== null && (
+                <div className="text-letterboxd-text-muted mt-1">
+                  ({film.year})
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </a>
+
+      <div className="mt-3 text-xs text-letterboxd-text-secondary space-y-0.5">
+        <div>
+          <span className="text-letterboxd-text-muted">{user1Name}:</span>{" "}
+          <span className="text-letterboxd-text-primary font-medium tabular-nums">
+            {formatRating(film.user1_rating)}
+          </span>
+        </div>
+        <div>
+          <span className="text-letterboxd-text-muted">{user2Name}:</span>{" "}
+          <span className="text-letterboxd-text-primary font-medium tabular-nums">
+            {formatRating(film.user2_rating)}
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -195,13 +214,25 @@ const TasteCompatibility = ({
       </div>
 
       {hasAnchors && (
-        <div className="mt-4 pt-4 border-t border-letterboxd-border space-y-2">
-          {darling && (
-            <AnchorFilm film={darling} label="Shared darling" emoji="🌟" />
-          )}
-          {fight && (
-            <AnchorFilm film={fight} label="Biggest fight" emoji="⚔️" />
-          )}
+        <div className="mt-5 pt-5 border-t border-letterboxd-border">
+          <div className="flex justify-center gap-6 sm:gap-10">
+            {darling && (
+              <AnchorFilm
+                film={darling}
+                label="Shared darling"
+                user1Name={user1Data.displayName || user1Data.username}
+                user2Name={user2Data.displayName || user2Data.username}
+              />
+            )}
+            {fight && (
+              <AnchorFilm
+                film={fight}
+                label="Biggest fight"
+                user1Name={user1Data.displayName || user1Data.username}
+                user2Name={user2Data.displayName || user2Data.username}
+              />
+            )}
+          </div>
         </div>
       )}
 
