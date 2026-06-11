@@ -1,183 +1,137 @@
 import React from "react";
+import {
+  computeCompatibility,
+  getPearsonLabel,
+  getPearsonZone,
+  formatSignedPercent,
+  pearsonToBarPosition,
+  MIN_RELIABLE_SAMPLE,
+  type PearsonZone,
+} from "../lib/ratingsCompatibility";
+import type { MovieInCommon } from "../types";
+import Tooltip from "./Tooltip";
 
-interface Rating {
-  rating: number;
-  count: number;
-}
-
-interface UserData {
+interface UserHeader {
   username: string;
   displayName?: string;
-  ratings: Rating[];
-}
-
-interface MovieInCommon {
-  title: string;
-  user1_rating: number;
-  user2_rating: number;
 }
 
 interface TasteCompatibilityProps {
-  user1Data: UserData | null;
-  user2Data: UserData | null;
+  user1Data: UserHeader | null;
+  user2Data: UserHeader | null;
   moviesInCommon: MovieInCommon[];
 }
+
+// Layman explanation. Deliberately avoids the words "correlation," "Pearson,"
+// "deviation," etc. The Tooltip component lowercases its content, so written
+// as a continuous sentence.
+const TOOLTIP_EXPLANATION =
+  "when one of you rates a film higher than your usual, the other tends to do the same — that's alignment. when you react in opposite directions — one loves it, the other hates it — that's opposition. independent means your reactions don't predict each other; you watch the same films but on different wavelengths.";
+
+const ZONE_MARKER_COLOR: Record<PearsonZone, string> = {
+  aligned: "bg-green-400",
+  opposite: "bg-red-400",
+  independent: "bg-letterboxd-text-muted",
+};
 
 const TasteCompatibility = ({
   user1Data,
   user2Data,
   moviesInCommon,
 }: TasteCompatibilityProps) => {
-  const calculateCosineSimilarity = (movies: MovieInCommon[]): {
-    similarity: number;
-    ratedMoviesCount: number;
-    totalMoviesCount: number;
-    imputation: 'none' | 'weighted';
-    weightedDataPoints: number;
-  } => {
-    if (movies.length === 0) {
-      return { similarity: 0, ratedMoviesCount: 0, totalMoviesCount: 0, imputation: 'none', weightedDataPoints: 0 };
-    }
-
-    // Separate movies by rating status
-    const ratedByBoth = movies.filter(m => m.user1_rating > 0 && m.user2_rating > 0);
-    const ratedByUser1Only = movies.filter(m => m.user1_rating > 0 && m.user2_rating === 0);
-    const ratedByUser2Only = movies.filter(m => m.user1_rating === 0 && m.user2_rating > 0);
-
-    // If no movies rated by both users, fall back to basic calculation
-    if (ratedByBoth.length === 0) {
-      return { similarity: 0, ratedMoviesCount: 0, totalMoviesCount: movies.length, imputation: 'none', weightedDataPoints: 0 };
-    }
-
-    // Calculate average ratings for imputation
-    const user1Ratings = ratedByBoth.map(m => m.user1_rating).concat(ratedByUser1Only.map(m => m.user1_rating));
-    const user2Ratings = ratedByBoth.map(m => m.user2_rating).concat(ratedByUser2Only.map(m => m.user2_rating));
-
-    const user1Average = user1Ratings.reduce((sum, r) => sum + r, 0) / user1Ratings.length;
-    const user2Average = user2Ratings.reduce((sum, r) => sum + r, 0) / user2Ratings.length;
-
-    // Confidence-based weights
-    const WEIGHT_ACTUAL = 1.0;      // Full confidence for actual ratings
-    const WEIGHT_IMPUTED = 0.6;     // Reduced confidence for imputed ratings
-
-    // Create comprehensive rating vectors with imputation
-    const vector1: number[] = [];
-    const vector2: number[] = [];
-    const weights: number[] = [];
-
-    // Add movies rated by both users (full confidence)
-    ratedByBoth.forEach(movie => {
-      vector1.push(movie.user1_rating);
-      vector2.push(movie.user2_rating);
-      weights.push(WEIGHT_ACTUAL);
-    });
-
-    // Add movies rated by user1 only (impute user2's rating with reduced confidence)
-    ratedByUser1Only.forEach(movie => {
-      vector1.push(movie.user1_rating);
-      vector2.push(user2Average); // Imputation
-      weights.push(WEIGHT_IMPUTED);
-    });
-
-    // Add movies rated by user2 only (impute user1's rating with reduced confidence)
-    ratedByUser2Only.forEach(movie => {
-      vector1.push(user1Average); // Imputation
-      vector2.push(movie.user2_rating);
-      weights.push(WEIGHT_IMPUTED);
-    });
-
-    // Calculate weighted cosine similarity
-    let weightedDotProduct = 0;
-    let weightedNorm1 = 0;
-    let weightedNorm2 = 0;
-    let totalWeight = 0;
-
-    for (let i = 0; i < vector1.length; i++) {
-      const weight = weights[i];
-      weightedDotProduct += weight * vector1[i] * vector2[i];
-      weightedNorm1 += weight * vector1[i] * vector1[i];
-      weightedNorm2 += weight * vector2[i] * vector2[i];
-      totalWeight += weight;
-    }
-
-    if (weightedNorm1 === 0 || weightedNorm2 === 0 || totalWeight === 0) {
-      return {
-        similarity: 0,
-        ratedMoviesCount: ratedByBoth.length,
-        totalMoviesCount: movies.length,
-        imputation: 'weighted',
-        weightedDataPoints: totalWeight
-      };
-    }
-
-    const similarity = weightedDotProduct / (Math.sqrt(weightedNorm1) * Math.sqrt(weightedNorm2));
-
-    return {
-      similarity,
-      ratedMoviesCount: ratedByBoth.length,
-      totalMoviesCount: movies.length,
-      imputation: ratedByUser1Only.length > 0 || ratedByUser2Only.length > 0 ? 'weighted' : 'none',
-      weightedDataPoints: Math.round(totalWeight * 10) / 10 // Round to 1 decimal place
-    };
-  };
-
-  const getSimilarityLabel = (similarity: number): string => {
-    if (similarity >= 0.9) return "Nearly Identical Taste";
-    if (similarity >= 0.75) return "Very Similar Taste";
-    if (similarity >= 0.5) return "Somewhat Similar";
-    if (similarity >= 0.25) return "Different Taste";
-    return "Opposite Taste";
-  };
-
   if (!user1Data || !user2Data || !moviesInCommon.length) {
     return null;
   }
 
-  const result = calculateCosineSimilarity(moviesInCommon);
-  const percentage = Math.round(result.similarity * 100);
-  const label = getSimilarityLabel(result.similarity);
+  const { pearson, mad, sampleSize } = computeCompatibility(moviesInCommon);
+  const lowSample = sampleSize > 0 && sampleSize < MIN_RELIABLE_SAMPLE;
+
+  const markerPositionPct =
+    pearson === null ? 50 : pearsonToBarPosition(pearson);
+  const markerColorClass =
+    pearson === null
+      ? ZONE_MARKER_COLOR.independent
+      : ZONE_MARKER_COLOR[getPearsonZone(pearson)];
 
   return (
     <div className="card">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex-1">
-          <h4 className="text-xl font-semibold text-letterboxd-text-primary mb-2 flex items-center gap-2">
-            🎯 Taste Compatibility
-          </h4>
-          <div className="text-sm text-letterboxd-text-secondary">
-            {user1Data.displayName || user1Data.username} vs {user2Data.displayName || user2Data.username}
-          </div>
-        </div>
-
-        <div className="flex-1 max-w-md">
-          {/* Similarity Bar */}
-          <div className="mb-2">
-            <div className="flex items-center gap-3">
-              <div className="flex-1 bg-letterboxd-bg-primary rounded-full h-3 overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-letterboxd-accent to-green-400 transition-all duration-500"
-                  style={{ width: `${percentage}%` }}
-                />
-              </div>
-              <span className="text-lg font-bold text-letterboxd-text-primary min-w-[45px]">
-                {percentage}%
-              </span>
-            </div>
-          </div>
-
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-            <div className="text-sm font-medium text-letterboxd-accent">
-              "{label}"
-            </div>
-            <div className="text-xs text-letterboxd-text-muted">
-              Based on {result.ratedMoviesCount} movies rated by both
-              {result.imputation === 'weighted' && result.totalMoviesCount > result.ratedMoviesCount &&
-                ` (+${result.totalMoviesCount - result.ratedMoviesCount} additional movies)`
-              }
-            </div>
-          </div>
+      {/* Header row */}
+      <div className="mb-4">
+        <h4 className="text-xl font-semibold text-letterboxd-text-primary flex items-center gap-2">
+          🎯 Taste Compatibility
+        </h4>
+        <div className="text-sm text-letterboxd-text-secondary mt-1">
+          {user1Data.displayName || user1Data.username} vs{" "}
+          {user2Data.displayName || user2Data.username}
         </div>
       </div>
+
+      {/* Zone labels */}
+      <div className="grid grid-cols-3 text-xs text-letterboxd-text-muted mb-1.5">
+        <div className="text-left">Opposite</div>
+        <div className="text-center">Independent</div>
+        <div className="text-right">Aligned</div>
+      </div>
+
+      {/* Spectrum bar with tick marker.
+        * role=img (not progressbar): this is a position-on-a-continuum
+        * visualization, not progress toward a goal. aria-label carries
+        * the full description for screen readers.
+        */}
+      <div
+        className="relative h-2 rounded-full bg-gradient-to-r from-red-400/15 via-letterboxd-text-muted/20 to-green-400/15"
+        role="img"
+        aria-label={
+          pearson === null
+            ? "Taste compatibility: not enough rating variation to compute"
+            : `Taste compatibility: ${formatSignedPercent(pearson)}, ${getPearsonLabel(pearson)}`
+        }
+      >
+        {/* Tick marks at the zone boundaries (1/3 and 2/3) */}
+        <div className="absolute top-0 bottom-0 left-1/3 w-px bg-letterboxd-text-muted/30" />
+        <div className="absolute top-0 bottom-0 left-2/3 w-px bg-letterboxd-text-muted/30" />
+        {/* Marker. translate-x-1/2 centers it on its left edge regardless
+          * of its width — no magic px offset to keep in sync. */}
+        {pearson !== null && (
+          <div
+            className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-5 rounded-sm transition-all duration-500 ${markerColorClass}`}
+            style={{ left: `${markerPositionPct}%` }}
+          />
+        )}
+      </div>
+
+      {/* Headline number + label */}
+      <div className="mt-4 text-center">
+        <div className="text-3xl font-bold text-letterboxd-text-primary leading-none">
+          {pearson === null ? "—" : formatSignedPercent(pearson)}
+        </div>
+        <div className="flex items-center justify-center gap-1.5 mt-1">
+          <div className="text-sm font-medium text-letterboxd-accent">
+            {pearson === null
+              ? "Not enough rating variation"
+              : getPearsonLabel(pearson)}
+          </div>
+          <Tooltip content={TOOLTIP_EXPLANATION}>
+            <span
+              className="text-letterboxd-text-muted hover:text-letterboxd-text-primary cursor-help text-sm"
+              aria-label="What does this mean?"
+              tabIndex={0}
+            >
+              ⓘ
+            </span>
+          </Tooltip>
+        </div>
+        <div className="text-xs text-letterboxd-text-muted mt-2">
+          {sampleSize} films in common
+          {mad !== null && ` · ${mad.toFixed(2)}★ apart on average`}
+        </div>
+      </div>
+
+      {lowSample && (
+        <div className="text-xs text-amber-400 mt-3 text-center">
+          Small sample — interpret with caution.
+        </div>
+      )}
     </div>
   );
 };

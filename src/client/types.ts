@@ -96,13 +96,6 @@ export interface MoviesInCommonData {
   correlationCoefficient?: number;
 }
 
-export interface TasteCompatibility {
-  score: number;
-  description: string;
-  commonMovies: number;
-  averageRatingDifference: number;
-}
-
 // ===========================
 // MFL Types
 // ===========================
@@ -134,13 +127,6 @@ export interface RatingDistributionHistogramProps {
   distribution: Rating[];
   className?: string;
   showTooltips?: boolean;
-}
-
-export interface TasteCompatibilityProps {
-  user1Data: UserData;
-  user2Data: UserData;
-  moviesInCommonData: MoviesInCommonData | null;
-  className?: string;
 }
 
 export interface TooltipProps {
