@@ -57,8 +57,8 @@ const AnchorFilm = ({ film, label, user1Name, user2Name }: AnchorFilmProps) => {
     film.letterboxd_url ?? `https://letterboxd.com/film/${film.film_slug}`;
 
   return (
-    <div className="flex flex-col items-center w-full max-w-[230px]">
-      <div className="font-letterboxdBody text-xl font-semibold text-letterboxd-text-primary mb-3 text-center">
+    <div className="flex flex-col items-center w-[120px]">
+      <div className="font-letterboxdBody text-lg font-semibold text-letterboxd-text-primary mb-3 text-center">
         {label}
       </div>
 
@@ -76,10 +76,10 @@ const AnchorFilm = ({ film, label, user1Name, user2Name }: AnchorFilmProps) => {
           />
         ) : (
           // Title-text fallback for films where the Films row isn't yet
-          // backfilled. 2:3 aspect ratio so the column layout doesn't shift
+          // backfilled. 2:3 aspect ratio so the column doesn't shift
           // depending on which film qualified.
-          <div className="flex aspect-[2/3] w-full items-center justify-center bg-slate-700 border rounded-t-md border-slate-500 border-b-0 p-3 font-letterboxdBody">
-            <div className="text-center text-letterboxd-text-primary">
+          <div className="flex aspect-[2/3] w-full items-center justify-center bg-slate-700 border rounded-t-md border-slate-500 border-b-0 p-2 font-letterboxdBody">
+            <div className="text-center text-xs text-letterboxd-text-primary">
               {film.title}
               {film.year !== null && (
                 <div className="text-letterboxd-text-muted mt-1">
@@ -91,14 +91,16 @@ const AnchorFilm = ({ film, label, user1Name, user2Name }: AnchorFilmProps) => {
         )}
       </a>
 
-      <div className="w-full p-2 text-center border rounded-b-md border-t-0 border-slate-500 bg-slate-800 font-letterboxdBody space-y-0.5">
-        <div className="truncate">
+      {/* Right-aligned text in a full-width box → ratings naturally stack
+        * vertically on the right edge regardless of username length. */}
+      <div className="w-full p-2 text-right border rounded-b-md border-t-0 border-slate-500 bg-slate-800 font-letterboxdBody text-sm space-y-0.5">
+        <div>
           <span className="text-letterboxd-text-muted">{user1Name}:</span>{" "}
           <span className="text-letterboxd-text-primary font-semibold tabular-nums">
             {formatRating(film.user1_rating)}
           </span>
         </div>
-        <div className="truncate">
+        <div>
           <span className="text-letterboxd-text-muted">{user2Name}:</span>{" "}
           <span className="text-letterboxd-text-primary font-semibold tabular-nums">
             {formatRating(film.user2_rating)}
