@@ -13,7 +13,8 @@
     "test:lite": "vitest run",
     "test:watch": "vitest",
     "seed:graph": "ts-node-dev --transpile-only --exit-child --no-notify scripts/seedActorGraph.ts",
-    "seed:retry": "ts-node-dev --transpile-only --exit-child --no-notify scripts/retrySeedFailures.ts"
+    "seed:retry": "ts-node-dev --transpile-only --exit-child --no-notify scripts/retrySeedFailures.ts",
+    "backfill:film-years": "ts-node-dev --transpile-only --exit-child --no-notify scripts/backfillFilmYears.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.38.0",
