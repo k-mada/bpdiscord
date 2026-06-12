@@ -6,6 +6,7 @@ import { useComparison } from "../hooks/useComparison";
 import { useScrapeJob } from "../hooks/useScrapeJob";
 import JobProgress from "./JobProgress";
 import RatingDistributionHistogram from "./RatingDistributionHistogram";
+import CompatibilityExtremes from "./CompatibilityExtremes";
 interface Rating {
   rating: number;
   count: number;
@@ -177,12 +178,15 @@ const ScraperInterface = () => {
       {job && <JobProgress job={job} />}
       {/* Snapshot of the user's current ratings, read from the database. */}
       {userRatings && (
-        <div className="m-auto">
-          <RatingDistributionHistogram
-            distribution={userRatings.ratings}
-            size="md"
-          />
-        </div>
+        <>
+          <div className="m-auto">
+            <RatingDistributionHistogram
+              distribution={userRatings.ratings}
+              size="md"
+            />
+          </div>
+          <CompatibilityExtremes username={userRatings.username} />
+        </>
       )}
     </div>
   );
