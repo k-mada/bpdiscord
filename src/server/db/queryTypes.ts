@@ -24,6 +24,16 @@ export interface MissingFilmsRow extends QueryRow {
   film_slugs: string[] | null;
 }
 
+// Result from taste_compatibility_extremes() function
+export interface CompatibilityExtremeRow extends QueryRow {
+  bucket: "most_compatible" | "least_compatible";
+  username: string;
+  display_name: string | null;
+  pearson: number;
+  sample_size: number;
+  mad: number;
+}
+
 /**
  * Helper to safely convert PostgreSQL numeric/bigint strings to numbers
  */

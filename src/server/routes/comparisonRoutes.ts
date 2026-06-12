@@ -5,6 +5,7 @@ import {
   compareUsers,
   getMoviesInCommon,
   getMovieSwap,
+  getCompatibilityExtremes,
 } from "../controllers/comparisonController";
 import {
   dbGetHaterRankings,
@@ -18,6 +19,7 @@ router.get("/usernames", getAllUsernames);
 router.post("/user-ratings", getUserRatings);
 router.post("/compare", compareUsers);
 router.post("/movies-in-common", getMoviesInCommon);
+router.get("/extremes/:username", getCompatibilityExtremes);
 
 // Public hater rankings endpoint
 router.get("/hater-rankings", async (req, res): Promise<void> => {

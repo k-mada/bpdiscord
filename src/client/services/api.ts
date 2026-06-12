@@ -17,6 +17,7 @@ import {
   AccountView,
   AccountUpdateRequest,
   AccountUpdateResponse,
+  CompatibilityExtremesData,
 } from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
@@ -111,6 +112,16 @@ class ApiService {
       method: "POST",
       body: JSON.stringify({ user1, user2 }),
     });
+  }
+
+  async getCompatibilityExtremes(
+    username: string,
+    signal?: AbortSignal,
+  ): Promise<ApiResponse<CompatibilityExtremesData>> {
+    return this.request<CompatibilityExtremesData>(
+      `/comparison/extremes/${encodeURIComponent(username)}`,
+      signal ? { signal } : {},
+    );
   }
 
   // Hater rankings endpoint
