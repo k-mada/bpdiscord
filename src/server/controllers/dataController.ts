@@ -855,6 +855,7 @@ export async function dbGetMoviesInCommon(
     poster: string | null;
     year: number | null;
     letterboxd_url: string | null;
+    total_ratings: number;
   }>;
   count?: number;
   error?: string;
@@ -883,6 +884,11 @@ export async function dbGetMoviesInCommon(
     // LEFT JOIN with Films so we can surface poster/year/url to the UI.
     // Films row may not exist for slugs the worker hasn't backfilled yet —
     // null fallbacks keep the row in the result.
+    //
+    // total_ratings is a per-film popularity signal used by the client to
+    // break ties between equally-scored darling/fight candidates (prefer
+    // the less-rated, more distinctive film). The correlated subquery is
+    // cheap thanks to idx_user_films_film_slug.
     const result = await db
       .select({
         title: uf1.title,
@@ -892,6 +898,11 @@ export async function dbGetMoviesInCommon(
         poster: films.poster,
         year: films.releaseYear,
         letterboxd_url: films.url,
+        total_ratings: sql<number>`(
+          SELECT COUNT(*)::int FROM "UserFilms" uf
+          WHERE uf.film_slug = ${uf1.filmSlug}
+            AND uf.rating IS NOT NULL AND uf.rating > 0
+        )`,
       })
       .from(uf1)
       .innerJoin(uf2, eq(uf1.filmSlug, uf2.filmSlug))
@@ -906,6 +917,7 @@ export async function dbGetMoviesInCommon(
       poster: r.poster ?? null,
       year: r.year ?? null,
       letterboxd_url: r.letterboxd_url ?? null,
+      total_ratings: r.total_ratings ?? 0,
     }));
   });
 }

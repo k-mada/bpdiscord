@@ -86,6 +86,10 @@ export interface MovieInCommon {
   poster: string | null;
   year: number | null;
   letterboxd_url: string | null;
+  // Count of distinct users in the DB who have rated this film (rating > 0).
+  // Used as a "distinctiveness" tiebreaker in findSharedDarling /
+  // findBiggestFight — lower = more distinctive to this pair.
+  total_ratings: number;
 }
 
 export interface MoviesInCommonData {
