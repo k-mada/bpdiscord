@@ -263,6 +263,27 @@ describe("findSharedDarling", () => {
     const result = findSharedDarling(films);
     expect(result?.slug).toBe("darling");
   });
+
+  it("ties on score: prefers film with fewer total_ratings (more distinctive)", () => {
+    interface ScoredFilm extends RatedFilm {
+      title: string;
+      total_ratings: number;
+    }
+    const films: ScoredFilm[] = [
+      { title: "Crowd-pleaser", user1_rating: 5, user2_rating: 5, total_ratings: 1000 },
+      { title: "Hidden gem",    user1_rating: 5, user2_rating: 5, total_ratings: 12 },
+      { title: "Common fav",    user1_rating: 5, user2_rating: 5, total_ratings: 500 },
+    ];
+    expect(findSharedDarling(films)?.title).toBe("Hidden gem");
+  });
+
+  it("ties on score, no total_ratings: falls back to first-occurrence", () => {
+    const films = namedPair([
+      ["First", 5, 5],
+      ["Second", 5, 5],
+    ]);
+    expect(findSharedDarling(films)?.title).toBe("First");
+  });
 });
 
 describe("findBiggestFight", () => {
@@ -310,6 +331,18 @@ describe("findBiggestFight", () => {
       { title: "Fight", user1_rating: 5, user2_rating: 2 },
     ];
     expect(findBiggestFight(films)?.title).toBe("Fight");
+  });
+
+  it("ties on gap: prefers film with fewer total_ratings (more distinctive)", () => {
+    interface ScoredFilm extends RatedFilm {
+      title: string;
+      total_ratings: number;
+    }
+    const films: ScoredFilm[] = [
+      { title: "Popular fight", user1_rating: 5, user2_rating: 2, total_ratings: 800 },
+      { title: "Niche fight",   user1_rating: 5, user2_rating: 2, total_ratings: 20 },
+    ];
+    expect(findBiggestFight(films)?.title).toBe("Niche fight");
   });
 });
 

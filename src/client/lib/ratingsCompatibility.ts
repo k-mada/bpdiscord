@@ -165,6 +165,15 @@ function isValidRatingPair(f: RatedFilm): boolean {
   );
 }
 
+// Tiebreaker hook: when two candidates score equally, prefer the one
+// more distinctive to this pair — i.e., rated by fewer users overall.
+// Without this, ties fall to first-occurrence in the API's alphabetical
+// ordering, which surfaces the same crowd-pleasers (2001, All that Jazz,
+// …) across many different pair comparisons.
+function distinctiveness(f: RatedFilm & { total_ratings?: number }): number {
+  return f.total_ratings ?? Infinity;
+}
+
 /**
  * The film both users love most, tightest agreement preferred. Picks the
  * film maximizing `(avg_rating) - (rating_gap)` over the both-rated set
@@ -174,8 +183,9 @@ function isValidRatingPair(f: RatedFilm): boolean {
  * The score balances "rated high" against "rated similarly" — a 5/5 wins
  * over a 5/3.5 (same average, smaller gap).
  *
- * Tiebreak is the first-occurrence order in the input array (deterministic
- * given a stable input from the API).
+ * Ties on score are broken by preferring the less-rated (more distinctive)
+ * film. Films without `total_ratings` populated fall back to first-occurrence
+ * order in the input array.
  */
 export function findSharedDarling<T extends RatedFilm>(films: T[]): T | null {
   const candidates = films.filter(
@@ -190,9 +200,13 @@ export function findSharedDarling<T extends RatedFilm>(films: T[]): T | null {
     (f.user1_rating + f.user2_rating) / 2 -
     Math.abs(f.user1_rating - f.user2_rating);
 
-  return candidates.reduce((best, current) =>
-    score(current) > score(best) ? current : best,
-  );
+  return candidates.reduce((best, current) => {
+    const sBest = score(best);
+    const sCurrent = score(current);
+    if (sCurrent > sBest) return current;
+    if (sCurrent < sBest) return best;
+    return distinctiveness(current) < distinctiveness(best) ? current : best;
+  });
 }
 
 /**
@@ -200,7 +214,9 @@ export function findSharedDarling<T extends RatedFilm>(films: T[]): T | null {
  * (below that it's just rounding, not a fight). Returns null if no film
  * qualifies.
  *
- * Tiebreak is the first-occurrence order in the input array.
+ * Ties on gap are broken by preferring the less-rated (more distinctive)
+ * film. Films without `total_ratings` populated fall back to first-occurrence
+ * order in the input array.
  */
 export function findBiggestFight<T extends RatedFilm>(films: T[]): T | null {
   const candidates = films.filter(
@@ -210,10 +226,14 @@ export function findBiggestFight<T extends RatedFilm>(films: T[]): T | null {
   );
   if (candidates.length === 0) return null;
 
-  return candidates.reduce((best, current) =>
-    Math.abs(current.user1_rating - current.user2_rating) >
-    Math.abs(best.user1_rating - best.user2_rating)
-      ? current
-      : best,
-  );
+  const gap = (f: RatedFilm): number =>
+    Math.abs(f.user1_rating - f.user2_rating);
+
+  return candidates.reduce((best, current) => {
+    const gBest = gap(best);
+    const gCurrent = gap(current);
+    if (gCurrent > gBest) return current;
+    if (gCurrent < gBest) return best;
+    return distinctiveness(current) < distinctiveness(best) ? current : best;
+  });
 }
