@@ -328,3 +328,16 @@ export interface AccountUpdateRequest {
 export interface AccountUpdateResponse extends AccountView {
   requiresReauth?: boolean;
 }
+
+export interface CompatibilityExtreme {
+  username: string;
+  displayName: string | null;
+  pearson: number;
+  sampleSize: number;
+  mad: number;
+}
+
+export interface CompatibilityExtremesData {
+  mostCompatible: CompatibilityExtreme[];
+  leastCompatible: CompatibilityExtreme[];
+}

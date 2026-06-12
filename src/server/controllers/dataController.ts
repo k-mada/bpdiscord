@@ -16,7 +16,12 @@ import {
   dbMutation,
   dbTransaction,
 } from "../db/utils";
-import { HaterRankingRow, MissingFilmsRow, toNumber } from "../db/queryTypes";
+import {
+  HaterRankingRow,
+  MissingFilmsRow,
+  CompatibilityExtremeRow,
+  toNumber,
+} from "../db/queryTypes";
 
 // ===========================
 // User Ratings Management
@@ -1008,6 +1013,51 @@ export async function dbGetMissingFilms(): Promise<{
     `);
 
     return result[0]?.film_slugs ?? [];
+  });
+}
+
+// ===========================
+// Taste compatibility
+// ===========================
+
+export interface CompatibilityExtreme {
+  username: string;
+  displayName: string | null;
+  pearson: number;
+  sampleSize: number;
+  mad: number;
+}
+
+export async function dbGetCompatibilityExtremes(username: string): Promise<{
+  success: boolean;
+  data?: {
+    mostCompatible: CompatibilityExtreme[];
+    leastCompatible: CompatibilityExtreme[];
+  };
+  error?: string;
+}> {
+  return dbOperation(async () => {
+    const rows = await db.execute<CompatibilityExtremeRow>(sql`
+      SELECT bucket, username, display_name, pearson, sample_size, mad
+      FROM taste_compatibility_extremes(${username})
+    `);
+
+    const toRow = (r: CompatibilityExtremeRow): CompatibilityExtreme => ({
+      username: r.username,
+      displayName: r.display_name,
+      pearson: r.pearson,
+      sampleSize: r.sample_size,
+      mad: r.mad,
+    });
+
+    return {
+      mostCompatible: rows
+        .filter((r) => r.bucket === "most_compatible")
+        .map(toRow),
+      leastCompatible: rows
+        .filter((r) => r.bucket === "least_compatible")
+        .map(toRow),
+    };
   });
 }
 

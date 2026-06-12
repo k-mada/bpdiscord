@@ -9,6 +9,7 @@
 
 - Use ES modules (import/export) syntax, not commonJS (require)
 - Destructure imports when possible (e.g. import { foo } from 'bar')
+- Async work inside `useEffect`: declare a named inner function and call it (not an IIFE). Pass `AbortSignal` from a controller created in the effect, abort unconditionally in the cleanup, and ignore `AbortError` in the catch. Named functions show in stack traces; AbortController cancels the actual request instead of just discarding the response. See `src/client/hooks/useCompatibilityExtremes.ts` for the canonical shape. Extend `apiService` methods with an optional `signal?: AbortSignal` parameter as you touch them — don't retrofit all at once.
 
 # BPDiscord
 

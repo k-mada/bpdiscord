@@ -6,6 +6,7 @@ import {
   dbGetUserProfile,
   dbGetMoviesInCommon,
   dbGetMovieSwap,
+  dbGetCompatibilityExtremes,
 } from "./dataController";
 
 // export class ComparisonController {
@@ -217,6 +218,44 @@ export async function getMoviesInCommon(
     console.error("Get movies in common error:", error);
     const response: ApiResponse = {
       error: `Failed to get movies in common: ${
+        error instanceof Error ? error.message : "Unknown error"
+      }`,
+    };
+    res.status(500).json(response);
+  }
+}
+
+export async function getCompatibilityExtremes(
+  req: Request,
+  res: Response
+): Promise<void> {
+  try {
+    const { username } = req.params;
+    if (!username) {
+      const response: ApiResponse = { error: "username is required" };
+      res.status(400).json(response);
+      return;
+    }
+
+    const result = await dbGetCompatibilityExtremes(username);
+
+    if (!result.success) {
+      const response: ApiResponse = {
+        error: result.error || "Failed to compute compatibility extremes",
+      };
+      res.status(500).json(response);
+      return;
+    }
+
+    const response: ApiResponse = {
+      message: "Compatibility extremes retrieved successfully",
+      data: result.data,
+    };
+    res.json(response);
+  } catch (error) {
+    console.error("Get compatibility extremes error:", error);
+    const response: ApiResponse = {
+      error: `Failed to get compatibility extremes: ${
         error instanceof Error ? error.message : "Unknown error"
       }`,
     };
