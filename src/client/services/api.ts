@@ -49,6 +49,11 @@ class ApiService {
 
       return data;
     } catch (error) {
+      // Intentional cancellation via AbortController isn't a failure.
+      // Propagate it for the caller to handle, but don't shout in the log.
+      if (error instanceof DOMException && error.name === "AbortError") {
+        throw error;
+      }
       console.error("API request failed:", error);
       throw error;
     }
