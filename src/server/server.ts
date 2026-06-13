@@ -142,12 +142,26 @@ app.use((req: Request, res: Response): void => {
 });
 
 // Start server
-app.listen(PORT, (): void => {
+const server = app.listen(PORT, (): void => {
   console.log(
     `🚀 Secure TypeScript server running on http://localhost:${PORT}`,
   );
   console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
 });
+
+// Without this the HTTP server keeps the port bound on Ctrl+C, causing
+// EADDRINUSE on the next yarn dev. The DB pool's own shutdown handler in
+// db/index.ts handles its own cleanup; we just close the HTTP server here.
+// The 5s safety timer (.unref() so it doesn't keep the loop alive itself)
+// force-exits if server.close stalls on a hung connection.
+const shutdown = (signal: string): void => {
+  console.log(`\n${signal} received — closing HTTP server`);
+  server.close(() => process.exit(0));
+  setTimeout(() => process.exit(1), 5000).unref();
+};
+
+process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("SIGTERM", () => shutdown("SIGTERM"));
 
 export default app;
