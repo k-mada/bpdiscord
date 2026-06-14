@@ -120,8 +120,6 @@ const TasteCompatibility = ({
 
   const darling = findSharedDarling(moviesInCommon);
   const rawFight = findBiggestFight(moviesInCommon);
-  // Defensive: under current thresholds darling/fight can't share a film
-  // (max overlap gap is 1.5 < FIGHT_MIN_GAP), but kept in case thresholds shift.
   const fight =
     rawFight && darling && rawFight.film_slug === darling.film_slug
       ? null
