@@ -143,12 +143,16 @@ export function formatSignedPercent(value: number): string {
 
 /**
  * Minimum rating both users must give a film for it to qualify as a
- * "shared darling." Without this gate, a pair whose all-shared-films
- * sit at 2.5/2.5 would surface that as a "darling" — which reads
- * absurd. 3.5★ matches Letterboxd's "I liked it" threshold (above the
- * neutral midpoint).
+ * "shared darling." 3.5★ matches Letterboxd's "I liked it" threshold.
  */
 export const DARLING_MIN_RATING = 3.5;
+
+/**
+ * Maximum rating both users can give a film for it to qualify as a
+ * "shared hater." Mirror of DARLING_MIN_RATING — 2.0★ sits below the
+ * neutral midpoint (2.5★).
+ */
+export const HATER_MAX_RATING = 2.0;
 
 /**
  * Minimum rating gap for a film to qualify as a "biggest fight." Below
@@ -165,41 +169,21 @@ function isValidRatingPair(f: RatedFilm): boolean {
   );
 }
 
-// Tiebreaker hook: when two candidates score equally, prefer the one
-// more distinctive to this pair — i.e., rated by fewer users overall.
-// Without this, ties fall to first-occurrence in the API's alphabetical
-// ordering, which surfaces the same crowd-pleasers (2001, All that Jazz,
-// …) across many different pair comparisons.
+// Lower = rated by fewer users = more "this pair's" pick. Used to break
+// ties so popular films don't dominate via the API's alphabetical order.
 function distinctiveness(f: RatedFilm & { total_ratings?: number }): number {
   return f.total_ratings ?? Infinity;
 }
 
-/**
- * The film both users love most, tightest agreement preferred. Picks the
- * film maximizing `(avg_rating) - (rating_gap)` over the both-rated set
- * where both ratings are ≥ DARLING_MIN_RATING. Returns null if no film
- * qualifies (the pair has no shared "love").
- *
- * The score balances "rated high" against "rated similarly" — a 5/5 wins
- * over a 5/3.5 (same average, smaller gap).
- *
- * Ties on score are broken by preferring the less-rated (more distinctive)
- * film. Films without `total_ratings` populated fall back to first-occurrence
- * order in the input array.
- */
-export function findSharedDarling<T extends RatedFilm>(films: T[]): T | null {
-  const candidates = films.filter(
-    (f) =>
-      isValidRatingPair(f) &&
-      f.user1_rating >= DARLING_MIN_RATING &&
-      f.user2_rating >= DARLING_MIN_RATING,
-  );
+// Shared engine for all anchor finders: filter to candidates, pick the
+// one with the highest score, break ties by distinctiveness.
+function pickBestByScore<T extends RatedFilm>(
+  films: T[],
+  filter: (f: T) => boolean,
+  score: (f: T) => number,
+): T | null {
+  const candidates = films.filter(filter);
   if (candidates.length === 0) return null;
-
-  const score = (f: RatedFilm): number =>
-    (f.user1_rating + f.user2_rating) / 2 -
-    Math.abs(f.user1_rating - f.user2_rating);
-
   return candidates.reduce((best, current) => {
     const sBest = score(best);
     const sCurrent = score(current);
@@ -210,30 +194,51 @@ export function findSharedDarling<T extends RatedFilm>(films: T[]): T | null {
 }
 
 /**
- * The film both users disagree on most, restricted to gaps ≥ FIGHT_MIN_GAP
- * (below that it's just rounding, not a fight). Returns null if no film
- * qualifies.
- *
- * Ties on gap are broken by preferring the less-rated (more distinctive)
- * film. Films without `total_ratings` populated fall back to first-occurrence
- * order in the input array.
+ * The film both users love most, tightest agreement preferred. Maximizes
+ * `(avg) - gap` over films where both ratings ≥ DARLING_MIN_RATING. Ties
+ * broken by lower total_ratings.
+ */
+export function findSharedDarling<T extends RatedFilm>(films: T[]): T | null {
+  return pickBestByScore(
+    films,
+    (f) =>
+      isValidRatingPair(f) &&
+      f.user1_rating >= DARLING_MIN_RATING &&
+      f.user2_rating >= DARLING_MIN_RATING,
+    (f) =>
+      (f.user1_rating + f.user2_rating) / 2 -
+      Math.abs(f.user1_rating - f.user2_rating),
+  );
+}
+
+/**
+ * The film both users dislike most, tightest agreement preferred. Mirror
+ * of findSharedDarling: maximizes `-(avg) - gap` over films where both
+ * ratings ≤ HATER_MAX_RATING. Ties broken by lower total_ratings.
+ */
+export function findSharedHater<T extends RatedFilm>(films: T[]): T | null {
+  return pickBestByScore(
+    films,
+    (f) =>
+      isValidRatingPair(f) &&
+      f.user1_rating <= HATER_MAX_RATING &&
+      f.user2_rating <= HATER_MAX_RATING,
+    (f) =>
+      -((f.user1_rating + f.user2_rating) / 2) -
+      Math.abs(f.user1_rating - f.user2_rating),
+  );
+}
+
+/**
+ * The film both users disagree on most, restricted to gaps ≥ FIGHT_MIN_GAP.
+ * Ties broken by lower total_ratings.
  */
 export function findBiggestFight<T extends RatedFilm>(films: T[]): T | null {
-  const candidates = films.filter(
+  return pickBestByScore(
+    films,
     (f) =>
       isValidRatingPair(f) &&
       Math.abs(f.user1_rating - f.user2_rating) >= FIGHT_MIN_GAP,
+    (f) => Math.abs(f.user1_rating - f.user2_rating),
   );
-  if (candidates.length === 0) return null;
-
-  const gap = (f: RatedFilm): number =>
-    Math.abs(f.user1_rating - f.user2_rating);
-
-  return candidates.reduce((best, current) => {
-    const gBest = gap(best);
-    const gCurrent = gap(current);
-    if (gCurrent > gBest) return current;
-    if (gCurrent < gBest) return best;
-    return distinctiveness(current) < distinctiveness(best) ? current : best;
-  });
 }

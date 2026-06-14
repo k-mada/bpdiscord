@@ -6,6 +6,7 @@ import {
   pearsonToBarPosition,
   findSharedDarling,
   findBiggestFight,
+  findSharedHater,
   MIN_RELIABLE_SAMPLE,
   type PearsonZone,
 } from "../lib/ratingsCompatibility";
@@ -118,16 +119,13 @@ const TasteCompatibility = ({
   const lowSample = sampleSize > 0 && sampleSize < MIN_RELIABLE_SAMPLE;
 
   const darling = findSharedDarling(moviesInCommon);
-  // Edge case: the only "fight" candidate might also qualify as the darling
-  // (e.g. 5/3.5 — both above 3.5, gap exactly 2). Suppress the fight in
-  // that case; showing the same film twice with conflicting framing reads
-  // weirdly.
   const rawFight = findBiggestFight(moviesInCommon);
   const fight =
     rawFight && darling && rawFight.film_slug === darling.film_slug
       ? null
       : rawFight;
-  const hasAnchors = darling !== null || fight !== null;
+  const hater = findSharedHater(moviesInCommon);
+  const hasAnchors = darling !== null || fight !== null || hater !== null;
 
   const markerPositionPct =
     pearson === null ? 50 : pearsonToBarPosition(pearson);
@@ -225,6 +223,14 @@ const TasteCompatibility = ({
               <AnchorFilm
                 film={fight}
                 label="Biggest fight"
+                user1Name={user1Data.displayName || user1Data.username}
+                user2Name={user2Data.displayName || user2Data.username}
+              />
+            )}
+            {hater && (
+              <AnchorFilm
+                film={hater}
+                label="Haters in Arms"
                 user1Name={user1Data.displayName || user1Data.username}
                 user2Name={user2Data.displayName || user2Data.username}
               />
