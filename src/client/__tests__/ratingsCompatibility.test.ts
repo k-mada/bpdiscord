@@ -6,7 +6,9 @@ import {
   pearsonToBarPosition,
   findSharedDarling,
   findBiggestFight,
+  findSharedHater,
   DARLING_MIN_RATING,
+  HATER_MAX_RATING,
   FIGHT_MIN_GAP,
   MIN_RELIABLE_SAMPLE,
   type RatedFilm,
@@ -343,6 +345,85 @@ describe("findBiggestFight", () => {
       { title: "Niche fight",   user1_rating: 5, user2_rating: 2, total_ratings: 20 },
     ];
     expect(findBiggestFight(films)?.title).toBe("Niche fight");
+  });
+});
+
+describe("findSharedHater", () => {
+  it("picks the film both users dislike most, tightest agreement preferred", () => {
+    const films = namedPair([
+      ["Mild dislike", 2, 2],   // avg 2, gap 0
+      ["Worst",        0.5, 0.5], // avg 0.5, gap 0 — the real shared hate
+      ["Disagree low", 2, 0.5], // avg 1.25, gap 1.5
+    ]);
+    expect(findSharedHater(films)?.title).toBe("Worst");
+  });
+
+  it("prefers smaller gap when averages are equal", () => {
+    const films = namedPair([
+      ["Wider", 2, 0.5],   // avg 1.25, gap 1.5
+      ["Tight", 1.5, 1],   // avg 1.25, gap 0.5
+    ]);
+    expect(findSharedHater(films)?.title).toBe("Tight");
+  });
+
+  it("returns null when no film qualifies (no shared dislike)", () => {
+    const films = namedPair([
+      ["Liked",  4, 4],     // both above threshold
+      ["Split",  3, 1],     // user1 above threshold
+      ["Split2", 1, 3],     // user2 above threshold
+    ]);
+    expect(findSharedHater(films)).toBeNull();
+  });
+
+  it("returns null for empty input", () => {
+    expect(findSharedHater([])).toBeNull();
+  });
+
+  it("uses 2.0 as the qualifying threshold (mirror of DARLING_MIN_RATING)", () => {
+    const films = namedPair([
+      ["Boundary just above", 2.5, 1], // user1 above threshold
+      ["Boundary at",         2, 2],   // exactly at threshold, both qualify
+    ]);
+    expect(findSharedHater(films)?.title).toBe("Boundary at");
+    expect(HATER_MAX_RATING).toBe(2.0);
+  });
+
+  it("ignores non-finite ratings", () => {
+    const films: NamedFilm[] = [
+      { title: "Bad",  user1_rating: NaN, user2_rating: 1 },
+      { title: "Hate", user1_rating: 1,   user2_rating: 1 },
+    ];
+    expect(findSharedHater(films)?.title).toBe("Hate");
+  });
+
+  it("ignores films either user hasn't rated (rating 0)", () => {
+    const films = namedPair([
+      ["Unrated", 1, 0],   // user2 hasn't rated
+      ["Hate",    1, 1.5], // legitimate shared dislike
+    ]);
+    expect(findSharedHater(films)?.title).toBe("Hate");
+  });
+
+  it("preserves caller's full object shape (generic over T)", () => {
+    interface FilmWithSlug extends RatedFilm {
+      slug: string;
+    }
+    const films: FilmWithSlug[] = [
+      { slug: "hater", user1_rating: 1, user2_rating: 1 },
+    ];
+    expect(findSharedHater(films)?.slug).toBe("hater");
+  });
+
+  it("ties on score: prefers film with fewer total_ratings (more distinctive)", () => {
+    interface ScoredFilm extends RatedFilm {
+      title: string;
+      total_ratings: number;
+    }
+    const films: ScoredFilm[] = [
+      { title: "Popular flop", user1_rating: 1, user2_rating: 1, total_ratings: 1500 },
+      { title: "Niche flop",   user1_rating: 1, user2_rating: 1, total_ratings: 30 },
+    ];
+    expect(findSharedHater(films)?.title).toBe("Niche flop");
   });
 });
 
