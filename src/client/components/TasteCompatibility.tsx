@@ -73,7 +73,7 @@ const AnchorFilm = ({ film, label, user1Name, user2Name }: AnchorFilmProps) => {
           <img
             src={posterUrl}
             alt={film.title}
-            className="w-full border rounded-md border-slate-500"
+            className="aspect-[2/3] w-full rounded-md border border-slate-500 bg-slate-700 object-cover"
           />
         ) : (
           <div className="flex aspect-[2/3] w-full items-center justify-center bg-slate-700 border rounded-md border-slate-500 p-2">
