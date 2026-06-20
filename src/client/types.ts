@@ -357,16 +357,6 @@ export interface CurrentUser {
   displayName: string | null;
 }
 
-// A single film in a user's library (GET /api/film-users/:username/films).
-export interface UserFilm {
-  title: string;
-  film_slug: string;
-  rating: number;
-  liked: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
 // Aggregated profile + rating distribution (GET /api/film-users/:username/complete).
 export interface FilmUserComplete {
   username: string;

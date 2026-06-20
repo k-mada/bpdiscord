@@ -19,7 +19,6 @@ import {
   AccountUpdateResponse,
   CompatibilityExtremesData,
   CurrentUser,
-  UserFilm,
 } from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
@@ -125,10 +124,12 @@ class ApiService {
   async getMoviesInCommon(
     user1: string,
     user2: string,
+    signal?: AbortSignal,
   ): Promise<ApiResponse<any>> {
     return this.request<ApiResponse<any>>("/comparison/movies-in-common", {
       method: "POST",
       body: JSON.stringify({ user1, user2 }),
+      ...(signal ? { signal } : {}),
     });
   }
 
@@ -163,16 +164,6 @@ class ApiService {
 
   async getFilmUserComplete(username: string): Promise<ApiResponse<any>> {
     return this.request<ApiResponse<any>>(`/film-users/${username}/complete`);
-  }
-
-  async getFilmUserFilms(
-    username: string,
-    signal?: AbortSignal,
-  ): Promise<ApiResponse<UserFilm[]>> {
-    return this.request<UserFilm[]>(
-      `/film-users/${encodeURIComponent(username)}/films`,
-      signal ? { signal } : {},
-    );
   }
 
   async getFilmUsers(): Promise<

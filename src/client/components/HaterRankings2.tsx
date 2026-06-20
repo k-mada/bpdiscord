@@ -125,10 +125,7 @@ const HaterRankings2 = ({
                               : "text-letterboxd-text-primary"
                           }`}
                         >
-                          <a
-                            href={`https://letterboxd.com/${ranking.username}`}
-                            target="_blank"
-                          >
+                          <a href={`/user/${ranking.username}`}>
                             {ranking.displayName || ranking.username}
                           </a>
                         </span>

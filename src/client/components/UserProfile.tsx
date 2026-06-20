@@ -1,60 +1,15 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { apiService } from "../services/api";
-import type { FilmUserComplete, UserFilm } from "../types";
+import type { FilmUserComplete } from "../types";
 import RatingDistributionHistogram from "./RatingDistributionHistogram";
 import CompatibilityExtremes from "./CompatibilityExtremes";
+import CompareWithUser from "./CompareWithUser";
 import NotFound from "./NotFound";
-
-const TOP_FILMS_LIMIT = 12;
-
-const formatStars = (rating: number): string => {
-  const full = Math.floor(rating);
-  const half = rating % 1 !== 0;
-  return "★".repeat(full) + (half ? "½" : "");
-};
-
-const TopRatedFilms = ({ films }: { films: UserFilm[] }) => {
-  const top = [...films]
-    .filter((f) => f.rating > 0)
-    .sort((a, b) => b.rating - a.rating)
-    .slice(0, TOP_FILMS_LIMIT);
-
-  if (top.length === 0) return null;
-
-  return (
-    <div className="card">
-      <h4 className="text-xl font-semibold text-letterboxd-text-primary mb-4">
-        Top rated films
-      </h4>
-      <ul className="divide-y divide-letterboxd-border">
-        {top.map((film) => (
-          <li
-            key={film.film_slug}
-            className="flex items-baseline justify-between gap-3 py-1"
-          >
-            <a
-              href={`https://letterboxd.com/film/${film.film_slug}`}
-              target="_blank"
-              rel="noreferrer"
-              className="text-letterboxd-text-primary hover:text-letterboxd-accent truncate"
-            >
-              {film.title || film.film_slug}
-            </a>
-            <span className="text-letterboxd-pro text-sm whitespace-nowrap">
-              {formatStars(film.rating)}
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-};
 
 const UserProfile = () => {
   const { username = "" } = useParams();
   const [profile, setProfile] = useState<FilmUserComplete | null>(null);
-  const [films, setFilms] = useState<UserFilm[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
 
@@ -65,12 +20,7 @@ const UserProfile = () => {
     setLoading(true);
     setNotFound(false);
     setProfile(null);
-    setFilms([]);
 
-    // The profile (header + histogram + compatibility) is the required data —
-    // its resolution alone clears the loading state. Top-rated films load
-    // independently so a slow or failing /films request can't withhold (or
-    // permanently trap) the rest of the page.
     async function fetchProfile() {
       try {
         const completeRes = await apiService.getFilmUserComplete(username);
@@ -88,17 +38,7 @@ const UserProfile = () => {
       }
     }
 
-    async function fetchFilms() {
-      try {
-        const filmsRes = await apiService.getFilmUserFilms(username, ac.signal);
-        if (filmsRes.data) setFilms(filmsRes.data);
-      } catch (e) {
-        if (e instanceof DOMException && e.name === "AbortError") return;
-      }
-    }
-
     fetchProfile();
-    fetchFilms();
 
     return () => ac.abort();
   }, [username]);
@@ -134,7 +74,7 @@ const UserProfile = () => {
           rel="noreferrer"
           className="text-letterboxd-text-secondary hover:text-letterboxd-accent"
         >
-          @{profile.username}
+          Letterboxd: @{profile.username}
         </a>
         <p className="text-sm text-letterboxd-text-muted mt-2">
           {profile.totalRatings.toLocaleString()} ratings
@@ -150,7 +90,10 @@ const UserProfile = () => {
 
       <CompatibilityExtremes username={profile.username} />
 
-      <TopRatedFilms films={films} />
+      <CompareWithUser
+        baseUsername={profile.username}
+        baseDisplayName={profile.displayName ?? undefined}
+      />
     </div>
   );
 };
