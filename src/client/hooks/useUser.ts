@@ -2,43 +2,69 @@ import { useState, useEffect } from "react";
 import { apiService } from "../services/api";
 import type { CurrentUser } from "../types";
 
+// Dispatched after the auth token is written/cleared in localStorage so
+// same-tab listeners (useUser) re-sync immediately — the native "storage"
+// event only fires in *other* tabs. Login/signup/logout emit this.
+export const AUTH_CHANGE_EVENT = "authchange";
+
+export const emitAuthChange = () => {
+  window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
+};
+
 // Resolves the logged-in account's identity (including its claimed
-// lbusername) from GET /api/auth/me. Returns null when there's no token,
-// or when the token is rejected — callers treat that as "logged out".
+// lbusername) from GET /api/auth/me. Returns null when there's no token, or
+// when the token is rejected — callers treat that as "logged out". Re-syncs
+// on login/logout (same tab via AUTH_CHANGE_EVENT, other tabs via "storage").
 export const useUser = () => {
   const [user, setUser] = useState<CurrentUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      setUser(null);
+    let ac: AbortController | null = null;
+
+    async function load() {
+      ac?.abort();
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setUser(null);
+        setError(null);
+        setLoading(false);
+        return;
+      }
+
+      const controller = new AbortController();
+      ac = controller;
+      setLoading(true);
       setError(null);
-      setLoading(false);
-      return;
-    }
 
-    const ac = new AbortController();
-    setLoading(true);
-    setError(null);
-
-    async function fetchCurrentUser() {
       try {
-        const response = await apiService.getCurrentUser(token!, ac.signal);
+        const response = await apiService.getCurrentUser(token, controller.signal);
         if (response.data) setUser(response.data);
       } catch (e) {
         if (e instanceof DOMException && e.name === "AbortError") return;
         setUser(null);
         setError("Failed to load current user");
       } finally {
-        if (!ac.signal.aborted) setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     }
 
-    fetchCurrentUser();
+    // Other tabs only signal via "storage"; ignore writes to unrelated keys.
+    // e.key is null when the whole store is cleared.
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "token" || e.key === null) load();
+    };
 
-    return () => ac.abort();
+    load();
+
+    window.addEventListener(AUTH_CHANGE_EVENT, load);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      ac?.abort();
+      window.removeEventListener(AUTH_CHANGE_EVENT, load);
+      window.removeEventListener("storage", onStorage);
+    };
   }, []);
 
   return { user, loading, error };

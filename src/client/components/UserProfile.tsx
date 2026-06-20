@@ -67,6 +67,10 @@ const UserProfile = () => {
     setProfile(null);
     setFilms([]);
 
+    // The profile (header + histogram + compatibility) is the required data —
+    // its resolution alone clears the loading state. Top-rated films load
+    // independently so a slow or failing /films request can't withhold (or
+    // permanently trap) the rest of the page.
     async function fetchProfile() {
       try {
         const completeRes = await apiService.getFilmUserComplete(username);
@@ -76,18 +80,6 @@ const UserProfile = () => {
           return;
         }
         setProfile(completeRes.data as FilmUserComplete);
-
-        // Films power the top-rated widget. A failure here shouldn't sink the
-        // whole page — degrade to no top-rated section.
-        try {
-          const filmsRes = await apiService.getFilmUserFilms(
-            username,
-            ac.signal,
-          );
-          if (filmsRes.data) setFilms(filmsRes.data);
-        } catch (e) {
-          if (e instanceof DOMException && e.name === "AbortError") return;
-        }
       } catch (e) {
         if (e instanceof DOMException && e.name === "AbortError") return;
         setNotFound(true);
@@ -96,7 +88,17 @@ const UserProfile = () => {
       }
     }
 
+    async function fetchFilms() {
+      try {
+        const filmsRes = await apiService.getFilmUserFilms(username, ac.signal);
+        if (filmsRes.data) setFilms(filmsRes.data);
+      } catch (e) {
+        if (e instanceof DOMException && e.name === "AbortError") return;
+      }
+    }
+
     fetchProfile();
+    fetchFilms();
 
     return () => ac.abort();
   }, [username]);

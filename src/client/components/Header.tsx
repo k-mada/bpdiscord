@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Subheading } from "./Subheading";
-import { useUser } from "../hooks/useUser";
+import { useUser, emitAuthChange } from "../hooks/useUser";
 
 const Header = () => {
   const navigate = useNavigate();
@@ -25,6 +25,7 @@ const Header = () => {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    emitAuthChange();
     setIsAuthenticated(false);
     navigate("/login");
   };

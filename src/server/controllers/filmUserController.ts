@@ -263,7 +263,11 @@ export async function getFilmsByUser(
         message: "Films retrieved successfully",
         data: result.data,
       });
+      return;
     }
+    res.status(500).json({
+      error: result.error || "Failed to get films",
+    });
   } catch (error) {
     console.error("Error in getFilmsByUser:", error);
     res.status(500).json({
