@@ -85,7 +85,12 @@ const UserProfile = () => {
         <h4 className="text-xl font-semibold text-letterboxd-text-primary mb-4">
           Rating distribution
         </h4>
-        <RatingDistributionHistogram distribution={profile.ratings} size="md" />
+
+        <RatingDistributionHistogram
+          distribution={profile.ratings}
+          size="md"
+          className="justify-center"
+        />
       </div>
 
       <CompatibilityExtremes username={profile.username} />

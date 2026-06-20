@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useComparison } from "../hooks/useComparison";
 import { useMoviesInCommon } from "../hooks/useMoviesInCommon";
-import TasteCompatibility from "./TasteCompatibility";
+import TasteCompatibility, {
+  TasteCompatibilitySkeleton,
+} from "./TasteCompatibility";
 
 interface CompareWithUserProps {
   baseUsername: string;
@@ -53,11 +55,7 @@ const CompareWithUser = ({
         <div className="card text-red-400 text-sm">{error}</div>
       )}
 
-      {loading && (
-        <div className="card text-letterboxd-text-muted text-sm">
-          Loading comparison…
-        </div>
-      )}
+      {loading && <TasteCompatibilitySkeleton />}
 
       {!loading && data && data.moviesInCommon.length === 0 && (
         <div className="card text-letterboxd-text-muted text-sm text-center">
