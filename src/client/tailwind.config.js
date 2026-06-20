@@ -33,7 +33,6 @@ module.exports = {
           "bg-secondary": "#2a2d2f", // Slightly lighter background
           "bg-tertiary": "#2c3440", // Even lighter for cards/sections
           "text-primary": "#e0e0e0", // Main text color
-          "input-text": "#333333",
           "text-secondary": "#a0a0a0", // Secondary text
           "text-muted": "#808080", // Muted text
           accent: "#00ac1c", // Letterboxd green
