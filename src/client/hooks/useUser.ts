@@ -39,8 +39,14 @@ export const useUser = () => {
       setError(null);
 
       try {
-        const response = await apiService.getCurrentUser(token, controller.signal);
-        if (response.data) setUser(response.data);
+        const response = await apiService.getCurrentUser(
+          token,
+          controller.signal,
+        );
+        // A 2xx is authoritative: if it somehow carries no user, the truth is
+        // "no user", not the previously-cached one. (Real auth failures throw
+        // and are handled below.)
+        setUser(response.data ?? null);
       } catch (e) {
         if (e instanceof DOMException && e.name === "AbortError") return;
         setUser(null);
