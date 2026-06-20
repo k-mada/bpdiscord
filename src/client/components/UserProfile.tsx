@@ -1,104 +1,154 @@
 import { useState, useEffect } from "react";
-import Header from "./Header";
+import { useParams } from "react-router-dom";
+import { apiService } from "../services/api";
+import type { FilmUserComplete, UserFilm } from "../types";
+import RatingDistributionHistogram from "./RatingDistributionHistogram";
+import CompatibilityExtremes from "./CompatibilityExtremes";
+import NotFound from "./NotFound";
+
+const TOP_FILMS_LIMIT = 12;
+
+const formatStars = (rating: number): string => {
+  const full = Math.floor(rating);
+  const half = rating % 1 !== 0;
+  return "★".repeat(full) + (half ? "½" : "");
+};
+
+const TopRatedFilms = ({ films }: { films: UserFilm[] }) => {
+  const top = [...films]
+    .filter((f) => f.rating > 0)
+    .sort((a, b) => b.rating - a.rating)
+    .slice(0, TOP_FILMS_LIMIT);
+
+  if (top.length === 0) return null;
+
+  return (
+    <div className="card">
+      <h4 className="text-xl font-semibold text-letterboxd-text-primary mb-4">
+        Top rated films
+      </h4>
+      <ul className="divide-y divide-letterboxd-border">
+        {top.map((film) => (
+          <li
+            key={film.film_slug}
+            className="flex items-baseline justify-between gap-3 py-1"
+          >
+            <a
+              href={`https://letterboxd.com/film/${film.film_slug}`}
+              target="_blank"
+              rel="noreferrer"
+              className="text-letterboxd-text-primary hover:text-letterboxd-accent truncate"
+            >
+              {film.title || film.film_slug}
+            </a>
+            <span className="text-letterboxd-pro text-sm whitespace-nowrap">
+              {formatStars(film.rating)}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
 
 const UserProfile = () => {
-  const [user, setUser] = useState<any>(null);
+  const { username = "" } = useParams();
+  const [profile, setProfile] = useState<FilmUserComplete | null>(null);
+  const [films, setFilms] = useState<UserFilm[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-  }, []);
+    if (!username) return;
 
-  const getUserName = () => {
-    if (user?.user_metadata?.name) {
-      return user.user_metadata.name;
-    }
-    if (user?.email) {
-      return user.email.split("@")[0]; // Use email prefix as fallback
-    }
-    return "User";
-  };
+    const ac = new AbortController();
+    setLoading(true);
+    setNotFound(false);
+    setProfile(null);
+    setFilms([]);
 
-  const getUserEmail = () => {
-    return user?.email || "No email available";
-  };
+    async function fetchProfile() {
+      try {
+        const completeRes = await apiService.getFilmUserComplete(username);
+        if (ac.signal.aborted) return;
+        if (!completeRes.data) {
+          setNotFound(true);
+          return;
+        }
+        setProfile(completeRes.data as FilmUserComplete);
 
-  const getJoinDate = () => {
-    if (user?.created_at) {
-      return new Date(user.created_at).toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
+        // Films power the top-rated widget. A failure here shouldn't sink the
+        // whole page — degrade to no top-rated section.
+        try {
+          const filmsRes = await apiService.getFilmUserFilms(
+            username,
+            ac.signal,
+          );
+          if (filmsRes.data) setFilms(filmsRes.data);
+        } catch (e) {
+          if (e instanceof DOMException && e.name === "AbortError") return;
+        }
+      } catch (e) {
+        if (e instanceof DOMException && e.name === "AbortError") return;
+        setNotFound(true);
+      } finally {
+        if (!ac.signal.aborted) setLoading(false);
+      }
     }
-    return "Unknown";
-  };
+
+    fetchProfile();
+
+    return () => ac.abort();
+  }, [username]);
+
+  if (loading) {
+    return (
+      <div className="card text-letterboxd-text-muted text-sm">
+        Loading profile…
+      </div>
+    );
+  }
+
+  if (notFound || !profile) {
+    return (
+      <NotFound
+        title={`No profile for "${username}"`}
+        message="We don't have Letterboxd data for this user yet. They may need to be added and refreshed."
+      />
+    );
+  }
+
+  const displayName = profile.displayName || profile.username;
 
   return (
     <div className="space-y-8">
-      {/* User Profile Section */}
       <div className="card">
-        <div className="flex items-center space-x-6">
-          <div className="w-20 h-20 bg-letterboxd-accent rounded-full flex items-center justify-center">
-            <span className="text-2xl font-bold text-white">
-              {getUserName().charAt(0).toUpperCase()}
-            </span>
-          </div>
-          <div className="flex-1">
-            <h2 className="text-3xl font-bold text-letterboxd-text-primary mb-2">
-              {getUserName()}
-            </h2>
-            <p className="text-letterboxd-text-secondary mb-1">
-              {getUserEmail()}
-            </p>
-            <p className="text-sm text-letterboxd-text-muted">
-              Member since {getJoinDate()}
-            </p>
-          </div>
-        </div>
+        <h2 className="text-3xl font-bold text-letterboxd-text-primary">
+          {displayName}
+        </h2>
+        <a
+          href={`https://letterboxd.com/${profile.username}`}
+          target="_blank"
+          rel="noreferrer"
+          className="text-letterboxd-text-secondary hover:text-letterboxd-accent"
+        >
+          @{profile.username}
+        </a>
+        <p className="text-sm text-letterboxd-text-muted mt-2">
+          {profile.totalRatings.toLocaleString()} ratings
+        </p>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="card text-center">
-          <div className="text-3xl font-bold text-letterboxd-accent mb-2">
-            0
-          </div>
-          <div className="text-letterboxd-text-secondary text-sm uppercase tracking-wide">
-            Fetches Completed
-          </div>
-        </div>
-        <div className="card text-center">
-          <div className="text-3xl font-bold text-letterboxd-accent mb-2">
-            0
-          </div>
-          <div className="text-letterboxd-text-secondary text-sm uppercase tracking-wide">
-            Films Analyzed
-          </div>
-        </div>
-        <div className="card text-center">
-          <div className="text-3xl font-bold text-letterboxd-accent mb-2">
-            0
-          </div>
-          <div className="text-letterboxd-text-secondary text-sm uppercase tracking-wide">
-            Users Rated
-          </div>
-        </div>
+      <div className="card">
+        <h4 className="text-xl font-semibold text-letterboxd-text-primary mb-4">
+          Rating distribution
+        </h4>
+        <RatingDistributionHistogram distribution={profile.ratings} size="md" />
       </div>
 
-      {/* Recent Activity */}
-      <div className="card">
-        <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-4">
-          Recent Activity
-        </h3>
-        <div className="text-center py-8">
-          <p className="text-letterboxd-text-secondary">
-            No recent activity. Start by scraping some Letterboxd data!
-          </p>
-        </div>
-      </div>
+      <CompatibilityExtremes username={profile.username} />
+
+      <TopRatedFilms films={films} />
     </div>
   );
 };

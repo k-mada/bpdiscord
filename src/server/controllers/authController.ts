@@ -340,4 +340,40 @@ export class AuthController {
     }
   }
 
+  static async me(req: Request, res: Response): Promise<void> {
+    try {
+      const authUser = req.user;
+      if (!authUser) {
+        res.status(401).json({ error: "Authentication required" });
+        return;
+      }
+
+      const rows = await db
+        .select({
+          lbusername: appUsers.lbusername,
+          displayName: users.displayName,
+        })
+        .from(appUsers)
+        .leftJoin(users, eq(appUsers.lbusername, users.lbusername))
+        .where(eq(appUsers.id, authUser.id))
+        .limit(1);
+
+      const row = rows[0];
+      const response: ApiResponse = {
+        message: "Current user retrieved",
+        data: {
+          id: authUser.id,
+          email: authUser.email ?? null,
+          role: authUser.user_metadata?.role ?? null,
+          lbusername: row?.lbusername ?? null,
+          displayName: row?.displayName ?? null,
+        },
+      };
+      res.json(response);
+    } catch (err) {
+      console.error("auth/me error:", err);
+      const response: ApiResponse = { error: "Internal server error" };
+      res.status(500).json(response);
+    }
+  }
 }

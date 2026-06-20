@@ -18,6 +18,8 @@ import {
   AccountUpdateRequest,
   AccountUpdateResponse,
   CompatibilityExtremesData,
+  CurrentUser,
+  UserFilm,
 } from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
@@ -78,6 +80,17 @@ class ApiService {
     return this.request("/auth/forgot-password", {
       method: "POST",
       body: JSON.stringify({ email }),
+    });
+  }
+
+  async getCurrentUser(
+    token: string,
+    signal?: AbortSignal,
+  ): Promise<ApiResponse<CurrentUser>> {
+    return this.request<CurrentUser>("/auth/me", {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+      ...(signal ? { signal } : {}),
     });
   }
 
@@ -150,6 +163,16 @@ class ApiService {
 
   async getFilmUserComplete(username: string): Promise<ApiResponse<any>> {
     return this.request<ApiResponse<any>>(`/film-users/${username}/complete`);
+  }
+
+  async getFilmUserFilms(
+    username: string,
+    signal?: AbortSignal,
+  ): Promise<ApiResponse<UserFilm[]>> {
+    return this.request<UserFilm[]>(
+      `/film-users/${encodeURIComponent(username)}/films`,
+      signal ? { signal } : {},
+    );
   }
 
   async getFilmUsers(): Promise<

@@ -1,9 +1,15 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useUser } from "../hooks/useUser";
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const { user: currentUser } = useUser();
   const [user, setUser] = useState<any>(null);
+
+  const profilePath = currentUser?.lbusername
+    ? `/user/${currentUser.lbusername}`
+    : null;
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
@@ -46,13 +52,14 @@ const Dashboard = () => {
             Profile
           </h3>
           <p className="text-letterboxd-text-secondary mb-4">
-            View and manage your account settings
+            View your ratings, compatibility, and top films
           </p>
           <button
-            onClick={() => navigate("/profile")}
-            className="btn-primary w-full"
+            onClick={() => profilePath && navigate(profilePath)}
+            disabled={!profilePath}
+            className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Go to Profile
+            {profilePath ? "Go to Profile" : "No Letterboxd username linked"}
           </button>
         </div>
 

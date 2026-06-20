@@ -262,3 +262,77 @@ describe('AuthController.signup — fast-path uniqueness check', () => {
     expect(statusCalls).toEqual([409]);
   });
 });
+
+// Builds a mock req/res where req.user is already populated (as the
+// authenticateToken middleware would). mockReqRes only sets body.
+function mockMeReqRes(
+  user: { id: string; email?: string; role?: string } | null,
+): MockedResponse {
+  const base = mockReqRes({});
+  (base.req as Request).user = user
+    ? ({
+        id: user.id,
+        email: user.email,
+        user_metadata: user.role ? { role: user.role } : {},
+      } as unknown as Request["user"])
+    : undefined;
+  return base;
+}
+
+describe('AuthController.me', () => {
+  it('returns the account identity joined with its Letterboxd display name', async () => {
+    const userId = crypto.randomUUID();
+    await db.execute(sql`
+      INSERT INTO auth.users (id, email)
+      VALUES (${userId}::uuid, ${'authcontroller-test-me@example.test'})
+    `);
+    await db
+      .insert(users)
+      .values({ lbusername: 'me_user', displayName: 'Me User', isDiscord: true })
+      .onConflictDoNothing();
+    await db.insert(appUsers).values({ id: userId, lbusername: 'me_user' });
+
+    const { req, res, jsonCalls } = mockMeReqRes({
+      id: userId,
+      email: 'authcontroller-test-me@example.test',
+      role: 'admin',
+    });
+
+    await AuthController.me(req, res);
+
+    expect(jsonCalls[0]).toMatchObject({
+      data: {
+        id: userId,
+        email: 'authcontroller-test-me@example.test',
+        role: 'admin',
+        lbusername: 'me_user',
+        displayName: 'Me User',
+      },
+    });
+  });
+
+  it('returns a null lbusername when the account has not claimed one', async () => {
+    const userId = crypto.randomUUID();
+    await db.execute(sql`
+      INSERT INTO auth.users (id, email)
+      VALUES (${userId}::uuid, ${'authcontroller-test-me-nolb@example.test'})
+    `);
+    await db.insert(appUsers).values({ id: userId, lbusername: null });
+
+    const { req, res, jsonCalls } = mockMeReqRes({ id: userId });
+
+    await AuthController.me(req, res);
+
+    expect(jsonCalls[0]).toMatchObject({
+      data: { id: userId, lbusername: null, displayName: null, role: null },
+    });
+  });
+
+  it('returns 401 when no authenticated user is present', async () => {
+    const { req, res, statusCalls } = mockMeReqRes(null);
+
+    await AuthController.me(req, res);
+
+    expect(statusCalls).toEqual([401]);
+  });
+});

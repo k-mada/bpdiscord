@@ -21,6 +21,7 @@ import MainLayout from "./components/MainLayout";
 import ActorGraph from "./components/ActorGraph";
 import AdminRefresh from "./components/AdminRefresh";
 import UserAdmin from "./components/admin/UserAdmin";
+import NotFound from "./components/NotFound";
 
 function App() {
   return (
@@ -91,15 +92,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          {/* <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <UserProfile />
-            </ProtectedRoute>
-          }
-        /> */}
-          <Route path="/:username" element={<UserProfile />} />
+          <Route path="/user/:username" element={<UserProfile />} />
           <Route
             path="/fetcher"
             element={
@@ -108,6 +101,7 @@ function App() {
               // </ProtectedRoute>
             }
           />
+          <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>
     </Router>
