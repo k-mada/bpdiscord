@@ -64,51 +64,53 @@ const UserProfile = () => {
 
   return (
     <div className="space-y-8">
-      <div className="card">
-        <h2 className="text-3xl font-bold text-letterboxd-text-primary">
-          {displayName}
-        </h2>
-        <a
-          href={`https://letterboxd.com/${profile.username}`}
-          target="_blank"
-          rel="noreferrer"
-          className="text-letterboxd-text-secondary hover:text-letterboxd-accent"
-        >
-          Letterboxd: @{profile.username}
-        </a>
-        <div className="text-sm text-letterboxd-text-muted mt-2">
-          <div>{profile.totalWatched.toLocaleString()} watched</div>
-          <div>{profile.totalRatings.toLocaleString()} rated</div>
-        </div>
+      <div className="card flex justify-start md:justify-between flex-col md:flex-row items-center">
         <div>
-          <RatingDistributionHistogram
-            distribution={profile.ratings}
-            size="sm"
-            className="justify-center"
-          />
+          <h2 className="text-xl md:text-3xl font-bold text-letterboxd-text-primary">
+            {displayName}
+          </h2>
+          <a
+            href={`https://letterboxd.com/${profile.username}`}
+            target="_blank"
+            rel="noreferrer"
+            className="text-letterboxd-text-secondary hover:text-letterboxd-accent"
+          >
+            Letterboxd: @{profile.username}
+          </a>
+        </div>
+        <RatingDistributionHistogram
+          distribution={profile.ratings}
+          size="sm"
+          className="ml-10"
+        />
+
+        <div className="flex direction-column mt-4 md:mt-0 ml-0 md:ml-auto items-center">
+          <div className="pr-10 border-r-2 border-gray-700 text-center">
+            <span className="block text-2xl text-letterboxd-text-primary">
+              {profile.totalWatched.toLocaleString()}
+            </span>
+            <span className="block text-letterboxd-text-muted text-md">
+              watched
+            </span>
+          </div>
+          <div className="pl-10 text-center">
+            <span className="block text-2xl text-letterboxd-text-primary">
+              {profile.totalRatings.toLocaleString()}
+            </span>
+            <span className="block text-letterboxd-text-muted text-md">
+              rated
+            </span>
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        <div className="card">
-          <h4 className="text-xl font-semibold text-letterboxd-text-primary mb-4">
-            Rating distribution
-          </h4>
-
-          <RatingDistributionHistogram
-            distribution={profile.ratings}
-            size="sm"
-            className="justify-center"
-          />
-        </div>
-
         <CompatibilityExtremes username={profile.username} />
+        <CompareWithUser
+          baseUsername={profile.username}
+          baseDisplayName={profile.displayName ?? undefined}
+        />
       </div>
-
-      <CompareWithUser
-        baseUsername={profile.username}
-        baseDisplayName={profile.displayName ?? undefined}
-      />
     </div>
   );
 };

@@ -24,8 +24,10 @@ const RatingDistributionHistogram = ({
   // Create a map for easy access and ensure we have all ratings from 0.5 to 5
   const distributionMap = new Map(distribution.map((d) => [d.rating, d.count]));
 
+  const classes = `histogram-${size} ${className}`;
+  console.log(classes);
   return (
-    <div className={`histogram-${size} ${className}`}>
+    <div className={classes}>
       {size === "md" && <span className="rating-star">★</span>}
       {ALL_RATINGS.map((rating) => {
         const count = distributionMap.get(rating) || 0;
