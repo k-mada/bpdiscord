@@ -76,9 +76,10 @@ const UserProfile = () => {
         >
           Letterboxd: @{profile.username}
         </a>
-        <p className="text-sm text-letterboxd-text-muted mt-2">
-          {profile.totalRatings.toLocaleString()} ratings
-        </p>
+        <div className="text-sm text-letterboxd-text-muted mt-2">
+          <div>{profile.totalWatched.toLocaleString()} watched</div>
+          <div>{profile.totalRatings.toLocaleString()} rated</div>
+        </div>
         <div>
           <RatingDistributionHistogram
             distribution={profile.ratings}

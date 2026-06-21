@@ -365,6 +365,7 @@ export interface FilmUserComplete {
   following: number;
   numberOfLists: number;
   totalRatings: number;
+  totalWatched: number;
   ratings: Array<{ rating: number; count: number }>;
   source: string;
   success: boolean;

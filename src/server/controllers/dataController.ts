@@ -81,6 +81,24 @@ export async function dbGetUserRatings(username: string): Promise<{
   });
 }
 
+// Total films a user has logged (watched), regardless of whether they rated
+// them. Unrated films are stored with a NULL rating, so COUNT(*) is the watch
+// total and COUNT(rating) would be the rated subset.
+export async function dbGetUserWatchedCount(username: string): Promise<{
+  success: boolean;
+  data?: number;
+  error?: string;
+}> {
+  return dbOperation(async () => {
+    const [row] = await db
+      .select({ watched: sql<number>`COUNT(*)::int` })
+      .from(userFilms)
+      .where(eq(userFilms.lbusername, username));
+
+    return row?.watched ?? 0;
+  });
+}
+
 // ===========================
 // Film Ratings Management (formerly LBFilmRatings)
 // ===========================

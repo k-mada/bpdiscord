@@ -165,6 +165,20 @@ describe('dataController', () => {
         expect(film).toHaveProperty('updated_at');
       });
     });
+
+    it('dbGetUserWatchedCount counts all logged films (rated or not)', async () => {
+      const result = await dc.dbGetUserWatchedCount('test_user_minimal');
+
+      expect(result.success).toBe(true);
+      expect(result.data).toBe(2); // matches dbGetFilmsByUser row count
+    });
+
+    it('dbGetUserWatchedCount returns 0 for a non-existent user', async () => {
+      const result = await dc.dbGetUserWatchedCount('no_such_user');
+
+      expect(result.success).toBe(true);
+      expect(result.data).toBe(0);
+    });
   });
 
   describe('Film Comparisons', () => {
