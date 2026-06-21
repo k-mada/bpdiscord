@@ -79,21 +79,30 @@ const UserProfile = () => {
         <p className="text-sm text-letterboxd-text-muted mt-2">
           {profile.totalRatings.toLocaleString()} ratings
         </p>
+        <div>
+          <RatingDistributionHistogram
+            distribution={profile.ratings}
+            size="sm"
+            className="justify-center"
+          />
+        </div>
       </div>
 
-      <div className="card">
-        <h4 className="text-xl font-semibold text-letterboxd-text-primary mb-4">
-          Rating distribution
-        </h4>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        <div className="card">
+          <h4 className="text-xl font-semibold text-letterboxd-text-primary mb-4">
+            Rating distribution
+          </h4>
 
-        <RatingDistributionHistogram
-          distribution={profile.ratings}
-          size="md"
-          className="justify-center"
-        />
+          <RatingDistributionHistogram
+            distribution={profile.ratings}
+            size="sm"
+            className="justify-center"
+          />
+        </div>
+
+        <CompatibilityExtremes username={profile.username} />
       </div>
-
-      <CompatibilityExtremes username={profile.username} />
 
       <CompareWithUser
         baseUsername={profile.username}

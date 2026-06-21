@@ -35,7 +35,7 @@ const CompareWithUser = ({
         <h4 className="text-xl font-semibold text-letterboxd-text-primary mb-3">
           Compare taste with…
         </h4>
-        <div className="select-wrapper">
+        <div className="select-wrapper max-w-sm">
           <select
             value={selected}
             onChange={(e) => setSelected(e.target.value)}
