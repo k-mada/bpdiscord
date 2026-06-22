@@ -66,7 +66,7 @@ const UserComparison = () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await getUserComplete(username, true);
+      const data = await getUserComplete(username);
 
       if (data) {
         const userData: UserData = {

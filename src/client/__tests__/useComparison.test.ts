@@ -79,7 +79,7 @@ describe("useComparison", () => {
 
   // Hook-specific: getUserComplete
   describe("getUserComplete", () => {
-    it("fetches complete user data with fallback enabled", async () => {
+    it("fetches complete user data by username and returns the payload", async () => {
       vi.mocked(apiService.getFilmUserComplete).mockResolvedValue({
         data: mockUserComplete,
       });
@@ -88,39 +88,11 @@ describe("useComparison", () => {
 
       let userData: typeof mockUserComplete | undefined;
       await act(async () => {
-        userData = await result.current.getUserComplete("alice", true);
+        userData = await result.current.getUserComplete("alice");
       });
 
-      expect(apiService.getFilmUserComplete).toHaveBeenCalledWith("alice", true);
+      expect(apiService.getFilmUserComplete).toHaveBeenCalledWith("alice");
       expect(userData).toEqual(mockUserComplete);
-    });
-
-    it("fetches complete user data with fallback disabled", async () => {
-      vi.mocked(apiService.getFilmUserComplete).mockResolvedValue({
-        data: mockUserComplete,
-      });
-
-      const result = await renderLoadedHook();
-
-      await act(async () => {
-        await result.current.getUserComplete("alice", false);
-      });
-
-      expect(apiService.getFilmUserComplete).toHaveBeenCalledWith("alice", false);
-    });
-
-    it("defaults fallback to true", async () => {
-      vi.mocked(apiService.getFilmUserComplete).mockResolvedValue({
-        data: mockUserComplete,
-      });
-
-      const result = await renderLoadedHook();
-
-      await act(async () => {
-        await result.current.getUserComplete("alice");
-      });
-
-      expect(apiService.getFilmUserComplete).toHaveBeenCalledWith("alice", true);
     });
   });
 
