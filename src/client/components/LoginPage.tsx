@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import PasswordReset from "./PasswordReset";
 import apiService from "../services/api";
 import { AuthRequest } from "../../shared/types";
 import { Input } from "./ui/Input";
@@ -9,7 +8,6 @@ import { emitAuthChange } from "../hooks/useUser";
 const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [showPasswordReset, setShowPasswordReset] = useState(false);
   const [formData, setFormData] = useState<AuthRequest>({
     email: "",
     password: "",
@@ -54,21 +52,12 @@ const LoginPage = () => {
     }
   };
 
-  const handleBackToLogin = () => {
-    setShowPasswordReset(false);
-    setError(null);
-  };
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
   };
-
-  if (showPasswordReset) {
-    return <PasswordReset onBackToLogin={handleBackToLogin} />;
-  }
 
   return (
     <div className="min-h-screen bg-letterboxd-bg-primary flex items-start mt-10 justify-center px-4">
@@ -160,14 +149,7 @@ const LoginPage = () => {
                 Sign Up
               </Link>
             </p>
-
-            <button
-              type="button"
-              onClick={() => setShowPasswordReset(true)}
-              className="text-letterboxd-text-secondary hover:text-letterboxd-text-primary font-medium transition-colors duration-200"
-            >
-              Forgot your password?
-            </button>
+            <Link to={"/forgot-password"}>Forgot your password?</Link>
           </div>
         </div>
       </div>

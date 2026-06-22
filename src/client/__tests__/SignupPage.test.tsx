@@ -50,6 +50,9 @@ describe("SignupPage", () => {
       },
     });
 
+    const onAuthChange = vi.fn();
+    window.addEventListener("authchange", onAuthChange);
+
     renderPage();
     await userEvent.type(screen.getByLabelText("Name"), "New User");
     await userEvent.type(screen.getByLabelText("Email"), "u@example.test");
@@ -64,6 +67,9 @@ describe("SignupPage", () => {
       email: "u@example.test",
       password: "secret",
     });
+    // Notifies useUser listeners (e.g. Header) to re-sync the new user.
+    expect(onAuthChange).toHaveBeenCalledTimes(1);
+    window.removeEventListener("authchange", onAuthChange);
   });
 
   it("trims, lowercases, and includes lbusername when provided", async () => {
@@ -164,6 +170,9 @@ describe("SignupPage", () => {
       message: "Account created. Please check your email to confirm your account before signing in.",
     });
 
+    const onAuthChange = vi.fn();
+    window.addEventListener("authchange", onAuthChange);
+
     renderPage();
     await userEvent.type(screen.getByLabelText("Name"), "Confirm Me");
     await userEvent.type(screen.getByLabelText("Email"), "u@example.test");
@@ -174,6 +183,9 @@ describe("SignupPage", () => {
       expect(screen.getByText(/check your email/i)).toBeInTheDocument();
     });
     expect(localStorage.getItem("token")).toBeNull();
+    // No token issued (email-confirmation flow) → no auth state to broadcast.
+    expect(onAuthChange).not.toHaveBeenCalled();
+    window.removeEventListener("authchange", onAuthChange);
   });
 
   it("displays a form-level error when signup fails", async () => {

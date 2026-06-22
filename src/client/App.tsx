@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import LoginPage from "./components/LoginPage";
 import SignupPage from "./components/SignupPage";
 import ResetPasswordPage from "./components/ResetPasswordPage";
+import ForgotPassword from "./components/ForgotPassword";
 import Dashboard from "./components/Dashboard";
 import UserProfile from "./components/UserProfile";
 import ScraperInterface from "./components/ScraperInterface";
@@ -67,6 +68,7 @@ function App() {
           <Route path="/actor-graph" element={<ActorGraph />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route
             path="/dashboard"

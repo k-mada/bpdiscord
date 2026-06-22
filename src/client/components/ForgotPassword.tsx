@@ -1,11 +1,8 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import apiService from "../services/api";
 
-interface PasswordResetProps {
-  onBackToLogin: () => void;
-}
-
-const PasswordReset = ({ onBackToLogin }: PasswordResetProps) => {
+const ForgotPassword = () => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,10 +30,10 @@ const PasswordReset = ({ onBackToLogin }: PasswordResetProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-letterboxd-bg-primary flex items-center justify-center px-4">
+    <div className="min-h-screen bg-letterboxd-bg-primary flex justify-center mt-20 px-4">
       <div className="w-full max-w-md">
         <h2 className="text-2xl font-semibold text-letterboxd-text-primary mb-6 text-center">
-          Password Reset
+          Reset your password
         </h2>
         <p className="text-letterboxd-text-secondary text-center">
           Enter your email to receive a reset link
@@ -85,13 +82,7 @@ const PasswordReset = ({ onBackToLogin }: PasswordResetProps) => {
           </form>
 
           <div className="mt-6 text-center">
-            <button
-              type="button"
-              onClick={onBackToLogin}
-              className="text-letterboxd-text-secondary hover:text-letterboxd-text-primary font-medium transition-colors duration-200"
-            >
-              Back to Login
-            </button>
+            <Link to={"/login"}>Back to login</Link>
           </div>
         </div>
       </div>
@@ -99,4 +90,4 @@ const PasswordReset = ({ onBackToLogin }: PasswordResetProps) => {
   );
 };
 
-export default PasswordReset;
+export default ForgotPassword;

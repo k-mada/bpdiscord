@@ -6,9 +6,6 @@ import apiService from "../services/api";
 import { installFakeLocalStorage } from "./helpers/localStorage";
 
 vi.mock("../services/api");
-vi.mock("../components/PasswordReset", () => ({
-  default: () => <div data-testid="password-reset" />,
-}));
 vi.mock("../components/Subheading", () => ({
   Subheading: () => <div data-testid="subheading" />,
 }));
@@ -40,6 +37,12 @@ describe("LoginPage", () => {
     expect(link).toHaveAttribute("href", "/signup");
   });
 
+  it("renders the Forgot password link to /forgot-password", () => {
+    renderPage();
+    const link = screen.getByRole("link", { name: /forgot your password/i });
+    expect(link).toHaveAttribute("href", "/forgot-password");
+  });
+
   it("submits via apiService.login and persists token + user to localStorage", async () => {
     vi.mocked(apiService.login).mockResolvedValue({
       data: {
@@ -48,6 +51,9 @@ describe("LoginPage", () => {
         user: { id: "u1", email: "u@example.test" } as never,
       },
     });
+
+    const onAuthChange = vi.fn();
+    window.addEventListener("authchange", onAuthChange);
 
     renderPage();
     await userEvent.type(screen.getByLabelText("Email"), "u@example.test");
@@ -62,10 +68,16 @@ describe("LoginPage", () => {
       email: "u@example.test",
       password: "secret",
     });
+    // Notifies useUser listeners (e.g. Header) to re-sync the logged-in user.
+    expect(onAuthChange).toHaveBeenCalledTimes(1);
+    window.removeEventListener("authchange", onAuthChange);
   });
 
   it("displays a form-level error when login fails", async () => {
     vi.mocked(apiService.login).mockRejectedValue(new Error("Invalid credentials"));
+
+    const onAuthChange = vi.fn();
+    window.addEventListener("authchange", onAuthChange);
 
     renderPage();
     await userEvent.type(screen.getByLabelText("Email"), "u@example.test");
@@ -76,5 +88,7 @@ describe("LoginPage", () => {
       expect(screen.getByText("Invalid credentials")).toBeInTheDocument();
     });
     expect(localStorage.getItem("token")).toBeNull();
+    expect(onAuthChange).not.toHaveBeenCalled();
+    window.removeEventListener("authchange", onAuthChange);
   });
 });
