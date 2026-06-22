@@ -49,6 +49,9 @@ describe("LoginPage", () => {
       },
     });
 
+    const onAuthChange = vi.fn();
+    window.addEventListener("authchange", onAuthChange);
+
     renderPage();
     await userEvent.type(screen.getByLabelText("Email"), "u@example.test");
     await userEvent.type(screen.getByLabelText("Password"), "secret");
@@ -62,10 +65,16 @@ describe("LoginPage", () => {
       email: "u@example.test",
       password: "secret",
     });
+    // Notifies useUser listeners (e.g. Header) to re-sync the logged-in user.
+    expect(onAuthChange).toHaveBeenCalledTimes(1);
+    window.removeEventListener("authchange", onAuthChange);
   });
 
   it("displays a form-level error when login fails", async () => {
     vi.mocked(apiService.login).mockRejectedValue(new Error("Invalid credentials"));
+
+    const onAuthChange = vi.fn();
+    window.addEventListener("authchange", onAuthChange);
 
     renderPage();
     await userEvent.type(screen.getByLabelText("Email"), "u@example.test");
@@ -76,5 +85,7 @@ describe("LoginPage", () => {
       expect(screen.getByText("Invalid credentials")).toBeInTheDocument();
     });
     expect(localStorage.getItem("token")).toBeNull();
+    expect(onAuthChange).not.toHaveBeenCalled();
+    window.removeEventListener("authchange", onAuthChange);
   });
 });
