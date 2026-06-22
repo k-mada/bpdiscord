@@ -6,9 +6,6 @@ import apiService from "../services/api";
 import { installFakeLocalStorage } from "./helpers/localStorage";
 
 vi.mock("../services/api");
-vi.mock("../components/PasswordReset", () => ({
-  default: () => <div data-testid="password-reset" />,
-}));
 vi.mock("../components/Subheading", () => ({
   Subheading: () => <div data-testid="subheading" />,
 }));
@@ -38,6 +35,12 @@ describe("LoginPage", () => {
     renderPage();
     const link = screen.getByRole("link", { name: /sign up/i });
     expect(link).toHaveAttribute("href", "/signup");
+  });
+
+  it("renders the Forgot password link to /forgot-password", () => {
+    renderPage();
+    const link = screen.getByRole("link", { name: /forgot your password/i });
+    expect(link).toHaveAttribute("href", "/forgot-password");
   });
 
   it("submits via apiService.login and persists token + user to localStorage", async () => {
