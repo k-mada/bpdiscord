@@ -4,6 +4,7 @@ import apiService from "../services/api";
 import { SignupRequest } from "../../shared/types";
 import { Subheading } from "./Subheading";
 import { Input } from "./ui/Input";
+import { emitAuthChange } from "../hooks/useUser";
 
 // Mirrors LBUSERNAME_FORMAT in src/server/lib/lbusername.ts. UX-only pre-check
 // before round-trip; server remains the source of truth.
@@ -63,6 +64,7 @@ const SignupPage = () => {
         if (response.data.user) {
           localStorage.setItem("user", JSON.stringify(response.data.user));
         }
+        emitAuthChange();
         const redirectPath =
           localStorage.getItem("redirectAfterLogin") || "/dashboard";
         localStorage.removeItem("redirectAfterLogin");

@@ -345,3 +345,28 @@ export interface CompatibilityExtremesData {
   mostCompatible: CompatibilityExtreme[];
   leastCompatible: CompatibilityExtreme[];
 }
+
+// GET /api/auth/me — the authenticated account's identity, joined with its
+// linked Letterboxd profile. `lbusername` is null when the account hasn't
+// claimed a Letterboxd username.
+export interface CurrentUser {
+  id: string;
+  email: string | null;
+  role: string | null;
+  lbusername: string | null;
+  displayName: string | null;
+}
+
+// Aggregated profile + rating distribution (GET /api/film-users/:username/complete).
+export interface FilmUserComplete {
+  username: string;
+  displayName: string | null;
+  followers: number;
+  following: number;
+  numberOfLists: number;
+  totalRatings: number;
+  totalWatched: number;
+  ratings: Array<{ rating: number; count: number }>;
+  source: string;
+  success: boolean;
+}

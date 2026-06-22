@@ -18,6 +18,7 @@ import {
   AccountUpdateRequest,
   AccountUpdateResponse,
   CompatibilityExtremesData,
+  CurrentUser,
 } from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
@@ -81,6 +82,17 @@ class ApiService {
     });
   }
 
+  async getCurrentUser(
+    token: string,
+    signal?: AbortSignal,
+  ): Promise<ApiResponse<CurrentUser>> {
+    return this.request<CurrentUser>("/auth/me", {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+      ...(signal ? { signal } : {}),
+    });
+  }
+
   // Health check
   async healthCheck(): Promise<ApiResponse> {
     return this.request<ApiResponse>("/health");
@@ -112,10 +124,12 @@ class ApiService {
   async getMoviesInCommon(
     user1: string,
     user2: string,
+    signal?: AbortSignal,
   ): Promise<ApiResponse<any>> {
     return this.request<ApiResponse<any>>("/comparison/movies-in-common", {
       method: "POST",
       body: JSON.stringify({ user1, user2 }),
+      ...(signal ? { signal } : {}),
     });
   }
 

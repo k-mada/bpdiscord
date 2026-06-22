@@ -47,7 +47,7 @@ The **actor-graph** tables have semantics that aren't obvious from the columns:
 
 Routes are defined under `src/server/routes/`. Quick map:
 
-- `/api/auth` — signup / login / forgot-password (server-mediated)
+- `/api/auth` — signup / login / forgot-password (server-mediated). `GET /me` is JWT-authed and returns the account's identity joined with its linked Letterboxd profile (`{ id, email, role, lbusername, displayName }`); `lbusername` is null when unclaimed. It's how the client resolves the logged-in user's own lbusername (e.g. to link to their public `/user/:lbusername` page) — see the `useUser` hook.
 - `/api/film-users` — **public, DB-only reads** of Letterboxd data. 404 on miss (hint user to trigger a refresh). No fallback scraping; the legacy `?fallback=scrape` query param was removed when Puppeteer was retired.
 - `/api/scrape-user` — **JWT-authed** per-user refresh job (trigger / poll / cancel). Delegates to moviemaestro. Per-username rate limit 10 req / 5 min; poll 120 req / 60s per IP.
 - `/api/admin/refresh-rankings` — **admin only** bulk refresh, same delegation pattern.

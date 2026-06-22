@@ -73,7 +73,7 @@ const AnchorFilm = ({ film, label, user1Name, user2Name }: AnchorFilmProps) => {
           <img
             src={posterUrl}
             alt={film.title}
-            className="w-full border rounded-md border-slate-500"
+            className="aspect-[2/3] w-full rounded-md border border-slate-500 bg-slate-700 object-cover"
           />
         ) : (
           <div className="flex aspect-[2/3] w-full items-center justify-center bg-slate-700 border rounded-md border-slate-500 p-2">
@@ -105,6 +105,44 @@ const AnchorFilm = ({ film, label, user1Name, user2Name }: AnchorFilmProps) => {
     </div>
   );
 };
+
+const SkeletonBlock = ({ className }: { className: string }) => (
+  <div className={`bg-slate-700 ${className}`} />
+);
+
+const AnchorFilmSkeleton = () => (
+  <div className="flex flex-col items-center w-[120px] sm:w-[150px]">
+    <SkeletonBlock className="h-5 w-24 mb-3 rounded" />
+    <SkeletonBlock className="aspect-[2/3] w-full rounded-md" />
+    <SkeletonBlock className="h-12 w-full mt-2 rounded-md" />
+  </div>
+);
+
+// Placeholder that mirrors the rendered card's vertical rhythm (header →
+// spectrum → headline → three posters) so swapping the compared user doesn't
+// collapse the layout and shove the rest of the page around mid-fetch. Keep
+// its structure roughly in sync with the component below.
+export const TasteCompatibilitySkeleton = () => (
+  <div className="card animate-pulse" aria-hidden="true">
+    <div className="mb-4 space-y-2">
+      <SkeletonBlock className="h-6 w-44 rounded" />
+      <SkeletonBlock className="h-4 w-32 rounded" />
+    </div>
+    <SkeletonBlock className="h-2 w-full rounded-full" />
+    <div className="mt-4 flex flex-col items-center gap-2">
+      <SkeletonBlock className="h-8 w-24 rounded" />
+      <SkeletonBlock className="h-4 w-40 rounded" />
+      <SkeletonBlock className="h-3 w-44 rounded" />
+    </div>
+    <div className="mt-6 pt-6 border-t border-letterboxd-border">
+      <div className="flex flex-wrap justify-center gap-6 sm:gap-10">
+        <AnchorFilmSkeleton />
+        <AnchorFilmSkeleton />
+        <AnchorFilmSkeleton />
+      </div>
+    </div>
+  </div>
+);
 
 const TasteCompatibility = ({
   user1Data,

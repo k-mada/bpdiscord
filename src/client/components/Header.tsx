@@ -1,12 +1,16 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { Subheading } from "./Subheading";
+import { useUser, emitAuthChange } from "../hooks/useUser";
 
 const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { user } = useUser();
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
+
+  const profilePath = user?.lbusername ? `/user/${user.lbusername}` : null;
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -21,16 +25,13 @@ const Header = () => {
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    emitAuthChange();
     setIsAuthenticated(false);
     navigate("/login");
   };
 
   const navigateTo = (path: string) => {
     navigate(path);
-  };
-
-  const isActivePath = (path: string): boolean => {
-    return location.pathname === path || location.pathname.startsWith(path);
   };
 
   const getNavButtonClass = (path: string): string => {
@@ -73,12 +74,14 @@ const Header = () => {
             Hater Rankings
           </button>
 
-          <button
-            onClick={() => navigateTo("/profile")}
-            className={getNavButtonClass("/profile")}
-          >
-            Profile
-          </button>
+          {profilePath && (
+            <button
+              onClick={() => navigateTo(profilePath)}
+              className={getNavButtonClass(profilePath)}
+            >
+              Profile
+            </button>
+          )}
           <button
             onClick={() => navigateTo("/fetcher")}
             className={getNavButtonClass("/fetcher")}
@@ -160,14 +163,16 @@ const Header = () => {
             >
               Dashboard
             </button>
-            <button
-              onClick={() => navigateTo("/profile")}
-              className={`block w-full text-left py-2 ${getNavButtonClass(
-                "/profile",
-              )}`}
-            >
-              Profile
-            </button>
+            {profilePath && (
+              <button
+                onClick={() => navigateTo(profilePath)}
+                className={`block w-full text-left py-2 ${getNavButtonClass(
+                  profilePath,
+                )}`}
+              >
+                Profile
+              </button>
+            )}
             <button
               onClick={() => navigateTo("/fetcher")}
               className={`block w-full text-left py-2 ${getNavButtonClass(

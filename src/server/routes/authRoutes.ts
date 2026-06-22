@@ -3,6 +3,7 @@ import rateLimit from "express-rate-limit";
 import { AuthController } from "../controllers/authController";
 import { validateSignup, validateAuth } from "../middleware/validation";
 import { handleValidationErrors } from "../middleware/errorHandler";
+import { authenticateToken } from "../middleware/auth";
 
 // Rate limiter for password reset requests
 const passwordResetLimiter = rateLimit({
@@ -40,5 +41,7 @@ router.post(
   [passwordResetLimiter, handleValidationErrors],
   AuthController.requestPasswordReset
 );
+
+router.get("/me", authenticateToken, AuthController.me);
 
 export default router;

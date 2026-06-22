@@ -4,6 +4,7 @@ import {
   dbGetUserProfile,
   dbGetAllUsernames,
   dbGetFilmsByUser,
+  dbGetUserWatchedCount,
 } from "./dataController";
 
 export async function getFilmRatings(
@@ -162,8 +163,11 @@ export async function getUserComplete(
   console.log(`Retrieving complete user data from database for: ${username}`);
 
   try {
-    const profileResult = await dbGetUserProfile(username);
-    const ratingsResult = await dbGetUserRatings(username);
+    const [profileResult, ratingsResult, watchedResult] = await Promise.all([
+      dbGetUserProfile(username),
+      dbGetUserRatings(username),
+      dbGetUserWatchedCount(username),
+    ]);
 
     const hasProfile = profileResult.success && profileResult.data;
     const hasRatings =
@@ -182,6 +186,13 @@ export async function getUserComplete(
         0
       );
 
+      // Watched ⊇ rated; clamp so a stale distribution can never show
+      // "watched < rated". Falls back to the rated count if the watch query
+      // failed, so the field is always populated.
+      const totalWatched = watchedResult.success
+        ? Math.max(watchedResult.data ?? 0, totalRatings)
+        : totalRatings;
+
       res.json({
         message: "Complete user data retrieved from database",
         data: {
@@ -191,6 +202,7 @@ export async function getUserComplete(
           following: profileResult.data!.following,
           numberOfLists: profileResult.data!.numberOfLists,
           totalRatings,
+          totalWatched,
           ratings,
           source: "database",
           success: true,
@@ -263,7 +275,11 @@ export async function getFilmsByUser(
         message: "Films retrieved successfully",
         data: result.data,
       });
+      return;
     }
+    res.status(500).json({
+      error: result.error || "Failed to get films",
+    });
   } catch (error) {
     console.error("Error in getFilmsByUser:", error);
     res.status(500).json({

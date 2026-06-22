@@ -4,6 +4,7 @@ import PasswordReset from "./PasswordReset";
 import apiService from "../services/api";
 import { AuthRequest } from "../../shared/types";
 import { Input } from "./ui/Input";
+import { emitAuthChange } from "../hooks/useUser";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -38,6 +39,7 @@ const LoginPage = () => {
         if (response.data.user) {
           localStorage.setItem("user", JSON.stringify(response.data.user));
         }
+        emitAuthChange();
         const redirectPath =
           localStorage.getItem("redirectAfterLogin") || "/dashboard";
         localStorage.removeItem("redirectAfterLogin");
