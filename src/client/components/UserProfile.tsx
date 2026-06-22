@@ -105,11 +105,11 @@ const UserProfile = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        <CompatibilityExtremes username={profile.username} />
         <CompareWithUser
           baseUsername={profile.username}
           baseDisplayName={profile.displayName ?? undefined}
         />
+        <CompatibilityExtremes username={profile.username} />
       </div>
     </div>
   );
