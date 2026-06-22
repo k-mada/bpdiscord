@@ -25,6 +25,7 @@ const CompareWithUser = ({
   );
 
   const candidates = usernames.filter((u) => u.username !== baseUsername);
+
   const selectedDisplayName = usernames.find(
     (u) => u.username === selected,
   )?.displayName;
@@ -51,16 +52,13 @@ const CompareWithUser = ({
         </div>
       </div>
 
-      {error && (
-        <div className="card text-red-400 text-sm">{error}</div>
-      )}
+      {error && <div className="card text-red-400 text-sm">{error}</div>}
 
       {loading && <TasteCompatibilitySkeleton />}
 
       {!loading && data && data.moviesInCommon.length === 0 && (
         <div className="card text-letterboxd-text-muted text-sm text-center">
-          No films in common with{" "}
-          {selectedDisplayName || selected} yet.
+          No films in common with {selectedDisplayName || selected} yet.
         </div>
       )}
 
@@ -72,7 +70,9 @@ const CompareWithUser = ({
           }}
           user2Data={{
             username: selected,
-            ...(selectedDisplayName ? { displayName: selectedDisplayName } : {}),
+            ...(selectedDisplayName
+              ? { displayName: selectedDisplayName }
+              : {}),
           }}
           moviesInCommon={data.moviesInCommon}
         />
