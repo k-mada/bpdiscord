@@ -25,7 +25,7 @@ const RatingDistributionHistogram = ({
   const distributionMap = new Map(distribution.map((d) => [d.rating, d.count]));
 
   const classes = `histogram-${size} ${className}`;
-  console.log(classes);
+
   return (
     <div className={classes}>
       {size === "md" && <span className="rating-star">★</span>}
