@@ -1,9 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap')
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap")
 layer(base);
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap')
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap")
 layer(base);
 
-@import 'tailwindcss';
+@import "tailwindcss";
 
 @config './tailwind.config.js';
 
@@ -44,7 +44,7 @@ layer(base);
 
 @utility subheading {
   @apply text-xl font-semibold text-letterboxd-text-primary mb-4 pb-2 border-b border-letterboxd-border;
-  font-family: 'Be Vietnam Pro', sans-serif;
+  font-family: "Be Vietnam Pro", sans-serif;
 }
 
 @utility btn-primary {
@@ -57,7 +57,7 @@ layer(base);
 
 @utility data-table {
   @apply w-full;
-  font-family: 'Be Vietnam Pro', sans-serif;
+  font-family: "Be Vietnam Pro", sans-serif;
 
   & > thead > tr > th {
     @apply text-left py-3 px-4 text-letterboxd-text-secondary font-medium;
@@ -112,7 +112,7 @@ layer(base);
 
 @utility rating-overlay-text {
   font:
-    800 1rem 'PT Serif',
+    800 1rem "PT Serif",
     serif;
 }
 
@@ -127,7 +127,7 @@ layer(base);
   width: 230px;
   height: 345px;
   font:
-    800 2.5rem 'PT Serif',
+    800 2.5rem "PT Serif",
     serif;
   /* background-color: rgba(0, 0, 0, 0.5); */
   background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent);
@@ -148,7 +148,7 @@ layer(base);
     opacity: 1;
     background: linear-gradient(to top, rgba(0, 0, 0, 1), transparent);
     font:
-      800 1.5rem 'PT Serif',
+      800 1.5rem "PT Serif",
       serif;
   }
 
@@ -160,7 +160,7 @@ layer(base);
     width: 70px;
     height: 105px;
     font:
-      800 1rem 'PT Serif',
+      800 1rem "PT Serif",
       serif;
   }
 }
@@ -252,13 +252,13 @@ layer(base);
 
 @layer utilities {
   @property --num {
-    syntax: '<integer>';
+    syntax: "<integer>";
     initial-value: 0;
     inherits: false;
   }
 
   @property --movieCount {
-    syntax: '<integer>';
+    syntax: "<integer>";
     initial-value: 16019;
     inherits: true;
   }
