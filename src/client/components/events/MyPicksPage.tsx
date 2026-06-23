@@ -122,7 +122,7 @@ const MyPicksPage = () => {
       </div>
 
       {pickError && (
-        <div className="mb-4 p-3 bg-red-500/20 text-red-400 text-sm rounded">
+        <div className="mb-4 p-3 bg-red-500/20 text-red-400 text-sm rounded-sm">
           {pickError}
         </div>
       )}

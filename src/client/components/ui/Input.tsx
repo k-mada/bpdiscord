@@ -12,7 +12,7 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 const baseClasses =
   "bg-letterboxd-bg-secondary border border-letterboxd-border rounded-md " +
   "px-4 py-3 text-letterboxd-text-primary placeholder-letterboxd-text-muted " +
-  "focus:outline-none focus:ring-2 focus:ring-letterboxd-accent focus:border-transparent " +
+  "focus:outline-hidden focus:ring-2 focus:ring-letterboxd-accent focus:border-transparent " +
   "transition-all duration-200 " +
   "disabled:opacity-50 disabled:cursor-not-allowed " +
   "aria-invalid:border-red-500 aria-invalid:focus:ring-red-500";

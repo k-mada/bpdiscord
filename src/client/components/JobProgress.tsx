@@ -180,7 +180,7 @@ const JobProgress = ({ job }: { job: RefreshJob }) => {
           </h2>
           <span
             className={
-              "text-xs uppercase tracking-wide px-2 py-1 rounded " +
+              "text-xs uppercase tracking-wide px-2 py-1 rounded-sm " +
               statusBadge(job.status).cls
             }
           >
@@ -212,7 +212,7 @@ const JobProgress = ({ job }: { job: RefreshJob }) => {
           <h2 className="text-lg font-semibold text-letterboxd-text-primary mb-2">
             Log
           </h2>
-          <pre className="text-xs font-mono whitespace-pre-wrap max-h-64 overflow-y-auto bg-letterboxd-bg-primary p-3 rounded">
+          <pre className="text-xs font-mono whitespace-pre-wrap max-h-64 overflow-y-auto bg-letterboxd-bg-primary p-3 rounded-sm">
             {job.logTail}
           </pre>
         </div>

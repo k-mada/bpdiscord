@@ -202,7 +202,7 @@ const ActorComboBox = ({
                 <img
                   src={buildImageUrl(actor.profilePath) || PLACEHOLDER_ACTOR}
                   alt=""
-                  className="w-10 h-14 object-cover rounded"
+                  className="w-10 h-14 object-cover rounded-sm"
                   onError={(e) => {
                     (e.currentTarget as HTMLImageElement).src =
                       PLACEHOLDER_ACTOR;

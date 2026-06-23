@@ -363,7 +363,7 @@ const EditAccountModal = ({
           {error && (
             <div
               role="alert"
-              className="bg-red-900/20 border border-red-500/40 text-red-300 px-3 py-2 rounded"
+              className="bg-red-900/20 border border-red-500/40 text-red-300 px-3 py-2 rounded-sm"
             >
               {error}
             </div>

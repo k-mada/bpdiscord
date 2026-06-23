@@ -137,7 +137,7 @@ const ScoringReference = () => {
         </select>
       </div>
       <div className="flex justify-center">
-        <div className="flex items-center mx-4 pr-4 ps-4 bg-neutral-primary-soft border border-default rounded-lg  shadow-xs">
+        <div className="flex items-center mx-4 pr-4 ps-4 bg-neutral-primary-soft border border-default rounded-lg  shadow-2xs">
           <input
             id="bordered-checkbox-1"
             type="checkbox"
@@ -156,7 +156,7 @@ const ScoringReference = () => {
             Show nominations only
           </label>
         </div>
-        <div className="flex items-center mx-4 pr-4 ps-4 bg-neutral-primary-soft border border-default rounded-lg  shadow-xs">
+        <div className="flex items-center mx-4 pr-4 ps-4 bg-neutral-primary-soft border border-default rounded-lg  shadow-2xs">
           <input
             id="bordered-checkbox-2"
             type="checkbox"

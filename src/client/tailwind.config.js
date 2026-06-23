@@ -7,12 +7,6 @@ module.exports = {
     "./services/**/*.{js,jsx,ts,tsx}",
     "!./node_modules/**/*",
   ],
-  safelist: [
-    {
-      pattern: /^histogram-/,
-      variants: ["sm", "md", "lg"],
-    },
-  ],
   theme: {
     extend: {
       screens: {

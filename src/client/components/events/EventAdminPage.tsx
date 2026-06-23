@@ -194,7 +194,7 @@ const EventAdminPage = () => {
       </div>
 
       {message && (
-        <div className="mb-4 p-3 bg-letterboxd-pro/20 text-letterboxd-pro text-sm rounded">
+        <div className="mb-4 p-3 bg-letterboxd-pro/20 text-letterboxd-pro text-sm rounded-sm">
           {message}
         </div>
       )}
