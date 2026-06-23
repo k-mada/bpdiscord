@@ -73,10 +73,10 @@ const AnchorFilm = ({ film, label, user1Name, user2Name }: AnchorFilmProps) => {
           <img
             src={posterUrl}
             alt={film.title}
-            className="aspect-[2/3] w-full rounded-md border border-slate-500 bg-slate-700 object-cover"
+            className="aspect-2/3 w-full rounded-md border border-slate-500 bg-slate-700 object-cover"
           />
         ) : (
-          <div className="flex aspect-[2/3] w-full items-center justify-center bg-slate-700 border rounded-md border-slate-500 p-2">
+          <div className="flex aspect-2/3 w-full items-center justify-center bg-slate-700 border rounded-md border-slate-500 p-2">
             <div className="text-center text-xs text-letterboxd-text-primary">
               {film.title}
               {film.year !== null && (
@@ -112,8 +112,8 @@ const SkeletonBlock = ({ className }: { className: string }) => (
 
 const AnchorFilmSkeleton = () => (
   <div className="flex flex-col items-center w-[120px] sm:w-[150px]">
-    <SkeletonBlock className="h-5 w-24 mb-3 rounded" />
-    <SkeletonBlock className="aspect-[2/3] w-full rounded-md" />
+    <SkeletonBlock className="h-5 w-24 mb-3 rounded-sm" />
+    <SkeletonBlock className="aspect-2/3 w-full rounded-md" />
     <SkeletonBlock className="h-12 w-full mt-2 rounded-md" />
   </div>
 );
@@ -125,14 +125,14 @@ const AnchorFilmSkeleton = () => (
 export const TasteCompatibilitySkeleton = () => (
   <div className="card animate-pulse" aria-hidden="true">
     <div className="mb-4 space-y-2">
-      <SkeletonBlock className="h-6 w-44 rounded" />
-      <SkeletonBlock className="h-4 w-32 rounded" />
+      <SkeletonBlock className="h-6 w-44 rounded-sm" />
+      <SkeletonBlock className="h-4 w-32 rounded-sm" />
     </div>
     <SkeletonBlock className="h-2 w-full rounded-full" />
     <div className="mt-4 flex flex-col items-center gap-2">
-      <SkeletonBlock className="h-8 w-24 rounded" />
-      <SkeletonBlock className="h-4 w-40 rounded" />
-      <SkeletonBlock className="h-3 w-44 rounded" />
+      <SkeletonBlock className="h-8 w-24 rounded-sm" />
+      <SkeletonBlock className="h-4 w-40 rounded-sm" />
+      <SkeletonBlock className="h-3 w-44 rounded-sm" />
     </div>
     <div className="mt-6 pt-6 border-t border-letterboxd-border">
       <div className="flex flex-wrap justify-center gap-6 sm:gap-10">
@@ -198,7 +198,7 @@ const TasteCompatibility = ({
        * the full description for screen readers.
        */}
       <div
-        className="relative h-2 rounded-full bg-gradient-to-r from-red-400/15 via-letterboxd-text-muted/20 to-green-400/15"
+        className="relative h-2 rounded-full bg-linear-to-r from-red-400/15 via-letterboxd-text-muted/20 to-green-400/15"
         role="img"
         aria-label={
           pearson === null
@@ -213,7 +213,7 @@ const TasteCompatibility = ({
          * of its width — no magic px offset to keep in sync. */}
         {pearson !== null && (
           <div
-            className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-5 rounded-sm transition-all duration-500 ${markerColorClass}`}
+            className={`absolute top-1/2 -translate-x-1/2 -translate-y-1/2 w-1.5 h-5 rounded-xs transition-all duration-500 ${markerColorClass}`}
             style={{ left: `${markerPositionPct}%` }}
           />
         )}

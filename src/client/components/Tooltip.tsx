@@ -69,7 +69,7 @@ const Tooltip = ({ content, children, className = "" }: TooltipProps) => {
           visibility: isVisible ? "visible" : "hidden",
         }}
       >
-        <div className="break-words lowercase">{content}</div>
+        <div className="wrap-break-word lowercase">{content}</div>
         {/* Tooltip arrow */}
         <div
           className="absolute w-2 h-2 bg-letterboxd-bg-primary border-b border-r border-letterboxd-border transform rotate-45"

@@ -82,7 +82,7 @@ const ModalHeader = ({
 }: ModalHeaderProps) => {
   return (
     <div
-      className={`flex items-center justify-between px-4 sm:px-6 py-4 border-b border-letterboxd-border flex-shrink-0 ${className}`}
+      className={`flex items-center justify-between px-4 sm:px-6 py-4 border-b border-letterboxd-border shrink-0 ${className}`}
     >
       <h2 className="text-lg sm:text-xl text-letterboxd-text-primary">
         {children}

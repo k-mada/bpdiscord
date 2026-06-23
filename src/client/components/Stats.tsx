@@ -54,7 +54,7 @@ const Dashboard = () => {
           <RatingDistributionHistogram size="md" distribution={allRatings} />
         )}
       </div>
-      <div className="flex flex-row justify-between max-md:justify-center max-md:flex-col m-auto w-[100%]">
+      <div className="flex flex-row justify-between max-md:justify-center max-md:flex-col m-auto w-full">
         <div className="flex-1 mr-2">
           <h3 className="subheading">Our highest rated movies (20+ ratings)</h3>
           <MovieList movies={topRatedUserFilms} showRating={true} size="sm" />

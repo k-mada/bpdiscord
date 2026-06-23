@@ -206,7 +206,7 @@ const EditEventView = ({
                   {cat.nominees.map((nominee) => (
                     <div
                       key={nominee.id}
-                      className="flex items-center justify-between py-2 px-3 bg-letterboxd-bg-primary/50 rounded"
+                      className="flex items-center justify-between py-2 px-3 bg-letterboxd-bg-primary/50 rounded-sm"
                     >
                       <div>
                         <p className="text-sm text-letterboxd-text-primary">
@@ -249,7 +249,7 @@ const EditEventView = ({
                 </div>
 
                 {showAddNominee === cat.id ? (
-                  <div className="mt-3 p-3 bg-letterboxd-bg-primary/50 rounded space-y-2">
+                  <div className="mt-3 p-3 bg-letterboxd-bg-primary/50 rounded-sm space-y-2">
                     <input
                       type="text"
                       value={newNomineeMovie}

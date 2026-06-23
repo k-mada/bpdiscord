@@ -58,7 +58,7 @@ const RatingDistributionHistogram = ({
           <Tooltip key={rating} content={tooltipContent}>
             <div className="histogram-bar">
               <div
-                className={`rounded-sm transition-all cursor-pointer ${
+                className={`rounded-xs transition-all cursor-pointer ${
                   count === 0
                     ? "bg-green-800 opacity-30"
                     : isTallestBar
