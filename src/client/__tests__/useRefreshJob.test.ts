@@ -1,11 +1,19 @@
 // @vitest-environment jsdom
+import { createElement, type ReactNode } from "react";
 import { renderHook, waitFor, act } from "@testing-library/react";
 
 import { useRefreshJob } from "../hooks/useRefreshJob";
 import apiService from "../services/api";
+import { AuthProvider } from "../contexts/AuthContext";
 import type { RefreshJob, RefreshJobStatus } from "../types";
 
 vi.mock("../services/api");
+
+// useRefreshJob now reads the token from the AuthProvider context; every
+// renderHook must be wrapped. The provider seeds its token from localStorage
+// at mount (set per-test below), matching the old getToken() behavior.
+const wrapper = ({ children }: { children: ReactNode }) =>
+  createElement(AuthProvider, null, children);
 
 const ACTIVE_JOB_KEY = "activeRefreshJobId";
 const TOKEN = "fake-jwt-token";
@@ -71,6 +79,8 @@ beforeEach(() => {
   vi.useRealTimers();
   installFakeLocalStorage();
   localStorage.setItem("token", TOKEN);
+  // AuthProvider resolves /me on mount; keep it a no-op for these job tests.
+  vi.mocked(apiService.getCurrentUser).mockResolvedValue({});
 });
 
 afterEach(() => {
@@ -83,7 +93,7 @@ afterEach(() => {
 
 describe("useRefreshJob — mount", () => {
   it("does nothing when localStorage has no saved job id", () => {
-    const { result } = renderHook(() => useRefreshJob());
+    const { result } = renderHook(() => useRefreshJob(), { wrapper });
     expect(result.current.job).toBeNull();
     expect(apiService.getRefreshJob).not.toHaveBeenCalled();
   });
@@ -94,7 +104,7 @@ describe("useRefreshJob — mount", () => {
       data: jobWith("running"),
     });
 
-    const { result } = renderHook(() => useRefreshJob());
+    const { result } = renderHook(() => useRefreshJob(), { wrapper });
 
     await waitFor(() => expect(result.current.job).not.toBeNull());
     expect(result.current.job?.status).toBe("running");
@@ -107,7 +117,7 @@ describe("useRefreshJob — mount", () => {
       data: jobWith("completed"),
     });
 
-    const { result } = renderHook(() => useRefreshJob());
+    const { result } = renderHook(() => useRefreshJob(), { wrapper });
 
     await waitFor(() => expect(result.current.job?.status).toBe("completed"));
     // Localstorage cleared because the job is terminal — no point resuming.
@@ -120,7 +130,7 @@ describe("useRefreshJob — mount", () => {
       new Error("Job not found"),
     );
 
-    renderHook(() => useRefreshJob());
+    renderHook(() => useRefreshJob(), { wrapper });
 
     await waitFor(() =>
       expect(localStorage.getItem(ACTIVE_JOB_KEY)).toBeNull(),
@@ -142,7 +152,7 @@ describe("useRefreshJob — trigger", () => {
     });
 
     vi.useFakeTimers();
-    const { result } = renderHook(() => useRefreshJob());
+    const { result } = renderHook(() => useRefreshJob(), { wrapper });
 
     await act(async () => {
       await result.current.trigger();
@@ -166,7 +176,7 @@ describe("useRefreshJob — trigger", () => {
       new Error("Another refresh job is already running"),
     );
 
-    const { result } = renderHook(() => useRefreshJob());
+    const { result } = renderHook(() => useRefreshJob(), { wrapper });
 
     await act(async () => {
       await result.current.trigger();
@@ -188,7 +198,7 @@ describe("useRefreshJob — trigger", () => {
       triggerPromise as ReturnType<typeof apiService.triggerRefresh>,
     );
 
-    const { result } = renderHook(() => useRefreshJob());
+    const { result } = renderHook(() => useRefreshJob(), { wrapper });
 
     let triggerCall: Promise<void>;
     act(() => {
@@ -221,7 +231,7 @@ describe("useRefreshJob — polling", () => {
       .mockResolvedValueOnce({ data: jobWith("completed") });
 
     vi.useFakeTimers();
-    const { result } = renderHook(() => useRefreshJob());
+    const { result } = renderHook(() => useRefreshJob(), { wrapper });
 
     await act(async () => {
       await result.current.trigger();
@@ -255,7 +265,7 @@ describe("useRefreshJob — polling", () => {
     });
 
     vi.useFakeTimers();
-    const { result, unmount } = renderHook(() => useRefreshJob());
+    const { result, unmount } = renderHook(() => useRefreshJob(), { wrapper });
 
     await act(async () => {
       await result.current.trigger();
@@ -291,7 +301,7 @@ describe("useRefreshJob — cancel", () => {
       data: { id: JOB_ID, status: "cancelled" },
     });
 
-    const { result } = renderHook(() => useRefreshJob());
+    const { result } = renderHook(() => useRefreshJob(), { wrapper });
 
     await act(async () => {
       await result.current.trigger();
@@ -304,7 +314,7 @@ describe("useRefreshJob — cancel", () => {
   });
 
   it("is a no-op when there is no current job", async () => {
-    const { result } = renderHook(() => useRefreshJob());
+    const { result } = renderHook(() => useRefreshJob(), { wrapper });
     await act(async () => {
       await result.current.cancel();
     });
@@ -322,7 +332,7 @@ describe("useRefreshJob — cancel", () => {
       new Error("Job is not running and cannot be cancelled"),
     );
 
-    const { result } = renderHook(() => useRefreshJob());
+    const { result } = renderHook(() => useRefreshJob(), { wrapper });
     await act(async () => {
       await result.current.trigger();
     });
@@ -341,7 +351,7 @@ describe("useRefreshJob — cancel", () => {
 describe("useRefreshJob — auth", () => {
   it("surfaces 'Not authenticated' if token is missing on trigger", async () => {
     localStorage.removeItem("token");
-    const { result } = renderHook(() => useRefreshJob());
+    const { result } = renderHook(() => useRefreshJob(), { wrapper });
     await act(async () => {
       await result.current.trigger();
     });
@@ -369,7 +379,7 @@ describe("useRefreshJob — recovery", () => {
       .mockResolvedValue({ data: jobWith("running") });
 
     vi.useFakeTimers();
-    const { result } = renderHook(() => useRefreshJob());
+    const { result } = renderHook(() => useRefreshJob(), { wrapper });
 
     await act(async () => {
       await result.current.trigger();
@@ -411,7 +421,7 @@ describe("useRefreshJob — mount-trigger race", () => {
       data: { job_id: JOB_ID },
     });
 
-    const { result } = renderHook(() => useRefreshJob());
+    const { result } = renderHook(() => useRefreshJob(), { wrapper });
 
     // User clicks Run while resume fetch is in flight.
     await act(async () => {

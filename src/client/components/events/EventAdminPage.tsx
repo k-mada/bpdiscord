@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { EventSummary, EventData } from "../../types";
 import { useAwardShows } from "../../hooks/useAwardShows";
 import { apiService } from "../../services/api";
+import { useAuth } from "../../contexts/AuthContext";
 import CreateEventForm from "./CreateEventForm";
 import EditEventView from "./EditEventView";
 
@@ -25,7 +26,8 @@ const EventAdminPage = () => {
   const [showDescription, setShowDescription] = useState("");
   const [creatingShow, setCreatingShow] = useState(false);
 
-  const getToken = () => localStorage.getItem("token") || "";
+  const { token } = useAuth();
+  const getToken = () => token ?? "";
 
   const loading = eventsLoading || awardShowsLoading;
 

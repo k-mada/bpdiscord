@@ -1,17 +1,13 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useAccounts } from "../../hooks/useAccounts";
 import { useUnclaimedLbUsernames } from "../../hooks/useUnclaimedLbUsernames";
+import { useAuth } from "../../contexts/AuthContext";
 import { Input } from "../ui/Input";
 import { Modal, ModalBody, ModalHeader } from "../Modal";
 import Spinner from "../Spinner";
-import type {
-  AccountUpdateRequest,
-  AccountView,
-  StoredUser,
-} from "../../types";
-import { isValidStoredUser } from "../../types";
+import type { AccountUpdateRequest, AccountView } from "../../types";
 
 // Letterboxd.com username format — kept in sync with src/server/lib/lbusername.ts.
 // Server is the source of truth; this is a UX-only pre-check to surface invalid
@@ -29,27 +25,25 @@ const formatDate = (iso: string | null): string => {
 
 const UserAdmin = () => {
   const navigate = useNavigate();
-  const [storedUser, setStoredUser] = useState<StoredUser | null>(null);
+  const { user, loading: authLoading, logout } = useAuth();
   const [editing, setEditing] = useState<AccountView | null>(null);
 
-  useEffect(() => {
-    const raw = localStorage.getItem("user");
-    if (!raw) return;
-    try {
-      const parsed: unknown = JSON.parse(raw);
-      if (isValidStoredUser(parsed)) setStoredUser(parsed);
-    } catch {
-      // Corrupt user row — leave storedUser null; the admin gate below redirects.
-    }
-  }, []);
-
-  const isAdmin = storedUser?.user_metadata?.role === "admin";
+  const isAdmin = user?.role === "admin";
 
   const { data: accounts, loading, error, update, remove } = useAccounts();
 
+  // Wait for /me to resolve before judging the gate — otherwise an admin sees
+  // a flash of "Access denied" while the identity round-trip is in flight.
+  if (authLoading) {
+    return (
+      <div className="card text-center py-12">
+        <Spinner />
+      </div>
+    );
+  }
+
   if (!isAdmin) {
-    // Mirror the pattern in Dashboard.tsx:25-26: role is sourced from the
-    // localStorage-cached user row. The server enforces the real gate
+    // Role is sourced from the /me response. The server enforces the real gate
     // (authorizeAdmin middleware), so this is a UX guard, not a security one.
     return (
       <div className="card border border-red-500/40">
@@ -176,7 +170,7 @@ const UserAdmin = () => {
         <EditAccountModal
           account={editing}
           accounts={accounts}
-          isSelf={storedUser?.id === editing.id}
+          isSelf={user?.id === editing.id}
           onClose={() => setEditing(null)}
           onSave={async (patch) => {
             const result = await update(editing.id, patch);
@@ -184,8 +178,7 @@ const UserAdmin = () => {
             if (result.requiresReauth) {
               // Admin changed their own email; their JWT rotated, so force a
               // re-login before continuing.
-              localStorage.removeItem("token");
-              localStorage.removeItem("user");
+              logout();
               navigate("/login");
             }
           }}

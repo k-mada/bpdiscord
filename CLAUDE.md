@@ -47,7 +47,7 @@ The **actor-graph** tables have semantics that aren't obvious from the columns:
 
 Routes are defined under `src/server/routes/`. Quick map:
 
-- `/api/auth` — signup / login / forgot-password (server-mediated). `GET /me` is JWT-authed and returns the account's identity joined with its linked Letterboxd profile (`{ id, email, role, lbusername, displayName }`); `lbusername` is null when unclaimed. It's how the client resolves the logged-in user's own lbusername (e.g. to link to their public `/user/:lbusername` page) — see the `useUser` hook.
+- `/api/auth` — signup / login / forgot-password (server-mediated). `GET /me` is JWT-authed and returns the account's identity joined with its linked Letterboxd profile (`{ id, email, role, lbusername, displayName }`); `lbusername` is null when unclaimed. It's how the client resolves the logged-in user's own lbusername (e.g. to link to their public `/user/:lbusername` page) — resolved by the `AuthProvider` context (`useAuth()`), the single owner of the token + `CurrentUser`.
 - `/api/film-users` — **public, DB-only reads** of Letterboxd data. 404 on miss (hint user to trigger a refresh). No fallback scraping; the legacy `?fallback=scrape` query param was removed when Puppeteer was retired.
 - `/api/scrape-user` — **JWT-authed** per-user refresh job (trigger / poll / cancel). Delegates to moviemaestro. Per-username rate limit 10 req / 5 min; poll 120 req / 60s per IP.
 - `/api/admin/refresh-rankings` — **admin only** bulk refresh, same delegation pattern.
@@ -85,7 +85,7 @@ In-process request coalescing dedupes concurrent same-id ingestions within a sin
 - **Admin editing own email** → server returns `requiresReauth: true`; the page clears the token and redirects to `/login` (the old JWT just rotated).
 - **Admin user table** unclaimed-lbusername datalist is the intersection of `GET /api/film-users` minus `GET /api/admin/users` lbusernames. The currently-edited account's own lbusername is intentionally included even though it's "claimed" so the current value stays valid.
 - **Admin self-delete is disabled** in the UI (forced to use Supabase Studio; the FK cascade would invalidate the in-flight JWT mid-request).
-- The page-level admin gate (`user.user_metadata.role === 'admin'`) is **UX only**. The real gate is the server-side `authorizeAdmin` middleware.
+- The page-level admin gate (`useAuth().user?.role === 'admin'`, sourced from `/me`) is **UX only**. The real gate is the server-side `authorizeAdmin` middleware.
 
 ## Development
 
