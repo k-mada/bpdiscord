@@ -1,6 +1,11 @@
 import { useState } from "react";
 
-import type { RefreshJob, RefreshJobPhase, RefreshJobStatus } from "../types";
+import {
+  LETTERBOXD_BLOCKED_REASON,
+  type RefreshJob,
+  type RefreshJobPhase,
+  type RefreshJobStatus,
+} from "../types";
 import Spinner from "./Spinner";
 
 const PHASE_ORDER: Array<{ key: RefreshJobPhase; label: string }> = [
@@ -40,6 +45,31 @@ export function statusBadge(status: RefreshJobStatus): {
     default:
       return { text: status, cls: "bg-gray-500/20 text-gray-300" };
   }
+}
+
+// A 'failed' job whose errors carry the worker's transient-block tag. Rendered
+// distinctly from a real failure: it's retry-worthy, not broken.
+function isLetterboxdBlocked(job: RefreshJob): boolean {
+  return (
+    job.status === "failed" &&
+    job.errors.some((e) => e.reason === LETTERBOXD_BLOCKED_REASON)
+  );
+}
+
+function BlockedBanner() {
+  return (
+    <div
+      role="status"
+      className="card border-l-2 border-yellow-500/50 bg-yellow-500/10"
+    >
+      <p className="text-sm text-yellow-200">
+        <span className="font-semibold">
+          Letterboxd is temporarily blocking requests from the server.
+        </span>{" "}
+        This usually clears in a few minutes — try again shortly.
+      </p>
+    </div>
+  );
 }
 
 function phaseRowIcon(s: PhaseRowStatus) {
@@ -171,6 +201,10 @@ function ErrorsPanel({ errors }: { errors: RefreshJob["errors"] }) {
  * surfaced by the page-specific header outside this component.
  */
 const JobProgress = ({ job }: { job: RefreshJob }) => {
+  const blocked = isLetterboxdBlocked(job);
+  const badge = blocked
+    ? { text: "Blocked", cls: "bg-yellow-500/20 text-yellow-300" }
+    : statusBadge(job.status);
   return (
     <>
       <div className="card">
@@ -180,11 +214,10 @@ const JobProgress = ({ job }: { job: RefreshJob }) => {
           </h2>
           <span
             className={
-              "text-xs uppercase tracking-wide px-2 py-1 rounded-sm " +
-              statusBadge(job.status).cls
+              "text-xs uppercase tracking-wide px-2 py-1 rounded-sm " + badge.cls
             }
           >
-            {statusBadge(job.status).text}
+            {badge.text}
           </span>
         </div>
         <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
@@ -205,7 +238,14 @@ const JobProgress = ({ job }: { job: RefreshJob }) => {
         ))}
       </div>
 
-      <ErrorsPanel errors={job.errors} />
+      {blocked && <BlockedBanner />}
+
+      {/* Block-tagged entries are surfaced by the banner, not as red errors. */}
+      <ErrorsPanel
+        errors={job.errors.filter(
+          (e) => e.reason !== LETTERBOXD_BLOCKED_REASON,
+        )}
+      />
 
       {job.logTail && (
         <div className="card">

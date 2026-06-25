@@ -245,11 +245,16 @@ export interface RefreshJobProgress {
   };
 }
 
+// Tags an error[] entry as a transient, retry-worthy Letterboxd IP/rate block.
+// Producer of record: moviemaestro app/pipeline/job_state.py::fail_blocked.
+export const LETTERBOXD_BLOCKED_REASON = "letterboxd_blocked";
+
 export interface RefreshJobErrorEntry {
   phase: string;
   item: string | null;
   error: string;
   at: string;
+  reason?: typeof LETTERBOXD_BLOCKED_REASON;
 }
 
 // Note on casing: top-level fields are camelCase because Drizzle (server-side
