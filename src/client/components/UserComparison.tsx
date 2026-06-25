@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import RatingDistributionHistogram from "./RatingDistributionHistogram";
 import TasteCompatibility from "./TasteCompatibility";
-import { MoviesInCommonData } from "../types";
 import { useComparison } from "../hooks/useComparison";
+import { useMoviesInCommon } from "../hooks/useMoviesInCommon";
 import StarRating from "./StarRating";
 interface Rating {
   rating: number;
@@ -20,45 +20,26 @@ interface UserData {
 }
 
 const UserComparison = () => {
-  const { usernames, getUserComplete, getMoviesInCommon } = useComparison();
+  const { usernames, getUserComplete } = useComparison();
   const [selectedUser1, setSelectedUser1] = useState<string>("");
   const [selectedUser2, setSelectedUser2] = useState<string>("");
   const [user1Data, setUser1Data] = useState<UserData | null>(null);
   const [user2Data, setUser2Data] = useState<UserData | null>(null);
-  const [moviesInCommonData, setMoviesInCommonData] =
-    useState<MoviesInCommonData | null>(null);
   const [loading, setLoading] = useState(false);
-  const [loadingMovies, setLoadingMovies] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filterNonRated, setFilterNonRated] = useState(false);
 
-  // Load movies in common when both users are selected
-  useEffect(() => {
-    if (selectedUser1 && selectedUser2 && selectedUser1 !== selectedUser2) {
-      loadMoviesInCommon();
-    } else {
-      setMoviesInCommonData(null);
-    }
-  }, [selectedUser1, selectedUser2]);
+  const {
+    data: moviesInCommonData,
+    loading: loadingMovies,
+    error: moviesError,
+  } = useMoviesInCommon(
+    selectedUser1 || null,
+    selectedUser2 || null,
+  );
 
-  const loadMoviesInCommon = async () => {
-    if (!selectedUser1 || !selectedUser2) return;
-
-    try {
-      setLoadingMovies(true);
-      setError(null);
-      const data = await getMoviesInCommon(selectedUser1, selectedUser2);
-      if (data) {
-        setMoviesInCommonData(data);
-      }
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to load movies in common",
-      );
-    } finally {
-      setLoadingMovies(false);
-    }
-  };
+  const displayError = error || moviesError;
+  const isLoading = loading || loadingMovies;
 
   const loadUserRatings = async (username: string, isUser1: boolean) => {
     if (!username) return;
@@ -151,7 +132,7 @@ const UserComparison = () => {
               <select
                 value={selectedUser1}
                 onChange={(e) => handleUser1Change(e.target.value)}
-                disabled={loading}
+                disabled={isLoading}
                 className="input-field w-full"
               >
                 <option value="">Select User 1</option>
@@ -168,7 +149,7 @@ const UserComparison = () => {
               <select
                 value={selectedUser2}
                 onChange={(e) => handleUser2Change(e.target.value)}
-                disabled={loading}
+                disabled={isLoading}
                 className="input-field w-full"
               >
                 <option value="">Select User 2</option>
@@ -182,10 +163,10 @@ const UserComparison = () => {
           </div>
         </div>
       </div>
-      {error && (
+      {displayError && (
         <div className="card border-red-500/30 bg-red-900/10">
           <h3 className="text-lg font-semibold text-red-400 mb-2">Error</h3>
-          <p className="text-red-300">{error}</p>
+          <p className="text-red-300">{displayError}</p>
         </div>
       )}
 

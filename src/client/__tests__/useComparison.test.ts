@@ -7,7 +7,6 @@ vi.mock("../services/api", () => ({
   apiService: {
     getFilmUsers: vi.fn(),
     getFilmUserComplete: vi.fn(),
-    getMoviesInCommon: vi.fn(),
   },
 }));
 
@@ -28,26 +27,6 @@ const mockUserComplete = {
     { rating: 3, count: 100 },
     { rating: 4, count: 150 },
     { rating: 5, count: 50 },
-  ],
-};
-
-const mockMoviesInCommon = {
-  user1: "alice",
-  user2: "bob",
-  count: 2,
-  moviesInCommon: [
-    {
-      title: "The Brutalist",
-      film_slug: "the-brutalist",
-      user1_rating: 4.5,
-      user2_rating: 3.0,
-    },
-    {
-      title: "Anora",
-      film_slug: "anora",
-      user1_rating: 4.0,
-      user2_rating: 4.5,
-    },
   ],
 };
 
@@ -93,41 +72,6 @@ describe("useComparison", () => {
 
       expect(apiService.getFilmUserComplete).toHaveBeenCalledWith("alice");
       expect(userData).toEqual(mockUserComplete);
-    });
-  });
-
-  // Hook-specific: getMoviesInCommon
-  describe("getMoviesInCommon", () => {
-    it("fetches movies in common for two users", async () => {
-      vi.mocked(apiService.getMoviesInCommon).mockResolvedValue({
-        data: mockMoviesInCommon,
-      });
-
-      const result = await renderLoadedHook();
-
-      let moviesData: typeof mockMoviesInCommon | undefined;
-      await act(async () => {
-        moviesData = await result.current.getMoviesInCommon("alice", "bob");
-      });
-
-      expect(apiService.getMoviesInCommon).toHaveBeenCalledWith("alice", "bob");
-      expect(moviesData).toEqual(mockMoviesInCommon);
-    });
-
-    it("returns data from API response", async () => {
-      vi.mocked(apiService.getMoviesInCommon).mockResolvedValue({
-        data: { user1: "alice", user2: "bob", count: 0, moviesInCommon: [] },
-      });
-
-      const result = await renderLoadedHook();
-
-      let moviesData: { count: number; moviesInCommon: unknown[] } | undefined;
-      await act(async () => {
-        moviesData = await result.current.getMoviesInCommon("alice", "bob");
-      });
-
-      expect(moviesData!.count).toBe(0);
-      expect(moviesData!.moviesInCommon).toEqual([]);
     });
   });
 });

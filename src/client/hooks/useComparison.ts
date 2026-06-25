@@ -30,17 +30,11 @@ export const useComparison = () => {
     return response.data;
   };
 
-  const getMoviesInCommon = async (user1: string, user2: string) => {
-    const response = await apiService.getMoviesInCommon(user1, user2);
-    return response.data;
-  };
-
   return {
     usernames,
     loading,
     error,
     refetch: fetchUsernames,
     getUserComplete,
-    getMoviesInCommon,
   };
 };

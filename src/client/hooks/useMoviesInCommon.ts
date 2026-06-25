@@ -6,10 +6,6 @@ import type { MoviesInCommonData } from "../types";
 // ratings (the input the taste-compatibility widget derives everything from).
 // No-ops until both usernames are set and distinct. Aborts in-flight requests
 // on change/unmount.
-//
-// `getMoviesInCommon` is still typed ApiResponse<any> (legacy) so the cast is
-// localized here; it tightens to ApiResponse<MoviesInCommonData> in the
-// comparison-page refactor (bpdiscord follow-up), at which point the cast goes.
 export const useMoviesInCommon = (
   user1: string | null,
   user2: string | null,
@@ -38,7 +34,7 @@ export const useMoviesInCommon = (
           user2!,
           ac.signal,
         );
-        if (response.data) setData(response.data as MoviesInCommonData);
+        if (response.data) setData(response.data);
       } catch (e) {
         if (e instanceof DOMException && e.name === "AbortError") return;
         setError("Failed to load movies in common");
