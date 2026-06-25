@@ -19,6 +19,7 @@ import {
   AccountUpdateResponse,
   CompatibilityExtremesData,
   CurrentUser,
+  MoviesInCommonData,
 } from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
@@ -125,8 +126,8 @@ class ApiService {
     user1: string,
     user2: string,
     signal?: AbortSignal,
-  ): Promise<ApiResponse<any>> {
-    return this.request<ApiResponse<any>>("/comparison/movies-in-common", {
+  ): Promise<ApiResponse<MoviesInCommonData>> {
+    return this.request<MoviesInCommonData>("/comparison/movies-in-common", {
       method: "POST",
       body: JSON.stringify({ user1, user2 }),
       ...(signal ? { signal } : {}),
