@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Subheading } from "./Subheading";
 import { useUser, emitAuthChange } from "../hooks/useUser";
 
@@ -30,11 +30,7 @@ const Header = () => {
     navigate("/login");
   };
 
-  const navigateTo = (path: string) => {
-    navigate(path);
-  };
-
-  const getNavButtonClass = (path: string): string => {
+  const getNavLinkClass = (path: string): string => {
     return `transition-colors duration-200 ${
       location.pathname === path
         ? "text-letterboxd-text-primary"
@@ -45,49 +41,34 @@ const Header = () => {
   return (
     <header>
       <div className="max-w-5xl mx-auto flex justify-between items-center">
-        <button
-          onClick={() => navigateTo("/")}
+        <Link
+          to="/"
           className="text-2xl text-left font-bold text-letterboxd-text-primary hover:text-letterboxd-accent transition-colors duration-200"
         >
           <span>The Big Picture Discord</span>
           <Subheading />
-        </button>
+        </Link>
 
         {/* Desktop Navigation */}
         <div className="hidden md:flex items-center space-x-4">
-          {/* <button
-            onClick={() => navigateTo("/mfl")}
-            className={getNavButtonClass("/mfl")}
-          >
-            MFL
-          </button> */}
-          <button
-            onClick={() => navigateTo("/compare")}
-            className={getNavButtonClass("/compare")}
-          >
+          <Link to="/compare" className={getNavLinkClass("/compare")}>
             Compare
-          </button>
-          <button
-            onClick={() => navigateTo("/hater-rankings")}
-            className={getNavButtonClass("/hater-rankings")}
+          </Link>
+          <Link
+            to="/hater-rankings"
+            className={getNavLinkClass("/hater-rankings")}
           >
             Hater Rankings
-          </button>
+          </Link>
 
           {profilePath && (
-            <button
-              onClick={() => navigateTo(profilePath)}
-              className={getNavButtonClass(profilePath)}
-            >
+            <Link to={profilePath} className={getNavLinkClass(profilePath)}>
               Profile
-            </button>
+            </Link>
           )}
-          <button
-            onClick={() => navigateTo("/fetcher")}
-            className={getNavButtonClass("/fetcher")}
-          >
+          <Link to="/fetcher" className={getNavLinkClass("/fetcher")}>
             Data Fetcher
-          </button>
+          </Link>
 
           {isAuthenticated ? (
             <button onClick={handleLogout} className="btn-secondary">
@@ -95,18 +76,12 @@ const Header = () => {
             </button>
           ) : (
             <div className="flex gap-2">
-              <button
-                onClick={() => navigateTo("/login")}
-                className="btn-secondary"
-              >
+              <Link to="/login" className="btn-secondary">
                 Login
-              </button>
-              <button
-                onClick={() => navigateTo("/signup")}
-                className="btn-primary"
-              >
+              </Link>
+              <Link to="/signup" className="btn-primary">
                 Sign Up
-              </button>
+              </Link>
             </div>
           )}
         </div>
@@ -139,48 +114,48 @@ const Header = () => {
       {isMobileMenuOpen && (
         <div className="md:hidden border-t border-letterboxd-border bg-letterboxd-bg-secondary">
           <div className="px-6 py-4 space-y-4">
-            <button
-              onClick={() => navigateTo("/compare")}
-              className={`block w-full text-left py-2 ${getNavButtonClass(
+            <Link
+              to="/compare"
+              className={`block w-full text-left py-2 ${getNavLinkClass(
                 "/compare",
               )}`}
             >
               Compare
-            </button>
-            <button
-              onClick={() => navigateTo("/hater-rankings")}
-              className={`block w-full text-left py-2 ${getNavButtonClass(
+            </Link>
+            <Link
+              to="/hater-rankings"
+              className={`block w-full text-left py-2 ${getNavLinkClass(
                 "/hater-rankings",
               )}`}
             >
               Hater Rankings
-            </button>
-            <button
-              onClick={() => navigateTo("/dashboard")}
-              className={`block w-full text-left py-2 ${getNavButtonClass(
+            </Link>
+            <Link
+              to="/dashboard"
+              className={`block w-full text-left py-2 ${getNavLinkClass(
                 "/dashboard",
               )}`}
             >
               Dashboard
-            </button>
+            </Link>
             {profilePath && (
-              <button
-                onClick={() => navigateTo(profilePath)}
-                className={`block w-full text-left py-2 ${getNavButtonClass(
+              <Link
+                to={profilePath}
+                className={`block w-full text-left py-2 ${getNavLinkClass(
                   profilePath,
                 )}`}
               >
                 Profile
-              </button>
+              </Link>
             )}
-            <button
-              onClick={() => navigateTo("/fetcher")}
-              className={`block w-full text-left py-2 ${getNavButtonClass(
+            <Link
+              to="/fetcher"
+              className={`block w-full text-left py-2 ${getNavLinkClass(
                 "/fetcher",
               )}`}
             >
               Data Fetcher
-            </button>
+            </Link>
 
             <div className="pt-2 border-t border-letterboxd-border space-y-2">
               {isAuthenticated ? (
@@ -189,18 +164,18 @@ const Header = () => {
                 </button>
               ) : (
                 <>
-                  <button
-                    onClick={() => navigateTo("/login")}
-                    className="btn-secondary w-full"
+                  <Link
+                    to="/login"
+                    className="btn-secondary w-full block text-center"
                   >
                     Login
-                  </button>
-                  <button
-                    onClick={() => navigateTo("/signup")}
-                    className="btn-primary w-full"
+                  </Link>
+                  <Link
+                    to="/signup"
+                    className="btn-primary w-full block text-center"
                   >
                     Sign Up
-                  </button>
+                  </Link>
                 </>
               )}
             </div>
