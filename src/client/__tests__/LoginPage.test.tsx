@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import LoginPage from "../components/LoginPage";
 import apiService from "../services/api";
+import { AuthProvider } from "../contexts/AuthContext";
 import { installFakeLocalStorage } from "./helpers/localStorage";
 
 vi.mock("../services/api");
@@ -12,9 +13,11 @@ vi.mock("../components/Subheading", () => ({
 
 function renderPage() {
   return render(
-    <MemoryRouter>
-      <LoginPage />
-    </MemoryRouter>,
+    <AuthProvider>
+      <MemoryRouter>
+        <LoginPage />
+      </MemoryRouter>
+    </AuthProvider>,
   );
 }
 
@@ -22,6 +25,8 @@ describe("LoginPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     installFakeLocalStorage();
+    // AuthProvider resolves /me after login(); keep it a no-op here.
+    vi.mocked(apiService.getCurrentUser).mockResolvedValue({});
   });
 
   it("renders email + password fields (no name field)", () => {
@@ -43,7 +48,7 @@ describe("LoginPage", () => {
     expect(link).toHaveAttribute("href", "/forgot-password");
   });
 
-  it("submits via apiService.login and persists token + user to localStorage", async () => {
+  it("submits via apiService.login and persists the token via AuthProvider", async () => {
     vi.mocked(apiService.login).mockResolvedValue({
       data: {
         message: "ok",
@@ -51,9 +56,6 @@ describe("LoginPage", () => {
         user: { id: "u1", email: "u@example.test" } as never,
       },
     });
-
-    const onAuthChange = vi.fn();
-    window.addEventListener("authchange", onAuthChange);
 
     renderPage();
     await userEvent.type(screen.getByLabelText("Email"), "u@example.test");
@@ -63,21 +65,16 @@ describe("LoginPage", () => {
     await waitFor(() => {
       expect(localStorage.getItem("token")).toBe("fake-token");
     });
-    expect(localStorage.getItem("user")).toContain("u@example.test");
     expect(apiService.login).toHaveBeenCalledWith({
       email: "u@example.test",
       password: "secret",
     });
-    // Notifies useUser listeners (e.g. Header) to re-sync the logged-in user.
-    expect(onAuthChange).toHaveBeenCalledTimes(1);
-    window.removeEventListener("authchange", onAuthChange);
+    // The legacy cached blob is no longer written — /me is the source of truth.
+    expect(localStorage.getItem("user")).toBeNull();
   });
 
   it("displays a form-level error when login fails", async () => {
     vi.mocked(apiService.login).mockRejectedValue(new Error("Invalid credentials"));
-
-    const onAuthChange = vi.fn();
-    window.addEventListener("authchange", onAuthChange);
 
     renderPage();
     await userEvent.type(screen.getByLabelText("Email"), "u@example.test");
@@ -88,7 +85,5 @@ describe("LoginPage", () => {
       expect(screen.getByText("Invalid credentials")).toBeInTheDocument();
     });
     expect(localStorage.getItem("token")).toBeNull();
-    expect(onAuthChange).not.toHaveBeenCalled();
-    window.removeEventListener("authchange", onAuthChange);
   });
 });

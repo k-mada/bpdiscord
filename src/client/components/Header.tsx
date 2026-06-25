@@ -1,21 +1,16 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Subheading } from "./Subheading";
-import { useUser, emitAuthChange } from "../hooks/useUser";
+import { useAuth } from "../contexts/AuthContext";
 
 const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useUser();
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const { token, user, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
+  const isAuthenticated = !!token;
   const profilePath = user?.lbusername ? `/user/${user.lbusername}` : null;
-
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    setIsAuthenticated(!!token);
-  }, [location.pathname]); // Re-check on route changes
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -23,10 +18,7 @@ const Header = () => {
   }, [location.pathname]);
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    emitAuthChange();
-    setIsAuthenticated(false);
+    logout();
     navigate("/login");
   };
 

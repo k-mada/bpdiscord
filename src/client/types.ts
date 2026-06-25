@@ -3,8 +3,6 @@
 // PasswordResetConfirmRequest, ScraperRequest, AuthenticatedUser) live in
 // src/shared/types.ts. Import from there directly.
 
-import type { AuthenticatedUser } from "../shared/types";
-
 // ===========================
 // UI Data Shapes
 // ===========================
@@ -49,30 +47,6 @@ export interface UserComparisonData {
   user1: UserData;
   user2: UserData;
 }
-
-// ===========================
-// Client-side Stored Auth
-// ===========================
-
-export interface StoredUser extends AuthenticatedUser {
-  // Re-required: a stored (logged-in) user always has an email — the
-  // isValidStoredUser guard below enforces this at runtime.
-  email: string;
-  aud: string;
-  role?: string;
-}
-
-// Type guard for user validation
-export const isValidStoredUser = (obj: unknown): obj is StoredUser => {
-  return (
-    typeof obj === "object" &&
-    obj !== null &&
-    "id" in obj &&
-    "email" in obj &&
-    typeof (obj as StoredUser).id === "string" &&
-    typeof (obj as StoredUser).email === "string"
-  );
-};
 
 // ===========================
 // Movie Comparison

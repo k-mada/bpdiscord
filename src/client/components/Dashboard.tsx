@@ -1,34 +1,29 @@
-import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useUser } from "../hooks/useUser";
+import { useAuth } from "../contexts/AuthContext";
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { user: currentUser } = useUser();
-  const [user, setUser] = useState<any>(null);
+  const { user, loading } = useAuth();
 
-  const profilePath = currentUser?.lbusername
-    ? `/user/${currentUser.lbusername}`
-    : null;
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-  }, []);
+  const profilePath = user?.lbusername ? `/user/${user.lbusername}` : null;
 
   const getUserName = () => {
-    if (user?.user_metadata?.name) {
-      return user.user_metadata.name;
-    }
-    if (user?.email) {
-      return user.email.split("@")[0];
-    }
+    if (user?.displayName) return user.displayName;
+    if (user?.email) return user.email.split("@")[0];
     return "User";
   };
 
-  const isAdmin = user?.user_metadata?.role === "admin";
+  const isAdmin = user?.role === "admin";
+
+  // Hold the greeting (and admin-gated cards) until /me resolves — otherwise a
+  // hard refresh flashes "Welcome back, User!" before the real identity lands.
+  if (loading) {
+    return (
+      <div className="flex justify-center py-20">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-letterboxd-accent" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">

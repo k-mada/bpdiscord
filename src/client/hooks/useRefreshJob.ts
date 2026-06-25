@@ -2,10 +2,10 @@ import { useCallback } from "react";
 
 import { apiService } from "../services/api";
 import type { RefreshJob } from "../types";
+import { useAuth } from "../contexts/AuthContext";
 import { useJob } from "./useJob";
 
 const ACTIVE_JOB_KEY = "activeRefreshJobId";
-const getToken = (): string | null => localStorage.getItem("token");
 
 /**
  * Owns the admin's active Hater Rankings bulk refresh job. Thin wrapper
@@ -13,12 +13,12 @@ const getToken = (): string | null => localStorage.getItem("token");
  * placeholder shape) live here; lifecycle/polling/retry live in useJob.
  */
 export const useRefreshJob = () => {
+  const { token } = useAuth();
   const { job, error, isTriggering, isCancelling, trigger, cancel } = useJob<
     RefreshJob,
     void
   >({
     trigger: async () => {
-      const token = getToken();
       if (!token) throw new Error("Not authenticated");
       const res = await apiService.triggerRefresh(token);
       const jobId = res.data?.job_id;
@@ -26,13 +26,11 @@ export const useRefreshJob = () => {
       return jobId;
     },
     poll: async (jobId) => {
-      const token = getToken();
       if (!token) throw new Error("Not authenticated");
       const res = await apiService.getRefreshJob(jobId, token);
       return res.data ?? null;
     },
     cancel: async (jobId) => {
-      const token = getToken();
       if (!token) throw new Error("Not authenticated");
       await apiService.cancelRefreshJob(jobId, token);
     },

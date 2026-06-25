@@ -3,11 +3,12 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import apiService from "../services/api";
 import { AuthRequest } from "../../shared/types";
 import { Input } from "./ui/Input";
-import { emitAuthChange } from "../hooks/useUser";
+import { useAuth } from "../contexts/AuthContext";
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { login } = useAuth();
   const [formData, setFormData] = useState<AuthRequest>({
     email: "",
     password: "",
@@ -33,11 +34,7 @@ const LoginPage = () => {
       const response = await apiService.login(formData);
 
       if (response.data?.access_token) {
-        localStorage.setItem("token", response.data.access_token);
-        if (response.data.user) {
-          localStorage.setItem("user", JSON.stringify(response.data.user));
-        }
-        emitAuthChange();
+        login(response.data.access_token);
         const redirectPath =
           localStorage.getItem("redirectAfterLogin") || "/dashboard";
         localStorage.removeItem("redirectAfterLogin");

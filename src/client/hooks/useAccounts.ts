@@ -1,13 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { apiService } from "../services/api";
+import { useAuth } from "../contexts/AuthContext";
 import type {
   AccountView,
   AccountUpdateRequest,
   AccountUpdateResponse,
 } from "../types";
-
-const getToken = (): string | null => localStorage.getItem("token");
 
 /**
  * Admin account list owner. Fetches GET /api/admin/users on mount and exposes
@@ -19,12 +18,19 @@ const getToken = (): string | null => localStorage.getItem("token");
  * already-claimed lbusername, which the modal renders inline.
  */
 export const useAccounts = () => {
+  const { token } = useAuth();
+  // Held in a ref so the memoized callbacks below stay identity-stable while
+  // always reading the latest token (avoids re-firing the mount fetch on every
+  // token-state change).
+  const tokenRef = useRef(token);
+  tokenRef.current = token;
+
   const [data, setData] = useState<AccountView[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const refetch = useCallback(async () => {
-    const token = getToken();
+    const token = tokenRef.current;
     if (!token) {
       setError("Not authenticated");
       setLoading(false);
@@ -51,7 +57,7 @@ export const useAccounts = () => {
       id: string,
       patch: AccountUpdateRequest,
     ): Promise<AccountUpdateResponse> => {
-      const token = getToken();
+      const token = tokenRef.current;
       if (!token) throw new Error("Not authenticated");
       const response = await apiService.updateAccount(id, patch, token);
       const updated = response.data;
@@ -68,7 +74,7 @@ export const useAccounts = () => {
   );
 
   const remove = useCallback(async (id: string): Promise<void> => {
-    const token = getToken();
+    const token = tokenRef.current;
     if (!token) throw new Error("Not authenticated");
     await apiService.deleteAccount(id, token);
     setData((prev) => prev.filter((a) => a.id !== id));

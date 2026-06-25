@@ -3,6 +3,8 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import ResetPasswordPage from "../components/ResetPasswordPage";
 import { supabase } from "../lib/supabase";
+import { apiService } from "../services/api";
+import { AuthProvider } from "../contexts/AuthContext";
 import { installFakeLocalStorage } from "./helpers/localStorage";
 
 // Mock the Supabase client. The page touches getSession, updateUser, signOut.
@@ -15,6 +17,8 @@ vi.mock("../lib/supabase", () => ({
     },
   },
 }));
+// AuthProvider resolves identity from /me; keep it a no-op in this suite.
+vi.mock("../services/api");
 vi.mock("../components/Subheading", () => ({
   Subheading: () => <div data-testid="subheading" />,
 }));
@@ -33,12 +37,14 @@ function LocationProbe() {
 
 function renderPage() {
   return render(
-    <MemoryRouter initialEntries={["/reset-password"]}>
-      <Routes>
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
-        <Route path="/login" element={<LocationProbe />} />
-      </Routes>
-    </MemoryRouter>,
+    <AuthProvider>
+      <MemoryRouter initialEntries={["/reset-password"]}>
+        <Routes>
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/login" element={<LocationProbe />} />
+        </Routes>
+      </MemoryRouter>
+    </AuthProvider>,
   );
 }
 
@@ -46,6 +52,7 @@ describe("ResetPasswordPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     installFakeLocalStorage();
+    vi.mocked(apiService.getCurrentUser).mockResolvedValue({});
   });
 
   it("shows 'Verifying...' immediately on mount", () => {

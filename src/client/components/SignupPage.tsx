@@ -4,7 +4,7 @@ import apiService from "../services/api";
 import { SignupRequest } from "../../shared/types";
 import { Subheading } from "./Subheading";
 import { Input } from "./ui/Input";
-import { emitAuthChange } from "../hooks/useUser";
+import { useAuth } from "../contexts/AuthContext";
 
 // Mirrors LBUSERNAME_FORMAT in src/server/lib/lbusername.ts. UX-only pre-check
 // before round-trip; server remains the source of truth.
@@ -14,6 +14,7 @@ const LBUSERNAME_FORMAT_MESSAGE =
 
 const SignupPage = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [formData, setFormData] = useState<
     Required<Pick<SignupRequest, "name" | "email" | "password">> & {
       lbusername: string;
@@ -60,11 +61,7 @@ const SignupPage = () => {
       const response = await apiService.signup(payload);
 
       if (response.data?.access_token) {
-        localStorage.setItem("token", response.data.access_token);
-        if (response.data.user) {
-          localStorage.setItem("user", JSON.stringify(response.data.user));
-        }
-        emitAuthChange();
+        login(response.data.access_token);
         const redirectPath =
           localStorage.getItem("redirectAfterLogin") || "/dashboard";
         localStorage.removeItem("redirectAfterLogin");

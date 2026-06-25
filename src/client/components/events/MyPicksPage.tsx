@@ -2,10 +2,12 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { EventData, EventCategory, EventUserPick } from "../../types";
 import { apiService } from "../../services/api";
+import { useAuth } from "../../contexts/AuthContext";
 import { formatNominee } from "./utils";
 
 const MyPicksPage = () => {
   const { slug } = useParams<{ slug: string }>();
+  const { token } = useAuth();
   const [event, setEvent] = useState<EventData | null>(null);
   const [picks, setPicks] = useState<EventUserPick[]>([]);
   const [loading, setLoading] = useState(true);
@@ -14,7 +16,6 @@ const MyPicksPage = () => {
   const [pickError, setPickError] = useState<string | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem("token") || "";
     if (!slug || !token) return;
 
     const fetchData = async () => {
@@ -37,7 +38,7 @@ const MyPicksPage = () => {
     };
 
     fetchData();
-  }, [slug]);
+  }, [slug, token]);
 
   const getPickForCategory = (categoryId: string): string | null => {
     const pick = picks.find((p) => p.categoryId === categoryId);
@@ -45,11 +46,10 @@ const MyPicksPage = () => {
   };
 
   const handlePickChange = async (categoryId: string, nomineeId: string) => {
-    const token = localStorage.getItem("token") || "";
     try {
       setSaving(categoryId);
       setPickError(null);
-      await apiService.submitEventPick(categoryId, nomineeId, token);
+      await apiService.submitEventPick(categoryId, nomineeId, token ?? "");
 
       // Update local state
       setPicks((prev) => {

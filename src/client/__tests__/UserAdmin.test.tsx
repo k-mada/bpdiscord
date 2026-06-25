@@ -4,7 +4,8 @@ import { MemoryRouter } from "react-router-dom";
 
 import UserAdmin from "../components/admin/UserAdmin";
 import apiService from "../services/api";
-import type { AccountView } from "../types";
+import { AuthProvider } from "../contexts/AuthContext";
+import type { AccountView, CurrentUser } from "../types";
 import { installFakeLocalStorage } from "./helpers/localStorage";
 
 vi.mock("../services/api");
@@ -12,18 +13,20 @@ vi.mock("../components/Spinner", () => ({
   default: () => <div data-testid="spinner" />,
 }));
 
-const ADMIN_USER = {
+const ADMIN_USER: CurrentUser = {
   id: "admin-id",
   email: "admin@example.com",
-  aud: "authenticated",
-  user_metadata: { name: "Admin", role: "admin" },
+  role: "admin",
+  lbusername: "admin-lb",
+  displayName: "Admin",
 };
 
-const NON_ADMIN_USER = {
+const NON_ADMIN_USER: CurrentUser = {
   id: "user-id",
   email: "user@example.com",
-  aud: "authenticated",
-  user_metadata: { name: "User" },
+  role: null,
+  lbusername: null,
+  displayName: "User",
 };
 
 const accounts: AccountView[] = [
@@ -62,39 +65,48 @@ const allLetterboxdUsers = [
 
 function renderPage() {
   return render(
-    <MemoryRouter>
-      <UserAdmin />
-    </MemoryRouter>,
+    <AuthProvider>
+      <MemoryRouter>
+        <UserAdmin />
+      </MemoryRouter>
+    </AuthProvider>,
   );
 }
 
 beforeEach(() => {
   installFakeLocalStorage();
   localStorage.setItem("token", "test-token");
-  localStorage.setItem("user", JSON.stringify(ADMIN_USER));
   vi.clearAllMocks();
+  // Admin identity resolved from /me by default; individual tests override.
+  vi.mocked(apiService.getCurrentUser).mockResolvedValue({
+    data: ADMIN_USER,
+  });
 });
 
 describe("UserAdmin — admin gate", () => {
-  it("renders 403 for non-admin users", () => {
-    localStorage.setItem("user", JSON.stringify(NON_ADMIN_USER));
+  it("renders 403 for non-admin users", async () => {
+    vi.mocked(apiService.getCurrentUser).mockResolvedValue({
+      data: NON_ADMIN_USER,
+    });
     vi.mocked(apiService.getAccounts).mockResolvedValue({ data: [] });
 
     renderPage();
 
-    expect(screen.getByText("Access denied")).toBeInTheDocument();
-    expect(
-      screen.queryByText("User management"),
-    ).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByText("Access denied")).toBeInTheDocument(),
+    );
+    expect(screen.queryByText("User management")).not.toBeInTheDocument();
   });
 
-  it("renders 403 when no user is in localStorage", () => {
-    localStorage.removeItem("user");
+  it("renders 403 when /me resolves no user", async () => {
+    vi.mocked(apiService.getCurrentUser).mockResolvedValue({});
     vi.mocked(apiService.getAccounts).mockResolvedValue({ data: [] });
 
     renderPage();
 
-    expect(screen.getByText("Access denied")).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByText("Access denied")).toBeInTheDocument(),
+    );
   });
 });
 

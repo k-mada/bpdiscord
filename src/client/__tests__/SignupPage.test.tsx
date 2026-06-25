@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import SignupPage from "../components/SignupPage";
 import apiService from "../services/api";
+import { AuthProvider } from "../contexts/AuthContext";
 import { installFakeLocalStorage } from "./helpers/localStorage";
 
 vi.mock("../services/api");
@@ -12,9 +13,11 @@ vi.mock("../components/Subheading", () => ({
 
 function renderPage() {
   return render(
-    <MemoryRouter>
-      <SignupPage />
-    </MemoryRouter>,
+    <AuthProvider>
+      <MemoryRouter>
+        <SignupPage />
+      </MemoryRouter>
+    </AuthProvider>,
   );
 }
 
@@ -22,6 +25,8 @@ describe("SignupPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     installFakeLocalStorage();
+    // AuthProvider resolves /me after login(); keep it a no-op here.
+    vi.mocked(apiService.getCurrentUser).mockResolvedValue({});
   });
 
   it("renders name + email + password + Letterboxd.com username fields", () => {
@@ -50,9 +55,6 @@ describe("SignupPage", () => {
       },
     });
 
-    const onAuthChange = vi.fn();
-    window.addEventListener("authchange", onAuthChange);
-
     renderPage();
     await userEvent.type(screen.getByLabelText("Name"), "New User");
     await userEvent.type(screen.getByLabelText("Email"), "u@example.test");
@@ -67,9 +69,8 @@ describe("SignupPage", () => {
       email: "u@example.test",
       password: "secret",
     });
-    // Notifies useUser listeners (e.g. Header) to re-sync the new user.
-    expect(onAuthChange).toHaveBeenCalledTimes(1);
-    window.removeEventListener("authchange", onAuthChange);
+    // The legacy cached blob is no longer written — /me is the source of truth.
+    expect(localStorage.getItem("user")).toBeNull();
   });
 
   it("trims, lowercases, and includes lbusername when provided", async () => {
@@ -170,9 +171,6 @@ describe("SignupPage", () => {
       message: "Account created. Please check your email to confirm your account before signing in.",
     });
 
-    const onAuthChange = vi.fn();
-    window.addEventListener("authchange", onAuthChange);
-
     renderPage();
     await userEvent.type(screen.getByLabelText("Name"), "Confirm Me");
     await userEvent.type(screen.getByLabelText("Email"), "u@example.test");
@@ -182,10 +180,8 @@ describe("SignupPage", () => {
     await waitFor(() => {
       expect(screen.getByText(/check your email/i)).toBeInTheDocument();
     });
+    // No token issued (email-confirmation flow) → no auth state set.
     expect(localStorage.getItem("token")).toBeNull();
-    // No token issued (email-confirmation flow) → no auth state to broadcast.
-    expect(onAuthChange).not.toHaveBeenCalled();
-    window.removeEventListener("authchange", onAuthChange);
   });
 
   it("displays a form-level error when signup fails", async () => {

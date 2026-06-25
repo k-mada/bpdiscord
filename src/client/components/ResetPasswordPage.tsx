@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
+import { useAuth } from "../contexts/AuthContext";
 import { Subheading } from "./Subheading";
 import { Input } from "./ui/Input";
 
@@ -8,6 +9,7 @@ type Status = "verifying" | "ready" | "invalid";
 
 const ResetPasswordPage = () => {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [status, setStatus] = useState<Status>("verifying");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -58,8 +60,7 @@ const ResetPasswordPage = () => {
       // storage because we use persistSession: false). If the user had an
       // old logged-in session, the token is now stale — let them re-login
       // cleanly with the new password.
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
+      logout();
       navigate("/login", {
         replace: true,
         state: { resetSuccess: true },
