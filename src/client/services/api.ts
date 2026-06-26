@@ -214,10 +214,7 @@ class ApiService {
       year: number | null;
       topRated: LBFilm[];
       topWatched: LBFilm[];
-    }>(
-      `/stats/top-films${year ? `/${year}` : ""}`,
-      signal ? { signal } : {},
-    );
+    }>(`/stats/top-films${year ? `/${year}` : ""}`, signal ? { signal } : {});
   }
 
   // Movie Swap endpoint

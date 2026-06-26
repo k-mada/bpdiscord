@@ -70,7 +70,11 @@ export async function getTopFilmsByYear(
 
   res.json({
     success: true,
-    data: { year: year ?? null, topRated: rated.data, topWatched: watched.data },
+    data: {
+      year: year ?? null,
+      topRated: rated.data,
+      topWatched: watched.data,
+    },
   });
 }
 

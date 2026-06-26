@@ -9,6 +9,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import * as dc from '../controllers/dataController';
 import {
   resetDatabase,
+  cleanDatabase,
   closeDatabase,
   assertTestEnvironment,
 } from './setup';
@@ -18,6 +19,8 @@ import {
   testUserFilms,
   expectedResults,
 } from './fixtures/testData';
+import { db } from '../db';
+import { users, films, userFilms } from '../db/schema';
 
 // Verify test environment before anything runs
 beforeAll(async () => {
@@ -528,5 +531,74 @@ describe('dataController', () => {
       const after = await dc.dbGetUserRatings('test_user_minimal');
       expect(after.data).toEqual([]);
     });
+  });
+});
+
+// The HighestRated path selects MEMBERSHIP by a Bayesian-weighted score, then
+// presents the chosen set by raw average. This block is isolated because the
+// weighted score depends on the global mean over ALL ratings — so it controls
+// the entire rating population, then restores the standard fixtures afterward.
+describe('dbGetTopUserFilms — highest-rated membership gate', () => {
+  // 2020 pool: FLUKE 5.0 from 2 raters, SOLID 4.5 from 6. ANCHOR (1990) only
+  // drags the global mean down; the year filter keeps it out of the pool.
+  //   c = (2*5 + 6*4.5 + 8*1) / 16 = 2.8125,  m = 10
+  //   adj(FLUKE) = 2/12*5  + 10/12*c ≈ 3.18
+  //   adj(SOLID) = 6/16*4.5 + 10/16*c ≈ 3.45  → SOLID wins selection
+  beforeAll(async () => {
+    await cleanDatabase();
+    await db.insert(users).values(
+      Array.from({ length: 8 }, (_, i) => ({
+        lbusername: `gate_u${i + 1}`,
+        isDiscord: true,
+      })),
+    );
+    await db.insert(films).values([
+      { filmSlug: 'gate-fluke', title: 'Fluke', releaseYear: 2020 },
+      { filmSlug: 'gate-solid', title: 'Solid', releaseYear: 2020 },
+      { filmSlug: 'gate-anchor', title: 'Anchor', releaseYear: 1990 },
+    ]);
+    const rows: { filmSlug: string; lbusername: string; rating: number }[] = [];
+    for (let i = 1; i <= 2; i++)
+      rows.push({ filmSlug: 'gate-fluke', lbusername: `gate_u${i}`, rating: 5.0 });
+    for (let i = 1; i <= 6; i++)
+      rows.push({ filmSlug: 'gate-solid', lbusername: `gate_u${i}`, rating: 4.5 });
+    for (let i = 1; i <= 8; i++)
+      rows.push({ filmSlug: 'gate-anchor', lbusername: `gate_u${i}`, rating: 1.0 });
+    await db.insert(userFilms).values(rows);
+  });
+
+  afterAll(async () => {
+    await resetDatabase();
+  });
+
+  it('drops a high-average low-sample film for a well-sampled one when the limit binds', async () => {
+    const result = await dc.dbGetTopUserFilms({
+      orderBy: dc.TopUserFilmsOrder.HighestRated,
+      year: 2020,
+      minRatings: 2,
+      m: 10,
+      limit: 1,
+    });
+    // Naive top-1-by-average would return the 5.0 fluke; the gate prefers the
+    // confidence-weighted winner.
+    expect(result.data!.map((f) => f.film_slug)).toEqual(['gate-solid']);
+  });
+
+  it('presents the selected set by raw average desc, not by the weighted score', async () => {
+    const result = await dc.dbGetTopUserFilms({
+      orderBy: dc.TopUserFilmsOrder.HighestRated,
+      year: 2020,
+      minRatings: 2,
+      m: 10,
+      limit: 25,
+    });
+    // Both qualify; display order is by raw average → the 5.0 fluke is shown
+    // first even though it lost the (hidden) selection tiebreak.
+    expect(result.data!.map((f) => f.film_slug)).toEqual([
+      'gate-fluke',
+      'gate-solid',
+    ]);
+    expect(result.data![0]!.average_rating).toBeCloseTo(5.0, 2);
+    expect(result.data![1]!.average_rating).toBeCloseTo(4.5, 2);
   });
 });

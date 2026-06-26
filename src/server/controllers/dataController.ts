@@ -701,6 +701,7 @@ export async function dbGetTopUserFilms(
     limit?: number;
     minRatings?: number;
     year?: number;
+    m?: number;
   } = {},
 ): Promise<{
   success: boolean;
@@ -721,16 +722,36 @@ export async function dbGetTopUserFilms(
   const limit = options.limit ?? 25;
   const minRatings = options.minRatings ?? 0;
   const year = options.year;
+  const m = options.m ?? 10;
+  const isHighestRated = orderBy === TopUserFilmsOrder.HighestRated;
 
   return dbOperation(async () => {
     const watchCount = sql<number>`COUNT(*)::int`;
     const ratingCount = sql<number>`COUNT(${userFilms.rating})::int`;
     const averageRating = sql`ROUND(AVG(${userFilms.rating})::numeric, 2)`;
 
-    const orderClause =
-      orderBy === TopUserFilmsOrder.HighestRated
-        ? [desc(averageRating), desc(ratingCount), asc(userFilms.filmSlug)]
-        : [desc(watchCount), asc(films.title)];
+    // "Highest rated" selects MEMBERSHIP by a Bayesian-weighted score that
+    // pulls low-sample films toward the Discord global mean `c` (so a
+    // 4.9-from-5 can't crowd out a 4.3-from-40), then the result is presented
+    // by raw average below so the displayed ★ list stays descending. The
+    // weighted score is an ordering key only — it never leaves this function.
+    let c = 0;
+    if (isHighestRated) {
+      const meanRow = await db
+        .select({ c: sql<string>`COALESCE(AVG(${userFilms.rating}), 0)` })
+        .from(userFilms)
+        .innerJoin(users, eq(userFilms.lbusername, users.lbusername))
+        .where(eq(users.isDiscord, true));
+      c = toNumber(meanRow[0]?.c ?? "0");
+    }
+    const adjusted = sql`
+      (${ratingCount}::numeric / (${ratingCount} + ${m})) * AVG(${userFilms.rating})
+      + (${m}::numeric / (${ratingCount} + ${m})) * ${c}
+    `;
+
+    const orderClause = isHighestRated
+      ? [desc(adjusted), desc(ratingCount), asc(userFilms.filmSlug)]
+      : [desc(watchCount), asc(films.title)];
 
     const base = db
       .select({
@@ -769,7 +790,7 @@ export async function dbGetTopUserFilms(
 
     const result = await filtered.orderBy(...orderClause).limit(limit);
 
-    return result.map((r) => ({
+    const mapped = result.map((r) => ({
       film_slug: r.film_slug,
       title: r.title ?? "",
       watch_count: r.watch_count,
@@ -780,6 +801,20 @@ export async function dbGetTopUserFilms(
       tmdb_link: r.tmdb_link ?? "",
       url: r.url ?? "",
     }));
+
+    // Re-sort the already-selected set by raw average for display. The DB
+    // LIMIT (by weighted score) fixed membership; this only reorders ≤limit
+    // rows so the ★ column reads top-to-bottom.
+    if (isHighestRated) {
+      mapped.sort(
+        (a, b) =>
+          b.average_rating - a.average_rating ||
+          b.rating_count - a.rating_count ||
+          a.film_slug.localeCompare(b.film_slug),
+      );
+    }
+
+    return mapped;
   });
 }
 
