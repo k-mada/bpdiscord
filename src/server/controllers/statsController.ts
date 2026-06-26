@@ -47,9 +47,8 @@ export async function getTopFilmsByYear(
   req: Request,
   res: Response,
 ): Promise<void> {
-  // No :year param → all-time (no release_year filter). Only year-scoped
-  // requests carry the looser 5-rating bar; all-time keeps the historical
-  // 20-rating threshold so the "highest rated" list stays meaningful.
+  // All-time (no :year) keeps the historical 20-rating bar; a single release
+  // year has far fewer ratings, so year-scoped uses a looser 5-rating bar.
   let year: number | undefined;
   if (req.params.year !== undefined) {
     year = Number(req.params.year);
