@@ -93,6 +93,7 @@ export const testFilms: NewFilm[] = [
     lbRating: 4.2,
     url: 'https://letterboxd.com/film/test-film-popular',
     poster: 'https://example.com/poster1.jpg',
+    releaseYear: 2020,
   },
   {
     filmSlug: 'test-film-classic',
@@ -100,6 +101,7 @@ export const testFilms: NewFilm[] = [
     lbRating: 4.8,
     url: 'https://letterboxd.com/film/test-film-classic',
     poster: 'https://example.com/poster2.jpg',
+    releaseYear: 2020,
   },
   {
     filmSlug: 'test-film-divisive',
@@ -107,6 +109,7 @@ export const testFilms: NewFilm[] = [
     lbRating: 2.5,
     url: 'https://letterboxd.com/film/test-film-divisive',
     poster: 'https://example.com/poster3.jpg',
+    releaseYear: 2021,
   },
   {
     filmSlug: 'test-film-obscure',
@@ -114,6 +117,7 @@ export const testFilms: NewFilm[] = [
     lbRating: 3.5,
     url: 'https://letterboxd.com/film/test-film-obscure',
     poster: 'https://example.com/poster4.jpg',
+    releaseYear: 2021,
   },
   {
     filmSlug: 'test-film-new',
@@ -121,7 +125,9 @@ export const testFilms: NewFilm[] = [
     lbRating: 3.8,
     url: 'https://letterboxd.com/film/test-film-new',
     poster: 'https://example.com/poster5.jpg',
+    releaseYear: 2022,
   },
+  // releaseYear intentionally omitted (NULL) — must be excluded by any year filter
   {
     filmSlug: 'test-film-unlisted',
     title: 'Unlisted Test Film',

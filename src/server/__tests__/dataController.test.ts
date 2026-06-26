@@ -447,6 +447,38 @@ describe('dataController', () => {
       expect(typeof first.rating_count).toBe('number');
       expect(typeof first.average_rating).toBe('number');
     });
+
+    // Fixture release years: popular/classic=2020, divisive/obscure=2021,
+    // new=2022, unlisted=NULL.
+    it('year filter restricts to films released that year', async () => {
+      const result = await dc.dbGetTopUserFilms({ year: 2020 });
+
+      expect(result.success).toBe(true);
+      // Both watch_count 2 → MostWatched tie broken by title asc.
+      expect(result.data!.map(f => f.film_slug)).toEqual([
+        'test-film-classic',
+        'test-film-popular',
+      ]);
+    });
+
+    it('year filter excludes films with a NULL release year', async () => {
+      const slugs = (await dc.dbGetTopUserFilms({ year: 2021 })).data!.map(
+        f => f.film_slug,
+      );
+      expect(slugs.sort()).toEqual(['test-film-divisive', 'test-film-obscure']);
+      expect(slugs).not.toContain('test-film-unlisted');
+    });
+
+    it('year with no released films returns an empty list', async () => {
+      const result = await dc.dbGetTopUserFilms({ year: 1999 });
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual([]);
+    });
+
+    it('omitting year is unchanged (no release-year filter applied)', async () => {
+      const result = await dc.dbGetTopUserFilms();
+      expect(result.data!.length).toBe(6);
+    });
   });
 
   describe('Mutation Operations', () => {

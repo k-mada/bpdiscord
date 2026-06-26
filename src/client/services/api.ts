@@ -208,6 +208,23 @@ class ApiService {
     return this.request<Array<LBFilm>>("/stats/top-rated-user-films");
   }
 
+  // Top films for a release year (defaults to current year server-side)
+  async getTopFilmsByYear(
+    year?: number,
+    signal?: AbortSignal,
+  ): Promise<
+    ApiResponse<{ year: number; topRated: LBFilm[]; topWatched: LBFilm[] }>
+  > {
+    return this.request<{
+      year: number;
+      topRated: LBFilm[];
+      topWatched: LBFilm[];
+    }>(
+      `/stats/top-films${year ? `/${year}` : ""}`,
+      signal ? { signal } : {},
+    );
+  }
+
   // Movie Swap endpoint
   // TODO: NEED TO STANDARDIZE MOVIE OBJECT, TOO MANY VARIATIONS
   async getMovieSwap(

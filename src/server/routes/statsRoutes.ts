@@ -8,6 +8,7 @@ import {
   getMissingFilms,
   getTopWatchedFilms,
   getTopRatedUserFilms,
+  getTopFilmsByYear,
 } from "../controllers/statsController";
 
 const router = Router();
@@ -41,6 +42,18 @@ router.get(
   "/top-rated-user-films",
   [statsLimiter, handleValidationErrors],
   getTopRatedUserFilms,
+);
+
+router.get(
+  "/top-films",
+  [statsLimiter, handleValidationErrors],
+  getTopFilmsByYear,
+);
+
+router.get(
+  "/top-films/:year",
+  [statsLimiter, handleValidationErrors],
+  getTopFilmsByYear,
 );
 
 router.get(
