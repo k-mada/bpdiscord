@@ -43,6 +43,44 @@ export async function getTopWatchedFilms(
   res.json(result);
 }
 
+export async function getTopFilmsByYear(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const year = req.params.year
+    ? Number(req.params.year)
+    : new Date().getFullYear();
+
+  if (!Number.isInteger(year) || year < 1870 || year > 2100) {
+    res.status(400).json({ success: false, error: "Invalid year" });
+    return;
+  }
+
+  const [rated, watched] = await Promise.all([
+    dbGetTopUserFilms({
+      orderBy: TopUserFilmsOrder.HighestRated,
+      year,
+      minRatings: 5,
+      limit: 25,
+    }),
+    dbGetTopUserFilms({
+      orderBy: TopUserFilmsOrder.MostWatched,
+      year,
+      limit: 25,
+    }),
+  ]);
+
+  if (!rated.success || !watched.success) {
+    res.json({ success: false, error: rated.error ?? watched.error });
+    return;
+  }
+
+  res.json({
+    success: true,
+    data: { year, topRated: rated.data, topWatched: watched.data },
+  });
+}
+
 export async function getMissingFilms(
   req: Request,
   res: Response,

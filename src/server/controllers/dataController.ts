@@ -1,4 +1,4 @@
-import { eq, asc, desc, inArray, sql } from "drizzle-orm";
+import { eq, and, asc, desc, inArray, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
   users,
@@ -700,6 +700,7 @@ export async function dbGetTopUserFilms(
     orderBy?: TopUserFilmsOrder;
     limit?: number;
     minRatings?: number;
+    year?: number;
   } = {},
 ): Promise<{
   success: boolean;
@@ -719,6 +720,7 @@ export async function dbGetTopUserFilms(
   const orderBy = options.orderBy ?? TopUserFilmsOrder.MostWatched;
   const limit = options.limit ?? 25;
   const minRatings = options.minRatings ?? 0;
+  const year = options.year;
 
   return dbOperation(async () => {
     const watchCount = sql<number>`COUNT(*)::int`;
@@ -745,7 +747,12 @@ export async function dbGetTopUserFilms(
       .from(userFilms)
       .innerJoin(users, eq(userFilms.lbusername, users.lbusername))
       .innerJoin(films, eq(userFilms.filmSlug, films.filmSlug))
-      .where(eq(users.isDiscord, true))
+      .where(
+        and(
+          eq(users.isDiscord, true),
+          year !== undefined ? eq(films.releaseYear, year) : undefined,
+        ),
+      )
       .groupBy(
         userFilms.filmSlug,
         films.title,
