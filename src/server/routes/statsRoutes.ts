@@ -44,14 +44,10 @@ router.get(
   getTopRatedUserFilms,
 );
 
+// Optional param (Express 4 `:year?`): /top-films → all-time,
+// /top-films/:year → that release year. Express 5 would need `{/:year}`.
 router.get(
-  "/top-films",
-  [statsLimiter, handleValidationErrors],
-  getTopFilmsByYear,
-);
-
-router.get(
-  "/top-films/:year",
+  "/top-films/:year?",
   [statsLimiter, handleValidationErrors],
   getTopFilmsByYear,
 );
