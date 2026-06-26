@@ -208,15 +208,20 @@ class ApiService {
     return this.request<Array<LBFilm>>("/stats/top-rated-user-films");
   }
 
-  // Top films for a release year (defaults to current year server-side)
+  // Top films for a release year. Omit `year` for all-time (server returns
+  // `year: null`); pass a year to scope to films released that year.
   async getTopFilmsByYear(
     year?: number,
     signal?: AbortSignal,
   ): Promise<
-    ApiResponse<{ year: number; topRated: LBFilm[]; topWatched: LBFilm[] }>
+    ApiResponse<{
+      year: number | null;
+      topRated: LBFilm[];
+      topWatched: LBFilm[];
+    }>
   > {
     return this.request<{
-      year: number;
+      year: number | null;
       topRated: LBFilm[];
       topWatched: LBFilm[];
     }>(
