@@ -32,17 +32,6 @@ export async function getUserFilmsCount(
   res.json(result);
 }
 
-export async function getTopWatchedFilms(
-  req: Request,
-  res: Response,
-): Promise<void> {
-  const result = await dbGetTopUserFilms({
-    orderBy: TopUserFilmsOrder.MostWatched,
-    limit: 24,
-  });
-  res.json(result);
-}
-
 export async function getTopFilmsByYear(
   req: Request,
   res: Response,
@@ -90,16 +79,5 @@ export async function getMissingFilms(
   res: Response,
 ): Promise<void> {
   const result = await dbGetMissingFilms();
-  res.json(result);
-}
-
-export async function getTopRatedUserFilms(
-  req: Request,
-  res: Response,
-): Promise<void> {
-  const result = await dbGetTopUserFilms({
-    orderBy: TopUserFilmsOrder.HighestRated,
-    minRatings: 20,
-  });
   res.json(result);
 }

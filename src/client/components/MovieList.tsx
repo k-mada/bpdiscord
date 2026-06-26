@@ -9,6 +9,7 @@ type MovieListProps = {
   animated?: boolean;
   showRating?: boolean;
   showCount?: boolean;
+  emptyMessage?: string;
 };
 
 const MovieList = ({
@@ -16,7 +17,12 @@ const MovieList = ({
   animated = true,
   showRating = false,
   showCount = false,
+  emptyMessage = "No films to show.",
 }: MovieListProps) => {
+  if (movies.length === 0) {
+    return <p className="body-text -prose italic opacity-70">{emptyMessage}</p>;
+  }
+
   return (
     <ol
       className={cn(
