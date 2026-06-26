@@ -198,16 +198,6 @@ class ApiService {
     return this.request<number>("/stats/user-films-count");
   }
 
-  // Top watched films endpoint
-  async getTopWatchedFilms(): Promise<ApiResponse<Array<LBFilm>>> {
-    return this.request<Array<LBFilm>>("/stats/top-watched-films");
-  }
-
-  // Top rated films endpoint
-  async getTopRatedUserFilms(): Promise<ApiResponse<Array<LBFilm>>> {
-    return this.request<Array<LBFilm>>("/stats/top-rated-user-films");
-  }
-
   // Top films for a release year. Omit `year` for all-time (server returns
   // `year: null`); pass a year to scope to films released that year.
   async getTopFilmsByYear(
@@ -224,10 +214,7 @@ class ApiService {
       year: number | null;
       topRated: LBFilm[];
       topWatched: LBFilm[];
-    }>(
-      `/stats/top-films${year ? `/${year}` : ""}`,
-      signal ? { signal } : {},
-    );
+    }>(`/stats/top-films${year ? `/${year}` : ""}`, signal ? { signal } : {});
   }
 
   // Movie Swap endpoint

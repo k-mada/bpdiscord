@@ -6,8 +6,6 @@ import {
   getAllUserFilms,
   getUserFilmsCount,
   getMissingFilms,
-  getTopWatchedFilms,
-  getTopRatedUserFilms,
   getTopFilmsByYear,
 } from "../controllers/statsController";
 
@@ -30,18 +28,6 @@ router.get(
   "/all-user-films",
   [statsLimiter, handleValidationErrors],
   getAllUserFilms,
-);
-
-router.get(
-  "/top-watched-films",
-  [statsLimiter, handleValidationErrors],
-  getTopWatchedFilms,
-);
-
-router.get(
-  "/top-rated-user-films",
-  [statsLimiter, handleValidationErrors],
-  getTopRatedUserFilms,
 );
 
 // Optional param (Express 4 `:year?`): /top-films → all-time,
