@@ -8,12 +8,14 @@
     "build:server": "cd src/server && tsc",
     "build:client": "cd src/client && yarn build",
     "start": "node src/server/dist/server/server.js",
-    "dev": "concurrently --kill-others --raw \"yarn dev:server\" \"yarn dev:client\"",
+    "dev": "concurrently --kill-others --raw \"yarn dev:server\" \"yarn dev:client:wait\"",
     "dev:server": "cd src/server && yarn dev",
     "dev:client": "cd src/client && yarn dev",
-    "dev:local": "concurrently --kill-others --raw \"yarn dev:server:local\" \"yarn dev:client:local\"",
+    "dev:client:wait": "wait-on tcp:127.0.0.1:3001 && yarn dev:client",
+    "dev:local": "concurrently --kill-others --raw \"yarn dev:server:local\" \"yarn dev:client:wait:local\"",
     "dev:server:local": "cd src/server && SMOKE_LOCAL=1 yarn dev",
     "dev:client:local": "cd src/client && yarn dev --mode smoke",
+    "dev:client:wait:local": "wait-on tcp:127.0.0.1:3001 && yarn dev:client:local",
     "setup:local": "cd src/server && yarn ts-node-dev --transpile-only --exit-child --no-notify scripts/setupLocalSmoke.ts",
     "seed:graph": "cd src/server && yarn seed:graph",
     "seed:retry": "cd src/server && yarn seed:retry",
@@ -42,7 +44,8 @@
     "concurrently": "^9.1.0",
     "rimraf": "^5.0.5",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.3.2"
+    "typescript": "^5.3.2",
+    "wait-on": "^9.0.10"
   },
   "engines": {
     "node": ">=18.0.0"
