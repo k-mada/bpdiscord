@@ -4,6 +4,7 @@ import {
   SignupRequest,
   AuthResponse,
 } from "../../shared/types";
+import { ApiError } from "../lib/apiError";
 import {
   LBFilm,
   MFLScoringMetric,
@@ -44,8 +45,9 @@ class ApiService {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(
+        throw new ApiError(
           data.error || `Request failed with status ${response.status}`,
+          response.status,
         );
       }
 
