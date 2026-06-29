@@ -7,6 +7,10 @@ import apiService from "../services/api";
 import { AuthProvider } from "../contexts/AuthContext";
 import type { AccountView, CurrentUser } from "../types";
 import { installFakeLocalStorage } from "./helpers/localStorage";
+import { futureJwt } from "./helpers/jwt";
+
+// AuthProvider drops a token it judges expired/malformed; use a live JWT.
+const TOKEN = futureJwt();
 
 vi.mock("../services/api");
 vi.mock("../components/Spinner", () => ({
@@ -75,7 +79,7 @@ function renderPage() {
 
 beforeEach(() => {
   installFakeLocalStorage();
-  localStorage.setItem("token", "test-token");
+  localStorage.setItem("token", TOKEN);
   vi.clearAllMocks();
   // Admin identity resolved from /me by default; individual tests override.
   vi.mocked(apiService.getCurrentUser).mockResolvedValue({
@@ -214,7 +218,7 @@ describe("UserAdmin — edit flow", () => {
       expect(apiService.updateAccount).toHaveBeenCalledWith(
         "bob-id",
         { name: "Bobby", lbusername: "unclaimed-1" },
-        "test-token",
+        TOKEN,
       );
     });
 
@@ -279,7 +283,7 @@ describe("UserAdmin — edit flow", () => {
       expect(apiService.updateAccount).toHaveBeenCalledWith(
         "carol-id",
         { lbusername: null },
-        "test-token",
+        TOKEN,
       ),
     );
   });
@@ -390,7 +394,7 @@ describe("UserAdmin — delete flow", () => {
     await waitFor(() =>
       expect(apiService.deleteAccount).toHaveBeenCalledWith(
         "bob-id",
-        "test-token",
+        TOKEN,
       ),
     );
     await waitFor(() =>
