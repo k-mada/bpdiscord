@@ -5,6 +5,7 @@ import { renderHook, waitFor, act } from "@testing-library/react";
 import { useRefreshJob } from "../hooks/useRefreshJob";
 import apiService from "../services/api";
 import { AuthProvider } from "../contexts/AuthContext";
+import { futureJwt } from "./helpers/jwt";
 import type { RefreshJob, RefreshJobStatus } from "../types";
 
 vi.mock("../services/api");
@@ -16,7 +17,9 @@ const wrapper = ({ children }: { children: ReactNode }) =>
   createElement(AuthProvider, null, children);
 
 const ACTIVE_JOB_KEY = "activeRefreshJobId";
-const TOKEN = "fake-jwt-token";
+// A live JWT: AuthProvider drops a token it judges expired/malformed, which
+// would strip the token the hook relies on.
+const TOKEN = futureJwt();
 const JOB_ID = "11111111-2222-3333-4444-555555555555";
 
 // jsdom in this project's vitest config doesn't expose window.localStorage;
