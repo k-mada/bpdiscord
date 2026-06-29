@@ -3,6 +3,7 @@ import {
   AuthRequest,
   SignupRequest,
   AuthResponse,
+  MovieSwapResult,
 } from "../../shared/types";
 import {
   LBFilm,
@@ -217,14 +218,14 @@ class ApiService {
     }>(`/stats/top-films${year ? `/${year}` : ""}`, signal ? { signal } : {});
   }
 
-  // Movie Swap endpoint
-  // TODO: NEED TO STANDARDIZE MOVIE OBJECT, TOO MANY VARIATIONS
+  // Movie Swap endpoint — bidirectional recommendations between two users.
   async getMovieSwap(
-    user1: string,
-    user2: string,
-  ): Promise<ApiResponse<{ filmSlug: string; title: string }[]>> {
-    return this.request<{ filmSlug: string; title: string }[]>(
-      "/comparison/movie-swap",
+    userA: string,
+    userB: string,
+  ): Promise<ApiResponse<MovieSwapResult>> {
+    const params = new URLSearchParams({ userA, userB });
+    return this.request<MovieSwapResult>(
+      `/comparison/movie-swap?${params.toString()}`,
     );
   }
 

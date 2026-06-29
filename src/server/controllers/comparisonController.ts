@@ -265,40 +265,38 @@ export async function getCompatibilityExtremes(
 
 export async function getMovieSwap(req: Request, res: Response): Promise<void> {
   try {
-    const user1 = req.query.user1?.toString();
-    const user2 = req.query.user2?.toString();
+    const userA = req.query.userA?.toString().trim();
+    const userB = req.query.userB?.toString().trim();
 
-    if (!user1 || !user2) {
+    if (!userA || !userB) {
       const response: ApiResponse = {
-        error: "Both user1 and user2 are required",
+        error: "Both userA and userB are required",
       };
       res.status(400).json(response);
       return;
     }
 
-    const result = await dbGetMovieSwap(user1, user2);
+    if (userA === userB) {
+      const response: ApiResponse = {
+        error: "Cannot compare a user with themselves",
+      };
+      res.status(400).json(response);
+      return;
+    }
+
+    const result = await dbGetMovieSwap(userA, userB);
 
     if (!result.success) {
       const response: ApiResponse = {
-        error: result.error || "Failed to get movies in common",
+        error: result.error || "Failed to get movie swap",
       };
       res.status(500).json(response);
       return;
     }
 
-    let movieSwapMovies: { filmSlug: string; title: string }[] = [];
-    if (result.data) {
-      movieSwapMovies = result.data.map((value, index) => {
-        return {
-          filmSlug: value.film_slug,
-          title: value.title,
-        };
-      });
-    }
-
     const response: ApiResponse = {
       message: "Movie swap retrieved successfully",
-      data: movieSwapMovies || [],
+      data: result.data,
     };
     res.json(response);
   } catch (error) {

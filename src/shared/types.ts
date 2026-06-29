@@ -19,6 +19,26 @@ export interface ApiResponse<T = unknown> {
 }
 
 // ===========================
+// Movie Swap
+// ===========================
+
+// Minimal-by-design: a swap row carries only what the feature needs today —
+// the film identity plus the *seer's* personal rating (the sort key). This is
+// deliberately not LBFilm, which has no per-user rating and carries aggregate
+// fields (poster/average_rating/watch_count) the swap lists don't use yet.
+// Adding fields later is backward-compatible.
+export interface SwapFilm {
+  film_slug: string;
+  title: string;
+  user_rating: number | null; // null = watched but not rated; sorts last
+}
+
+export interface MovieSwapResult {
+  recsForUserA: SwapFilm[]; // films userA hasn't seen that userB has
+  recsForUserB: SwapFilm[]; // films userB hasn't seen that userA has
+}
+
+// ===========================
 // User & Authentication
 // ===========================
 

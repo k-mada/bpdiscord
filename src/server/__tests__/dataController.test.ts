@@ -209,14 +209,40 @@ describe('dataController', () => {
       expect(result.data).toEqual([]);
     });
 
-    it('dbGetMovieSwap returns films user1 has that user2 does not', async () => {
+    it('dbGetMovieSwap returns both directions, rating-DESC ordered', async () => {
       const result = await dc.dbGetMovieSwap('test_user_active', 'test_user_minimal');
 
       expect(result.success).toBe(true);
-      expect(result.data!.length).toBe(4); // Divisive, New, Obscure, Unlisted
 
-      const titles = result.data!.map(f => f.title).sort();
-      expect(titles).toEqual(expectedResults.movieSwapActiveToMinimal);
+      // active has seen everything minimal has → no recs for active
+      expect(result.data!.recsForUserA.map(f => f.title)).toEqual(
+        expectedResults.movieSwap.activeMinimalRecsForA,
+      );
+
+      // minimal gets active's extras, highest-rated first (order significant)
+      expect(result.data!.recsForUserB.map(f => f.title)).toEqual(
+        expectedResults.movieSwap.activeMinimalRecsForB,
+      );
+      expect(result.data!.recsForUserB[0].user_rating).toBe(4.0); // New Test Film
+    });
+
+    it('dbGetMovieSwap sorts unrated (watched-only) films last via NULLS LAST', async () => {
+      const result = await dc.dbGetMovieSwap('test_user_minimal', 'test_user_non_discord');
+
+      expect(result.success).toBe(true);
+
+      const recsForA = result.data!.recsForUserA;
+      expect(recsForA.map(f => f.title)).toEqual(
+        expectedResults.movieSwap.minimalNonDiscordRecsForA,
+      );
+      // The unrated film sorts last despite its alphabetically-first title.
+      const last = recsForA[recsForA.length - 1];
+      expect(last.title).toBe('Aardvark Unrated Film');
+      expect(last.user_rating).toBeNull();
+
+      expect(result.data!.recsForUserB.map(f => f.title)).toEqual(
+        expectedResults.movieSwap.minimalNonDiscordRecsForB,
+      );
     });
   });
 

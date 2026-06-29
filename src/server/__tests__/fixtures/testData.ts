@@ -135,6 +135,17 @@ export const testFilms: NewFilm[] = [
     url: 'https://letterboxd.com/film/test-film-unlisted',
     poster: 'https://example.com/poster6.jpg',
   },
+  // Alphabetically-first title but watched-but-unrated below — exercises the
+  // movie-swap NULLS LAST sort. Watched only by the non-discord user, so it
+  // stays out of discord-only aggregates.
+  {
+    filmSlug: 'test-film-unrated',
+    title: 'Aardvark Unrated Film',
+    lbRating: 4.0,
+    url: 'https://letterboxd.com/film/test-film-unrated',
+    poster: 'https://example.com/poster7.jpg',
+    releaseYear: 2023,
+  },
 ];
 
 // ===========================
@@ -164,6 +175,11 @@ export const testUserFilms: NewUserFilm[] = [
   // Attached to the non-discord user so it doesn't affect any discord-only
   // count assertions. Used to exercise dbGetMissingFilms.
   { lbusername: 'test_user_non_discord', filmSlug: 'test-film-no-data', title: 'No Data Film', rating: 2.5, liked: false },
+
+  // Watched but NOT rated (rating null), non-discord user — drives the
+  // movie-swap NULLS LAST assertion. Title sorts first alphabetically, so it
+  // appearing last proves unrated films sink below rated ones.
+  { lbusername: 'test_user_non_discord', filmSlug: 'test-film-unrated', title: 'Aardvark Unrated Film', rating: null, liked: false },
 ];
 
 // ===========================
@@ -222,8 +238,28 @@ export const expectedResults = {
   // Movies in common between active and minimal users
   moviesInCommonActiveMinimal: ['Classic Test Film', 'Popular Test Film'],
 
-  // Movies active has but minimal doesn't
-  movieSwapActiveToMinimal: ['Divisive Test Film', 'New Test Film', 'Obscure Test Film', 'Unlisted Test Film'],
+  // Movie swap (bidirectional). Lists are rating-DESC, then title-ASC, with
+  // unrated films last. Order is significant — do not sort before asserting.
+  movieSwap: {
+    // swap(active, minimal): active has seen everything minimal has, so A's
+    // recs are empty; minimal gets active's extras, highest-rated first.
+    activeMinimalRecsForA: [] as string[],
+    activeMinimalRecsForB: [
+      'New Test Film', // 4.0
+      'Obscure Test Film', // 3.5
+      'Unlisted Test Film', // 3.0
+      'Divisive Test Film', // 1.5
+    ],
+    // swap(minimal, non_discord): A's recs prove NULLS LAST — the unrated
+    // 'Aardvark' sorts last despite its alphabetically-first title.
+    minimalNonDiscordRecsForA: [
+      'Divisive Test Film', // 4.5
+      'No Data Film', // 2.5
+      'Obscure Test Film', // 1.0
+      'Aardvark Unrated Film', // null → last
+    ],
+    minimalNonDiscordRecsForB: ['Classic Test Film'], // 5.0
+  },
 
   // Missing films (in UserFilms but not in Films)
   missingFilms: ['test-film-no-data'],

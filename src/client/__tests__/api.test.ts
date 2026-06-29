@@ -217,9 +217,9 @@ describe("ApiService", () => {
   // -------------------------------------------------------------------------
 
   describe("getMovieSwap", () => {
-    it("calls GET /comparison/movie-swap (params unused)", async () => {
+    it("calls GET /comparison/movie-swap with userA & userB params", async () => {
       await apiService.getMovieSwap("alice", "bob");
-      expectFetch("/comparison/movie-swap");
+      expectFetch("/comparison/movie-swap?userA=alice&userB=bob");
     });
   });
 
