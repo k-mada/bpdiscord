@@ -135,9 +135,8 @@ export const testFilms: NewFilm[] = [
     url: 'https://letterboxd.com/film/test-film-unlisted',
     poster: 'https://example.com/poster6.jpg',
   },
-  // Alphabetically-first title but watched-but-unrated below — exercises the
-  // movie-swap NULLS LAST sort. Watched only by the non-discord user, so it
-  // stays out of discord-only aggregates.
+  // Watched-but-unrated by the non-discord user only — exercises movie-swap
+  // NULLS LAST without touching discord-only aggregates.
   {
     filmSlug: 'test-film-unrated',
     title: 'Aardvark Unrated Film',
@@ -176,9 +175,7 @@ export const testUserFilms: NewUserFilm[] = [
   // count assertions. Used to exercise dbGetMissingFilms.
   { lbusername: 'test_user_non_discord', filmSlug: 'test-film-no-data', title: 'No Data Film', rating: 2.5, liked: false },
 
-  // Watched but NOT rated (rating null), non-discord user — drives the
-  // movie-swap NULLS LAST assertion. Title sorts first alphabetically, so it
-  // appearing last proves unrated films sink below rated ones.
+  // Watched but not rated (rating null); its A-title sorting last proves NULLS LAST.
   { lbusername: 'test_user_non_discord', filmSlug: 'test-film-unrated', title: 'Aardvark Unrated Film', rating: null, liked: false },
 ];
 

@@ -1036,11 +1036,6 @@ export async function dbGetMovieSwap(
   error?: string;
 }> {
   return dbOperation(async () => {
-    // One direction of the swap: films `seer` has logged (watched or rated)
-    // that `other` has not. The seer's personal rating drives the sort, with
-    // NULLS LAST so watched-but-unrated films sink below rated ones — Drizzle's
-    // desc() would otherwise emit NULLS FIRST in Postgres. No Films join: the
-    // minimal SwapFilm shape needs only the denormalized UserFilms.title.
     const swapDirection = async (
       seer: string,
       other: string,
@@ -1064,7 +1059,8 @@ export async function dbGetMovieSwap(
           ),
         )
         .orderBy(
-          sql`${userFilms.rating} DESC NULLS LAST, ${userFilms.title} ASC`,
+          // Drizzle desc() emits NULLS FIRST in Postgres; unrated films sort last.
+          sql`${userFilms.rating} DESC NULLS LAST, ${userFilms.title} ASC, ${userFilms.filmSlug} ASC`,
         );
 
       return rows.map((r) => ({
