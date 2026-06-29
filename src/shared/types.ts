@@ -19,6 +19,23 @@ export interface ApiResponse<T = unknown> {
 }
 
 // ===========================
+// Movie Swap
+// ===========================
+
+// Not LBFilm: that type has no per-user rating (the sort key). Kept minimal;
+// adding fields later is backward-compatible.
+export interface SwapFilm {
+  film_slug: string;
+  title: string;
+  user_rating: number | null; // null = watched but not rated; sorts last
+}
+
+export interface MovieSwapResult {
+  recsForUserA: SwapFilm[]; // films userA hasn't seen that userB has
+  recsForUserB: SwapFilm[]; // films userB hasn't seen that userA has
+}
+
+// ===========================
 // User & Authentication
 // ===========================
 

@@ -1,4 +1,4 @@
-import { eq, and, asc, desc, inArray, sql } from "drizzle-orm";
+import { eq, and, asc, desc, inArray, notInArray, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
   users,
@@ -22,6 +22,7 @@ import {
   CompatibilityExtremeRow,
   toNumber,
 } from "../db/queryTypes";
+import { SwapFilm } from "../../shared/types";
 
 // ===========================
 // User Ratings Management
@@ -1023,41 +1024,62 @@ export async function dbGetFilmsByUser(username: string): Promise<{
 // Movie Swap
 // ===========================
 
+// Interim hard cap until the limit becomes a request parameter.
+const SWAP_RESULT_LIMIT = 100;
+
 export async function dbGetMovieSwap(
-  user1: string,
-  user2: string,
+  userA: string,
+  userB: string,
 ): Promise<{
   success: boolean;
-  data?: Array<{
-    title: string;
-    film_slug: string;
-  }>;
+  data?: {
+    recsForUserA: SwapFilm[];
+    recsForUserB: SwapFilm[];
+  };
   error?: string;
 }> {
   return dbOperation(async () => {
-    // Matches RPC: get_movie_swap
-    // Movies user1 has seen but user2 hasn't
-    // Subquery for user2's films
-    const user2FilmsSq = db
-      .select({ filmSlug: userFilms.filmSlug })
-      .from(userFilms)
-      .where(eq(userFilms.lbusername, user2));
+    const swapDirection = async (
+      seer: string,
+      other: string,
+    ): Promise<SwapFilm[]> => {
+      const otherFilms = db
+        .select({ filmSlug: userFilms.filmSlug })
+        .from(userFilms)
+        .where(eq(userFilms.lbusername, other));
 
-    const result = await db
-      .selectDistinct({
-        film_slug: userFilms.filmSlug,
-        title: userFilms.title,
-      })
-      .from(userFilms)
-      .where(
-        sql`${userFilms.lbusername} = ${user1} AND ${userFilms.filmSlug} NOT IN (${user2FilmsSq})`,
-      )
-      .orderBy(asc(userFilms.filmSlug));
+      const rows = await db
+        .select({
+          film_slug: userFilms.filmSlug,
+          title: userFilms.title,
+          user_rating: userFilms.rating,
+        })
+        .from(userFilms)
+        .where(
+          and(
+            eq(userFilms.lbusername, seer),
+            notInArray(userFilms.filmSlug, otherFilms),
+          ),
+        )
+        .orderBy(
+          // Drizzle desc() emits NULLS FIRST in Postgres; unrated films sort last.
+          sql`${userFilms.rating} DESC NULLS LAST, ${userFilms.title} ASC, ${userFilms.filmSlug} ASC`,
+        )
+        .limit(SWAP_RESULT_LIMIT);
 
-    return result.map((r) => ({
-      title: r.title ?? "",
-      film_slug: r.film_slug,
-    }));
+      return rows.map((r) => ({
+        film_slug: r.film_slug,
+        title: r.title ?? "",
+        user_rating: r.user_rating ?? null,
+      }));
+    };
+
+    const [recsForUserA, recsForUserB] = await Promise.all([
+      swapDirection(userB, userA), // films userB has, userA lacks → for userA
+      swapDirection(userA, userB), // films userA has, userB lacks → for userB
+    ]);
+
+    return { recsForUserA, recsForUserB };
   });
 }
 
