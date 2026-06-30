@@ -4,6 +4,10 @@ import TasteCompatibility from "./TasteCompatibility";
 import { useComparison } from "../hooks/useComparison";
 import { useMoviesInCommon } from "../hooks/useMoviesInCommon";
 import StarRating from "./StarRating";
+import { DataTable } from "./DataTable/DataTable";
+import { moviesInCommonColumns } from "./DataTable/columns";
+import { MovieInCommon } from "../types";
+
 interface Rating {
   rating: number;
   count: number;
@@ -33,10 +37,7 @@ const UserComparison = () => {
     data: moviesInCommonData,
     loading: loadingMovies,
     error: moviesError,
-  } = useMoviesInCommon(
-    selectedUser1 || null,
-    selectedUser2 || null,
-  );
+  } = useMoviesInCommon(selectedUser1 || null, selectedUser2 || null);
 
   const displayError = error || moviesError;
   const isLoading = loading || loadingMovies;
@@ -271,61 +272,53 @@ const UserComparison = () => {
 
           {moviesInCommonData.count > 0 && (
             <div className="overflow-x-auto max-h-50vh">
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th className="sticky top-0 text-left py-3 px-4 text-letterboxd-text-secondary font-medium z-1 bg-letterboxd-bg-secondary">
-                      Movie Title
-                    </th>
-                    <th className="sticky top-0 text-left py-3 px-4 text-letterboxd-text-secondary font-medium z-1 bg-letterboxd-bg-secondary">
-                      {user1Data?.displayName || moviesInCommonData.user1}
-                    </th>
-                    <th className="sticky top-0 text-left py-3 px-4 text-letterboxd-text-secondary font-medium z-1 bg-letterboxd-bg-secondary">
-                      {user2Data?.displayName || moviesInCommonData.user2}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {moviesInCommonData.moviesInCommon.map((movie, index) => {
-                    const hasNonRating =
-                      movie.user1_rating === 0 || movie.user2_rating === 0;
-                    const shouldShow = filterNonRated ? !hasNonRating : true;
+              <DataTable
+                data={moviesInCommonData.moviesInCommon}
+                columns={moviesInCommonColumns}
+                enableSort={false}
+                headerContext={{
+                  user1: user1Data?.displayName || moviesInCommonData.user1,
+                  user2: user2Data?.displayName || moviesInCommonData.user2,
+                }}
+                renderRow={(movie: MovieInCommon, index) => {
+                  const hasNonRating =
+                    movie.user1_rating === 0 || movie.user2_rating === 0;
+                  const shouldShow = filterNonRated ? !hasNonRating : true;
 
-                    return (
-                      shouldShow && (
-                        <tr key={`${movie.title}-${index}`}>
-                          <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
-                            <a
-                              href={`https://letterboxd.com/film/${movie.film_slug}`}
-                              target="_blank"
-                            >
-                              {movie.title}
-                            </a>
-                          </td>
-                          <td className="py-3 px-4 text-letterboxd-text-primary">
-                            {movie.user1_rating > 0 ? (
-                              <StarRating rating={movie.user1_rating} />
-                            ) : (
-                              <span className="text-letterboxd-text-muted italic">
-                                not rated
-                              </span>
-                            )}
-                          </td>
-                          <td className="py-3 px-4 text-letterboxd-text-primary">
-                            {movie.user2_rating > 0 ? (
-                              <StarRating rating={movie.user2_rating} />
-                            ) : (
-                              <span className="text-letterboxd-text-muted italic">
-                                not rated
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      )
-                    );
-                  })}
-                </tbody>
-              </table>
+                  return (
+                    shouldShow && (
+                      <tr key={`${movie.title}-${index}`}>
+                        <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
+                          <a
+                            href={`https://letterboxd.com/film/${movie.film_slug}`}
+                            target="_blank"
+                          >
+                            {movie.title}
+                          </a>
+                        </td>
+                        <td className="py-3 px-4 text-letterboxd-text-primary">
+                          {movie.user1_rating > 0 ? (
+                            <StarRating rating={movie.user1_rating} />
+                          ) : (
+                            <span className="text-letterboxd-text-muted italic">
+                              not rated
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 px-4 text-letterboxd-text-primary">
+                          {movie.user2_rating > 0 ? (
+                            <StarRating rating={movie.user2_rating} />
+                          ) : (
+                            <span className="text-letterboxd-text-muted italic">
+                              not rated
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  );
+                }}
+              />
             </div>
           )}
 
