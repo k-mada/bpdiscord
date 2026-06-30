@@ -33,6 +33,7 @@ const mockMovieScores = [
     scoringId: 1,
     filmSlug: "the-brutalist",
     metricId: 1,
+    metric: "Domestic Gross",
     metricName: "gross",
     category: "domestic",
     scoringCondition: "threshold",
@@ -42,6 +43,7 @@ const mockMovieScores = [
     scoringId: 2,
     filmSlug: "the-brutalist",
     metricId: 2,
+    metric: "Oscar",
     metricName: "oscar",
     category: "Best Picture",
     scoringCondition: "nomination",
@@ -106,12 +108,8 @@ describe("useMflData", () => {
     });
 
     it("handles undefined data gracefully", async () => {
-      vi.mocked(apiService.getMflScoringMetrics).mockResolvedValue({
-        data: undefined,
-      });
-      vi.mocked(apiService.getMflMovies).mockResolvedValue({
-        data: undefined,
-      });
+      vi.mocked(apiService.getMflScoringMetrics).mockResolvedValue({});
+      vi.mocked(apiService.getMflMovies).mockResolvedValue({});
 
       const { result } = renderHook(() => useMflData());
 
@@ -224,9 +222,7 @@ describe("useMflData", () => {
     });
 
     it("returns empty array when API returns no data", async () => {
-      vi.mocked(apiService.getMflMovieScore).mockResolvedValue({
-        data: undefined,
-      });
+      vi.mocked(apiService.getMflMovieScore).mockResolvedValue({});
 
       const result = await renderLoadedHook();
 

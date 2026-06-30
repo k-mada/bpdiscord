@@ -18,7 +18,7 @@ const pair = (
   ratings1: number[],
   ratings2: number[],
 ): RatedFilm[] =>
-  ratings1.map((r1, i) => ({ user1_rating: r1, user2_rating: ratings2[i] }));
+  ratings1.map((r1, i) => ({ user1_rating: r1, user2_rating: ratings2[i]! }));
 
 describe("computeCompatibility", () => {
   describe("Pearson", () => {

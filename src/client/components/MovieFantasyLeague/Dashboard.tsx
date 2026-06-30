@@ -64,7 +64,7 @@ const MovieFantasyLeague = () => {
             </thead>
             <tbody>
               {movieScores.map((movieScore, id) => {
-                let scoringMetric = "";
+                let scoringMetric: string;
                 if (
                   movieScore.metricName === "gross" ||
                   movieScore.metricName === "rank"

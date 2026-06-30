@@ -14,9 +14,7 @@ import {
   assertTestEnvironment,
 } from './setup';
 import {
-  testUsers,
   testFilms,
-  testUserFilms,
   expectedResults,
 } from './fixtures/testData';
 import { db } from '../db';

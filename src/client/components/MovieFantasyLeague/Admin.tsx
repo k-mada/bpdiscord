@@ -338,7 +338,7 @@ const MFLAdmin = () => {
             </thead>
             <tbody>
               {movieScore.map((score, id) => {
-                let scoringMetric = "";
+                let scoringMetric: string;
                 if (
                   score.metricName === "gross" ||
                   score.metricName === "rank"

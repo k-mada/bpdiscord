@@ -1,7 +1,6 @@
 import { useState } from "react";
 
 import apiService from "../services/api";
-import { ALL_RATINGS } from "../constants";
 import { useComparison } from "../hooks/useComparison";
 import { useScrapeJob } from "../hooks/useScrapeJob";
 import JobProgress from "./JobProgress";
@@ -16,15 +15,6 @@ interface UserData {
   username: string;
   ratings: Rating[];
 }
-
-const renderStars = (rating: number): string => {
-  const fullStars = Math.floor(rating);
-  const hasHalfStar = rating % 1 !== 0;
-  const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
-  return (
-    "★".repeat(fullStars) + (hasHalfStar ? "½" : "") + "☆".repeat(emptyStars)
-  );
-};
 
 const ScraperInterface = () => {
   const { usernames: availableUsers, loading: loadingUsers } = useComparison();

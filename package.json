@@ -7,6 +7,7 @@
     "build": "cd src/server && tsc",
     "build:server": "cd src/server && tsc",
     "build:client": "cd src/client && yarn build",
+    "lint": "cd src/client && yarn lint && cd ../server && yarn lint",
     "start": "node src/server/dist/server/server.js",
     "dev": "concurrently --kill-others --raw \"yarn dev:server\" \"yarn dev:client:wait\"",
     "dev:server": "cd src/server && yarn dev",
