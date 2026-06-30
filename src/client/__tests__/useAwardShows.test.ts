@@ -48,7 +48,7 @@ describe("useAwardShows", () => {
         id: "uuid-3",
         name: "The Emmys",
         slug: "emmys",
-        description: null,
+        description: null as string | null,
       };
 
       vi.mocked(apiService.getAwardShows)

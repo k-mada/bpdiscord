@@ -38,11 +38,6 @@ const ZONE_MARKER_COLOR: Record<PearsonZone, string> = {
   independent: "bg-letterboxd-text-muted",
 };
 
-function formatRating(r: number): string {
-  // Drop trailing zero on integers (3 not 3.0), keep half-star precision.
-  return r % 1 === 0 ? r.toFixed(0) : r.toFixed(1);
-}
-
 interface AnchorFilmProps {
   film: MovieInCommon;
   label: string;

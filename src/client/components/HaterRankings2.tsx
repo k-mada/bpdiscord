@@ -18,10 +18,6 @@ const HaterRankings2 = ({
   const { rankings, loading, error, refetch } = useHaterRankings2();
   const [isOpen, setIsOpen] = useState<boolean>(false);
 
-  const formatRating = (rating: number): string => {
-    return rating.toFixed(2);
-  };
-
   const handleClose = () => {
     setIsOpen(false);
   };
@@ -40,8 +36,6 @@ const HaterRankings2 = ({
       </div>
     );
   }
-
-  const tooltipContent = "Normalized to per 100 movies rated";
 
   const RankingsContent = () => (
     <div>

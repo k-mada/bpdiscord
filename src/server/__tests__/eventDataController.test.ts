@@ -151,7 +151,7 @@ describe("Award Show Operations", () => {
   });
 
   it("dbGetAwardShowBySlug returns award show with nested events", async () => {
-    const { awardShow, event } = await seedEvent();
+    await seedEvent();
 
     const result = await ec.dbGetAwardShowBySlug("academy-awards");
     expect(result.success).toBe(true);
@@ -233,7 +233,7 @@ describe("Event Operations", () => {
   });
 
   it("dbGetEventBySlug returns full event hierarchy", async () => {
-    const { event, categories, nominees } = await seedNominees();
+    await seedNominees();
 
     const result = await ec.dbGetEventBySlug(testEventTemplate.slug);
     expect(result.success).toBe(true);
@@ -407,7 +407,7 @@ describe("Winner Operations", () => {
 
 describe("User Pick Operations", () => {
   it("dbUpsertUserPick creates a pick", async () => {
-    const { event, nominees, categories } = await seedNominees();
+    const { nominees, categories } = await seedNominees();
     const userId = "test-user-1";
 
     const result = await ec.dbUpsertUserPick(

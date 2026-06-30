@@ -18,10 +18,7 @@ const ScoringReference = () => {
   ): Record<string, MFLScoringMetric[]> => {
     return metrics.reduce((acc: Record<string, MFLScoringMetric[]>, metric) => {
       const metricName = metric.metricName;
-      if (!acc[metricName]) {
-        acc[metricName] = [];
-      }
-      acc[metricName].push(metric);
+      (acc[metricName] ??= []).push(metric);
       return acc;
     }, {});
   };
@@ -74,7 +71,7 @@ const ScoringReference = () => {
   };
 
   const formatMetricName = (metricName: string) => {
-    return (metricName = metricName.toLowerCase().replace(/ /g, "-"));
+    return metricName.toLowerCase().replace(/ /g, "-");
   };
 
   const handleMetricSelect = (event: React.ChangeEvent<HTMLSelectElement>) => {
