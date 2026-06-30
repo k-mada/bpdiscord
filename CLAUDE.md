@@ -10,7 +10,7 @@
 - Use ES modules (import/export) syntax, not commonJS (require)
 - Destructure imports when possible (e.g. import { foo } from 'bar')
 - Async work inside `useEffect`: declare a named inner function and call it (not an IIFE). Pass `AbortSignal` from a controller created in the effect, abort unconditionally in the cleanup, and ignore `AbortError` in the catch. Named functions show in stack traces; AbortController cancels the actual request instead of just discarding the response. See `src/client/hooks/useCompatibilityExtremes.ts` for the canonical shape. Extend `apiService` methods with an optional `signal?: AbortSignal` parameter as you touch them — don't retrofit all at once.
-- Comments: default to none. When an inline comment is warranted (non-obvious WHY only — workaround, hidden constraint, surprising invariant), keep it to ≤2 lines. JSDoc on exported APIs is fine at any reasonable length since IDEs surface it on hover. Multi-paragraph narrative explanations belong in the PR description or commit body, not in source — they bloat files and rot in place.
+- Comments: default to none. When an inline comment is warranted (non-obvious WHY only — workaround, hidden constraint, surprising invariant), keep it to ≤2 lines. **Hard ceiling: no more than 2 consecutive comment lines outside JSDoc** — a 3+-line non-JSDoc comment block is a policy violation, trim it. JSDoc on exported APIs is fine at any reasonable length since IDEs surface it on hover. Multi-paragraph narrative explanations belong in the PR description or commit body, not in source — they bloat files and rot in place. (A local, gitignored Stop hook can enforce this automatically — see `.claude/hooks/check-comment-blocks.mjs`; not committed, so set it up per machine.)
 
 # BPDiscord
 
@@ -193,17 +193,18 @@ Watch for: stack versions (React, Tailwind, Drizzle, etc.), table/schema/FK/RLS 
 
 1. File issues for remaining work
 2. Run quality gates (tests, linters, builds) if code changed
-3. Update issue status — close finished work, update in-progress items
-4. **Push to remote** (mandatory):
+3. Scan the diff for comment blocks >2 lines that restate code; delete them (a local Stop hook can automate this — see Code style)
+4. Update issue status — close finished work, update in-progress items
+5. **Push to remote** (mandatory):
    ```bash
    git pull --rebase
    bd dolt push
    git push
    git status  # MUST show "up to date with origin"
    ```
-5. Clean up — clear stashes, prune remote branches
-6. Verify — all changes committed AND pushed
-7. Hand off — provide context for next session
+6. Clean up — clear stashes, prune remote branches
+7. Verify — all changes committed AND pushed
+8. Hand off — provide context for next session
 
 **Critical:** work is NOT complete until `git push` succeeds. If push fails, resolve and retry until it succeeds.
 
