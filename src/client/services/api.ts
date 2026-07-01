@@ -224,10 +224,12 @@ class ApiService {
   async getMovieSwap(
     userA: string,
     userB: string,
+    signal?: AbortSignal,
   ): Promise<ApiResponse<MovieSwapResult>> {
     const params = new URLSearchParams({ userA, userB });
     return this.request<MovieSwapResult>(
       `/comparison/movie-swap?${params.toString()}`,
+      signal ? { signal } : {},
     );
   }
 

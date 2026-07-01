@@ -7,6 +7,7 @@ import Dashboard from "./components/Dashboard";
 import UserProfile from "./components/UserProfile";
 import ScraperInterface from "./components/ScraperInterface";
 import UserComparison from "./components/UserComparison";
+import MovieSwapPage from "./components/MovieSwapPage";
 import MFLAdmin from "./components/MovieFantasyLeague/Admin";
 import MovieFantasyLeague from "./components/MovieFantasyLeague/Dashboard";
 import ScoringReference from "./components/MovieFantasyLeague/ScoringReference";
@@ -41,6 +42,7 @@ function App() {
             }
           />
           <Route path="/compare" element={<UserComparison />} />
+          <Route path="/movie-swap" element={<MovieSwapPage />} />
           <Route
             path="/hater-rankings"
             element={<HaterRankings2 isPublic={true} />}
