@@ -210,5 +210,48 @@ describe("DataTable", () => {
       fireEvent.click(scoreControl());
       expect(header(1).textContent).toContain("▼");
     });
+
+    it("seeds the active sort from initialSort", () => {
+      const { container } = render(
+        <DataTable
+          data={rows}
+          columns={basicColumns}
+          enableSort
+          initialSort={{ key: "score", direction: "desc" }}
+        />,
+      );
+
+      // score desc → 3, 2, 1
+      expect(bodyColumn(container, 1)).toEqual(["3", "2", "1"]);
+      const scoreTh = container.querySelectorAll("th")[1] as Element;
+      expect(scoreTh.getAttribute("aria-sort")).toBe("descending");
+      expect(scoreTh.textContent).toContain("▼");
+    });
+
+    it("renders sortable headers as keyboard-accessible buttons", () => {
+      render(<DataTable data={rows} columns={basicColumns} enableSort />);
+
+      expect(
+        screen.getByRole("button", { name: "Score" }),
+      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Name" })).toBeInTheDocument();
+    });
+
+    it("shows a neutral affordance on inactive sortable columns", () => {
+      const { container } = render(
+        <DataTable
+          data={rows}
+          columns={basicColumns}
+          enableSort
+          initialSort={{ key: "score", direction: "desc" }}
+        />,
+      );
+      const nameTh = container.querySelectorAll("th")[0] as Element;
+
+      expect(nameTh.getAttribute("aria-sort")).toBe("none");
+      expect(nameTh.textContent).toContain("⇅");
+      expect(nameTh.textContent).not.toContain("▲");
+      expect(nameTh.textContent).not.toContain("▼");
+    });
   });
 });

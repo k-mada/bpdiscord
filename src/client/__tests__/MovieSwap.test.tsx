@@ -79,7 +79,7 @@ describe("MovieSwap", () => {
     );
   });
 
-  it("defaults to rating order (desc, unrated last), sorting client-side", async () => {
+  it("defaults to rating order (desc, unrated last)", async () => {
     mockGetMovieSwap.mockResolvedValue({
       data: {
         recsForUserA: [
@@ -100,7 +100,7 @@ describe("MovieSwap", () => {
     expect(titles()).toEqual(["Zodiac", "Amelie", "Tenet"]);
   });
 
-  it("toggles between Rating and A–Z order", async () => {
+  it("sorts alphabetically via the Title header and toggles direction", async () => {
     mockGetMovieSwap.mockResolvedValue({
       data: {
         recsForUserA: [
@@ -118,10 +118,10 @@ describe("MovieSwap", () => {
     const titles = () =>
       screen.getAllByRole("link").map((a) => a.textContent);
 
-    fireEvent.click(screen.getByRole("button", { name: /A.Z/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Title" }));
     expect(titles()).toEqual(["Amelie", "Tenet", "Zodiac"]);
 
-    fireEvent.click(screen.getByRole("button", { name: "Rating" }));
-    expect(titles()).toEqual(["Zodiac", "Amelie", "Tenet"]);
+    fireEvent.click(screen.getByRole("button", { name: "Title" }));
+    expect(titles()).toEqual(["Zodiac", "Tenet", "Amelie"]);
   });
 });

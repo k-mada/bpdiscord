@@ -13,6 +13,8 @@ export interface TableProps<T, HeaderCtx = unknown> {
   data: T[];
   columns: ColumnDef<T, HeaderCtx>[];
   enableSort?: boolean;
+  /** Seeds the initial active sort (column key + direction) when enableSort. */
+  initialSort?: { key: string; direction: "asc" | "desc" };
   headerContext?: HeaderCtx;
   renderRow?: (data: T, index: number) => React.ReactNode;
 }

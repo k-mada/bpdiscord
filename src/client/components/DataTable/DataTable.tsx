@@ -1,8 +1,6 @@
 import { useMemo, useState } from "react";
 import type { TableProps } from "./types";
 
-// import "./DataTable.css";
-
 type SortKey = {
   key: string;
   sortDirection: "none" | "asc" | "desc";
@@ -12,13 +10,15 @@ export function DataTable<T, HeaderCtx = unknown>({
   data,
   columns,
   enableSort = false,
+  initialSort,
   headerContext,
   renderRow,
 }: TableProps<T, HeaderCtx>) {
-  const [sortKey, setSortKey] = useState<SortKey>({
-    key: "",
-    sortDirection: "asc",
-  });
+  const [sortKey, setSortKey] = useState<SortKey>(
+    initialSort
+      ? { key: initialSort.key, sortDirection: initialSort.direction }
+      : { key: "", sortDirection: "asc" },
+  );
 
   const sortedTable = useMemo(() => {
     if (!sortKey.key) return data;
@@ -47,42 +47,52 @@ export function DataTable<T, HeaderCtx = unknown>({
     }));
   };
 
-  const renderSortDirection = (direction: SortKey["sortDirection"]) => {
-    if (direction === "none") {
-      return null;
-    }
-    return direction === "asc" ? <span>▲</span> : <span>▼</span>;
-  };
+  const sortGlyph = (active: boolean, direction: SortKey["sortDirection"]) => (
+    <span
+      aria-hidden="true"
+      className={`text-xs ${active ? "" : "text-letterboxd-text-muted"}`}
+    >
+      {!active ? "⇅" : direction === "asc" ? "▲" : "▼"}
+    </span>
+  );
 
   return (
     <table className="data-table">
       <thead>
         <tr>
           {columns.map((column) => {
-            const canSort = column.sortKey && enableSort;
+            const canSort = Boolean(column.sortKey && enableSort);
             const isActiveSort = sortKey.key === (column.key as string);
-            const sortControl = (
-              <div
-                className="sort-control"
-                onClick={() => {
-                  handleSort(column.key as string);
-                }}
-              >
-                {renderSortDirection(
-                  isActiveSort ? sortKey.sortDirection : "none",
-                )}
-              </div>
-            );
+            const label = column.customLabel
+              ? column.customLabel(headerContext)
+              : column.label;
 
             return (
               <th
                 key={column.key as string}
+                aria-sort={
+                  !canSort
+                    ? undefined
+                    : !isActiveSort
+                      ? "none"
+                      : sortKey.sortDirection === "asc"
+                        ? "ascending"
+                        : "descending"
+                }
                 className="sticky top-0 text-left py-3 px-4 text-letterboxd-text-secondary font-medium z-1 bg-letterboxd-bg-secondary"
               >
-                {canSort && sortControl}
-                {column.customLabel
-                  ? column.customLabel(headerContext)
-                  : column.label}
+                {canSort ? (
+                  <button
+                    type="button"
+                    onClick={() => handleSort(column.key as string)}
+                    className="sort-control inline-flex items-center gap-1 border-0 bg-transparent p-0 font-medium text-letterboxd-text-secondary hover:text-letterboxd-text-primary cursor-pointer"
+                  >
+                    {label}
+                    {sortGlyph(isActiveSort, sortKey.sortDirection)}
+                  </button>
+                ) : (
+                  label
+                )}
               </th>
             );
           })}
