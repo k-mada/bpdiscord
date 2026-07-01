@@ -6,6 +6,16 @@ type SortKey = {
   sortDirection: "none" | "asc" | "desc";
 };
 
+function ariaSort(
+  canSort: boolean,
+  isActive: boolean,
+  direction: SortKey["sortDirection"],
+): "ascending" | "descending" | "none" | undefined {
+  if (!canSort) return undefined;
+  if (!isActive) return "none";
+  return direction === "asc" ? "ascending" : "descending";
+}
+
 export function DataTable<T, HeaderCtx = unknown>({
   data,
   columns,
@@ -70,15 +80,11 @@ export function DataTable<T, HeaderCtx = unknown>({
             return (
               <th
                 key={column.key as string}
-                aria-sort={
-                  !canSort
-                    ? undefined
-                    : !isActiveSort
-                      ? "none"
-                      : sortKey.sortDirection === "asc"
-                        ? "ascending"
-                        : "descending"
-                }
+                aria-sort={ariaSort(
+                  canSort,
+                  isActiveSort,
+                  sortKey.sortDirection,
+                )}
                 className="sticky top-0 text-left py-3 px-4 text-letterboxd-text-secondary font-medium z-1 bg-letterboxd-bg-secondary"
               >
                 {canSort ? (

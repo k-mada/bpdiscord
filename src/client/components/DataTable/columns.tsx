@@ -26,7 +26,6 @@ export const swapFilmColumns: ColumnDef<SwapFilm, SwapFilmHeaderCtx>[] = [
   {
     key: "user_rating",
     label: "Rating",
-    customLabel: (ctx) => (ctx?.rater ? `${ctx.rater}'s rating` : "Rating"),
     sortKey: "user_rating",
     // Ascending, nulls lowest; equal/both-null return 0 so the stable sort keeps
     // the server's title-ASC secondary order (alphabetical ties both directions).
