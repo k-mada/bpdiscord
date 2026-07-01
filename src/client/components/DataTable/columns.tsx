@@ -11,6 +11,8 @@ export const swapFilmColumns: ColumnDef<SwapFilm, SwapFilmHeaderCtx>[] = [
   {
     key: "title",
     label: "Title",
+    sortKey: "title",
+    customSort: (a: SwapFilm, b: SwapFilm) => a.title.localeCompare(b.title),
     renderColumn: (data: SwapFilm) => (
       <a
         href={`https://letterboxd.com/film/${data.film_slug}`}
@@ -25,6 +27,15 @@ export const swapFilmColumns: ColumnDef<SwapFilm, SwapFilmHeaderCtx>[] = [
     key: "user_rating",
     label: "Rating",
     customLabel: (ctx) => (ctx?.rater ? `${ctx.rater}'s rating` : "Rating"),
+    sortKey: "user_rating",
+    // Ascending, nulls lowest; equal/both-null return 0 so the stable sort keeps
+    // the server's title-ASC secondary order (alphabetical ties both directions).
+    customSort: (a: SwapFilm, b: SwapFilm) => {
+      if (a.user_rating === b.user_rating) return 0;
+      if (a.user_rating === null) return -1;
+      if (b.user_rating === null) return 1;
+      return a.user_rating - b.user_rating;
+    },
     renderColumn: (data: SwapFilm) =>
       data.user_rating === null ? (
         <span className="text-letterboxd-text-muted italic">not rated</span>

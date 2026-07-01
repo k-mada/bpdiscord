@@ -27,7 +27,8 @@ const SwapList = ({ films, rater, heading }: SwapListProps) => (
         <DataTable
           data={films}
           columns={swapFilmColumns}
-          enableSort={false}
+          enableSort
+          initialSort={{ key: "user_rating", direction: "desc" }}
           headerContext={{ rater }}
         />
       </div>

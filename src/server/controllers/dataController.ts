@@ -1024,9 +1024,6 @@ export async function dbGetFilmsByUser(username: string): Promise<{
 // Movie Swap
 // ===========================
 
-// Interim hard cap until the limit becomes a request parameter.
-const SWAP_RESULT_LIMIT = 100;
-
 export async function dbGetMovieSwap(
   userA: string,
   userB: string,
@@ -1064,8 +1061,7 @@ export async function dbGetMovieSwap(
         .orderBy(
           // Drizzle desc() emits NULLS FIRST in Postgres; unrated films sort last.
           sql`${userFilms.rating} DESC NULLS LAST, ${userFilms.title} ASC, ${userFilms.filmSlug} ASC`,
-        )
-        .limit(SWAP_RESULT_LIMIT);
+        );
 
       return rows.map((r) => ({
         film_slug: r.film_slug,

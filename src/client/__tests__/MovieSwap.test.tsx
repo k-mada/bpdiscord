@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import MovieSwap from "../components/MovieSwap";
 import { apiService } from "../services/api";
 import type { MovieSwapResult } from "../../shared/types";
@@ -77,5 +77,51 @@ describe("MovieSwap", () => {
     await waitFor(() =>
       expect(screen.getByText("Failed to load movie swap")).toBeInTheDocument(),
     );
+  });
+
+  it("defaults to rating order (desc, unrated last)", async () => {
+    mockGetMovieSwap.mockResolvedValue({
+      data: {
+        recsForUserA: [
+          { film_slug: "amelie", title: "Amelie", user_rating: 3 },
+          { film_slug: "zodiac", title: "Zodiac", user_rating: 5 },
+          { film_slug: "tenet", title: "Tenet", user_rating: null },
+        ],
+        recsForUserB: [],
+      },
+    });
+    renderSwap();
+
+    await waitFor(() =>
+      expect(screen.getByText("Zodiac")).toBeInTheDocument(),
+    );
+    const titles = () =>
+      screen.getAllByRole("link").map((a) => a.textContent);
+    expect(titles()).toEqual(["Zodiac", "Amelie", "Tenet"]);
+  });
+
+  it("sorts alphabetically via the Title header and toggles direction", async () => {
+    mockGetMovieSwap.mockResolvedValue({
+      data: {
+        recsForUserA: [
+          { film_slug: "amelie", title: "Amelie", user_rating: 3 },
+          { film_slug: "zodiac", title: "Zodiac", user_rating: 5 },
+          { film_slug: "tenet", title: "Tenet", user_rating: null },
+        ],
+        recsForUserB: [],
+      },
+    });
+    renderSwap();
+    await waitFor(() =>
+      expect(screen.getByText("Zodiac")).toBeInTheDocument(),
+    );
+    const titles = () =>
+      screen.getAllByRole("link").map((a) => a.textContent);
+
+    fireEvent.click(screen.getByRole("button", { name: "Title" }));
+    expect(titles()).toEqual(["Amelie", "Tenet", "Zodiac"]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Title" }));
+    expect(titles()).toEqual(["Zodiac", "Tenet", "Amelie"]);
   });
 });
