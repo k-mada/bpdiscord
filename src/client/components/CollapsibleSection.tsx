@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { ChevronDownIcon } from "@heroicons/react/24/solid";
 
 interface CollapsibleSectionProps {
@@ -13,6 +13,7 @@ const CollapsibleSection = ({
   children,
 }: CollapsibleSectionProps) => {
   const [open, setOpen] = useState(defaultOpen);
+  const bodyId = useId();
 
   return (
     <div>
@@ -21,6 +22,7 @@ const CollapsibleSection = ({
           type="button"
           onClick={() => setOpen((o) => !o)}
           aria-expanded={open}
+          aria-controls={bodyId}
           className="flex w-full items-center justify-between text-left"
         >
           <span className="text-letterboxd-text-primary font-semibold">
@@ -33,7 +35,9 @@ const CollapsibleSection = ({
           />
         </button>
       </h4>
-      {open && <div>{children}</div>}
+      <div id={bodyId} hidden={!open}>
+        {children}
+      </div>
     </div>
   );
 };
