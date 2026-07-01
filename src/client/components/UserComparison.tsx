@@ -53,12 +53,14 @@ const UserComparison = () => {
       if (data) {
         const userData: UserData = {
           username: data.username,
-          displayName: data.displayName,
           followers: data.followers,
           following: data.following,
           numberOfLists: data.numberOfLists,
           totalFilms: data.totalRatings,
           ratings: data.ratings,
+          ...(data.displayName
+            ? { displayName: data.displayName }
+            : {}),
         };
 
         if (isUser1) {

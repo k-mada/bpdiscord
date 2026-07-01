@@ -22,6 +22,9 @@ import {
   CompatibilityExtremesData,
   CurrentUser,
   MoviesInCommonData,
+  HaterRanking,
+  HaterRanking2,
+  FilmUserComplete,
 } from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
@@ -111,15 +114,20 @@ class ApiService {
     );
   }
 
-  async getComparisonUserRatings(username: string): Promise<ApiResponse<any>> {
-    return this.request<ApiResponse<any>>("/comparison/user-ratings", {
+  async getComparisonUserRatings(
+    username: string,
+  ): Promise<ApiResponse<unknown>> {
+    return this.request<unknown>("/comparison/user-ratings", {
       method: "POST",
       body: JSON.stringify({ username }),
     });
   }
 
-  async compareUsers(user1: string, user2: string): Promise<ApiResponse<any>> {
-    return this.request<ApiResponse<any>>("/comparison/compare", {
+  async compareUsers(
+    user1: string,
+    user2: string,
+  ): Promise<ApiResponse<unknown>> {
+    return this.request<unknown>("/comparison/compare", {
       method: "POST",
       body: JSON.stringify({ user1, user2 }),
     });
@@ -148,26 +156,28 @@ class ApiService {
   }
 
   // Hater rankings endpoint
-  async getHaterRankings(): Promise<ApiResponse<any>> {
-    return this.request<ApiResponse<any>>("/comparison/hater-rankings");
+  async getHaterRankings(): Promise<ApiResponse<HaterRanking[]>> {
+    return this.request<HaterRanking[]>("/comparison/hater-rankings");
   }
 
   // New Hater rankings
-  async getHaterRankings2(): Promise<ApiResponse<any>> {
-    return this.request<ApiResponse<any>>("/comparison/v2/hater-rankings");
+  async getHaterRankings2(): Promise<ApiResponse<HaterRanking2[]>> {
+    return this.request<HaterRanking2[]>("/comparison/v2/hater-rankings");
   }
 
   // Database-first film user endpoints (no auth required)
-  async getFilmUserRatings(username: string): Promise<ApiResponse<any>> {
-    return this.request<ApiResponse<any>>(`/film-users/${username}/ratings`);
+  async getFilmUserRatings(username: string): Promise<ApiResponse<unknown>> {
+    return this.request<unknown>(`/film-users/${username}/ratings`);
   }
 
-  async getFilmUserProfile(username: string): Promise<ApiResponse<any>> {
-    return this.request<ApiResponse<any>>(`/film-users/${username}/profile`);
+  async getFilmUserProfile(username: string): Promise<ApiResponse<unknown>> {
+    return this.request<unknown>(`/film-users/${username}/profile`);
   }
 
-  async getFilmUserComplete(username: string): Promise<ApiResponse<any>> {
-    return this.request<ApiResponse<any>>(`/film-users/${username}/complete`);
+  async getFilmUserComplete(
+    username: string,
+  ): Promise<ApiResponse<FilmUserComplete>> {
+    return this.request<FilmUserComplete>(`/film-users/${username}/complete`);
   }
 
   async getFilmUsers(): Promise<
@@ -254,15 +264,17 @@ class ApiService {
     pointsAwarded: number,
     metricId: number,
     scoringId?: number,
-  ): Promise<ApiResponse<any>> {
-    return this.request<any>(`/mfl/upsert-movie-score`, {
+  ): Promise<ApiResponse<unknown>> {
+    return this.request<unknown>(`/mfl/upsert-movie-score`, {
       method: "POST",
       body: JSON.stringify({ filmSlug, pointsAwarded, metricId, scoringId }),
     });
   }
 
-  async deleteMflScoringMetric(scoringId: number): Promise<ApiResponse<any>> {
-    return this.request<any>(`/mfl/delete-scoring-metric/${scoringId}`, {
+  async deleteMflScoringMetric(
+    scoringId: number,
+  ): Promise<ApiResponse<unknown>> {
+    return this.request<unknown>(`/mfl/delete-scoring-metric/${scoringId}`, {
       method: "DELETE",
     });
   }
