@@ -130,4 +130,6 @@ backfill-film-years-failures.json
 .dolt/
 *.db
 .beads-credential-key
-.yarn/install-state.gz
+# Yarn Berry install cache — regenerated on every install, must never be tracked.
+# Glob so it matches the per-package .yarn dirs (src/client, src/server), not just root.
+**/.yarn/install-state.gz
