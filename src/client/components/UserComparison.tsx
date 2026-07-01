@@ -58,9 +58,7 @@ const UserComparison = () => {
           numberOfLists: data.numberOfLists,
           totalFilms: data.totalRatings,
           ratings: data.ratings,
-          ...(data.displayName
-            ? { displayName: data.displayName }
-            : {}),
+          ...(data.displayName ? { displayName: data.displayName } : {}),
         };
 
         if (isUser1) {
@@ -101,7 +99,7 @@ const UserComparison = () => {
       if (!selectedUser1) setUser1Data(null);
       if (!selectedUser2) setUser2Data(null);
     }
-  }, [selectedUser1, selectedUser2]);
+  }, [loadUserRatings, selectedUser1, selectedUser2]);
 
   const getTotalRatings = (userData: UserData | null): number => {
     if (!userData) return 0;
