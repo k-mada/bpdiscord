@@ -2,6 +2,7 @@ import { renderHook, waitFor, act } from "@testing-library/react";
 import { useComparison } from "../hooks/useComparison";
 import { apiService } from "../services/api";
 import { describeFetchHookLifecycle } from "./helpers/hookTestFactory";
+import type { FilmUserComplete } from "../types";
 
 vi.mock("../services/api", () => ({
   apiService: {
@@ -16,13 +17,16 @@ const mockUsernames = [
   { username: "charlie" },
 ];
 
-const mockUserComplete = {
+const mockUserComplete: FilmUserComplete = {
   username: "alice",
   displayName: "Alice",
   followers: 150,
   following: 80,
   numberOfLists: 5,
   totalRatings: 300,
+  totalWatched: 320,
+  source: "letterboxd",
+  success: true,
   ratings: [
     { rating: 3, count: 100 },
     { rating: 4, count: 150 },

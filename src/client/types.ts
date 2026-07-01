@@ -43,6 +43,14 @@ export interface HaterRanking {
   ratingDistribution?: Rating[];
 }
 
+export interface HaterRanking2 {
+  displayName: string;
+  username: string;
+  filmsRated: number;
+  differential: number;
+  adjustedDifferential: number;
+}
+
 export interface UserComparisonData {
   user1: UserData;
   user2: UserData;

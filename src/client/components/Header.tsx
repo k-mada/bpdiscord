@@ -46,6 +46,9 @@ const Header = () => {
           <Link to="/compare" className={getNavLinkClass("/compare")}>
             Compare
           </Link>
+          <Link to="/movie-swap" className={getNavLinkClass("/movie-swap")}>
+            Movie Swap
+          </Link>
           <Link
             to="/hater-rankings"
             className={getNavLinkClass("/hater-rankings")}
@@ -113,6 +116,14 @@ const Header = () => {
               )}`}
             >
               Compare
+            </Link>
+            <Link
+              to="/movie-swap"
+              className={`block w-full text-left py-2 ${getNavLinkClass(
+                "/movie-swap",
+              )}`}
+            >
+              Movie Swap
             </Link>
             <Link
               to="/hater-rankings"

@@ -3,26 +3,34 @@ import type { MovieInCommon } from "../../types";
 import type { SwapFilm } from "../../../shared/types";
 import StarRating from "../StarRating";
 
-export const swapFilmColumns: ColumnDef<SwapFilm>[] = [
+export interface SwapFilmHeaderCtx {
+  rater: string;
+}
+
+export const swapFilmColumns: ColumnDef<SwapFilm, SwapFilmHeaderCtx>[] = [
   {
     key: "title",
     label: "Title",
-    sortKey: "title",
+    renderColumn: (data: SwapFilm) => (
+      <a
+        href={`https://letterboxd.com/film/${data.film_slug}`}
+        target="_blank"
+        rel="noreferrer"
+      >
+        {data.title}
+      </a>
+    ),
   },
   {
     key: "user_rating",
     label: "Rating",
-    sortKey: "user_rating",
-    customSort: (a: SwapFilm, b: SwapFilm) => {
-      if (a.user_rating !== null && b.user_rating !== null) {
-        return a.user_rating > b.user_rating ? -1 : 1;
-      } else {
-        return 1;
-      }
-    },
-    renderColumn: (data: SwapFilm) => (
-      <StarRating rating={data.user_rating || 0} />
-    ),
+    customLabel: (ctx) => (ctx?.rater ? `${ctx.rater}'s rating` : "Rating"),
+    renderColumn: (data: SwapFilm) =>
+      data.user_rating === null ? (
+        <span className="text-letterboxd-text-muted italic">not rated</span>
+      ) : (
+        <StarRating rating={data.user_rating} />
+      ),
   },
 ];
 

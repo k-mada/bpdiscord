@@ -1,14 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { apiService } from "../services/api";
-import { HaterRanking } from "../types";
-
-export interface HaterRanking2 {
-  displayName: string;
-  username: string;
-  filmsRated: number;
-  differential: number;
-  adjustedDifferential: number;
-}
+import { HaterRanking, HaterRanking2 } from "../types";
 
 export const useHaterRankings = () => {
   const [rankings, setRankings] = useState<HaterRanking[]>([]);
