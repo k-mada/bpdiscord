@@ -64,12 +64,12 @@ const MovieSwap = ({
           <SwapList
             films={data.recsForUserA}
             rater={user2Label}
-            heading={`Movies ${user2Label} rated that ${user1Label} hasn't seen`}
+            heading={`Movies that ${user2Label} saw ${user1Label} hasn't seen`}
           />
           <SwapList
             films={data.recsForUserB}
             rater={user1Label}
-            heading={`Movies ${user1Label} rated that ${user2Label} hasn't seen`}
+            heading={`Movies that ${user1Label} saw ${user2Label} hasn't seen`}
           />
         </div>
       )}

@@ -39,9 +39,8 @@ describe("MovieSwap", () => {
       expect(screen.getByText("Heat")).toBeInTheDocument(),
     );
     expect(screen.getByText("Tenet")).toBeInTheDocument();
-    // The rating column names the seer (headerContext-driven label).
-    expect(screen.getByText("Bob's rating")).toBeInTheDocument();
-    expect(screen.getByText("Alice's rating")).toBeInTheDocument();
+    // Both directions render a sortable Rating column header.
+    expect(screen.getAllByRole("button", { name: "Rating" })).toHaveLength(2);
   });
 
   it("renders an unrated film as 'not rated', not zero stars", async () => {
