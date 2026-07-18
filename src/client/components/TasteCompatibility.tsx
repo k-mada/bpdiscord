@@ -1,5 +1,4 @@
 import {
-  computeCompatibility,
   getPearsonLabel,
   getPearsonZone,
   formatSignedPercent,
@@ -10,7 +9,7 @@ import {
   MIN_RELIABLE_SAMPLE,
   type PearsonZone,
 } from "../lib/ratingsCompatibility";
-import type { MovieInCommon } from "../types";
+import type { MovieInCommon, TasteCompatibility as TasteCompatibilityMetrics } from "../types";
 import Tooltip from "./Tooltip";
 import StarRating from "./StarRating";
 
@@ -23,6 +22,7 @@ interface TasteCompatibilityProps {
   user1Data: UserHeader | null;
   user2Data: UserHeader | null;
   moviesInCommon: MovieInCommon[];
+  compatibility: TasteCompatibilityMetrics;
 }
 
 // Layman explanation. Deliberately avoids "correlation," "Pearson," etc.
@@ -143,12 +143,13 @@ const TasteCompatibility = ({
   user1Data,
   user2Data,
   moviesInCommon,
+  compatibility,
 }: TasteCompatibilityProps) => {
   if (!user1Data || !user2Data || !moviesInCommon.length) {
     return null;
   }
 
-  const { pearson, mad, sampleSize } = computeCompatibility(moviesInCommon);
+  const { pearson, mad, sampleSize } = compatibility;
   const lowSample = sampleSize > 0 && sampleSize < MIN_RELIABLE_SAMPLE;
 
   const darling = findSharedDarling(moviesInCommon);

@@ -34,6 +34,14 @@ export interface CompatibilityExtremeRow extends QueryRow {
   mad: number;
 }
 
+// Result from taste_compatibility(a, b). pearson/mad are nullable here (unlike
+// the extremes function): corr() is NULL on zero variance, AVG on an empty set.
+export interface CompatibilityRow extends QueryRow {
+  pearson: number | null;
+  mad: number | null;
+  sample_size: number;
+}
+
 /**
  * Helper to safely convert PostgreSQL numeric/bigint strings to numbers
  */

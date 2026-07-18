@@ -7,12 +7,13 @@ import {
   dbGetMoviesInCommon,
   dbGetMovieSwap,
   dbGetCompatibilityExtremes,
+  dbGetTasteCompatibility,
 } from "./dataController";
 
 // export class ComparisonController {
 export async function getAllUsernames(
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> {
   try {
     const result = await dbGetAllUsernames();
@@ -46,7 +47,7 @@ export async function getAllUsernames(
 
 export async function getUserRatings(
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> {
   try {
     const { username } = req.body;
@@ -72,9 +73,9 @@ export async function getUserRatings(
 
     // Transform the ratings data to match the expected format
     const ratings =
-      ratingsResult.data?.map((item: any) => ({
+      ratingsResult.data?.map((item) => ({
         rating: item.rating,
-        count: item.count,
+        count: item.count ?? 0,
       })) || [];
 
     // Calculate total films rated
@@ -133,13 +134,13 @@ export async function compareUsers(req: Request, res: Response): Promise<void> {
 
     // Transform the data
     const ratings1 =
-      result1.data?.map((item: any) => ({
+      result1.data?.map((item) => ({
         rating: item.rating,
         count: item.count,
       })) || [];
 
     const ratings2 =
-      result2.data?.map((item: any) => ({
+      result2.data?.map((item) => ({
         rating: item.rating,
         count: item.count,
       })) || [];
@@ -172,7 +173,7 @@ export async function compareUsers(req: Request, res: Response): Promise<void> {
 
 export async function getMoviesInCommon(
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> {
   try {
     const { user1, user2 } = req.body;
@@ -193,11 +194,14 @@ export async function getMoviesInCommon(
       return;
     }
 
-    const result = await dbGetMoviesInCommon(user1, user2);
+    const [result, compat] = await Promise.all([
+      dbGetMoviesInCommon(user1, user2),
+      dbGetTasteCompatibility(user1, user2),
+    ]);
 
-    if (!result.success) {
+    if (!result.success || !compat.success) {
       const response: ApiResponse = {
-        error: result.error || "Failed to get movies in common",
+        error: result.error || compat.error || "Failed to get movies in common",
       };
       res.status(500).json(response);
       return;
@@ -210,6 +214,11 @@ export async function getMoviesInCommon(
         user2,
         moviesInCommon: result.data || [],
         count: result.count || 0,
+        compatibility: compat.data ?? {
+          pearson: null,
+          mad: null,
+          sampleSize: 0,
+        },
       },
     };
 
@@ -227,7 +236,7 @@ export async function getMoviesInCommon(
 
 export async function getCompatibilityExtremes(
   req: Request,
-  res: Response
+  res: Response,
 ): Promise<void> {
   try {
     const { username } = req.params;

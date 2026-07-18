@@ -20,6 +20,7 @@ import {
   HaterRankingRow,
   MissingFilmsRow,
   CompatibilityExtremeRow,
+  CompatibilityRow,
   toNumber,
 } from "../db/queryTypes";
 import { SwapFilm } from "../../shared/types";
@@ -1145,6 +1146,35 @@ export async function dbGetCompatibilityExtremes(username: string): Promise<{
       leastCompatible: rows
         .filter((r) => r.bucket === "least_compatible")
         .map(toRow),
+    };
+  });
+}
+
+export interface TasteCompatibility {
+  pearson: number | null;
+  mad: number | null;
+  sampleSize: number;
+}
+
+export async function dbGetTasteCompatibility(
+  user1: string,
+  user2: string,
+): Promise<{
+  success: boolean;
+  data?: TasteCompatibility;
+  error?: string;
+}> {
+  return dbOperation(async () => {
+    const rows = await db.execute<CompatibilityRow>(sql`
+      SELECT pearson, mad, sample_size
+      FROM taste_compatibility(${user1}, ${user2})
+    `);
+
+    const row = rows[0];
+    return {
+      pearson: row?.pearson ?? null,
+      mad: row?.mad ?? null,
+      sampleSize: row?.sample_size ?? 0,
     };
   });
 }
