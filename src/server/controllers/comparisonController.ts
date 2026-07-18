@@ -7,6 +7,7 @@ import {
   dbGetMoviesInCommon,
   dbGetMovieSwap,
   dbGetCompatibilityExtremes,
+  dbGetTasteCompatibility,
 } from "./dataController";
 
 // export class ComparisonController {
@@ -193,11 +194,17 @@ export async function getMoviesInCommon(
       return;
     }
 
-    const result = await dbGetMoviesInCommon(user1, user2);
+    const [result, compat] = await Promise.all([
+      dbGetMoviesInCommon(user1, user2),
+      dbGetTasteCompatibility(user1, user2),
+    ]);
 
-    if (!result.success) {
+    if (!result.success || !compat.success) {
       const response: ApiResponse = {
-        error: result.error || "Failed to get movies in common",
+        error:
+          result.error ||
+          compat.error ||
+          "Failed to get movies in common",
       };
       res.status(500).json(response);
       return;
@@ -210,6 +217,11 @@ export async function getMoviesInCommon(
         user2,
         moviesInCommon: result.data || [],
         count: result.count || 0,
+        compatibility: compat.data ?? {
+          pearson: null,
+          mad: null,
+          sampleSize: 0,
+        },
       },
     };
 

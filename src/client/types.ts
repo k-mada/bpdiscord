@@ -74,13 +74,21 @@ export interface MovieInCommon {
   total_ratings: number;
 }
 
+export interface TasteCompatibility {
+  // Pearson correlation over the both-rated set. null when either user has
+  // zero rating variance (Pearson undefined) or the shared set is empty.
+  pearson: number | null;
+  // Mean absolute star difference over the both-rated set. null when empty.
+  mad: number | null;
+  sampleSize: number;
+}
+
 export interface MoviesInCommonData {
   user1: string;
   user2: string;
   moviesInCommon: MovieInCommon[];
   count: number;
-  averageRatingDifference?: number;
-  correlationCoefficient?: number;
+  compatibility: TasteCompatibility;
 }
 
 // ===========================

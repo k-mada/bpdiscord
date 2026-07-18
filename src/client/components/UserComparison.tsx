@@ -176,6 +176,7 @@ const UserComparison = () => {
           user1Data={user1Data}
           user2Data={user2Data}
           moviesInCommon={moviesInCommonData.moviesInCommon}
+          compatibility={moviesInCommonData.compatibility}
         />
       )}
 

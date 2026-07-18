@@ -75,6 +75,7 @@ const CompareWithUser = ({
               : {}),
           }}
           moviesInCommon={data.moviesInCommon}
+          compatibility={data.compatibility}
         />
       )}
     </div>

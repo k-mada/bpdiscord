@@ -25,6 +25,7 @@ const mockData: MoviesInCommonData = {
       total_ratings: 100,
     },
   ],
+  compatibility: { pearson: null, mad: 0.5, sampleSize: 1 },
 };
 
 const mockGetMoviesInCommon = vi.mocked(apiService.getMoviesInCommon);
