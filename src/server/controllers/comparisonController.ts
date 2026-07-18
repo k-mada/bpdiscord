@@ -73,9 +73,9 @@ export async function getUserRatings(
 
     // Transform the ratings data to match the expected format
     const ratings =
-      ratingsResult.data?.map((item: any) => ({
+      ratingsResult.data?.map((item) => ({
         rating: item.rating,
-        count: item.count,
+        count: item.count ?? 0,
       })) || [];
 
     // Calculate total films rated

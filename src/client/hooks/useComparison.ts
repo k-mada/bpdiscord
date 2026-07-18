@@ -25,10 +25,10 @@ export const useComparison = () => {
     fetchUsernames();
   }, [fetchUsernames]);
 
-  const getUserComplete = async (username: string) => {
+  const getUserComplete = useCallback(async (username: string) => {
     const response = await apiService.getFilmUserComplete(username);
     return response.data;
-  };
+  }, []);
 
   return {
     usernames,

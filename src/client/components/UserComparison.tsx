@@ -42,40 +42,6 @@ const UserComparison = () => {
   const displayError = error || moviesError;
   const isLoading = loading || loadingMovies;
 
-  const loadUserRatings = async (username: string, isUser1: boolean) => {
-    if (!username) return;
-
-    try {
-      setLoading(true);
-      setError(null);
-      const data = await getUserComplete(username);
-
-      if (data) {
-        const userData: UserData = {
-          username: data.username,
-          followers: data.followers,
-          following: data.following,
-          numberOfLists: data.numberOfLists,
-          totalFilms: data.totalRatings,
-          ratings: data.ratings,
-          ...(data.displayName ? { displayName: data.displayName } : {}),
-        };
-
-        if (isUser1) {
-          setUser1Data(userData);
-        } else {
-          setUser2Data(userData);
-        }
-      }
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to load user ratings",
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleUser1Change = (username: string) => {
     setSelectedUser1(username);
     if (!username) {
@@ -92,14 +58,58 @@ const UserComparison = () => {
 
   // Load user data for both users when both are selected
   useEffect(() => {
-    if (selectedUser1 && selectedUser2 && selectedUser1 !== selectedUser2) {
-      loadUserRatings(selectedUser1, true);
-      loadUserRatings(selectedUser2, false);
-    } else {
+    if (!selectedUser1 || !selectedUser2 || selectedUser1 === selectedUser2) {
       if (!selectedUser1) setUser1Data(null);
       if (!selectedUser2) setUser2Data(null);
+      setLoading(false);
+      return;
     }
-  }, [loadUserRatings, selectedUser1, selectedUser2]);
+
+    let cancelled = false;
+
+    const loadUser = async (username: string, isUser1: boolean) => {
+      const data = await getUserComplete(username);
+      if (cancelled || !data) return;
+
+      const userData: UserData = {
+        username: data.username,
+        followers: data.followers,
+        following: data.following,
+        numberOfLists: data.numberOfLists,
+        totalFilms: data.totalRatings,
+        ratings: data.ratings,
+        ...(data.displayName ? { displayName: data.displayName } : {}),
+      };
+      if (isUser1) setUser1Data(userData);
+      else setUser2Data(userData);
+    };
+
+    // Await both before clearing loading (no drop while one is in flight); a
+    // cancelled/stale run leaves the spinner to the newer run, never clears it.
+    const loadBoth = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        await Promise.all([
+          loadUser(selectedUser1, true),
+          loadUser(selectedUser2, false),
+        ]);
+      } catch (err) {
+        if (cancelled) return;
+        setError(
+          err instanceof Error ? err.message : "Failed to load user ratings",
+        );
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    loadBoth();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [getUserComplete, selectedUser1, selectedUser2]);
 
   const getTotalRatings = (userData: UserData | null): number => {
     if (!userData) return 0;
