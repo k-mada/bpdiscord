@@ -22,12 +22,24 @@ import {
   type InsertResult,
   type WorkerConfig,
   callWorker,
+  callWorkerJson,
   cancelJob,
   getJob,
   getWorkerConfig,
   insertRunningJob,
   markJobFailed,
 } from "./jobHelpers";
+
+// /refresh-user is synchronous worker-side (RSS fetch + parse + upsert under
+// the process-wide Letterboxd serializer), so it gets a longer budget than the
+// fire-and-forget job handoffs.
+const REFRESH_WORKER_TIMEOUT_MS = 30_000;
+
+interface RefreshUserResult {
+  lbusername: string;
+  watch_items: number;
+  upserted: number;
+}
 
 // Letterboxd usernames are alphanumeric + underscore/dash. Real rules cap
 // at 30 chars; we cap at 50 to be permissive without permitting abusive
@@ -189,6 +201,47 @@ export async function triggerScrapeUser(
   }
 
   res.status(202).json({ data: { job_id: jobId } });
+}
+
+/**
+ * Synchronous RSS recent-refresh: proxy to moviemaestro POST /refresh-user.
+ * Creates no job row — the worker fetches the user's RSS feed, upserts
+ * UserFilms + refreshes the histogram inline, and returns counts we echo back.
+ */
+export async function refreshUser(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const startedBy = getAuthedUserId(req, res);
+  if (!startedBy) return;
+
+  const lbusername = await validateUsername(req.params.username, res);
+  if (!lbusername) return;
+
+  const workerConfig = getWorkerConfig();
+  if (!workerConfig) {
+    console.error(
+      "refreshUser: WORKER_URL or WORKER_SHARED_SECRET not configured",
+    );
+    res.status(500).json({ error: "Worker not configured" });
+    return;
+  }
+
+  try {
+    const result = await callWorkerJson<RefreshUserResult>(
+      workerConfig,
+      "/refresh-user",
+      { lbusername },
+      REFRESH_WORKER_TIMEOUT_MS,
+    );
+    res.json({ data: result });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    console.error(
+      `refreshUser: worker call failed for ${lbusername}: ${message}`,
+    );
+    res.status(502).json({ error: "Refresh failed", details: message });
+  }
 }
 
 export async function getScrapeJob(

@@ -529,6 +529,22 @@ class ApiService {
     );
   }
 
+  async refreshUser(
+    username: string,
+    token: string,
+  ): Promise<
+    ApiResponse<{ lbusername: string; watch_items: number; upserted: number }>
+  > {
+    return this.request<{
+      lbusername: string;
+      watch_items: number;
+      upserted: number;
+    }>(`/scrape-user/${encodeURIComponent(username)}/refresh`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  }
+
   // ===========================
   // Admin account management (admin role required server-side)
   // ===========================
