@@ -201,18 +201,22 @@ export function getWorkerConfig(): WorkerConfig | null {
   return { url, sharedSecret };
 }
 
+export type WorkerEndpoint = "/start" | "/scrape-user" | "/refresh-user";
+
 /**
- * Fire-and-forget POST to the moviemaestro worker. Times out after
- * WORKER_FETCH_TIMEOUT_MS; on any non-2xx, throws so the caller can roll
- * back the row via markJobFailed.
+ * POST to the moviemaestro worker and return its parsed JSON body. Times out
+ * after `timeoutMs` (default WORKER_FETCH_TIMEOUT_MS); on any non-2xx, throws.
+ * `/refresh-user` runs the RSS fetch+parse+upsert synchronously worker-side, so
+ * it passes a longer timeout than the fire-and-forget job handoffs.
  */
-export async function callWorker(
+export async function callWorkerJson<T>(
   config: WorkerConfig,
-  endpoint: "/start" | "/scrape-user",
+  endpoint: WorkerEndpoint,
   body: Record<string, unknown>,
-): Promise<void> {
+  timeoutMs: number = WORKER_FETCH_TIMEOUT_MS,
+): Promise<T> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), WORKER_FETCH_TIMEOUT_MS);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const res = await fetch(`${config.url}${endpoint}`, {
       method: "POST",
@@ -229,9 +233,23 @@ export async function callWorker(
         `worker ${endpoint} returned ${res.status}: ${text.slice(0, 200)}`,
       );
     }
+    return (await res.json()) as T;
   } finally {
     clearTimeout(timeout);
   }
+}
+
+/**
+ * Fire-and-forget POST to the worker. Throws on non-2xx so the caller can roll
+ * back the row via markJobFailed. Discards the body; use callWorkerJson when
+ * the response is needed.
+ */
+export async function callWorker(
+  config: WorkerConfig,
+  endpoint: WorkerEndpoint,
+  body: Record<string, unknown>,
+): Promise<void> {
+  await callWorkerJson(config, endpoint, body);
 }
 
 // ===========================

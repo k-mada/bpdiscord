@@ -7,6 +7,7 @@ import { validateUUIDParam } from "../middleware/validation";
 import {
   cancelScrapeJob,
   getScrapeJob,
+  refreshUser,
   triggerScrapeUser,
 } from "../controllers/userScrapeJobController";
 
@@ -40,8 +41,22 @@ const pollLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Per-username limit for the synchronous RSS refresh. Cheaper than a full
+// scrape but still hits Letterboxd, so cap it the same way.
+const refreshLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  max: 10,
+  keyGenerator: (req) => `refresh-user:${req.params.username ?? "unknown"}`,
+  message: { error: "Too many refresh requests for this user — try again later." },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 // POST /api/scrape-user/:username — trigger a per-user refresh.
 router.post("/:username", triggerLimiter, triggerScrapeUser);
+
+// POST /api/scrape-user/:username/refresh — synchronous RSS recent-refresh.
+router.post("/:username/refresh", refreshLimiter, refreshUser);
 
 // GET /api/scrape-user/jobs/:id — read job state for polling.
 router.get(
