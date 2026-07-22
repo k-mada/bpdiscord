@@ -28,10 +28,11 @@ const isLocalDatabase =
 
 // Create postgres client with proper connection pool settings
 const client = postgres(databaseUrl, {
-  // Connection pool size
-  // - Production: 10 connections (Supabase free tier allows 60)
-  // - Development/Test: 5 connections
-  max: isProduction ? 10 : 5,
+  // Pool size. Prod is capped at 10 because Vercel runs many concurrent
+  // lambdas, each with its own pool against the shared pooler. Dev is one
+  // long-lived process, so give it headroom for the homepage's ~7-endpoint
+  // fan-out instead of the old 5.
+  max: isProduction ? 10 : 15,
 
   // Close idle connections after 20 seconds
   idle_timeout: 20,
