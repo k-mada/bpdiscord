@@ -53,13 +53,13 @@ const MovieList = ({
               animated ? { animationDelay: `${index * 0.2 + 0.5}s` } : undefined
             }
           >
-            <div className={cn("max-w-[230px]")}>
+            <div className={cn("max-w-40")}>
               <a
                 href={`https://letterboxd.com/film/${movie.film_slug}`}
                 target="_blank"
               >
                 <img
-                  src={posterUrl}
+                  src={movie.poster}
                   alt={movie.title ?? ""}
                   className="border rounded-t-md border-slate-500 border-b-0 rounded-b-none"
                 />
