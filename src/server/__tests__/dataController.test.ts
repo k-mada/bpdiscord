@@ -290,6 +290,91 @@ describe('dataController', () => {
     });
   });
 
+  describe('Film Detail', () => {
+    // test-film-popular fixtures: active 4.0 + minimal 4.5 (discord),
+    // non_discord 2.0 — so the toggle moves the average 4.25 → 3.50.
+    it('dbGetFilmDetail returns discord-scoped stats and film metadata', async () => {
+      const result = await dc.dbGetFilmDetail('test-film-popular');
+
+      expect(result.success).toBe(true);
+      expect(result.data).toMatchObject({
+        filmSlug: 'test-film-popular',
+        title: 'Popular Test Film',
+        releaseYear: 2020,
+        letterboxdRating: 4.2,
+        watchedCount: 2,
+        ratedCount: 2,
+        averageRating: 4.25,
+      });
+    });
+
+    it('dbGetFilmDetail orders raters by rating descending', async () => {
+      const result = await dc.dbGetFilmDetail('test-film-popular');
+
+      expect(result.data!.ratings.map(r => r.username)).toEqual([
+        'test_user_minimal',
+        'test_user_active',
+      ]);
+      expect(result.data!.ratings[0]!.displayName).toBe('Minimal User');
+    });
+
+    it('dbGetFilmDetail includes non-discord raters when toggled on', async () => {
+      const result = await dc.dbGetFilmDetail('test-film-popular', {
+        includeNonDiscord: true,
+      });
+
+      expect(result.data!.watchedCount).toBe(3);
+      expect(result.data!.ratedCount).toBe(3);
+      expect(result.data!.averageRating).toBe(3.5);
+      expect(result.data!.ratings.map(r => r.username)).toContain(
+        'test_user_non_discord',
+      );
+    });
+
+    it('dbGetFilmDetail counts a null rating as watched but not rated', async () => {
+      // test-film-unrated is watched (rating null) by the non-discord user only.
+      const result = await dc.dbGetFilmDetail('test-film-unrated', {
+        includeNonDiscord: true,
+      });
+
+      expect(result.data!.watchedCount).toBe(1);
+      expect(result.data!.ratedCount).toBe(0);
+      expect(result.data!.averageRating).toBeNull();
+      expect(result.data!.ratings).toEqual([]);
+    });
+
+    it('dbGetFilmDetail resolves a slug with no Films row, falling back to the UserFilms title', async () => {
+      const result = await dc.dbGetFilmDetail('test-film-no-data', {
+        includeNonDiscord: true,
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.data).toMatchObject({
+        title: 'No Data Film',
+        poster: null,
+        letterboxdRating: null,
+        releaseYear: null,
+        watchedCount: 1,
+        ratedCount: 1,
+      });
+    });
+
+    it('dbGetFilmDetail still resolves a film only non-discord users logged', async () => {
+      const result = await dc.dbGetFilmDetail('test-film-no-data');
+
+      expect(result.data).not.toBeNull();
+      expect(result.data!.watchedCount).toBe(0);
+      expect(result.data!.ratings).toEqual([]);
+    });
+
+    it('dbGetFilmDetail returns null for a slug in neither Films nor UserFilms', async () => {
+      const result = await dc.dbGetFilmDetail('no-such-film-anywhere');
+
+      expect(result.success).toBe(true);
+      expect(result.data).toBeNull();
+    });
+  });
+
   describe('MFL Scoring', () => {
     it('dbGetMFLScoringMetrics returns empty when no metrics seeded', async () => {
       const result = await dc.dbGetMFLScoringMetrics();
@@ -530,6 +615,65 @@ describe('dataController', () => {
 
       const after = await dc.dbGetUserRatings('test_user_minimal');
       expect(after.data).toEqual([]);
+    });
+  });
+});
+
+// Isolated because it adds rows the shared fixture assertions don't expect;
+// afterAll restores the standard fixtures.
+describe('dbGetFilmDetail — rows the standard fixtures do not cover', () => {
+  beforeAll(async () => {
+    await db.insert(films).values([
+      { filmSlug: 'detail-unwatched', title: 'Unwatched Film', lbRating: 3.3 },
+      { filmSlug: 'detail-zero-rated', title: 'Zero Rated Film' },
+    ]);
+    await db.insert(userFilms).values([
+      {
+        lbusername: 'test_user_active',
+        filmSlug: 'detail-zero-rated',
+        title: 'Zero Rated Film',
+        rating: 0,
+      },
+    ]);
+  });
+
+  afterAll(async () => {
+    await resetDatabase();
+  });
+
+  it('treats a 0 rating as watched-but-unrated', async () => {
+    const result = await dc.dbGetFilmDetail('detail-zero-rated');
+
+    expect(result.data!.watchedCount).toBe(1);
+    expect(result.data!.ratedCount).toBe(0);
+    expect(result.data!.averageRating).toBeNull();
+    expect(result.data!.ratings).toEqual([]);
+  });
+
+  it('picks the most common title when users disagree and no Films row exists', async () => {
+    // Deterministic across calls: frequency first, alphabetical tiebreak.
+    await db.insert(userFilms).values([
+      { lbusername: 'test_user_active', filmSlug: 'detail-untitled', title: 'The Real Title' },
+      { lbusername: 'test_user_minimal', filmSlug: 'detail-untitled', title: 'The Real Title' },
+      { lbusername: 'test_user_non_discord', filmSlug: 'detail-untitled', title: 'A Typo Title' },
+    ]);
+
+    const first = await dc.dbGetFilmDetail('detail-untitled');
+    const second = await dc.dbGetFilmDetail('detail-untitled');
+
+    expect(first.data!.title).toBe('The Real Title');
+    expect(second.data!.title).toBe(first.data!.title);
+  });
+
+  it('returns a catalogued film nobody has watched with zeroed stats', async () => {
+    const result = await dc.dbGetFilmDetail('detail-unwatched');
+
+    expect(result.data).toMatchObject({
+      title: 'Unwatched Film',
+      letterboxdRating: 3.3,
+      watchedCount: 0,
+      ratedCount: 0,
+      averageRating: null,
     });
   });
 });

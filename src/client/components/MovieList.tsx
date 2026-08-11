@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { LBFilm } from "../types";
 import { cn } from "../lib/utils";
 
@@ -60,11 +61,7 @@ const MovieList = ({
           >
             <div className="flex flex-col w-60">
               <div className="group relative transition-transform hover:scale-105 duration-500 ease-in-out">
-                <a
-                  href={`https://letterboxd.com/film/${movie.film_slug}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
+                <Link to={`/film/${movie.film_slug}`}>
                   {movie.poster ? (
                     <img
                       src={movie.poster}
@@ -77,7 +74,7 @@ const MovieList = ({
                   ) : (
                     <div className="w-full aspect-[2/3] bg-slate-800" />
                   )}
-                </a>
+                </Link>
                 <div className="pointer-events-none absolute inset-0 hidden items-end bg-gradient-to-b from-transparent to-slate-900 py-5 text-xl opacity-0 transition-opacity duration-500 ease-in-out group-hover:opacity-100 hover-desktop:flex">
                   {statLine}
                 </div>

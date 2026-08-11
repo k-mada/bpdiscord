@@ -24,6 +24,28 @@ export interface MovieSwapResult {
   recsForUserB: SwapFilm[]; // films userB hasn't seen that userA has
 }
 
+export interface FilmRater {
+  username: string;
+  displayName: string | null;
+  rating: number;
+  liked: boolean;
+}
+
+// GET /api/films/:filmSlug — Discord-scoped unless includeNonDiscord is set.
+// `ratings` holds raters only, so watchedCount >= ratings.length.
+export interface FilmDetail {
+  filmSlug: string;
+  title: string;
+  releaseYear: number | null;
+  poster: string | null;
+  letterboxdUrl: string | null;
+  letterboxdRating: number | null;
+  watchedCount: number;
+  ratedCount: number;
+  averageRating: number | null;
+  ratings: FilmRater[];
+}
+
 export interface User {
   id: string;
   name: string;

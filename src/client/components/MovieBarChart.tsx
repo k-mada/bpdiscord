@@ -1,4 +1,5 @@
 import { type CSSProperties } from "react";
+import { Link } from "react-router-dom";
 import { LBFilm } from "../types";
 import { cn } from "../lib/utils";
 
@@ -59,10 +60,8 @@ const MovieBarChart = ({
 
         return (
           <li key={movie.film_slug} className="m-0">
-            <a
-              href={`https://letterboxd.com/film/${movie.film_slug}`}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              to={`/film/${movie.film_slug}`}
               className="group flex items-center gap-3"
             >
               {movie.poster ? (
@@ -96,7 +95,7 @@ const MovieBarChart = ({
                   )}
                 </div>
               </div>
-            </a>
+            </Link>
           </li>
         );
       })}

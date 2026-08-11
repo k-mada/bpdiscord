@@ -4,6 +4,7 @@ import {
   SignupRequest,
   AuthResponse,
   MovieSwapResult,
+  FilmDetail,
 } from "../../shared/types";
 import { ApiError } from "../lib/apiError";
 import {
@@ -172,6 +173,18 @@ class ApiService {
     username: string,
   ): Promise<ApiResponse<FilmUserComplete>> {
     return this.request<FilmUserComplete>(`/film-users/${username}/complete`);
+  }
+
+  async getFilmDetail(
+    filmSlug: string,
+    options: { includeNonDiscord?: boolean } = {},
+    signal?: AbortSignal,
+  ): Promise<ApiResponse<FilmDetail>> {
+    const query = options.includeNonDiscord ? "?includeNonDiscord=true" : "";
+    return this.request<FilmDetail>(
+      `/films/${encodeURIComponent(filmSlug)}${query}`,
+      signal ? { signal } : {},
+    );
   }
 
   async getFilmUsers(): Promise<
