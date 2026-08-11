@@ -11,6 +11,7 @@ const Header = () => {
 
   const isAuthenticated = !!token;
   const profilePath = user?.lbusername ? `/user/${user.lbusername}` : null;
+  const isDevMode = import.meta.env.DEV;
 
   // Close mobile menu when route changes
   useEffect(() => {
@@ -61,9 +62,11 @@ const Header = () => {
               Profile
             </Link>
           )}
-          <Link to="/fetcher" className={getNavLinkClass("/fetcher")}>
-            Data Fetcher
-          </Link>
+          {isDevMode && (
+            <Link to="/fetcher" className={getNavLinkClass("/fetcher")}>
+              Data Fetcher
+            </Link>
+          )}
 
           {isAuthenticated ? (
             <button onClick={handleLogout} className="btn-secondary">

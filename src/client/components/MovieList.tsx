@@ -31,51 +31,62 @@ const MovieList = ({
       )}
     >
       {movies.map((movie, index: number) => {
-        // TODO: MAKE THIS MORE RESPONSIVE LATER
-        const posterUrl =
-          movie.poster?.replace("0-230-0-345", "0-150-0-225") ?? "";
+        const statLine = (
+          <div className="ml-4">
+            {showRating && (
+              <span>
+                ★&nbsp;
+                <span className="font-bold">
+                  {movie.average_rating.toFixed(2)}
+                </span>
+              </span>
+            )}
+            {showCount && (
+              <span>
+                👀&nbsp;
+                <span className="font-bold">{movie.watch_count}</span>
+              </span>
+            )}
+          </div>
+        );
 
         return (
           <li
             key={movie.film_slug}
-            className={cn(
-              "flex items-center gap-4 mb-8",
-              "max-md:justify-start",
-              "before:[counter-increment:movie] before:content-[counter(movie)]",
-              "before:min-w-12 before:min-h-12",
-              "before:border before:border-slate-700",
-              "before:flex before:items-center before:justify-center",
-              "before:font-letterboxdBody before:text-2xl",
-              "before:movie-counter-text",
-              "before:rounded-full before:bg-slate-800",
-            )}
+            className="flex items-center gap-4 mb-8 max-md:justify-start before:[counter-increment:movie] before:content-[counter(movie)] before:min-w-12 before:min-h-12 before:border before:border-slate-700 before:flex before:items-center before:justify-center before:font-letterboxdBody before:text-2xl before:movie-counter-text before:rounded-full before:bg-slate-800"
             style={
               animated ? { animationDelay: `${index * 0.2 + 0.5}s` } : undefined
             }
           >
-            <div className={cn("max-w-[230px]")}>
-              <a
-                href={`https://letterboxd.com/film/${movie.film_slug}`}
-                target="_blank"
-              >
-                <img
-                  src={posterUrl}
-                  alt={movie.title ?? ""}
-                  className="border rounded-t-md border-slate-500 border-b-0 rounded-b-none"
-                />
-              </a>
-              <div className="movie-stats">
-                {showRating && (
-                  <div className="h-10 p-1 text-center border rounded-b-md border-t-0  border-slate-500 bg-slate-800">
-                    ★&nbsp;{movie.average_rating.toFixed(2) ?? 0}
-                  </div>
-                )}
-                {showCount && (
-                  <div className="h-10 p-1 text-center border rounded-b-md border-t-0  border-slate-500 bg-slate-800">
-                    👀&nbsp;&nbsp;{`${movie.watch_count ?? 0}`}
-                  </div>
-                )}
+            <div className="flex flex-col w-60">
+              <div className="group relative transition-transform hover:scale-105 duration-500 ease-in-out">
+                <a
+                  href={`https://letterboxd.com/film/${movie.film_slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {movie.poster ? (
+                    <img
+                      src={movie.poster}
+                      alt={`${movie.title ?? movie.film_slug} poster`}
+                      width={230}
+                      height={345}
+                      loading="lazy"
+                      className="w-full aspect-[2/3] object-cover"
+                    />
+                  ) : (
+                    <div className="w-full aspect-[2/3] bg-slate-800" />
+                  )}
+                </a>
+                <div className="pointer-events-none absolute inset-0 hidden items-end bg-gradient-to-b from-transparent to-slate-900 py-5 text-xl opacity-0 transition-opacity duration-500 ease-in-out group-hover:opacity-100 hover-desktop:flex">
+                  {statLine}
+                </div>
               </div>
+              {(showRating || showCount) && (
+                <div className="py-2 text-xl text-left hover-desktop:hidden">
+                  {statLine}
+                </div>
+              )}
             </div>
           </li>
         );

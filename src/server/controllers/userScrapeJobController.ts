@@ -208,10 +208,7 @@ export async function triggerScrapeUser(
  * Creates no job row — the worker fetches the user's RSS feed, upserts
  * UserFilms + refreshes the histogram inline, and returns counts we echo back.
  */
-export async function refreshUser(
-  req: Request,
-  res: Response,
-): Promise<void> {
+export async function refreshUser(req: Request, res: Response): Promise<void> {
   const startedBy = getAuthedUserId(req, res);
   if (!startedBy) return;
 
@@ -244,10 +241,7 @@ export async function refreshUser(
   }
 }
 
-export async function getScrapeJob(
-  req: Request,
-  res: Response,
-): Promise<void> {
+export async function getScrapeJob(req: Request, res: Response): Promise<void> {
   const startedBy = getAuthedUserId(req, res);
   if (!startedBy) return;
   const id = req.params.id;

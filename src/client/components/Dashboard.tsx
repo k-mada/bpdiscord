@@ -7,6 +7,8 @@ const Dashboard = () => {
 
   const profilePath = user?.lbusername ? `/user/${user.lbusername}` : null;
 
+  const isDevMode = import.meta.env.DEV;
+
   const getUserName = () => {
     if (user?.displayName) return user.displayName;
     if (user?.email) return user.email.split("@")[0];
@@ -35,10 +37,6 @@ const Dashboard = () => {
           Your Letterboxd data analysis dashboard
         </p>
       </div>
-      <div>
-        <span className="text-3xl font-bold">Total Movies:</span>
-        <span className="text-3xl font-bold movie-counter"></span>
-      </div>
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -58,20 +56,22 @@ const Dashboard = () => {
           </button>
         </div>
 
-        <div className="card hover:bg-letterboxd-bg-tertiary transition-colors">
-          <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-2">
-            Data Fetcher
-          </h3>
-          <p className="text-letterboxd-text-secondary mb-4">
-            Scrape and analyze Letterboxd rating data
-          </p>
-          <button
-            onClick={() => navigate("/fetcher")}
-            className="btn-primary w-full"
-          >
-            Fetch Data
-          </button>
-        </div>
+        {isDevMode && (
+          <div className="card hover:bg-letterboxd-bg-tertiary transition-colors">
+            <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-2">
+              Data Fetcher
+            </h3>
+            <p className="text-letterboxd-text-secondary mb-4">
+              Scrape and analyze Letterboxd rating data
+            </p>
+            <button
+              onClick={() => navigate("/fetcher")}
+              className="btn-primary w-full"
+            >
+              Fetch Data
+            </button>
+          </div>
+        )}
 
         <div className="card hover:bg-letterboxd-bg-tertiary transition-colors">
           <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-2">
@@ -88,7 +88,7 @@ const Dashboard = () => {
           </button>
         </div>
 
-        {isAdmin && (
+        {isAdmin && isDevMode && (
           <div className="card hover:bg-letterboxd-bg-tertiary transition-colors">
             <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-2">
               Refresh user film data
