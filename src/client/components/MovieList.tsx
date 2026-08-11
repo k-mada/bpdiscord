@@ -32,10 +32,22 @@ const MovieList = ({
     >
       {movies.map((movie, index: number) => {
         const statLine = (
-          <>
-            <span>★&nbsp;{movie.average_rating.toFixed(2)}&nbsp;&nbsp;</span>
-            <span>👀&nbsp;&nbsp;{movie.watch_count}</span>
-          </>
+          <div className="ml-4">
+            {showRating && (
+              <span>
+                ★&nbsp;
+                <span className="font-bold">
+                  {movie.average_rating.toFixed(2)}
+                </span>
+              </span>
+            )}
+            {showCount && (
+              <span>
+                👀&nbsp;
+                <span className="font-bold">{movie.watch_count}</span>
+              </span>
+            )}
+          </div>
         );
 
         return (
@@ -47,7 +59,7 @@ const MovieList = ({
             }
           >
             <div className="flex flex-col w-60">
-              <div className="group relative transition-transform hover:scale-105 duration-200  ease-in-out">
+              <div className="group relative transition-transform hover:scale-105 duration-500 ease-in-out">
                 <a
                   href={`https://letterboxd.com/film/${movie.film_slug}`}
                   target="_blank"
@@ -66,10 +78,15 @@ const MovieList = ({
                     <div className="w-full aspect-[2/3] bg-slate-800" />
                   )}
                 </a>
-                <div className="pointer-events-none absolute inset-0 hidden items-end justify-center bg-gradient-to-b from-transparent to-slate-900 py-5 text-center text-xl opacity-0 transition-opacity duration-200 ease-in-out group-hover:opacity-100 can-hover:flex">
+                <div className="pointer-events-none absolute inset-0 hidden items-end bg-gradient-to-b from-transparent to-slate-900 py-5 text-xl opacity-0 transition-opacity duration-500 ease-in-out group-hover:opacity-100 hover-desktop:flex">
                   {statLine}
                 </div>
               </div>
+              {(showRating || showCount) && (
+                <div className="py-2 text-xl text-left hover-desktop:hidden">
+                  {statLine}
+                </div>
+              )}
             </div>
           </li>
         );
