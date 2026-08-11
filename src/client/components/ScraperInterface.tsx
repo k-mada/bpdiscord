@@ -24,9 +24,8 @@ const ScraperInterface = () => {
   const [checkLoading, setCheckLoading] = useState(false);
   const [checkError, setCheckError] = useState<string | null>(null);
 
-  // Per-user scrape job lifecycle — owns trigger/poll/cancel, localStorage
-  // resume, and terminal-state detection. The job_id is persisted across
-  // refreshes so a long scrape can be monitored from another tab.
+  // job_id is persisted so a long scrape survives a refresh and can be
+  // monitored from another tab.
   const {
     job,
     error: jobError,

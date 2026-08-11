@@ -134,7 +134,6 @@ async function seed() {
   for (const cat of allCategories) {
     const displayMode = getDisplayMode(cat.category);
 
-    // Check if this category already exists for the event
     const existingCat = await db
       .select({ id: eventCategories.id })
       .from(eventCategories)
@@ -151,7 +150,6 @@ async function seed() {
       continue;
     }
 
-    // Insert category + all its nominees in a single transaction
     // so we never end up with a half-seeded category
     await db.transaction(async (tx) => {
       const catResult = await tx

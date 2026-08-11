@@ -5,44 +5,29 @@ import { db } from "../db";
 import { agActors, agFilms, agActedIn } from "../db/schema";
 import { ApiResponse } from "../../shared/types";
 
-// ===========================
-// Path-finder tuning
-// ===========================
-
 const DEFAULT_MAX_DEPTH = 8;
 const MAX_ALLOWED_DEPTH = 8;
 
-// Only consider the top-N billed cast members when expanding a movie's
-// co-stars. Real movies often have hundreds of credited actors (extras,
-// voice roles, etc.); without a cutoff the branching factor makes the
-// recursive CTE explode. 15 keeps the primary cast while trimming the
-// long tail.
+// Films credit hundreds of actors (extras, voice roles); without a billing
+// cutoff the BFS branching factor explodes.
 const DEFAULT_BILLING_CUTOFF = 15;
 const MAX_BILLING_CUTOFF = 50;
 
-// Hard ceiling on how long the path-finding query may run. Prevents a
-// single bad pair (e.g. two obscure actors with no short path) from
-// pinning a pooled connection.
+// Stops one bad pair (two obscure actors, no short path) from pinning a
+// pooled connection.
 const QUERY_TIMEOUT_MS = 5_000;
 
 // Mirrors the Python ingestion service — when hydrating a movie's cast,
 // only persist the top-N billed actors to keep the graph manageable.
 const MAX_CAST_PER_MOVIE = 15;
 
-// Co-stars can balloon for prolific actors (Kevin Bacon has ~1500+). Cap
-// the response by default and let callers paginate via ?limit up to a
-// hard ceiling.
+// Prolific actors have ~1500+ co-stars; callers paginate via ?limit.
 const DEFAULT_COSTARS_LIMIT = 100;
 const MAX_COSTARS_LIMIT = 500;
 
-// Cap on the `q` parameter for /search. Prevents abusive payloads from
-// being forwarded to TMDB or used as trigram patterns. Real actor /
-// movie names fit comfortably under this.
+// Keeps abusive payloads out of TMDB calls and trigram patterns; real names
+// fit well under this.
 const MAX_SEARCH_QUERY_LENGTH = 80;
-
-// ===========================
-// TMDB client
-// ===========================
 
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p";
@@ -83,10 +68,6 @@ const tmdbGet = async <T>(
     throw err;
   }
 };
-
-// ===========================
-// TMDB response shapes (subset we use)
-// ===========================
 
 type TmdbPersonResponse = {
   id: number;
@@ -151,10 +132,6 @@ type TmdbMovieSearchResponse = {
   }>;
 };
 
-// ===========================
-// Input validation
-// ===========================
-
 const parsePositiveInt = (value: string | undefined): number | null => {
   if (typeof value !== "string") return null;
   const trimmed = value.trim();
@@ -170,20 +147,16 @@ const parseBoundedInt = (
   const trimmed = value.trim();
   if (trimmed.length === 0) return null;
   const n = Number.parseInt(trimmed, 10);
-  // Reject non-canonical inputs ("05", " 5", "5abc") — `String(n) === trimmed`
-  // mirrors parsePositiveInt so path params and query params validate the
-  // same way.
+  // `String(n) === trimmed` rejects non-canonical inputs ("05", "5abc") the
+  // same way parsePositiveInt does.
   if (!Number.isInteger(n) || n < min || n > max || String(n) !== trimmed) {
     return null;
   }
   return n;
 };
 
-// Escape characters that LIKE/ILIKE treats as wildcards. PG's default
-// escape character is `\`, which we must escape too. Without this, a user
-// query containing `%` or `_` matches everything / any-single-char and
-// degrades trigram index utilisation. Not a SQL-injection concern (Drizzle
-// parameterizes), but a search-quality + performance concern.
+// Search-quality, not injection (Drizzle parameterizes): unescaped `%`/`_`
+// match everything and defeat the trigram index. `\` must be escaped too.
 const escapeLikePattern = (s: string): string =>
   s.replace(/[\\%_]/g, (c) => `\\${c}`);
 
@@ -220,19 +193,11 @@ const mergeAndRank = <T extends { tmdbId: number; popularity: number | null }>(
     .slice(0, limit);
 };
 
-// ===========================
-// Cache-through ingestion helpers
-// ===========================
-
 type ActorRow = typeof agActors.$inferSelect;
 type FilmRow = typeof agFilms.$inferSelect;
 
-// In-process request coalescing. When two concurrent requests ask for the
-// same actor/movie, the second finds an in-flight promise and awaits it
-// instead of firing its own TMDB call + transaction. Saves TMDB quota and
-// avoids redundant writes within a single Node instance. Cross-instance
-// races (Vercel parallel lambdas) still fall through to ON CONFLICT DO
-// UPDATE — bounded cost, no correctness impact.
+// Concurrent requests for the same id await one in-flight TMDB call. Only
+// per-instance; cross-instance races fall through to ON CONFLICT DO UPDATE.
 const inflightActor = new Map<number, Promise<ActorRow | null>>();
 const inflightMovie = new Map<number, Promise<MovieWithCast | null>>();
 
@@ -274,9 +239,8 @@ async function ensureActorImpl(tmdbId: number): Promise<ActorRow | null> {
   });
 
   const rawCredits = person.movie_credits?.cast ?? [];
-  // Skip credits missing a usable id or title — ag_films.title is NOT NULL,
-  // so inserting "" would pollute search and downstream joins. TMDB
-  // occasionally returns region-blocked or unreleased rows without a title.
+  // TMDB returns region-blocked/unreleased rows with no title; ag_films.title
+  // is NOT NULL and "" would pollute search.
   const credits = dedupeBy(
     rawCredits.filter(
       (c) =>
@@ -410,9 +374,8 @@ async function ensureMovieWithCastImpl(
     .where(eq(agFilms.tmdbId, tmdbId))
     .limit(1);
 
-  // Cache hit: pull cast inline (one join) and return. Skip the extra
-  // film re-SELECT that dbGetMovieWithCast would do — we already have the
-  // row in `existing`.
+  // Inline join rather than dbGetMovieWithCast — the film row is already in
+  // `existing`, so that path would re-SELECT it.
   if (existing[0]?.castFullyFetched) {
     const cast = await db
       .select({
@@ -496,9 +459,7 @@ async function ensureMovieWithCastImpl(
         fetchedAt: now,
       }));
 
-      // Lightweight actor upsert — never clobber a prior
-      // fully_fetched=true. ON CONFLICT for existing rows only refreshes
-      // surface metadata.
+      // Surface metadata only — must never clobber a prior fully_fetched=true.
       await tx
         .insert(agActors)
         .values(actorRows)
@@ -535,9 +496,8 @@ async function ensureMovieWithCastImpl(
 
   if (!filmRow) return null;
 
-  // Build the cast response from the in-memory trimmed array — no re-read
-  // needed. Ordering matches the inline cast JOIN above (billing order ASC
-  // NULLS LAST), which is how we pre-sorted `trimmed`.
+  // `trimmed` is pre-sorted billing ASC NULLS LAST, matching the cache-hit
+  // JOIN above, so the response shape is identical on both paths.
   const cast = trimmed.map((m) => ({
     tmdbId: m.id,
     name: m.name,
@@ -549,10 +509,6 @@ async function ensureMovieWithCastImpl(
   return { ...filmRow, cast };
 }
 
-// ===========================
-// Read-only DB queries
-// ===========================
-
 type CostarRow = {
   tmdbId: number;
   name: string;
@@ -561,16 +517,8 @@ type CostarRow = {
   sharedMovies: string[];
 };
 
-// Helpers in this controller throw on DB error rather than returning
-// `dbOperation`'s `{success, data, error}` shape. Reason: handlers in this
-// file already use `classifyError` to convert thrown errors (TMDB-specific
-// + generic) into HTTP responses; layering `dbOperation` on top creates a
-// second error path for the same flow. Other controllers (dataController,
-// eventDataController) don't have classifyError and keep `dbOperation`.
-//
-// SQL `AS "camelCase"` aliases use double quotes so PG preserves case
-// (unquoted identifiers are folded to lowercase). This keeps response
-// keys camelCase to match the rest of the API surface.
+// Aliases are double-quoted so PG preserves camelCase — unquoted identifiers
+// fold to lowercase and would break the response shape.
 async function dbGetCostars(
   actorTmdbId: number,
   limit: number,
@@ -686,10 +634,6 @@ async function dbSearchMovies(
     .limit(limit);
 }
 
-// ===========================
-// Error handling
-// ===========================
-
 type HandlerError = { status: number; body: ApiResponse };
 
 function classifyError(error: unknown, context: string): HandlerError {
@@ -729,10 +673,6 @@ function classifyError(error: unknown, context: string): HandlerError {
     },
   };
 }
-
-// ===========================
-// Handlers
-// ===========================
 
 export async function findActorPath(
   req: Request,
@@ -779,9 +719,8 @@ export async function findActorPath(
   }
 
   try {
-    // Cache-through ingestion: ensure both actors exist (populate from TMDB if missing).
-    // This aligns with the pattern used by getCostars and getCommonMovies, and lets us
-    // distinguish "unknown actor" (ensureActor returns null) from "no path within maxDepth".
+    // Ingesting up front lets us distinguish "unknown actor" (null) from
+    // "no path within maxDepth" (empty path).
     const [actor1, actor2] = await Promise.all([
       ensureActor(actor1Id),
       ensureActor(actor2Id),
@@ -798,14 +737,8 @@ export async function findActorPath(
       return;
     }
 
-    // Layer-by-layer BFS over the actor co-appearance graph. The `parents`
-    // map doubles as the global visited set (membership check) and the
-    // parent-pointer chain (path reconstruction). Each actor is expanded
-    // at most once, so complexity is O(V + E) over the connected component
-    // — not O(B^D) like a recursive CTE that only dedupes within a single
-    // path. One indexed lookup per layer:
-    //   - my_cast: (actor_tmdb_id, movie_tmdb_id) — primary key
-    //   - co_cast: (movie_tmdb_id, actor_tmdb_id) — idx_ag_acted_in_movie_actor
+    // `parents` is both the global visited set and the parent-pointer chain,
+    // so each actor expands at most once — O(V+E), not the O(B^D) of a CTE.
     type FrontierRow = {
       nextActor: number;
       prevActor: number;
@@ -832,9 +765,8 @@ export async function findActorPath(
             sql`, `,
           );
 
-          // DISTINCT ON dedupes when a new actor is reachable through
-          // several frontier actors in this same layer; we keep one
-          // arbitrary parent edge.
+          // DISTINCT ON keeps one arbitrary parent edge when an actor is
+          // reachable via several frontier actors in the same layer.
           const rows = await tx.execute<FrontierRow>(sql`
             SELECT DISTINCT ON (co_cast.actor_tmdb_id)
               co_cast.actor_tmdb_id AS "nextActor",
@@ -871,10 +803,8 @@ export async function findActorPath(
     }
 
     if (foundDepth === null) {
-      // The query succeeded; the graph just has no connection within
-      // maxDepth. That's a valid result, not an error — return 200 with
-      // an empty path so callers can render a "no connection found"
-      // message instead of treating it as a failure.
+      // No connection within maxDepth is a valid result, not an error — 200
+      // with an empty path so callers can render "no connection found".
       res.json({
         data: {
           degrees: null,
@@ -916,9 +846,8 @@ export async function findActorPath(
       }>;
     };
 
-    // Build ARRAY[...]::int[] literals from validated integer IDs. sql.join
-    // on an empty list collapses to nothing, yielding `ARRAY[]::int[]` for
-    // the trivial actor1Id === actor2Id case.
+    // sql.join on an empty list collapses to `ARRAY[]::int[]`, which is what
+    // the trivial actor1Id === actor2Id case needs.
     const actorIdsArr = sql`ARRAY[${sql.join(
       actorIds.map((id) => sql`${id}`),
       sql`, `,
@@ -1025,10 +954,8 @@ export async function searchGraph(
   }
 
   try {
-    // Run DB + TMDB searches in parallel. Each leg degrades gracefully via
-    // .catch(): a failure on one source returns empty results rather than
-    // failing the whole endpoint, so e.g. a TMDB outage still yields DB
-    // hits and vice versa.
+    // Per-leg .catch() so one source failing (TMDB outage, DB blip) degrades
+    // to partial results instead of failing the endpoint.
     const [dbActors, dbMovies, tmdbPersons, tmdbMovies] = await Promise.all([
       dbSearchActors(rawQuery, 10).catch((err) => {
         console.warn(

@@ -1,12 +1,5 @@
-// Types shared between client and server.
-//
-// Anything in here must be free of side-specific dependencies (no React, no
-// Express, no Supabase server SDK, no Drizzle, no Puppeteer). If a type needs
-// one of those, it belongs in src/client/types.ts or src/server/types.ts.
-
-// ===========================
-// API Response
-// ===========================
+// Must stay free of side-specific dependencies (React, Express, Drizzle, the
+// server SDK). Anything needing those goes in client/types.ts or server/types.ts.
 
 export interface ApiResponse<T = unknown> {
   data?: T;
@@ -17,10 +10,6 @@ export interface ApiResponse<T = unknown> {
   // a partial-failure object, or a debug string depending on the endpoint.
   details?: unknown;
 }
-
-// ===========================
-// Movie Swap
-// ===========================
 
 // Not LBFilm: that type has no per-user rating (the sort key). Kept minimal;
 // adding fields later is backward-compatible.
@@ -34,10 +23,6 @@ export interface MovieSwapResult {
   recsForUserA: SwapFilm[]; // films userA hasn't seen that userB has
   recsForUserB: SwapFilm[]; // films userB hasn't seen that userA has
 }
-
-// ===========================
-// User & Authentication
-// ===========================
 
 export interface User {
   id: string;
@@ -57,10 +42,8 @@ export interface SignupRequest extends AuthRequest {
   lbusername?: string;
 }
 
-// `email` is optional to match what Supabase's auth User actually returns —
-// password-flow users always have one, but the SDK types it as optional.
-// Client code that needs email-required can narrow via StoredUser (see
-// src/client/types.ts) or the isValidStoredUser guard.
+// `email` is optional only because the Supabase SDK types it that way;
+// password-flow users always have one. Narrow via StoredUser when required.
 export interface AuthenticatedUser {
   id: string;
   email?: string;
@@ -78,10 +61,6 @@ export interface AuthResponse {
   access_token?: string;
   user: AuthenticatedUser;
 }
-
-// ===========================
-// Password Reset
-// ===========================
 
 export interface PasswordResetRequest {
   email: string;

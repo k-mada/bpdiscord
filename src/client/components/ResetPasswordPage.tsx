@@ -16,9 +16,8 @@ const ResetPasswordPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // On mount: Supabase's detectSessionInUrl has auto-parsed the recovery
-  // code from the URL hash. We just check whether it established a session.
-  // No session → the link was invalid or expired.
+  // detectSessionInUrl has already parsed the recovery code from the hash;
+  // no session here means the link was invalid or expired.
   useEffect(() => {
     let cancelled = false;
     void supabase.auth.getSession().then(({ data }) => {
@@ -52,14 +51,9 @@ const ResetPasswordPage = () => {
         return;
       }
 
-      // Sign out the recovery session — we don't want the email-link click
-      // alone to grant an authenticated session. Force the user to log in
-      // with the new password.
+      // An email-link click alone must not grant a session, so drop both the
+      // recovery session and our own now-stale app token before /login.
       await supabase.auth.signOut();
-      // Also clear our own app-level auth (separate from the SDK's session
-      // storage because we use persistSession: false). If the user had an
-      // old logged-in session, the token is now stale — let them re-login
-      // cleanly with the new password.
       logout();
       navigate("/login", {
         replace: true,

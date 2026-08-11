@@ -135,7 +135,6 @@ async function seed() {
       for (const nom of cat.nominees) {
         const { personName, movieOrShowName } = mapNominee(nom, displayMode);
 
-        // Check if this nominee is a winner
         const isWinner = cat.actual_winner.some(
           (w) =>
             w.title.toLowerCase() === nom.title.toLowerCase() &&

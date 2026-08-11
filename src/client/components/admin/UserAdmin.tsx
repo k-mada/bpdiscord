@@ -9,9 +9,8 @@ import { Modal, ModalBody, ModalHeader } from "../Modal";
 import Spinner from "../Spinner";
 import type { AccountUpdateRequest, AccountView } from "../../types";
 
-// Letterboxd.com username format — kept in sync with src/server/lib/lbusername.ts.
-// Server is the source of truth; this is a UX-only pre-check to surface invalid
-// input before the round-trip.
+// UX-only pre-check. Server is the source of truth — keep in sync with
+// src/server/lib/lbusername.ts.
 const LBUSERNAME_FORMAT = /^[a-z0-9_-]{2,15}$/;
 
 const formatDate = (iso: string | null): string => {

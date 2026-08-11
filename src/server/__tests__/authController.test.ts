@@ -75,8 +75,7 @@ function mockReqRes(body: Record<string, unknown>): MockedResponse {
   };
 }
 
-// Insert auth.users row + Users row + app_users row to simulate "this
-// Letterboxd.com username is already claimed." The Users row is needed because
+// Simulates an already-claimed username. The Users row is required because
 // app_users.lbusername has a FK to "Users"(lbusername).
 async function seedClaimedLbusername(lbusername: string): Promise<void> {
   const userId = crypto.randomUUID();

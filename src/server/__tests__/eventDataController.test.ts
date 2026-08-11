@@ -19,7 +19,6 @@ import {
   testNomineeTemplates,
 } from "./fixtures/testData";
 
-// Verify test environment before anything runs
 beforeAll(() => {
   assertTestEnvironment();
 });
@@ -32,10 +31,6 @@ beforeEach(async () => {
 afterAll(async () => {
   await closeDatabase();
 });
-
-// ===========================
-// Helpers
-// ===========================
 
 /**
  * Seed helpers use explicit throws instead of expect() assertions.
@@ -117,10 +112,6 @@ async function seedNominees() {
   return { awardShow, event, categories, nominees };
 }
 
-// ===========================
-// Award Show Operations
-// ===========================
-
 describe("Award Show Operations", () => {
   it("dbGetAwardShows returns all award shows ordered by name", async () => {
     await seedAwardShows();
@@ -175,15 +166,10 @@ describe("Award Show Operations", () => {
     });
     expect(updateResult.success).toBe(true);
 
-    // Verify update
     const getResult = await ec.dbGetAwardShowBySlug("academy-awards");
     expect(getResult.data!.description).toBe("Updated description");
   });
 });
-
-// ===========================
-// Event Operations
-// ===========================
 
 describe("Event Operations", () => {
   it("dbCreateEvent creates event linked to award show", async () => {
@@ -245,7 +231,6 @@ describe("Event Operations", () => {
     // 3 categories
     expect(result.data!.categories).toHaveLength(3);
 
-    // Sorted by displayOrder
     expect(result.data!.categories[0].name).toBe("Best Picture");
     expect(result.data!.categories[1].name).toBe("Best Director");
     expect(result.data!.categories[2].name).toBe("Best Actor");
@@ -264,10 +249,6 @@ describe("Event Operations", () => {
     expect(result.data).toBeNull();
   });
 });
-
-// ===========================
-// Category Operations
-// ===========================
 
 describe("Category Operations", () => {
   it("dbUpsertCategory inserts new category", async () => {
@@ -299,7 +280,6 @@ describe("Category Operations", () => {
     expect(result.success).toBe(true);
     expect(result.data!.id).toBe(catId);
 
-    // Verify update via full event fetch
     const eventResult = await ec.dbGetEventBySlug(testEventTemplate.slug);
     const updatedCat = eventResult.data!.categories.find(
       (c: any) => c.id === catId
@@ -307,10 +287,6 @@ describe("Category Operations", () => {
     expect(updatedCat!.name).toBe("Best Motion Picture");
   });
 });
-
-// ===========================
-// Nominee Operations
-// ===========================
 
 describe("Nominee Operations", () => {
   it("dbUpsertNominee inserts new nominee", async () => {
@@ -344,10 +320,6 @@ describe("Nominee Operations", () => {
   });
 });
 
-// ===========================
-// Winner Operations
-// ===========================
-
 describe("Winner Operations", () => {
   it("dbSetWinner sets nominee as winner", async () => {
     const { nominees } = await seedNominees();
@@ -356,7 +328,6 @@ describe("Winner Operations", () => {
     const result = await ec.dbSetWinner(nomineeId, true);
     expect(result.success).toBe(true);
 
-    // Verify via event fetch
     const eventResult = await ec.dbGetEventBySlug(testEventTemplate.slug);
     const bestPicture = eventResult.data!.categories[0];
     const winner = bestPicture.nominees.find((n: any) => n.id === nomineeId);
@@ -367,7 +338,6 @@ describe("Winner Operations", () => {
     const { nominees } = await seedNominees();
     // nominees[0] = Anora, nominees[1] = The Brutalist (both Best Picture)
 
-    // Set Anora as winner
     await ec.dbSetWinner(nominees[0].id, true);
 
     // Set The Brutalist as winner (should clear Anora)
@@ -401,10 +371,6 @@ describe("Winner Operations", () => {
   });
 });
 
-// ===========================
-// User Pick Operations
-// ===========================
-
 describe("User Pick Operations", () => {
   it("dbUpsertUserPick creates a pick", async () => {
     const { nominees, categories } = await seedNominees();
@@ -428,7 +394,6 @@ describe("User Pick Operations", () => {
     // Change to The Brutalist
     await ec.dbUpsertUserPick(categories[0].id, userId, nominees[1].id);
 
-    // Verify only one pick exists
     const picks = await ec.dbGetEventUserPicks(event.id, userId);
     expect(picks.success).toBe(true);
     expect(picks.data).toHaveLength(1);

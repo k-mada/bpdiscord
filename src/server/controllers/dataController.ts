@@ -25,10 +25,6 @@ import {
 } from "../db/queryTypes";
 import { SwapFilm } from "../../shared/types";
 
-// ===========================
-// User Ratings Management
-// ===========================
-
 export async function dbDeleteUserRatings(
   username: string,
 ): Promise<{ success: boolean; error?: string }> {
@@ -83,9 +79,8 @@ export async function dbGetUserRatings(username: string): Promise<{
   });
 }
 
-// Total films a user has logged (watched), regardless of whether they rated
-// them. Unrated films are stored with a NULL rating, so COUNT(*) is the watch
-// total and COUNT(rating) would be the rated subset.
+// Unrated films carry a NULL rating, so COUNT(*) is the watch total —
+// COUNT(rating) would silently give the rated subset.
 export async function dbGetUserWatchedCount(username: string): Promise<{
   success: boolean;
   data?: number;
@@ -100,10 +95,6 @@ export async function dbGetUserWatchedCount(username: string): Promise<{
     return row?.watched ?? 0;
   });
 }
-
-// ===========================
-// Film Ratings Management (formerly LBFilmRatings)
-// ===========================
 
 export async function dbGetLBFilms(): Promise<{
   success: boolean;
@@ -181,10 +172,6 @@ export async function dbUpsertLBFilmRatings(
   });
 }
 
-// ===========================
-// Username Listing
-// ===========================
-
 export async function dbGetAllUsernames(): Promise<{
   success: boolean;
   data?: Array<{ username: string; displayName?: string }>;
@@ -205,10 +192,6 @@ export async function dbGetAllUsernames(): Promise<{
     }));
   });
 }
-
-// ===========================
-// Film Data Management
-// ===========================
 
 export async function dbInsertFilmData(
   filmData: Array<{
@@ -255,10 +238,6 @@ export async function dbInsertFilmData(
       });
   });
 }
-
-// ===========================
-// Hater Rankings
-// ===========================
 
 export async function dbGetHaterRankings2(): Promise<{
   success: boolean;
@@ -362,10 +341,6 @@ export async function dbGetHaterRankings(): Promise<{
   });
 }
 
-// ===========================
-// User Profile Management
-// ===========================
-
 export async function dbGetUserProfile(username: string): Promise<{
   success: boolean;
   // data is null when user not found, undefined on error
@@ -452,10 +427,6 @@ export async function dbUpsertUserProfile(
   });
 }
 
-// ===========================
-// Total Ratings Distribution
-// ===========================
-
 export async function dbGetTotalRatingsDistribution(): Promise<{
   success: boolean;
   data?: Array<{ rating: number; count: number }>;
@@ -481,10 +452,6 @@ export async function dbGetTotalRatingsDistribution(): Promise<{
     }));
   });
 }
-
-// ===========================
-// User Films Management
-// ===========================
 
 export async function dbGetAllUserFilms(): Promise<{
   success: boolean;
@@ -732,11 +699,8 @@ export async function dbGetTopUserFilms(
     const ratingCount = sql<number>`COUNT(${userFilms.rating})::int`;
     const averageRating = sql`ROUND(AVG(${userFilms.rating})::numeric, 2)`;
 
-    // "Highest rated" selects MEMBERSHIP by a Bayesian-weighted score that
-    // pulls low-sample films toward the Discord global mean `c` (so a
-    // 4.9-from-5 can't crowd out a 4.3-from-40), then the result is presented
-    // by raw average below so the displayed ★ list stays descending. The
-    // weighted score is an ordering key only — it never leaves this function.
+    // Bayesian weighting toward global mean `c` decides membership only, so a
+    // 4.9-from-5 can't crowd out a 4.3-from-40. Display re-sorts by raw avg.
     let c = 0;
     if (isHighestRated) {
       const meanRow = await db
@@ -804,9 +768,8 @@ export async function dbGetTopUserFilms(
       url: r.url ?? "",
     }));
 
-    // Re-sort the already-selected set by raw average for display. The DB
-    // LIMIT (by weighted score) fixed membership; this only reorders ≤limit
-    // rows so the ★ column reads top-to-bottom.
+    // Membership was already fixed by the weighted-score LIMIT; this reorders
+    // ≤limit rows so the ★ column reads top-to-bottom.
     if (isHighestRated) {
       mapped.sort(
         (a, b) =>
@@ -900,10 +863,6 @@ export async function dbDeleteUserFilms(
   });
 }
 
-// ===========================
-// Movies In Common
-// ===========================
-
 export async function dbGetMoviesInCommon(
   user1: string,
   user2: string,
@@ -943,14 +902,8 @@ export async function dbGetMoviesInCommon(
       .where(eq(userFilms.lbusername, user2))
       .as("uf2");
 
-    // LEFT JOIN with Films so we can surface poster/year/url to the UI.
-    // Films row may not exist for slugs the worker hasn't backfilled yet —
-    // null fallbacks keep the row in the result.
-    //
-    // total_ratings is a per-film popularity signal used by the client to
-    // break ties between equally-scored darling/fight candidates (prefer
-    // the less-rated, more distinctive film). The correlated subquery is
-    // cheap thanks to idx_user_films_film_slug.
+    // LEFT JOIN because the worker may not have backfilled a slug's Films row
+    // yet. total_ratings breaks client-side ties toward less-rated films.
     const result = await db
       .select({
         title: uf1.title,
@@ -1021,10 +974,6 @@ export async function dbGetFilmsByUser(username: string): Promise<{
   });
 }
 
-// ===========================
-// Movie Swap
-// ===========================
-
 export async function dbGetMovieSwap(
   userA: string,
   userB: string,
@@ -1080,10 +1029,6 @@ export async function dbGetMovieSwap(
   });
 }
 
-// ===========================
-// Missing Films
-// ===========================
-
 export async function dbGetMissingFilms(): Promise<{
   success: boolean;
   data?: Array<string>;
@@ -1104,10 +1049,6 @@ export async function dbGetMissingFilms(): Promise<{
     return result[0]?.film_slugs ?? [];
   });
 }
-
-// ===========================
-// Taste compatibility
-// ===========================
 
 export interface CompatibilityExtreme {
   username: string;
@@ -1178,10 +1119,6 @@ export async function dbGetTasteCompatibility(
     };
   });
 }
-
-// ===========================
-// MFL Scoring
-// ===========================
 
 export async function dbGetMFLScoringMetrics(): Promise<{
   success: boolean;

@@ -10,9 +10,8 @@ import type { RefreshJob, RefreshJobStatus } from "../types";
 
 vi.mock("../services/api");
 
-// useRefreshJob now reads the token from the AuthProvider context; every
-// renderHook must be wrapped. The provider seeds its token from localStorage
-// at mount (set per-test below), matching the old getToken() behavior.
+// useRefreshJob reads the token from AuthProvider context, so every renderHook
+// must be wrapped; the provider seeds from localStorage at mount.
 const wrapper = ({ children }: { children: ReactNode }) =>
   createElement(AuthProvider, null, children);
 
@@ -90,10 +89,6 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-// ---------------------------------------------------------------------------
-// mount-time behavior
-// ---------------------------------------------------------------------------
-
 describe("useRefreshJob — mount", () => {
   it("does nothing when localStorage has no saved job id", () => {
     const { result } = renderHook(() => useRefreshJob(), { wrapper });
@@ -140,10 +135,6 @@ describe("useRefreshJob — mount", () => {
     );
   });
 });
-
-// ---------------------------------------------------------------------------
-// trigger
-// ---------------------------------------------------------------------------
 
 describe("useRefreshJob — trigger", () => {
   it("posts, saves job_id to localStorage, sets job optimistically, and starts polling", async () => {
@@ -219,10 +210,6 @@ describe("useRefreshJob — trigger", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// polling lifecycle
-// ---------------------------------------------------------------------------
-
 describe("useRefreshJob — polling", () => {
   it("stops polling when the job reaches a terminal status", async () => {
     vi.mocked(apiService.triggerRefresh).mockResolvedValue({
@@ -288,10 +275,6 @@ describe("useRefreshJob — polling", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// cancel
-// ---------------------------------------------------------------------------
-
 describe("useRefreshJob — cancel", () => {
   it("calls the cancel endpoint when invoked while running", async () => {
     vi.mocked(apiService.triggerRefresh).mockResolvedValue({
@@ -347,10 +330,6 @@ describe("useRefreshJob — cancel", () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// auth
-// ---------------------------------------------------------------------------
-
 describe("useRefreshJob — auth", () => {
   it("surfaces 'Not authenticated' if token is missing on trigger", async () => {
     localStorage.removeItem("token");
@@ -362,10 +341,6 @@ describe("useRefreshJob — auth", () => {
     expect(apiService.triggerRefresh).not.toHaveBeenCalled();
   });
 });
-
-// ---------------------------------------------------------------------------
-// regression tests for code-review fixes
-// ---------------------------------------------------------------------------
 
 describe("useRefreshJob — recovery", () => {
   it("clears a stale 'Lost connection' banner once polling recovers", async () => {

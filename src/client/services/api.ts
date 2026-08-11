@@ -67,7 +67,6 @@ class ApiService {
     }
   }
 
-  // Auth endpoints
   async signup(userData: SignupRequest): Promise<ApiResponse<AuthResponse>> {
     return this.request<AuthResponse>("/auth/signup", {
       method: "POST",
@@ -100,12 +99,10 @@ class ApiService {
     });
   }
 
-  // Health check
   async healthCheck(): Promise<ApiResponse> {
     return this.request<ApiResponse>("/health");
   }
 
-  // Comparison endpoints (public - no auth required)
   async getComparisonUsernames(): Promise<
     ApiResponse<Array<{ username: string; displayName?: string }>>
   > {
@@ -155,17 +152,14 @@ class ApiService {
     );
   }
 
-  // Hater rankings endpoint
   async getHaterRankings(): Promise<ApiResponse<HaterRanking[]>> {
     return this.request<HaterRanking[]>("/comparison/hater-rankings");
   }
 
-  // New Hater rankings
   async getHaterRankings2(): Promise<ApiResponse<HaterRanking2[]>> {
     return this.request<HaterRanking2[]>("/comparison/v2/hater-rankings");
   }
 
-  // Database-first film user endpoints (no auth required)
   async getFilmUserRatings(username: string): Promise<ApiResponse<unknown>> {
     return this.request<unknown>(`/film-users/${username}/ratings`);
   }
@@ -188,7 +182,6 @@ class ApiService {
     );
   }
 
-  // Hater rankings endpoint
   async getRatingsDistribution(): Promise<
     ApiResponse<Array<{ rating: number; count: number }>>
   > {
@@ -197,7 +190,6 @@ class ApiService {
     );
   }
 
-  // Hater rankings endpoint
   async getAllUserFilms(): Promise<
     ApiResponse<Array<{ rating: number; count: number }>>
   > {
@@ -206,7 +198,6 @@ class ApiService {
     );
   }
 
-  // Hater rankings endpoint
   async getUserFilmsCount(): Promise<ApiResponse<number>> {
     return this.request<number>("/stats/user-films-count");
   }
@@ -278,9 +269,6 @@ class ApiService {
       method: "DELETE",
     });
   }
-  // ===========================
-  // Award Show endpoints
-  // ===========================
 
   async getAwardShows(): Promise<ApiResponse<AwardShow[]>> {
     return this.request<AwardShow[]>("/events/award-shows");
@@ -297,10 +285,6 @@ class ApiService {
     });
   }
 
-  // ===========================
-  // Event endpoints (public)
-  // ===========================
-
   async getEvents(status?: string): Promise<ApiResponse<EventSummary[]>> {
     const query = status ? `?status=${status}` : "";
     return this.request<EventSummary[]>(`/events${query}`);
@@ -310,7 +294,6 @@ class ApiService {
     return this.request<EventData>(`/events/${slug}`);
   }
 
-  // Event endpoints (authenticated)
   async submitEventPick(
     categoryId: string,
     nomineeId: string,
@@ -332,7 +315,6 @@ class ApiService {
     });
   }
 
-  // Event admin endpoints
   async createEvent(
     data: {
       awardShowId: string;
@@ -453,10 +435,6 @@ class ApiService {
     });
   }
 
-  // ===========================
-  // Refresh-films admin endpoints (auth + admin role required)
-  // ===========================
-
   async triggerRefresh(
     token: string,
   ): Promise<ApiResponse<{ job_id: string }>> {
@@ -488,10 +466,6 @@ class ApiService {
       },
     );
   }
-
-  // ===========================
-  // Scrape-user endpoints (any authenticated user)
-  // ===========================
 
   async triggerScrapeUser(
     username: string,
@@ -544,10 +518,6 @@ class ApiService {
       headers: { Authorization: `Bearer ${token}` },
     });
   }
-
-  // ===========================
-  // Admin account management (admin role required server-side)
-  // ===========================
 
   async getAccounts(token: string): Promise<ApiResponse<AccountView[]>> {
     return this.request<AccountView[]>("/admin/users", {

@@ -52,9 +52,8 @@ export const useRefreshJob = () => {
     },
   });
 
-  // Bulk path's trigger takes no argument — wrap the generic's
-  // trigger(arg: void) to a thunk so existing callers can keep saying
-  // `await trigger()` without an explicit `undefined`.
+  // Thunk over the generic's trigger(arg: void) so bulk callers can keep
+  // writing `await trigger()` without an explicit `undefined`.
   const triggerNoArg = useCallback(() => trigger(undefined as void), [trigger]);
 
   return {

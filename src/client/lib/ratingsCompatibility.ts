@@ -15,13 +15,9 @@ export const MIN_RELIABLE_SAMPLE = 10;
 export type PearsonZone = "aligned" | "independent" | "opposite";
 
 /**
- * Zone identifier for a Pearson value. Single source of truth for the
- * threshold logic — UI uses this to pick colors, to derive the display
- * label, and (eventually) anywhere else that needs to branch on zone.
- *
- * Thresholds at ±1/3 partition the Pearson range [-1, +1] into three
- * equal zones, so the zone boundary aligns exactly with the marker
- * crossing a third of the bar.
+ * Zone identifier for a Pearson value — the single source of truth for the
+ * threshold logic. Thresholds at ±1/3 split [-1, +1] into three equal zones,
+ * so a boundary lines up exactly with the marker crossing a third of the bar.
  */
 export function getPearsonZone(pearson: number): PearsonZone {
   if (pearson >= 1 / 3) return "aligned";
@@ -36,10 +32,8 @@ const ZONE_LABELS: Record<PearsonZone, string> = {
 };
 
 /**
- * Capitalized human-readable label matching the spectrum's zone labels.
- * The spectrum bar shows the continuous position; the label just confirms
- * which zone the marker is in. Granularity comes from the bar, not the
- * label.
+ * Human-readable zone label matching the spectrum's own labels. Granularity
+ * comes from the bar's continuous position, not from this.
  */
 export function getPearsonLabel(pearson: number): string {
   return ZONE_LABELS[getPearsonZone(pearson)];
@@ -63,12 +57,6 @@ export function formatSignedPercent(value: number): string {
   if (pct === 0) return "0%";
   return pct > 0 ? `+${pct}%` : `${pct}%`;
 }
-
-// ===========================
-// Anchor films — concrete callouts that tell a story the numbers can't.
-// Generic over T so callers can pass MovieInCommon (or any extension of
-// RatedFilm) and get the full object back, not just the ratings.
-// ===========================
 
 /**
  * Minimum rating both users must give a film for it to qualify as a

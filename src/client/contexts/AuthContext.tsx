@@ -17,9 +17,8 @@ const TOKEN_KEY = "token";
 // Cleared on logout so a stale copy can't linger and mislead any straggler.
 const LEGACY_USER_KEY = "user";
 
-// Read the stored token, but treat a locally-expired one as absent: drop it
-// from storage and return null so the UI never starts up showing a logged-in
-// state for a dead token. (Idempotent — safe to call from a lazy initializer.)
+// Treats a locally-expired token as absent so the UI never boots into a
+// logged-in state for a dead token. Idempotent — safe in a lazy initializer.
 function readLiveStoredToken(): string | null {
   const stored = localStorage.getItem(TOKEN_KEY);
   if (!stored) return null;
@@ -75,9 +74,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    // A locally-expired token is unusable — clear it without a doomed /me
-    // round-trip. (The refresh-token work hooks in here: attempt a refresh
-    // before giving up, falling through to the clear only if that fails.)
+    // Clear without a doomed /me round-trip. A refresh-token attempt would
+    // slot in here, falling through to the clear only on failure.
     if (isJwtExpired(token)) {
       clearStoredAuth();
       return;
@@ -98,10 +96,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(response.data ?? null);
       } catch (e) {
         if (e instanceof DOMException && e.name === "AbortError") return;
-        // A genuine auth rejection (token revoked, signing key rotated, or
-        // clock skew the local exp check missed) clears the session so the UI
-        // flips to logged-out. Network/5xx blips keep the token and surface an
-        // error instead, so a transient outage doesn't log the user out.
+        // Only a genuine auth rejection clears the session; network/5xx blips
+        // keep the token so a transient outage doesn't log the user out.
         if (e instanceof ApiError && (e.status === 401 || e.status === 403)) {
           clearStoredAuth();
           return;

@@ -2,9 +2,8 @@ interface JwtPayload {
   exp?: number;
 }
 
-// Decode a JWT payload without verifying the signature — the server is the only
-// authority on validity; the client reads `exp` purely to avoid a doomed
-// round-trip with an already-dead token. Returns null on any malformed input.
+// Unverified decode — the server remains the only authority on validity. The
+// client reads `exp` purely to skip a doomed round-trip.
 function decodePayload(token: string): JwtPayload | null {
   const parts = token.split(".");
   const encodedPayload = parts[1];

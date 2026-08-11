@@ -96,9 +96,8 @@ async function confirm(message: string): Promise<boolean> {
   return /^y(es)?$/i.test(answer.trim());
 }
 
-// Single source of truth for persisting the failure list across the run +
-// SIGINT shutdown. Deletes the file when the list is empty so an
-// "operator retries until clean" pattern terminates without leftover noise.
+// Deletes the file when the list is empty so a "retry until clean" loop
+// terminates without leftover noise.
 function writeOrDeleteFailures(failures: FailureRecord[]): void {
   if (failures.length === 0) {
     if (fs.existsSync(FAILURES_PATH)) {
@@ -116,10 +115,8 @@ function writeOrDeleteFailures(failures: FailureRecord[]): void {
   console.log(`Failures written to ${FAILURES_PATH}`);
 }
 
-// Phase 1: copy release_year from ag_films where Films.tmdb_link maps to a
-// known ag_films row that already has a year. Idempotent via the
-// `release_year IS NULL` guard. Deliberately does NOT bump updated_at —
-// backfill is bookkeeping, not a content change.
+// Idempotent via the `release_year IS NULL` guard. Deliberately leaves
+// updated_at alone — backfill is bookkeeping, not a content change.
 async function runShortcut(dryRun: boolean): Promise<number> {
   // `\\d` in the template literal -> `\d` in the SQL sent to Postgres.
   const stmt = sql`
@@ -181,9 +178,8 @@ async function callWorker(args: WorkerCallArgs): Promise<WorkerBatchResp> {
   return resp.data;
 }
 
-// Wraps callWorker with retry for transient errors. Skips retry on 4xx
-// (auth, validation — won't fix themselves) and on the final attempt.
-// Backoff: 1s, 4s, 16s.
+// Backoff 1s/4s/16s. No retry on 4xx — auth and validation errors won't fix
+// themselves.
 async function callWorkerWithRetry(
   args: WorkerCallArgs,
   maxAttempts = 3,
@@ -302,9 +298,8 @@ async function main(): Promise<void> {
 
   const failures: FailureRecord[] = [];
 
-  // SIGINT/SIGTERM flush so a Ctrl+C mid-run preserves whatever failures
-  // we've accumulated. Only writes if non-empty — an early interrupt
-  // before any failures shouldn't clobber a file from a prior run.
+  // Ctrl+C mid-run preserves accumulated failures, but only writes when
+  // non-empty so an early interrupt can't clobber a prior run's file.
   const shutdown = (signal: string): void => {
     console.log(`\n${signal} received — flushing state and exiting.`);
     if (failures.length > 0) {

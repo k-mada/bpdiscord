@@ -12,12 +12,6 @@ import {
   markJobFailed,
 } from "./jobHelpers";
 
-// ===========================
-// DB helpers (exported for tests — thin, typed wrappers around the
-// shared helpers in jobHelpers.ts. The bulk path has no extra fields
-// beyond started_by, so the API stays {startedBy: string} → InsertResult.)
-// ===========================
-
 export type { InsertResult, CancelOutcome };
 
 export async function dbInsertRunningJob(startedBy: string): Promise<InsertResult> {
@@ -36,17 +30,9 @@ export async function dbMarkJobFailed(jobId: string, message: string): Promise<v
   return markJobFailed("refresh_jobs", jobId, message);
 }
 
-// ===========================
-// Worker handoff
-// ===========================
-
 async function callWorkerStart(config: WorkerConfig, jobId: string): Promise<void> {
   return callWorker(config, "/start", { job_id: jobId });
 }
-
-// ===========================
-// Per-handler helpers
-// ===========================
 
 /**
  * Resolve the authenticated user id, or send a 401 and return null. Defense
@@ -61,10 +47,6 @@ function getAuthedUserId(req: Request, res: Response): string | null {
   }
   return id;
 }
-
-// ===========================
-// HTTP handlers
-// ===========================
 
 export async function triggerRefresh(req: Request, res: Response): Promise<void> {
   const startedBy = getAuthedUserId(req, res);

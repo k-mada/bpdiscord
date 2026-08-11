@@ -48,12 +48,8 @@ const ActorComboBox = ({
   onSelect,
   excludeId,
 }: ActorComboBoxProps) => {
-  // `query` is initialised from `selected` and is otherwise driven entirely
-  // by event handlers (onChange, handleSelect, handleClear). There is no
-  // useEffect mirroring `selected` → `query`: every legitimate state
-  // transition that changes either one already updates both together, and
-  // a sync effect would race with the typing path (clearing `selected` to
-  // null, which the effect would then echo back to clear `query`).
+  // Deliberately no `selected` → `query` sync effect: handlers already update
+  // both together, and an effect would race the typing path and clear `query`.
   const [query, setQuery] = useState(selected?.name ?? "");
   const [results, setResults] = useState<ActorOption[]>([]);
   const [open, setOpen] = useState(false);

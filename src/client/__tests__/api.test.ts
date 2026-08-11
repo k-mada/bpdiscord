@@ -1,9 +1,5 @@
 import { apiService } from "../services/api";
 
-// ---------------------------------------------------------------------------
-// Global fetch mock
-// ---------------------------------------------------------------------------
-
 const mockResponse = (data: unknown, ok = true, status = 200) =>
   Promise.resolve({
     ok,
@@ -23,10 +19,6 @@ beforeEach(() => {
     vi.fn(() => mockResponse({ data: "ok" })),
   );
 });
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 /** Return the most recent `fetch` call's [url, init]. */
 function lastFetchCall(): [string, RequestInit] {
@@ -57,14 +49,7 @@ function expectBody(expected: unknown) {
   expect(JSON.parse(init.body as string)).toEqual(expected);
 }
 
-// ===========================================================================
-// Tests
-// ===========================================================================
-
 describe("ApiService", () => {
-  // -------------------------------------------------------------------------
-  // Private request() method (tested indirectly via public methods)
-  // -------------------------------------------------------------------------
 
   describe("request() core behavior", () => {
     it("sets Content-Type to application/json by default", async () => {
@@ -104,10 +89,6 @@ describe("ApiService", () => {
     });
   });
 
-  // -------------------------------------------------------------------------
-  // Simple GET endpoints (no auth, no params)
-  // -------------------------------------------------------------------------
-
   describe.each([
     ["healthCheck", "/health"],
     ["getComparisonUsernames", "/comparison/usernames"],
@@ -134,10 +115,6 @@ describe("ApiService", () => {
       expect(result).toEqual({ data: [1, 2, 3] });
     });
   });
-
-  // -------------------------------------------------------------------------
-  // POST endpoints (no auth) — body from args
-  // -------------------------------------------------------------------------
 
   describe.each([
     [
@@ -166,10 +143,6 @@ describe("ApiService", () => {
     });
   });
 
-  // -------------------------------------------------------------------------
-  // Auth endpoints (POST, no token, body from args)
-  // -------------------------------------------------------------------------
-
   describe("auth endpoints", () => {
     it("signup sends user data", async () => {
       const userData = {
@@ -197,10 +170,6 @@ describe("ApiService", () => {
     });
   });
 
-  // -------------------------------------------------------------------------
-  // Film-user endpoints (database-first, no scrape fallback)
-  // -------------------------------------------------------------------------
-
   describe.each([
     ["getFilmUserRatings", "ratings"],
     ["getFilmUserProfile", "profile"],
@@ -211,10 +180,6 @@ describe("ApiService", () => {
       expectFetch(`/film-users/${USERNAME}/${segment}`);
     });
   });
-
-  // -------------------------------------------------------------------------
-  // MFL endpoints with specific signatures
-  // -------------------------------------------------------------------------
 
   describe("getMovieSwap", () => {
     it("calls GET /comparison/movie-swap with userA & userB params", async () => {
@@ -255,10 +220,6 @@ describe("ApiService", () => {
     });
   });
 
-  // -------------------------------------------------------------------------
-  // Event endpoints (public)
-  // -------------------------------------------------------------------------
-
   describe("getEvents", () => {
     it("calls GET /events without query when no status", async () => {
       await apiService.getEvents();
@@ -278,10 +239,6 @@ describe("ApiService", () => {
     });
   });
 
-  // -------------------------------------------------------------------------
-  // Event endpoints (authenticated)
-  // -------------------------------------------------------------------------
-
   describe("submitEventPick", () => {
     it("calls POST /events/picks with auth and body", async () => {
       await apiService.submitEventPick("cat-1", "nom-1", TOKEN);
@@ -298,10 +255,6 @@ describe("ApiService", () => {
       expectAuth(TOKEN);
     });
   });
-
-  // -------------------------------------------------------------------------
-  // Event admin endpoints (POST/PUT/DELETE + auth)
-  // -------------------------------------------------------------------------
 
   describe("createAwardShow", () => {
     it("calls POST /events/admin/award-shows with auth and body", async () => {

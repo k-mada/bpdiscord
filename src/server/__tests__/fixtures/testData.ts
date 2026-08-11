@@ -14,10 +14,6 @@ import type {
   NewEventNominee,
 } from '../../db/schema';
 
-// ===========================
-// Users
-// ===========================
-
 export const testUsers: NewUser[] = [
   {
     lbusername: 'test_user_active',
@@ -53,10 +49,6 @@ export const testUsers: NewUser[] = [
   },
 ];
 
-// ===========================
-// User Ratings (rating distribution histogram)
-// ===========================
-
 export const testUserRatings: NewUserRating[] = [
   // Active user - varied distribution
   { username: 'test_user_active', rating: 0.5, count: 2 },
@@ -81,10 +73,6 @@ export const testUserRatings: NewUserRating[] = [
   { username: 'test_user_non_discord', rating: 2.0, count: 10 },
   { username: 'test_user_non_discord', rating: 2.5, count: 5 },
 ];
-
-// ===========================
-// Films (master film list)
-// ===========================
 
 export const testFilms: NewFilm[] = [
   {
@@ -147,10 +135,6 @@ export const testFilms: NewFilm[] = [
   },
 ];
 
-// ===========================
-// User Films (what users have watched/rated)
-// ===========================
-
 export const testUserFilms: NewUserFilm[] = [
   // Active user - watched all films
   { lbusername: 'test_user_active', filmSlug: 'test-film-popular', title: 'Popular Test Film', rating: 4.0, liked: true },
@@ -179,10 +163,6 @@ export const testUserFilms: NewUserFilm[] = [
   { lbusername: 'test_user_non_discord', filmSlug: 'test-film-unrated', title: 'Aardvark Unrated Film', rating: null, liked: false },
 ];
 
-// ===========================
-// Award Shows
-// ===========================
-
 export const testAwardShows: Omit<NewAwardShow, 'id' | 'createdAt' | 'updatedAt'>[] = [
   {
     name: 'Academy Awards',
@@ -196,9 +176,8 @@ export const testAwardShows: Omit<NewAwardShow, 'id' | 'createdAt' | 'updatedAt'
   },
 ];
 
-// Note: events, categories, and nominees require FK IDs that are
-// generated at insert time, so they are created dynamically in tests.
-// These templates provide the shape for convenience.
+// Events/categories/nominees need FK IDs generated at insert time, so tests
+// create them dynamically — these templates only supply the shape.
 
 export const testEventTemplate = {
   name: '97th Academy Awards',
@@ -223,10 +202,6 @@ export const testNomineeTemplates: Omit<NewEventNominee, 'id' | 'categoryId' | '
   { personName: 'Timothée Chalamet', movieOrShowName: 'A Complete Unknown', isWinner: false },
   { personName: 'Adrien Brody', movieOrShowName: 'The Brutalist', isWinner: false },
 ];
-
-// ===========================
-// Expected Test Results (for assertions)
-// ===========================
 
 export const expectedResults = {
   // Total films watched by discord users (distinct titles)

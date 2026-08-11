@@ -34,9 +34,8 @@ const RUNNING_CONSTRAINT: Record<JobTable, string> = {
   user_scrape_jobs: "user_scrape_jobs_one_running_per_user",
 };
 
-// Columns that scope the conflicting-row lookup. refresh_jobs is globally
-// single-flight (any running row conflicts); user_scrape_jobs is single-
-// flight per username, so we filter by lbusername to find the right row.
+// Scopes the conflicting-row lookup: refresh_jobs is globally single-flight,
+// user_scrape_jobs is per-username.
 const CONFLICT_FILTER_COLUMNS: Record<JobTable, readonly string[]> = {
   refresh_jobs: [],
   user_scrape_jobs: ["lbusername"],
@@ -55,10 +54,6 @@ export interface WorkerConfig {
 
 const WORKER_FETCH_TIMEOUT_MS = 10_000;
 
-// ===========================
-// DB helpers
-// ===========================
-
 /**
  * Insert a fresh job row in 'running' state. On the partial unique index
  * violation (23505), returns the existing running row's id instead so the
@@ -75,8 +70,7 @@ export async function insertRunningJob(
   const tableRef = TABLE_BY_NAME[table];
   try {
     const inserted = await db
-      // Drizzle's typed union for the two tables doesn't narrow well at
-      // runtime dispatch — cast at the seam, then trust the schema.
+      // Drizzle's union of the two tables doesn't narrow at runtime dispatch.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .insert(tableRef as any)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -186,10 +180,6 @@ export async function markJobFailed(
     .where(and(eq(t.id, jobId), eq(t.status, "running")));
 }
 
-// ===========================
-// Worker handoff
-// ===========================
-
 /**
  * Read worker config from env. Returns null if either var is missing so
  * the caller can fail fast BEFORE inserting a row.
@@ -251,10 +241,6 @@ export async function callWorker(
 ): Promise<void> {
   await callWorkerJson(config, endpoint, body);
 }
-
-// ===========================
-// Internal: 23505 classifier
-// ===========================
 
 function isUniqueViolationOnRunningIndex(e: unknown, table: JobTable): boolean {
   const expected = RUNNING_CONSTRAINT[table];

@@ -20,10 +20,6 @@ import {
   dbUpsertUserPick,
 } from "./eventDataController";
 
-// ===========================
-// Award Show Endpoints
-// ===========================
-
 export async function getAwardShows(_req: Request, res: Response): Promise<void> {
   const result = await dbGetAwardShows();
 
@@ -79,10 +75,6 @@ export async function updateAwardShow(req: Request, res: Response): Promise<void
   }
 }
 
-// ===========================
-// Public Endpoints
-// ===========================
-
 export async function getEvents(req: Request, res: Response): Promise<void> {
   const status = req.query.status as string | undefined;
   const result = await dbGetEvents(status);
@@ -132,10 +124,6 @@ export async function getEventBySlug(
     res.status(500).json({ error: result.error || "Failed to get event" });
   }
 }
-
-// ===========================
-// Authenticated Endpoints
-// ===========================
 
 export async function submitPick(req: Request, res: Response): Promise<void> {
   const userId = req.user?.id;
@@ -191,11 +179,6 @@ export async function getMyPicks(req: Request, res: Response): Promise<void> {
     res.status(500).json({ error: result.error || "Failed to get picks" });
   }
 }
-
-// ===========================
-// Admin Endpoints
-// (admin authorization enforced by authorizeAdmin middleware in routes)
-// ===========================
 
 export async function createEvent(req: Request, res: Response): Promise<void> {
   const { awardShowId, name, slug, year, editionNumber, nominationsDate, awardsDate, status } = req.body;

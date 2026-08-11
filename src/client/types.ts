@@ -1,11 +1,4 @@
-// Cross-cutting API/contract types (ApiResponse, User, AuthRequest,
-// SignupRequest, AuthResponse, PasswordResetRequest,
-// PasswordResetConfirmRequest, ScraperRequest, AuthenticatedUser) live in
-// src/shared/types.ts. Import from there directly.
-
-// ===========================
-// UI Data Shapes
-// ===========================
+// Cross-cutting API/contract types live in src/shared/types.ts.
 
 export interface LBFilm {
   film_slug: string;
@@ -56,10 +49,6 @@ export interface UserComparisonData {
   user2: UserData;
 }
 
-// ===========================
-// Movie Comparison
-// ===========================
-
 export interface MovieInCommon {
   title: string;
   film_slug: string;
@@ -68,9 +57,8 @@ export interface MovieInCommon {
   poster: string | null;
   year: number | null;
   letterboxd_url: string | null;
-  // Count of distinct users in the DB who have rated this film (rating > 0).
-  // Used as a "distinctiveness" tiebreaker in findSharedDarling /
-  // findBiggestFight — lower = more distinctive to this pair.
+  // Distinctiveness tiebreaker for findSharedDarling / findBiggestFight —
+  // lower means more distinctive to this pair.
   total_ratings: number;
 }
 
@@ -91,9 +79,6 @@ export interface MoviesInCommonData {
   compatibility: TasteCompatibility;
 }
 
-// ===========================
-// MFL Types
-// ===========================
 export interface MFLScoringMetric {
   metricId: number;
   metric: string;
@@ -113,10 +98,6 @@ export interface MFLMovieScore {
   metricName: string;
   scoringCondition: string;
 }
-
-// ===========================
-// Component Props Types
-// ===========================
 
 export interface RatingDistributionHistogramProps {
   distribution: Rating[];
@@ -140,20 +121,12 @@ export interface HaterRankingsProps {
   isPublic?: boolean;
 }
 
-// ===========================
-// Award Show Types
-// ===========================
-
 export interface AwardShow {
   id: string;
   name: string;
   slug: string;
   description: string | null;
 }
-
-// ===========================
-// Event Types
-// ===========================
 
 export interface EventNominee {
   id: string;
@@ -208,10 +181,6 @@ export interface EventSummary {
   awardShowSlug: string;
 }
 
-// ===========================
-// Oscars Types
-// ===========================
-
 export interface OscarsPrediction {
   title: string;
   subtitle: string;
@@ -230,10 +199,6 @@ export interface OscarsCategory {
 }
 
 export type OscarsViewMode = "will_win" | "should_win";
-
-// ===========================
-// Refresh Job (admin: /api/admin/refresh-rankings)
-// ===========================
 
 export type RefreshJobStatus =
   | "pending"
@@ -273,10 +238,8 @@ export interface RefreshJobErrorEntry {
   reason?: typeof LETTERBOXD_BLOCKED_REASON;
 }
 
-// Note on casing: top-level fields are camelCase because Drizzle (server-side
-// ORM) returns rows with JS-property names from src/server/db/schema.ts. Only
-// the underlying DB columns + jsonb contents are snake_case (those are written
-// by moviemaestro's Python supabase-py client, which uses raw column names).
+// Top-level fields are camelCase because Drizzle returns JS property names;
+// only the jsonb contents stay snake_case (written by moviemaestro).
 export interface RefreshJob {
   id: string;
   status: RefreshJobStatus;
@@ -290,20 +253,13 @@ export interface RefreshJob {
   updatedAt: string;
 }
 
-// user_scrape_jobs row — same shape as refresh_jobs plus the target
-// Letterboxd username. Both tables drive the same 3-phase pipeline; the
-// per-user variant just scopes phase 1 + phase 2 to one user.
+// Same 3-phase pipeline as refresh_jobs, scoped to one Letterboxd user.
 export interface UserScrapeJob extends RefreshJob {
   lbusername: string;
 }
 
-// ===========================
-// Admin: account management (GET/PUT/DELETE /api/admin/users)
-// ===========================
-
-// Merged shape returned by GET /api/admin/users — auth.users (email, name)
-// joined with app_users (lbusername, timestamps) by id. See server-side
-// userAdminController.mergeAccount for the canonical mapping.
+// GET /api/admin/users — auth.users joined with app_users by id. Canonical
+// mapping lives in userAdminController.mergeAccount.
 export interface AccountView {
   id: string;
   email: string | null;
@@ -313,9 +269,8 @@ export interface AccountView {
   updatedAt: string | null;
 }
 
-// PUT /api/admin/users/:id request body. Each field is optional — omit to
-// leave unchanged. `lbusername: null` explicitly unlinks. Server enforces
-// the Letterboxd.com username format on non-null values.
+// PUT /api/admin/users/:id — omit a field to leave it unchanged;
+// `lbusername: null` explicitly unlinks.
 export interface AccountUpdateRequest {
   email?: string;
   name?: string;
@@ -341,9 +296,8 @@ export interface CompatibilityExtremesData {
   leastCompatible: CompatibilityExtreme[];
 }
 
-// GET /api/auth/me — the authenticated account's identity, joined with its
-// linked Letterboxd profile. `lbusername` is null when the account hasn't
-// claimed a Letterboxd username.
+// GET /api/auth/me — `lbusername` is null when the account hasn't claimed a
+// Letterboxd username.
 export interface CurrentUser {
   id: string;
   email: string | null;
