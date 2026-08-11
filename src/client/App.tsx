@@ -5,6 +5,7 @@ import ResetPasswordPage from "./components/ResetPasswordPage";
 import ForgotPassword from "./components/ForgotPassword";
 import Dashboard from "./components/Dashboard";
 import UserProfile from "./components/UserProfile";
+import FilmPage from "./components/FilmPage";
 import ScraperInterface from "./components/ScraperInterface";
 import UserComparison from "./components/UserComparison";
 import MovieSwapPage from "./components/MovieSwapPage";
@@ -97,6 +98,7 @@ function App() {
             }
           />
           <Route path="/user/:username" element={<UserProfile />} />
+          <Route path="/film/:filmSlug" element={<FilmPage />} />
           <Route
             path="/fetcher"
             element={

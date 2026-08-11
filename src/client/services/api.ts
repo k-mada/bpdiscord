@@ -25,6 +25,7 @@ import {
   HaterRanking,
   HaterRanking2,
   FilmUserComplete,
+  FilmDetail,
 } from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";
@@ -172,6 +173,18 @@ class ApiService {
     username: string,
   ): Promise<ApiResponse<FilmUserComplete>> {
     return this.request<FilmUserComplete>(`/film-users/${username}/complete`);
+  }
+
+  async getFilmDetail(
+    filmSlug: string,
+    options: { includeNonDiscord?: boolean } = {},
+    signal?: AbortSignal,
+  ): Promise<ApiResponse<FilmDetail>> {
+    const query = options.includeNonDiscord ? "?includeNonDiscord=true" : "";
+    return this.request<FilmDetail>(
+      `/films/${encodeURIComponent(filmSlug)}${query}`,
+      signal ? { signal } : {},
+    );
   }
 
   async getFilmUsers(): Promise<

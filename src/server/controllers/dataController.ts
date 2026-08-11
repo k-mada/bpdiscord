@@ -974,6 +974,117 @@ export async function dbGetFilmsByUser(username: string): Promise<{
   });
 }
 
+export interface FilmRater {
+  username: string;
+  displayName: string | null;
+  rating: number;
+  liked: boolean;
+}
+
+export interface FilmDetail {
+  filmSlug: string;
+  title: string;
+  releaseYear: number | null;
+  poster: string | null;
+  letterboxdUrl: string | null;
+  tmdbLink: string | null;
+  letterboxdRating: number | null;
+  watchedCount: number;
+  ratedCount: number;
+  averageRating: number | null;
+  ratings: FilmRater[];
+}
+
+export async function dbGetFilmDetail(
+  filmSlug: string,
+  options: { includeNonDiscord?: boolean } = {},
+): Promise<{
+  success: boolean;
+  data?: FilmDetail | null;
+  error?: string;
+}> {
+  const includeNonDiscord = options.includeNonDiscord ?? false;
+
+  return dbOperation(async () => {
+    // Fetched unscoped and filtered below so existence stays independent of the
+    // is_discord toggle; LEFT JOIN keeps rows whose user is missing from Users.
+    const [filmRows, watchRows] = await Promise.all([
+      db
+        .select({
+          filmSlug: films.filmSlug,
+          title: films.title,
+          releaseYear: films.releaseYear,
+          poster: films.poster,
+          url: films.url,
+          tmdbLink: films.tmdbLink,
+          lbRating: films.lbRating,
+        })
+        .from(films)
+        .where(eq(films.filmSlug, filmSlug))
+        .limit(1),
+      db
+        .select({
+          username: userFilms.lbusername,
+          displayName: users.displayName,
+          rating: userFilms.rating,
+          liked: userFilms.liked,
+          title: userFilms.title,
+          isDiscord: users.isDiscord,
+        })
+        .from(userFilms)
+        .leftJoin(users, eq(userFilms.lbusername, users.lbusername))
+        .where(eq(userFilms.filmSlug, filmSlug)),
+    ]);
+
+    const film = filmRows[0];
+    if (!film && watchRows.length === 0) return null;
+
+    const scoped = includeNonDiscord
+      ? watchRows
+      : watchRows.filter((r) => r.isDiscord === true);
+
+    // 0 is written for unrated entries alongside NULL, so both are excluded.
+    const rated = scoped.filter((r) => r.rating !== null && r.rating > 0);
+    const sum = rated.reduce((acc, r) => acc + (r.rating ?? 0), 0);
+
+    const ratings: FilmRater[] = rated
+      .map((r) => ({
+        username: r.username,
+        displayName: r.displayName ?? null,
+        rating: r.rating as number,
+        liked: r.liked ?? false,
+      }))
+      .sort(
+        (a, b) =>
+          b.rating - a.rating ||
+          (a.displayName || a.username).localeCompare(
+            b.displayName || b.username,
+            undefined,
+            { sensitivity: "base" },
+          ),
+      );
+
+    return {
+      filmSlug,
+      title:
+        film?.title ??
+        watchRows.find((r) => r.title)?.title ??
+        filmSlug,
+      releaseYear: film?.releaseYear ?? null,
+      poster: film?.poster ?? null,
+      letterboxdUrl: film?.url ?? null,
+      tmdbLink: film?.tmdbLink ?? null,
+      letterboxdRating: film?.lbRating ?? null,
+      watchedCount: scoped.length,
+      ratedCount: rated.length,
+      averageRating: rated.length
+        ? Math.round((sum / rated.length) * 100) / 100
+        : null,
+      ratings,
+    };
+  });
+}
+
 export async function dbGetMovieSwap(
   userA: string,
   userB: string,

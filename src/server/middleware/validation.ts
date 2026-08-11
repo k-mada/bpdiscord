@@ -1,4 +1,4 @@
-import { body, param, ValidationChain } from 'express-validator';
+import { body, param, query, ValidationChain } from 'express-validator';
 
 export const validateUser: ValidationChain[] = [
   body('name')
@@ -36,6 +36,18 @@ export const validateUUIDParam: ValidationChain[] = [
   param('id')
     .isUUID()
     .withMessage('Invalid ID format — expected a UUID')
+];
+
+// Deliberately permissive — a stricter charset would 400 on legitimate
+// Letterboxd slugs, and a real miss is better served by the 404.
+export const validateFilmSlug: ValidationChain[] = [
+  param('filmSlug')
+    .matches(/^[A-Za-z0-9._-]{1,200}$/)
+    .withMessage('Invalid film slug format'),
+  query('includeNonDiscord')
+    .optional()
+    .isIn(['true', 'false'])
+    .withMessage('includeNonDiscord must be "true" or "false"'),
 ];
 
 export const validateAuth: ValidationChain[] = [
