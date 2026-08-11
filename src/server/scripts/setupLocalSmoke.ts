@@ -152,9 +152,8 @@ function writeEnvFiles(env: SupabaseStatusEnv, force: boolean): void {
   const clientTpl = resolve(clientDir, ".env.smoke.example");
   const clientOut = resolve(clientDir, ".env.smoke");
 
-  // Migration: previous setup wrote .env.local. Vite would silently
-  // auto-load those even in normal `yarn dev` mode, pointing dev at the
-  // local stack against the user's intent. Detect and rename.
+  // Vite auto-loads .env.local even in normal `yarn dev`, which would silently
+  // point dev at the local stack. Rename any left by an older setup.
   const legacyServer = resolve(serverDir, ".env.local");
   const legacyClient = resolve(clientDir, ".env.local");
   for (const p of [legacyServer, legacyClient]) {
@@ -227,9 +226,8 @@ async function seedAdmin(
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  // Idempotency: list and look for a matching email. Supabase's
-  // listUsers is paginated; the local instance has tiny page counts, so
-  // a single call covers the realistic case.
+  // listUsers is paginated, but the local instance is small enough that one
+  // call covers the realistic case.
   const { data: list, error: listErr } = await admin.auth.admin.listUsers({
     page: 1,
     perPage: 1000,
@@ -301,9 +299,7 @@ async function seedAdmin(
   );
 
   if (flags.lbusername) {
-    // Best-effort: ensure the linked lbusername exists in Users so JOINs
-    // don't return null displayName. We don't touch it if it's already
-    // there.
+    // Best-effort: without a Users row, JOINs return a null displayName.
     const { error: usersErr } = await admin
       .from("Users")
       .upsert(

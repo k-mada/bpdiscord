@@ -1,13 +1,6 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 
-// Cross-cutting API/contract types (ApiResponse, User, AuthRequest,
-// SignupRequest, AuthResponse, PasswordResetRequest,
-// PasswordResetConfirmRequest, ScraperRequest, AuthenticatedUser) live in
-// src/shared/types.ts. Import from there directly.
-
-// ===========================
-// Server-side User Mutations
-// ===========================
+// Cross-cutting API/contract types live in src/shared/types.ts.
 
 export interface CreateUserRequest {
   name: string;
@@ -18,10 +11,6 @@ export interface UpdateUserRequest {
   name?: string;
   email?: string;
 }
-
-// ===========================
-// Supabase Auth
-// ===========================
 
 export interface SupabaseUser {
   id: string;
@@ -38,10 +27,6 @@ export interface AuthenticatedRequest extends Express.Request {
   user: SupabaseUser;
   supabase: SupabaseClient;
 }
-
-// ===========================
-// Global Type Extensions
-// ===========================
 
 // For extending Express Request type
 declare global {

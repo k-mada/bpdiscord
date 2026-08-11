@@ -1,16 +1,3 @@
-// Admin-only user management surface. Mounted at /api/admin/users via
-// userAdminRoutes; gated at the router level by authenticateToken +
-// authorizeAdmin. See bpdiscord-dk7.
-//
-// Endpoints:
-//   GET    /api/admin/users        — list accounts (Drizzle app_users +
-//                                    supabase.auth.admin.listUsers, merged)
-//   PUT    /api/admin/users/:id    — patch { email?, name?, lbusername? }
-//                                    (lbusername is lenient: auto-stubs Users
-//                                    + enqueues scrape, same as signup)
-//   DELETE /api/admin/users/:id    — supabase.auth.admin.deleteUser; FK
-//                                    cascades remove the app_users row.
-
 import { Request, Response } from "express";
 import { and, eq, ne, sql } from "drizzle-orm";
 import { createSupabaseAdminClient } from "../config/database";
@@ -18,9 +5,8 @@ import { db } from "../db";
 import { appUsers, users, userScrapeJobs } from "../db/schema";
 import { LBUSERNAME_FORMAT, normalizeLbusername } from "../lib/lbusername";
 
-// Default page size for supabase.auth.admin.listUsers. The Discord is far
-// below this for the foreseeable future; if list responses ever return exactly
-// LIST_PAGE_SIZE rows we log a warning so we know to paginate.
+// No pagination yet — a response of exactly this many rows logs a warning
+// so we find out before accounts get silently truncated.
 const LIST_PAGE_SIZE = 1000;
 
 interface AccountView {
@@ -94,10 +80,8 @@ export class UserAdminController {
       for (const [id, authUser] of authUsersById) {
         const appRow = appUsersById.get(id);
         if (!appRow) {
-          // Synthesize-and-warn: auth user exists with no app_users row. Per
-          // Stage 1 backfill + signup invariants this shouldn't happen, but
-          // we surface them so they're visible to the admin instead of silently
-          // missing from the list.
+          // Shouldn't happen given the signup invariants, but synthesize so
+          // the account is visible to the admin rather than silently absent.
           console.warn(`auth user ${id} has no app_users row — synthesizing in admin list`);
         }
         merged.push(mergeAccount(authUser, appRow ?? null));
@@ -166,15 +150,8 @@ export class UserAdminController {
         return;
       }
 
-      // Fast-path conflict check: if a non-null lbusername is being claimed by
-      // a different account, return 409. The unique constraint at insert is
-      // the actual gate (race-safe).
-      //
-      // We deliberately do NOT name the existing claimer in the response.
-      // The admin can already enumerate accounts via GET /api/admin/users;
-      // baking the claimer's identity into a conflict error response inlines
-      // PII into an error path and is a pattern that ages badly if the
-      // validation is ever reused on a less-privileged surface.
+      // Fast-path only; the unique constraint is the race-safe gate. The
+      // response omits the existing claimer to keep PII out of error paths.
       if (lbusernameUpdate !== null && lbusernameUpdate !== undefined) {
         const existing = await db
           .select({ id: appUsers.id })
@@ -233,10 +210,8 @@ export class UserAdminController {
         }
       }
 
-      // lbusername write via Drizzle. Lenient model: auto-upsert Users stub
-      // (with is_discord=true) if linking; enqueue a scrape for newly-created
-      // rows. xmax trick distinguishes fresh INSERT (xmax=0) from CONFLICT
-      // UPDATE so we don't enqueue scrapes for existing rows.
+      // Lenient like signup: auto-stub the Users row when linking. xmax=0
+      // marks a fresh INSERT so existing rows don't re-enqueue a scrape.
       let usersRowWasInserted = false;
       if (lbusernameUpdate !== undefined) {
         try {
@@ -257,9 +232,8 @@ export class UserAdminController {
               wasInserted = insertedUsers[0]!.wasInserted;
             }
 
-            // Upsert app_users so this also handles the "auth user exists but
-            // app_users row was never inserted" edge case (#10 from the plan
-            // review — happens if a user was created outside our signup flow).
+            // Upsert, not update — accounts created outside the signup flow
+            // can have an auth user with no app_users row.
             await tx
               .insert(appUsers)
               .values({ id, lbusername: lbusernameUpdate })
@@ -299,11 +273,8 @@ export class UserAdminController {
         }
       }
 
-      // Build the response from the pre-update auth user + the patches we
-      // know were applied, rather than round-tripping through getUserById a
-      // second time. Avoids a needless SDK call, dodges any race window
-      // between update and refresh, and means we don't have to null-guard
-      // a refresh response that could theoretically fail.
+      // Composed from the pre-update user + known patches rather than a second
+      // getUserById — no extra SDK call, no race window between the two reads.
       const updatedAuthUser: AuthUserLike = {
         id: currentData.user.id,
         email: email !== undefined ? email : (currentData.user.email ?? null),
@@ -339,10 +310,8 @@ export class UserAdminController {
     try {
       const id = req.params.id!;
 
-      // Self-deletion guard. The admin's JWT would invalidate mid-request
-      // and the cascade would leave them unable to log back in. Force admins
-      // to delete their own accounts via a separate, deliberate path (or
-      // SQL/Studio) so it can't happen by accident.
+      // The cascade would invalidate the admin's own JWT mid-request and lock
+      // them out; self-deletion has to go through Supabase Studio.
       if (req.user?.id === id) {
         res.status(400).json({
           error:
@@ -364,9 +333,8 @@ export class UserAdminController {
         return;
       }
 
-      // The FK from app_users.id → auth.users(id) ON DELETE CASCADE removes
-      // the app_users row automatically. user_scrape_jobs.started_by has no
-      // FK, so historical job rows persist (acceptable — they're audit logs).
+      // The app_users row goes via ON DELETE CASCADE. user_scrape_jobs has no
+      // FK on started_by, so its rows persist as audit history.
       res.status(200).json({ data: { id, deleted: true } });
     } catch (err) {
       console.error("Admin delete error:", err);

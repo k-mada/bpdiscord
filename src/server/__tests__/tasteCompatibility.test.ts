@@ -18,15 +18,8 @@ import { users, userFilms } from '../db/schema';
 
 const USERNAMES = ['tc_a', 'tc_b', 'tc_c'];
 
-/*
- * tc_a vs tc_b over the four both-rated films:
- *   a = [5, 4, 3, 2]   b = [4, 5, 2, 3]   (means 3.5 / 3.5)
- *   Σxy=52 Σx=Σy=14 Σx²=Σy²=54  → corr = 12/20 = 0.6 exactly
- *   MAD = (1+1+1+1)/4 = 1.0
- * tc_a vs tc_c: tc_c gives 3.0 to all → zero variance → pearson NULL, MAD 1.0.
- * tc-f5/tc-f6 carry an unrated (NULL) and a zero rating to prove the > 0
- * filter leaves sampleSize at 4.
- */
+// a=[5,4,3,2] vs b=[4,5,2,3] → corr = 12/20 = 0.6 exactly, MAD 1.0. tc_c rates
+// everything 3.0 (zero variance → NULL); tc-f5/f6 prove the >0 filter holds.
 const AB_PEARSON = 0.6;
 const AB_MAD = 1.0;
 const SAMPLE_SIZE = 4;

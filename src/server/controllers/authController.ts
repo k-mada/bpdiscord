@@ -18,11 +18,8 @@ import {
   PasswordResetRequest,
 } from "../../shared/types";
 
-// Cleans up the most-hit Supabase Auth error messages before surfacing them
-// to clients. Supabase's defaults enumerate every valid character ("Password
-// should contain at least one character of each: abcdefghij…") which is
-// verbose UX. Falls back to the original message when we don't have a mapping.
-// Exported for direct unit testing.
+// Supabase's defaults enumerate every valid character ("…at least one of:
+// abcdefghij…"); unmapped messages pass through unchanged.
 export function humanizeSupabaseAuthError(msg: string | undefined): string {
   if (!msg) return "Signup failed";
   const lower = msg.toLowerCase();
@@ -104,12 +101,8 @@ export class AuthController {
         return;
       }
 
-      // Supabase returns a stub user (random UUID, empty identities array)
-      // when the email is already registered — anti-enumeration behavior.
-      // The stub UUID isn't in auth.users, so a later FK insert would 500.
-      // Detect and surface as a clean 409. Note: Supabase also normalizes
-      // Gmail plus-aliases (foo+x@gmail.com → foo@gmail.com), so this
-      // catches both literal duplicates and plus-aliased collisions.
+      // Anti-enumeration: an already-registered email yields a stub user with
+      // empty identities whose UUID isn't in auth.users, so an FK insert 500s.
       if (
         !signUpData.user.identities ||
         signUpData.user.identities.length === 0
@@ -129,11 +122,8 @@ export class AuthController {
         usersRowWasInserted = await db.transaction(async (tx) => {
           let wasInserted = false;
           if (lbusername !== undefined) {
-            // ON CONFLICT DO UPDATE (not DO NOTHING) so we forcibly mark
-            // is_discord=true even if the row was previously curated as
-            // non-discord. The xmax system column distinguishes a fresh
-            // INSERT (xmax=0) from a CONFLICT-driven UPDATE (xmax!=0) —
-            // needed so we only enqueue a scrape for truly new rows.
+            // DO UPDATE (not DO NOTHING) forces is_discord=true on curated
+            // rows; xmax=0 marks a fresh INSERT so only new rows enqueue.
             const insertedUsers = await tx
               .insert(users)
               .values({ lbusername, isDiscord: true })
@@ -200,9 +190,8 @@ export class AuthController {
         }
       }
 
-      // Issue a session token in the same response so the client doesn't need
-      // a second round-trip. Falls back to a 'check your email' instruction
-      // below if Supabase is configured to require email confirmation.
+      // Sign in inline to save a round-trip; falls back to "check your email"
+      // below when Supabase requires email confirmation.
       const { data: signInData, error: signInError } =
         await supabase.auth.signInWithPassword({
           email,
@@ -228,9 +217,8 @@ export class AuthController {
           return;
         }
 
-        // Unexpected sign-in failure. Account exists, but we couldn't issue a
-        // session. 500 signals the server-side problem; body tells the client
-        // their account is usable once the underlying issue is resolved.
+        // Account exists but no session could be issued — server-side problem,
+        // and the account is usable once it's resolved.
         console.error("Unexpected sign-in failure after signup:", signInError);
         res.status(500).json({
           error:

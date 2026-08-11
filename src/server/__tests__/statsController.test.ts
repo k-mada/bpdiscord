@@ -1,10 +1,8 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import type { Request, Response } from 'express';
 
-// Hoisted mock so the controller picks up the stubbed data layer at import time.
-// We only exercise getTopFilmsByYear's branch logic (param presence → year filter
-// + threshold selection + response shape), not the DB query itself — that's
-// covered by dataController.test.ts.
+// Hoisted so the controller picks up the stub at import time. Covers only
+// branch logic; the DB query itself is dataController.test.ts's job.
 vi.mock('../controllers/dataController', () => ({
   dbGetTopUserFilms: vi.fn(),
   TopUserFilmsOrder: { HighestRated: 'highest_rated', MostWatched: 'most_watched' },

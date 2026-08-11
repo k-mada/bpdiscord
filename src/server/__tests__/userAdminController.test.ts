@@ -145,9 +145,6 @@ beforeEach(async () => {
   `);
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  GET /api/admin/users — list
-// ─────────────────────────────────────────────────────────────────────────────
 describe('UserAdminController.list', () => {
   it('merges Drizzle app_users + auth.admin.listUsers by id', async () => {
     await seedAuthUser(TARGET_ID, 'useradmin-test-1@example.test');
@@ -251,9 +248,6 @@ describe('UserAdminController.list', () => {
   });
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  PUT /api/admin/users/:id — update
-// ─────────────────────────────────────────────────────────────────────────────
 describe('UserAdminController.update', () => {
   it('returns 404 when the account does not exist', async () => {
     const sdk = installSdkMock();
@@ -575,9 +569,8 @@ describe('UserAdminController.update', () => {
     await UserAdminController.update(req, res);
 
     expect(statusCalls).toEqual([200]);
-    // Verify the SDK was actually called — without this the test passes even
-    // if the email-update code path is broken (requiresReauth is computed
-    // from req.user.id === id alone).
+    // requiresReauth is computed from req.user.id alone, so without this the
+    // test passes even when the email-update path is broken.
     expect(sdk.auth.admin.updateUserById).toHaveBeenCalledWith(
       ADMIN_ID,
       expect.objectContaining({
@@ -594,9 +587,6 @@ describe('UserAdminController.update', () => {
   });
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  DELETE /api/admin/users/:id — remove
-// ─────────────────────────────────────────────────────────────────────────────
 describe('UserAdminController.remove', () => {
   it('blocks self-deletion with 400', async () => {
     installSdkMock();
@@ -654,9 +644,6 @@ describe('UserAdminController.remove', () => {
   });
 });
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  Admin gating
-// ─────────────────────────────────────────────────────────────────────────────
 describe('admin gating (authorizeAdmin middleware)', () => {
   it('returns 403 for a non-admin user', () => {
     const statusCalls: number[] = [];

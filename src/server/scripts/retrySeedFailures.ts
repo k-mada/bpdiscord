@@ -17,11 +17,8 @@ import {
 
 const DEFAULT_CONCURRENCY = 10;
 
-// Cap on how many times we'll retry the same entry before giving up. Without
-// this, an agent loop ("run seed:retry until file is gone") can spin forever
-// on a genuinely unrecoverable failure (e.g., a deleted TMDB id returning
-// 404). After this many cumulative attempts, the entry is dropped and logged
-// to stdout so it's visible in the agent's run history.
+// Without a cap, a "retry until the file is gone" loop spins forever on an
+// unrecoverable failure (e.g. a deleted TMDB id that always 404s).
 const MAX_ATTEMPTS = 3;
 
 type Args = {
@@ -53,9 +50,8 @@ function parseArgs(argv: string[]): Args {
 const isObject = (v: unknown): v is Record<string, unknown> =>
   typeof v === "object" && v !== null;
 
-// Coerce a single record from raw JSON. attempts defaults to 1 when missing
-// or invalid so files written by older seed runs (before the field existed)
-// load cleanly — those entries had been attempted exactly once.
+// Defaults to 1 so files from before the field existed load cleanly — those
+// entries had been attempted exactly once.
 const normalizeAttempts = (raw: unknown): number =>
   typeof raw === "number" && raw > 0 ? raw : 1;
 
@@ -113,10 +109,8 @@ function loadFailures(): {
   return { actorFailures, filmFailures };
 }
 
-// All mutable retry state lives at module scope so the SIGINT handler can
-// flush it without each phase function having to thread it through. Single-
-// threaded JS guarantees the handler sees a consistent snapshot at the moment
-// it fires (workers are at await boundaries when SIGINT can interrupt them).
+// Module scope so the SIGINT handler can flush without threading state through
+// every phase; single-threaded JS guarantees it sees a consistent snapshot.
 const state = {
   originalActorFailures: [] as FailureRecord[],
   originalFilmFailures: [] as FilmFailureRecord[],
@@ -125,22 +119,18 @@ const state = {
   // Re-failures accumulate here with attempts incremented.
   stillFailingActorsAcc: [] as FailureRecord[],
   stillFailingFilmsAcc: [] as FilmFailureRecord[],
-  // Brand-new film failures emerging from successful actor retries (phase 1).
-  // Always attempts=1 because the actor previously failed before reaching
-  // the films loop, so the films were never tried before this run.
+  // Always attempts=1: the actor failed before reaching the films loop, so
+  // these films were never tried before this run.
   newFilmFailuresAcc: [] as FilmFailureRecord[],
-  // Permanents accumulated across the run: those loaded already past the cap
-  // (skipped, never retried) plus those that hit the cap during finalize.
-  // Logged together at the end for a single clear summary.
+  // Both those loaded already past the cap and those that hit it during
+  // finalize, so the end-of-run summary is a single list.
   permanentActorsSeen: [] as FailureRecord[],
   permanentFilmsSeen: [] as FilmFailureRecord[],
   activeRenderer: null as LiveRenderer | null,
 };
 
-// Compute the file's final retriable contents from current state. Newly-
-// permanent entries (those that hit MAX_ATTEMPTS this run) are pushed into
-// state.permanent*Seen so they appear in the final log alongside any that
-// were already past the cap when loaded.
+// Entries that hit MAX_ATTEMPTS here are pushed to state.permanent*Seen so
+// they log alongside those already past the cap when loaded.
 function finalize(): {
   retriableActors: FailureRecord[];
   retriableFilms: FilmFailureRecord[];
@@ -164,12 +154,8 @@ function finalize(): {
     finalFilms.push(stillFilmMap.get(orig.filmId) ?? orig);
   }
 
-  // New film failures from phase 1 actor retries. Dedupe against (a) films
-  // we've already accounted for via originals/resolved — otherwise the same
-  // filmId can appear twice with different attempt counts; and (b) films
-  // already pushed in this loop — if two phase-1 actors share an un-hydrated
-  // film, coalesce dedupes the TMDB call but both seedOneActor catch blocks
-  // still fire, producing two newFilmFailuresAcc entries for the same id.
+  // Dedupe against originals/resolved and within this loop — two actors sharing
+  // an un-hydrated film both hit their catch even though coalesce dedupes TMDB.
   const accountedFilmIds = new Set<number>([
     ...state.resolvedFilmIds,
     ...state.originalFilmFailures.map((f) => f.filmId),
@@ -233,10 +219,8 @@ async function retryActorFailures(concurrency: number): Promise<void> {
     })),
     concurrency,
     async (actor) => {
-      // Per-worker local buffer so we can determine recovery without racing
-      // on the shared array's length. seedOneActor pushes at most one entry
-      // (the actor-level catch); concurrent workers writing to a shared
-      // array would corrupt a length-based "did this one push?" check.
+      // Local buffer because a length-based "did this push?" check against the
+      // shared array would race with concurrent workers.
       const localActorFailures: FailureRecord[] = [];
       await seedOneActor(
         actor,
@@ -257,10 +241,8 @@ async function retryActorFailures(concurrency: number): Promise<void> {
 }
 
 async function retryFilmFailures(concurrency: number): Promise<void> {
-  // Phase 1 may have hydrated some of these films as a side effect of
-  // recovering an actor whose filmography includes them. Filter those out so
-  // phase 2 doesn't waste a roundtrip per cached entry — and so the renderer
-  // shows a count that reflects actual work, not pre-resolved no-ops.
+  // Phase 1 may have hydrated some of these while recovering an actor; drop
+  // them so the count reflects actual work rather than pre-resolved no-ops.
   const toRetry = state.originalFilmFailures.filter(
     (f) => !state.resolvedFilmIds.has(f.filmId),
   );
@@ -308,11 +290,8 @@ async function main(): Promise<void> {
 
   const loaded = loadFailures();
 
-  // Pre-partition: anything already at or past the cap gets dropped before
-  // we waste a TMDB call on it. Most common cause is a previous run that
-  // pushed an entry to attempts=MAX_ATTEMPTS and persisted it (e.g., before
-  // a process crash interrupted the file rewrite). They land in
-  // state.permanent*Seen and are surfaced via logAllPermanent below.
+  // Drop anything already at the cap before spending a TMDB call on it —
+  // usually persisted by a prior run that crashed mid-rewrite.
   for (const f of loaded.actorFailures) {
     if (f.attempts >= MAX_ATTEMPTS) state.permanentActorsSeen.push(f);
     else state.originalActorFailures.push(f);
@@ -397,9 +376,8 @@ async function main(): Promise<void> {
 
 if (require.main === module) {
   main().catch((err) => {
-    // Print only message + stack. Do NOT print the error object directly:
-    // `console.error("Fatal:", axiosError)` expands `err.config.headers` via
-    // util.inspect, which leaks the TMDB Bearer token to stdout.
+    // Message + stack only — printing the error object expands
+    // err.config.headers via util.inspect and leaks the TMDB Bearer token.
     if (err instanceof Error) {
       console.error("Fatal:", err.message);
       if (err.stack) console.error(err.stack);

@@ -21,9 +21,8 @@ function phaseRowStatus(
   phase: RefreshJobPhase,
 ): PhaseRowStatus {
   const has = job.progress[phase] !== undefined;
-  // Only show "running" when the whole job is actually running. There's a
-  // brief window during cancel/complete where status flips to terminal but
-  // phase hasn't been cleared yet (separate writes on the worker side).
+  // Status and phase are separate worker-side writes, so on cancel/complete
+  // there's a window where status is terminal but phase is stale.
   if (job.status === "running" && job.phase === phase) return "running";
   if (has) return "done";
   return "pending";

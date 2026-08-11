@@ -105,9 +105,8 @@ export const useJob = <TJob extends BaseJob, TTriggerArg = void>(
     [fetchJobOnce, stopPolling],
   );
 
-  // Mount: resume from localStorage if there's a saved job id. Aborts itself
-  // if the user triggers a fresh job before the resume fetch resolves —
-  // otherwise the resume would stomp the new job and leak an interval.
+  // Self-aborts if a fresh job is triggered before the resume fetch resolves;
+  // otherwise the resume stomps the new job and leaks an interval.
   useEffect(() => {
     const savedId = localStorage.getItem(cfgRef.current.storageKey);
     if (!savedId) return;

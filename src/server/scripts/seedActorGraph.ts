@@ -18,9 +18,8 @@ const SPINNER_FRAMES = ["|", "/", "-", "\\"];
 // at repo root regardless of the cwd `yarn seed:graph` runs from.
 export const FAILURES_PATH = path.resolve(__dirname, "..", "..", "..", "seed-failures.json");
 
-// Returns the resolved DB host:port (no credentials) for display in preflight
-// summaries. Surfacing this before the confirmation prompt lets the user
-// notice if their .env points at prod when they meant staging.
+// Shown before the confirmation prompt so the user notices a .env pointing at
+// prod when they meant staging. Credentials are stripped.
 export function getDbHost(): string {
   const url = process.env.DATABASE_URL;
   if (!url) return "(DATABASE_URL not set)";
@@ -91,11 +90,8 @@ type PopularResult = {
   total_pages: number;
 };
 
-// Wraps any TMDB-touching async call (raw axios.get, ensureActor,
-// ensureMovieWithCast) with retry-on-throttle semantics. Retries on AxiosError
-// with status 429 or 5xx; honors `Retry-After` when present, otherwise capped
-// exponential backoff. Non-retryable errors (4xx other than 429, non-Axios
-// errors) propagate immediately.
+// Retries 429/5xx, honoring `Retry-After` when present and falling back to
+// capped exponential backoff. Everything else propagates immediately.
 export async function withTmdbRetry<T>(
   fn: () => Promise<T>,
   attempts = TMDB_RETRY_ATTEMPTS,
@@ -151,9 +147,8 @@ async function fetchPopularActorIds(
     if (!data.results || data.results.length === 0) break;
     for (const r of data.results) {
       if (collected.size >= limit) break;
-      // /person/popular includes directors, writers, etc. Skip non-actors —
-      // their movie_credits.cast is empty so seeding them produces zero edges
-      // and just burns one TMDB call.
+      // /person/popular includes directors and writers, whose empty
+      // movie_credits.cast yields zero edges for one wasted TMDB call.
       if (r.known_for_department !== "Acting") continue;
       if (Number.isInteger(r.id) && typeof r.name === "string" && r.name) {
         collected.set(r.id, r.name);
@@ -264,10 +259,8 @@ export async function runWithConcurrency<T>(
   await Promise.all(tasks);
 }
 
-// `attempts` tracks how many times this entry has failed across all runs.
-// The retry script drops entries that exceed a cap, which prevents an agent
-// loop ("run seed:retry until file is gone") from spinning forever on a
-// genuinely unrecoverable failure (e.g., TMDB returning 404 for a deleted id).
+// `attempts` accumulates across runs; the retry script drops entries past a
+// cap so a "retry until gone" loop can't spin on an unrecoverable failure.
 export type FailureRecord = {
   tmdbId: number;
   name: string;
@@ -317,11 +310,8 @@ export async function seedOneActor(
       try {
         await withTmdbRetry(() => ensureMovieWithCast(film.tmdbId));
       } catch (err) {
-        // Per-film failures are non-fatal; the actor is still recorded as a
-        // success but the failure is tracked so we can surface it in the
-        // summary and seed-failures.json. attempts=1 because this is the
-        // first time this film failed (the actor previously failed before
-        // ever reaching the films loop).
+        // Non-fatal — the actor still counts as a success. attempts=1 because
+        // this is the first time the film itself has been tried.
         filmFailures.push({
           filmId: film.tmdbId,
           fromActorId: actor.tmdbId,
@@ -389,9 +379,8 @@ export async function confirm(message: string): Promise<boolean> {
   return /^y(es)?$/i.test(answer.trim());
 }
 
-// Single source of truth for persisting failure state. Deletes the file when
-// both lists are empty so an "agent loop until gone" pattern terminates.
-// Logs its own action (write or delete) so callers don't need to.
+// Deletes the file when both lists are empty so a "retry until gone" loop
+// terminates. Logs its own action, so callers don't.
 export function writeOrDeleteFailures(
   actorFailures: FailureRecord[],
   filmFailures: FilmFailureRecord[],
@@ -450,9 +439,8 @@ async function main(): Promise<void> {
 
   const shutdown = (): void => {
     renderer.stop();
-    // On early interrupt (no failures yet), don't touch an existing file
-    // from a previous run — the user may want it preserved. Only flush if
-    // we've actually accumulated something.
+    // An early interrupt must not clobber a previous run's file, so only
+    // flush once something has actually accumulated.
     if (actorFailures.length > 0 || filmFailures.length > 0) {
       writeOrDeleteFailures(actorFailures, filmFailures);
     }
@@ -494,9 +482,8 @@ async function main(): Promise<void> {
 
 if (require.main === module) {
   main().catch((err) => {
-    // Print only message + stack. Do NOT print the error object directly:
-    // `console.error("Fatal:", axiosError)` expands `err.config.headers` via
-    // util.inspect, which leaks the TMDB Bearer token to stdout.
+    // Message + stack only — printing the error object expands
+    // err.config.headers via util.inspect and leaks the TMDB Bearer token.
     if (err instanceof Error) {
       console.error("Fatal:", err.message);
       if (err.stack) console.error(err.stack);

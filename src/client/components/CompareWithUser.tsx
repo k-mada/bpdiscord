@@ -10,9 +10,7 @@ interface CompareWithUserProps {
   baseDisplayName?: string | undefined;
 }
 
-// Profile-page widget: pick one other user and see how this profile's taste
-// compares to theirs (the same compatibility meter + anchor films as the
-// /compare page, but with the base user fixed and a single dropdown).
+// The /compare page's meter and anchor films, with the base user fixed.
 const CompareWithUser = ({
   baseUsername,
   baseDisplayName,

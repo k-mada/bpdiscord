@@ -19,9 +19,6 @@ import {
 import { sql } from 'drizzle-orm';
 import { relations } from 'drizzle-orm';
 
-// ===========================
-// Users Table
-// ===========================
 export const users = pgTable('Users', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   lbusername: varchar('lbusername').primaryKey(),
@@ -38,9 +35,6 @@ export const usersRelations = relations(users, ({ many }) => ({
   films: many(userFilms),
 }));
 
-// ===========================
-// UserRatings Table
-// ===========================
 export const userRatings = pgTable(
   'UserRatings',
   {
@@ -60,9 +54,6 @@ export const userRatingsRelations = relations(userRatings, ({ one }) => ({
   }),
 }));
 
-// ===========================
-// UserFilms Table
-// ===========================
 export const userFilms = pgTable(
   'UserFilms',
   {
@@ -85,9 +76,6 @@ export const userFilmsRelations = relations(userFilms, ({ one }) => ({
   }),
 }));
 
-// ===========================
-// FilmRatings Table
-// ===========================
 export const filmRatings = pgTable(
   'FilmRatings',
   {
@@ -100,9 +88,6 @@ export const filmRatings = pgTable(
   (table) => [primaryKey({ columns: [table.filmSlug, table.rating] })]
 );
 
-// ===========================
-// Films Table
-// ===========================
 export const films = pgTable('Films', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
@@ -116,9 +101,6 @@ export const films = pgTable('Films', {
   releaseYear: integer('release_year'),
 });
 
-// ===========================
-// MFLUserMovies Table
-// ===========================
 export const mflUserMovies = pgTable(
   'MFLUserMovies',
   {
@@ -129,9 +111,6 @@ export const mflUserMovies = pgTable(
   (table) => [primaryKey({ columns: [table.username, table.title] })]
 );
 
-// ===========================
-// MFLScoringMetrics Table
-// ===========================
 export const mflScoringMetrics = pgTable('MFLScoringMetrics', {
   metricId: bigint('metric_id', { mode: 'number' }).primaryKey(),
   metric: text('metric'),
@@ -141,9 +120,6 @@ export const mflScoringMetrics = pgTable('MFLScoringMetrics', {
   pointValue: bigint('point_value', { mode: 'number' }),
 });
 
-// ===========================
-// MFLScoringTally Table
-// ===========================
 export const mflScoringTally = pgTable('MFLScoringTally', {
   filmSlug: text('film_slug'),
   metricId: bigint('metric_id', { mode: 'number' }),
@@ -159,9 +135,6 @@ export const mflScoringTallyRelations = relations(mflScoringTally, ({ one }) => 
   }),
 }));
 
-// ===========================
-// MFLMovieData Table
-// ===========================
 export const mflMovieData = pgTable('MFLMovieData', {
   title: text('title'),
   price: real('price'),
@@ -174,9 +147,6 @@ export const mflMovieData = pgTable('MFLMovieData', {
   filmSlug: text('film_slug'),
 });
 
-// ===========================
-// AwardShows Table
-// ===========================
 export const awardShows = pgTable('AwardShows', {
   id: uuid('id').defaultRandom().primaryKey(),
   name: varchar('name').notNull().unique(),
@@ -190,9 +160,6 @@ export const awardShowsRelations = relations(awardShows, ({ many }) => ({
   events: many(events),
 }));
 
-// ===========================
-// Events Table
-// ===========================
 export const events = pgTable('Events', {
   id: uuid('id').defaultRandom().primaryKey(),
   awardShowId: uuid('award_show_id').notNull().references(() => awardShows.id),
@@ -215,9 +182,6 @@ export const eventsRelations = relations(events, ({ one, many }) => ({
   categories: many(eventCategories),
 }));
 
-// ===========================
-// EventCategories Table
-// ===========================
 export const eventCategories = pgTable('EventCategories', {
   id: uuid('id').defaultRandom().primaryKey(),
   eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
@@ -237,9 +201,6 @@ export const eventCategoriesRelations = relations(eventCategories, ({ one, many 
   picks: many(eventUserPicks),
 }));
 
-// ===========================
-// EventNominees Table
-// ===========================
 export const eventNominees = pgTable('EventNominees', {
   id: uuid('id').defaultRandom().primaryKey(),
   categoryId: uuid('category_id').notNull().references(() => eventCategories.id, { onDelete: 'cascade' }),
@@ -258,9 +219,6 @@ export const eventNomineesRelations = relations(eventNominees, ({ one, many }) =
   picks: many(eventUserPicks),
 }));
 
-// ===========================
-// EventUserPicks Table
-// ===========================
 export const eventUserPicks = pgTable(
   'EventUserPicks',
   {
@@ -285,9 +243,6 @@ export const eventUserPicksRelations = relations(eventUserPicks, ({ one }) => ({
   }),
 }));
 
-// ===========================
-// ag_actors Table (TMDB-sourced actor graph)
-// ===========================
 export const agActors = pgTable('ag_actors', {
   tmdbId: integer('tmdb_id').primaryKey(),
   name: text('name').notNull(),
@@ -300,9 +255,6 @@ export const agActors = pgTable('ag_actors', {
   fetchedAt: timestamp('fetched_at', { withTimezone: true }).defaultNow(),
 });
 
-// ===========================
-// ag_films Table
-// ===========================
 export const agFilms = pgTable('ag_films', {
   tmdbId: integer('tmdb_id').primaryKey(),
   title: text('title').notNull(),
@@ -318,13 +270,8 @@ export const agFilms = pgTable('ag_films', {
   fetchedAt: timestamp('fetched_at', { withTimezone: true }).defaultNow(),
 });
 
-// ===========================
-// ag_acted_in Table (actor <-> film edges)
-// ===========================
-// The table's primary key is (actor_tmdb_id, movie_tmdb_id). The reverse-
-// direction index is required for the path-finder's BFS, which joins on
-// movie_tmdb_id to find co-stars — without it, each recursion step would
-// seq-scan the edge table.
+// The reverse-direction index is required by the path-finder BFS, which joins
+// on movie_tmdb_id; without it each layer seq-scans the edge table.
 export const agActedIn = pgTable(
   'ag_acted_in',
   {
@@ -362,13 +309,8 @@ export const agActedInRelations = relations(agActedIn, ({ one }) => ({
   }),
 }));
 
-// ===========================
-// refresh_jobs Table (Hater Rankings refresh pipeline state)
-// ===========================
-// One row per pipeline run orchestrated by the moviemaestro worker. The
-// partial unique index on (status) WHERE status='running' enforces single-
-// flight at the DB level — parallel INSERTs fail with a unique violation
-// that the admin endpoint catches and surfaces as 409.
+// The partial unique index enforces single-flight at the DB level — parallel
+// INSERTs raise a unique violation that the admin endpoint surfaces as 409.
 export const refreshJobs = pgTable(
   'refresh_jobs',
   {
@@ -390,12 +332,8 @@ export const refreshJobs = pgTable(
   ]
 );
 
-// ===========================
-// user_scrape_jobs Table (per-user /fetcher refresh pipeline state)
-// ===========================
-// Same lifecycle and progress shape as refresh_jobs, but scoped to one
-// Letterboxd user. The partial unique index is per-username so two users
-// can scrape in parallel; the same user can't double-trigger.
+// Like refresh_jobs, but the partial unique index is per-username: two users
+// can scrape in parallel, the same user can't double-trigger.
 export const userScrapeJobs = pgTable(
   'user_scrape_jobs',
   {
@@ -418,13 +356,8 @@ export const userScrapeJobs = pgTable(
   ]
 );
 
-// ===========================
-// AppUsers Table
-// ===========================
-// Links Supabase Auth accounts to Letterboxd usernames. Documentary — the SQL
-// migration is the source of truth (see CLAUDE.md). The FK from `id` to
-// `auth.users(id)` lives in the migration; `auth.users` isn't in the Drizzle
-// schema so we treat `id` as a plain UUID here.
+// `id` is a plain UUID here only because `auth.users` isn't in the Drizzle
+// schema — the real FK to auth.users(id) lives in the migration.
 export const appUsers = pgTable('app_users', {
   id: uuid('id').primaryKey(),
   lbusername: varchar('lbusername').unique(),
@@ -439,9 +372,6 @@ export const appUsersRelations = relations(appUsers, ({ one }) => ({
   }),
 }));
 
-// ===========================
-// Type Exports
-// ===========================
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 

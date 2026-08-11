@@ -25,10 +25,8 @@ interface TasteCompatibilityProps {
   compatibility: TasteCompatibilityMetrics;
 }
 
-// Layman explanation. Deliberately avoids "correlation," "Pearson," etc.
-// Framed around predictability so the three zones are clearly distinct:
-// Aligned and Opposite are both predictable (just in opposite directions);
-// Independent is the noise zone where neither rule applies.
+// Deliberately avoids "correlation"/"Pearson" and frames the three zones by
+// predictability — Aligned and Opposite are both predictable, Independent isn't.
 const TOOLTIP_EXPLANATION =
   "higher means you tend to react the same way to the same films. lower means you tend to react in opposite directions — when one of you loves it, the other reliably hates it. the middle means there's no pattern: sometimes you agree, sometimes you don't, but you can't predict it from each other.";
 
@@ -113,10 +111,8 @@ const AnchorFilmSkeleton = () => (
   </div>
 );
 
-// Placeholder that mirrors the rendered card's vertical rhythm (header →
-// spectrum → headline → three posters) so swapping the compared user doesn't
-// collapse the layout and shove the rest of the page around mid-fetch. Keep
-// its structure roughly in sync with the component below.
+// Mirrors the real card's vertical rhythm so swapping users doesn't collapse
+// the layout mid-fetch. Keep roughly in sync with the component below.
 export const TasteCompatibilitySkeleton = () => (
   <div className="card animate-pulse" aria-hidden="true">
     <div className="mb-4 space-y-2">

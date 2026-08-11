@@ -5,10 +5,8 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   ref?: Ref<HTMLInputElement>;
 }
 
-// Base styles inline rather than referencing the .input-field CSS class so
-// tailwind-merge can resolve conflicting utility classes when callers pass
-// their own className. .input-field still exists in index.css for legacy
-// callers (cleanup in bpdiscord-3h2).
+// Inline rather than the .input-field class so tailwind-merge can resolve
+// conflicts when callers pass their own className.
 const baseClasses =
   "bg-letterboxd-bg-secondary border border-letterboxd-border rounded-md " +
   "px-4 py-3 text-letterboxd-text-primary placeholder-letterboxd-text-muted " +

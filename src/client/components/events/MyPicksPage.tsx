@@ -142,10 +142,6 @@ const MyPicksPage = () => {
   );
 };
 
-// ===========================
-// Category Pick Card
-// ===========================
-
 interface CategoryPickCardProps {
   category: EventCategory;
   selectedNomineeId: string | null;

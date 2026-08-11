@@ -19,9 +19,8 @@ import type {
  */
 export const useAccounts = () => {
   const { token } = useAuth();
-  // Held in a ref so the memoized callbacks below stay identity-stable while
-  // always reading the latest token (avoids re-firing the mount fetch on every
-  // token-state change).
+  // Ref keeps the callbacks below identity-stable while still reading the
+  // latest token, so the mount fetch doesn't re-fire on every token change.
   const tokenRef = useRef(token);
   tokenRef.current = token;
 
@@ -62,9 +61,8 @@ export const useAccounts = () => {
       const response = await apiService.updateAccount(id, patch, token);
       const updated = response.data;
       if (!updated) throw new Error("Server did not return updated account");
-      // Splice into the local list so the table reflects the change without a
-      // full refetch. requiresReauth is a transport-only signal, not part of
-      // AccountView, so we strip it before storing.
+      // Spliced in to avoid a full refetch. requiresReauth is transport-only,
+      // not part of AccountView, so it's stripped before storing.
       const { requiresReauth: _ignored, ...row } = updated;
       void _ignored;
       setData((prev) => prev.map((a) => (a.id === id ? row : a)));

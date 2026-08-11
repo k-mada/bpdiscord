@@ -55,10 +55,6 @@ async function readRow(jobId: string) {
   return r[0] ?? null;
 }
 
-// ===========================
-// dbInsertRunningScrapeJob — single-flight is PER-USERNAME (not global)
-// ===========================
-
 describe("dbInsertRunningScrapeJob", () => {
   it("returns ok with a new id when no job is running for this user", async () => {
     const result = await dbInsertRunningScrapeJob(ALICE_AUTH, LB_ALICE);
@@ -85,9 +81,8 @@ describe("dbInsertRunningScrapeJob", () => {
   });
 
   it("allows DIFFERENT users to scrape concurrently (per-username single-flight)", async () => {
-    // The critical difference from refresh_jobs: single-flight here is
-    // per-username, not global. /fetcher must support concurrent
-    // scrapes for different users.
+    // Unlike refresh_jobs, single-flight is per-username — different users
+    // must be able to scrape concurrently.
     const aliceJob = await dbInsertRunningScrapeJob(ALICE_AUTH, LB_ALICE);
     const bobJob = await dbInsertRunningScrapeJob(BOB_AUTH, LB_BOB);
 
@@ -126,10 +121,6 @@ describe("dbInsertRunningScrapeJob", () => {
   });
 });
 
-// ===========================
-// dbGetScrapeJob — own-only enforcement
-// ===========================
-
 describe("dbGetScrapeJob", () => {
   it("returns the row for its owner", async () => {
     const ins = await dbInsertRunningScrapeJob(ALICE_AUTH, LB_ALICE);
@@ -158,10 +149,6 @@ describe("dbGetScrapeJob", () => {
     expect(row).toBeNull();
   });
 });
-
-// ===========================
-// dbCancelScrapeJob
-// ===========================
 
 describe("dbCancelScrapeJob", () => {
   it("flips status to cancelled for own running job", async () => {
@@ -210,10 +197,6 @@ describe("dbCancelScrapeJob", () => {
     expect(outcome).toBe("not_found");
   });
 });
-
-// ===========================
-// dbMarkScrapeJobFailed — atomic rollback after worker handoff failure
-// ===========================
 
 describe("dbMarkScrapeJobFailed", () => {
   it("flips status to failed and appends an error entry", async () => {

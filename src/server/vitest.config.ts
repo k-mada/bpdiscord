@@ -8,7 +8,6 @@ export default defineConfig({
     exclude: ['__tests__/fixtures/**'],
     testTimeout: 30000, // 30s for database operations
     hookTimeout: 30000, // 30s for setup/teardown
-    // Set NODE_ENV for test database selection
     env: {
       NODE_ENV: 'test',
     },

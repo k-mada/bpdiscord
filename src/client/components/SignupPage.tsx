@@ -46,9 +46,8 @@ const SignupPage = () => {
       return;
     }
 
-    // Build the payload without the lbusername key when empty, so the server
-    // sees `undefined` (skip the linking flow entirely) rather than an empty
-    // string (which would trip its format check).
+    // Omit the key entirely when empty — the server skips linking on
+    // `undefined` but fails its format check on "".
     const payload: SignupRequest = {
       name: formData.name,
       email: formData.email,
@@ -68,9 +67,8 @@ const SignupPage = () => {
         return;
       }
 
-      // No access_token: signup succeeded but auto-login didn't run (most
-      // common cause is Supabase requiring email confirmation). Surface the
-      // server message so the user knows to check their email.
+      // Signup worked but auto-login didn't — usually Supabase requiring email
+      // confirmation, so surface the server's message verbatim.
       if (response.message) {
         setMessage(response.message);
       } else {

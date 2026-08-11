@@ -19,9 +19,8 @@ export const createSupabaseClient = (token?: string): SupabaseClient => {
   });
 };
 
-// Service-role client. Bypasses RLS and grants `auth.admin.*` access (e.g.
-// deleteUser for signup-failure compensation). Read the key at call time so
-// callers in code paths that never need admin don't crash on missing env.
+// Bypasses RLS and grants `auth.admin.*`. The key is read at call time so
+// paths that never need admin don't crash when the env var is absent.
 export const createSupabaseAdminClient = (): SupabaseClient => {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!serviceRoleKey) {

@@ -100,7 +100,6 @@ export async function getUserRatings(
   }
 }
 
-// Get user profile from database only
 export async function getUserProfile(
   req: Request,
   res: Response
@@ -148,7 +147,6 @@ export async function getUserProfile(
   }
 }
 
-// Get complete user data (profile + ratings) from database only
 export async function getUserComplete(
   req: Request,
   res: Response
@@ -186,9 +184,8 @@ export async function getUserComplete(
         0
       );
 
-      // Watched ⊇ rated; clamp so a stale distribution can never show
-      // "watched < rated". Falls back to the rated count if the watch query
-      // failed, so the field is always populated.
+      // Watched ⊇ rated, so clamp — a stale distribution must never render
+      // "watched < rated".
       const totalWatched = watchedResult.success
         ? Math.max(watchedResult.data ?? 0, totalRatings)
         : totalRatings;
@@ -231,7 +228,6 @@ export async function getUserComplete(
   }
 }
 
-// Get list of all users with their display names
 export async function getAllUsers(req: Request, res: Response): Promise<void> {
   console.log("Retrieving all users from database");
 

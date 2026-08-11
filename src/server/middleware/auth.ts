@@ -21,7 +21,6 @@ export const authenticateToken = async (
       return;
     }
 
-    // Verify token with Supabase
     const supabase = createSupabaseClient();
     const {
       data: { user },
@@ -32,7 +31,6 @@ export const authenticateToken = async (
       return;
     }
 
-    // Add user info to request object
     req.user = user as SupabaseUser;
     req.supabase = createSupabaseClient(token);
 
@@ -62,7 +60,6 @@ export const authorizeOwnerOrAdmin = (
     return;
   }
 
-  // Check if user has admin role
   if (req.user?.user_metadata?.role === "admin") {
     next();
     return;

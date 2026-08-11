@@ -13,15 +13,6 @@ import {
 } from "../db/schema";
 import { dbOperation, dbMutation, dbTransaction } from "../db/utils";
 
-// Wrapper conventions:
-// - dbOperation<T>:   returns DbResult<T> with data — use for reads and writes that return data
-// - dbMutation:       returns DbResult<void> — use for writes that don't return data
-// - dbTransaction:    returns DbResult<void> within a transaction — use for multi-step writes
-
-// ===========================
-// Award Show Operations
-// ===========================
-
 export async function dbGetAwardShows() {
   return dbOperation(async () => {
     return db
@@ -72,10 +63,6 @@ export async function dbUpdateAwardShow(
       .where(eq(awardShows.id, id));
   });
 }
-
-// ===========================
-// Read Operations
-// ===========================
 
 export async function dbGetEvents(status?: string) {
   return dbOperation(async () => {
@@ -128,7 +115,6 @@ export async function dbGetEventBySlug(slug: string) {
 
 export async function dbGetEventUserPicks(eventId: string, userId: string) {
   return dbOperation(async () => {
-    // Get all category IDs for this event, then get picks for those categories
     const result = await db
       .select({
         id: eventUserPicks.id,
@@ -153,10 +139,6 @@ export async function dbGetEventUserPicks(eventId: string, userId: string) {
     return result;
   });
 }
-
-// ===========================
-// Write Operations (Admin)
-// ===========================
 
 export async function dbCreateEvent(data: Omit<NewEvent, "id" | "createdAt" | "updatedAt">) {
   return dbOperation(async () => {
@@ -192,7 +174,6 @@ export async function dbUpsertCategory(
 ) {
   return dbOperation(async () => {
     if (data.id) {
-      // Update existing
       const { id, ...updateData } = data;
       await db
         .update(eventCategories)
@@ -203,7 +184,6 @@ export async function dbUpsertCategory(
         .where(eq(eventCategories.id, id));
       return { id };
     } else {
-      // Insert new
       const result = await db
         .insert(eventCategories)
         .values({

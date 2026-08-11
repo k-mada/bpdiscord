@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Mock the db module before importing the utilities
 vi.mock("../db", () => ({
   db: {
     transaction: vi.fn(),

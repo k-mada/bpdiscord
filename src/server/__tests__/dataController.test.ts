@@ -20,7 +20,6 @@ import {
 import { db } from '../db';
 import { users, films, userFilms } from '../db/schema';
 
-// Verify test environment before anything runs
 beforeAll(async () => {
   assertTestEnvironment();
   await resetDatabase();
@@ -40,7 +39,6 @@ describe('dataController', () => {
       // Only users with entries in userRatings table are returned (3 of 4 test users)
       expect(result.data!.length).toBe(3);
 
-      // Verify display names are populated
       const activeUser = result.data!.find(u => u.username === 'test_user_active');
       expect(activeUser?.displayName).toBe('Active Test User');
     });
@@ -52,7 +50,6 @@ describe('dataController', () => {
       expect(result.data).toBeDefined();
       expect(result.data!.length).toBe(10); // 10 rating levels for active user
 
-      // Verify sorted by rating
       const ratings = result.data!.map(r => r.rating);
       expect(ratings).toEqual([0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]);
     });
@@ -137,7 +134,6 @@ describe('dataController', () => {
       expect(result.data).toBeDefined();
       expect(result.data!.length).toBe(6); // Active user has 6 films (including unlisted)
 
-      // Verify film data structure
       const popularFilm = result.data!.find(f => f.film_slug === 'test-film-popular');
       expect(popularFilm?.title).toBe('Popular Test Film');
       expect(popularFilm?.rating).toBe(4.0);
@@ -193,7 +189,6 @@ describe('dataController', () => {
       const titles = result.data!.map(f => f.title).sort();
       expect(titles).toEqual(expectedResults.moviesInCommonActiveMinimal);
 
-      // Verify ratings from both users are included
       const popularFilm = result.data!.find(f => f.title === 'Popular Test Film');
       expect(popularFilm?.user1_rating).toBe(4.0); // Active user's rating
       expect(popularFilm?.user2_rating).toBe(4.5); // Minimal user's rating
@@ -312,14 +307,6 @@ describe('dataController', () => {
   });
 
   describe('Top Rated Films', () => {
-    // Fixtures yield (after the is_discord filter, which drops test_user_non_discord):
-    //   popular  → active 4.0, minimal 4.5         → count 2, avg 4.25
-    //   classic  → active 5.0, minimal 5.0         → count 2, avg 5.00
-    //   divisive → active 1.5                      → count 1, avg 1.50
-    //   obscure  → active 3.5                      → count 1, avg 3.50
-    //   new      → active 4.0                      → count 1, avg 4.00
-    //   unlisted → active 3.0                      → count 1, avg 3.00
-
     it('excludes non-discord raters from count and average', async () => {
       const result = await dc.dbGetTopRatedUserFilms({ minRatings: 1 });
 
@@ -390,14 +377,6 @@ describe('dataController', () => {
   });
 
   describe('Top User Films (dbGetTopUserFilms)', () => {
-    // Same fixture shape as Top Rated Films above (discord-only):
-    //   popular  → watch 2, rating 2, avg 4.25
-    //   classic  → watch 2, rating 2, avg 5.00
-    //   divisive → watch 1, rating 1, avg 1.50
-    //   obscure  → watch 1, rating 1, avg 3.50
-    //   new      → watch 1, rating 1, avg 4.00
-    //   unlisted → watch 1, rating 1, avg 3.00
-
     it('defaults to MostWatched ordering (watch_count desc, title asc)', async () => {
       const result = await dc.dbGetTopUserFilms();
 
@@ -520,7 +499,6 @@ describe('dataController', () => {
       const result = await dc.dbUpsertUserProfile('test_user_new', newUser);
       expect(result.success).toBe(true);
 
-      // Verify it was created
       const profile = await dc.dbGetUserProfile('test_user_new');
       expect(profile.data?.displayName).toBe('New Test User');
     });
@@ -536,7 +514,6 @@ describe('dataController', () => {
       const result = await dc.dbUpsertUserProfile('test_user_active', updates);
       expect(result.success).toBe(true);
 
-      // Verify it was updated
       const profile = await dc.dbGetUserProfile('test_user_active');
       expect(profile.data?.displayName).toBe('Updated Display Name');
       expect(profile.data?.followers).toBe(200);
@@ -551,23 +528,17 @@ describe('dataController', () => {
       const result = await dc.dbDeleteUserRatings('test_user_minimal');
       expect(result.success).toBe(true);
 
-      // Verify deleted
       const after = await dc.dbGetUserRatings('test_user_minimal');
       expect(after.data).toEqual([]);
     });
   });
 });
 
-// The HighestRated path selects MEMBERSHIP by a Bayesian-weighted score, then
-// presents the chosen set by raw average. This block is isolated because the
-// weighted score depends on the global mean over ALL ratings — so it controls
-// the entire rating population, then restores the standard fixtures afterward.
+// Isolated because the weighted score depends on the global mean over ALL
+// ratings, so this block owns the whole rating population and restores it after.
 describe('dbGetTopUserFilms — highest-rated membership gate', () => {
-  // 2020 pool: FLUKE 5.0 from 2 raters, SOLID 4.5 from 6. ANCHOR (1990) only
-  // drags the global mean down; the year filter keeps it out of the pool.
-  //   c = (2*5 + 6*4.5 + 8*1) / 16 = 2.8125,  m = 10
-  //   adj(FLUKE) = 2/12*5  + 10/12*c ≈ 3.18
-  //   adj(SOLID) = 6/16*4.5 + 10/16*c ≈ 3.45  → SOLID wins selection
+  // c = (2*5 + 6*4.5 + 8*1)/16 = 2.8125, m = 10 → adj(FLUKE) ≈ 3.18 vs
+  // adj(SOLID) ≈ 3.45, so SOLID wins despite the lower raw average.
   beforeAll(async () => {
     await cleanDatabase();
     await db.insert(users).values(

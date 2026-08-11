@@ -30,9 +30,8 @@ import {
   markJobFailed,
 } from "./jobHelpers";
 
-// /refresh-user is synchronous worker-side (RSS fetch + parse + upsert under
-// the process-wide Letterboxd serializer), so it gets a longer budget than the
-// fire-and-forget job handoffs.
+// /refresh-user runs synchronously worker-side under the Letterboxd
+// serializer, so it needs more budget than the fire-and-forget handoffs.
 const REFRESH_WORKER_TIMEOUT_MS = 30_000;
 
 interface RefreshUserResult {
@@ -41,15 +40,10 @@ interface RefreshUserResult {
   upserted: number;
 }
 
-// Letterboxd usernames are alphanumeric + underscore/dash. Real rules cap
-// at 30 chars; we cap at 50 to be permissive without permitting abusive
-// payloads to reach the trigram patterns or the worker.
+// Letterboxd caps at 30; we allow 50 to stay permissive while keeping abusive
+// payloads away from the trigram patterns and the worker.
 const USERNAME_REGEX = /^[a-zA-Z0-9_-]+$/;
 const USERNAME_MAX_LENGTH = 50;
-
-// ===========================
-// DB helpers (typed wrappers around shared jobHelpers internals)
-// ===========================
 
 export async function dbInsertRunningScrapeJob(
   startedBy: string,
@@ -76,10 +70,6 @@ export async function dbMarkScrapeJobFailed(
   return markJobFailed("user_scrape_jobs", jobId, message);
 }
 
-// ===========================
-// Worker handoff
-// ===========================
-
 async function callWorkerScrapeUser(
   config: WorkerConfig,
   jobId: string,
@@ -87,10 +77,6 @@ async function callWorkerScrapeUser(
 ): Promise<void> {
   return callWorker(config, "/scrape-user", { job_id: jobId, lbusername });
 }
-
-// ===========================
-// Per-handler helpers
-// ===========================
 
 function getAuthedUserId(req: Request, res: Response): string | null {
   const id = req.user?.id;
@@ -137,10 +123,6 @@ async function validateUsername(
   }
   return username;
 }
-
-// ===========================
-// HTTP handlers
-// ===========================
 
 export async function triggerScrapeUser(
   req: Request,

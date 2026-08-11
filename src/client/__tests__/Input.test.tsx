@@ -28,9 +28,8 @@ describe("Input", () => {
   });
 
   it("caller className overrides default conflicting classes (tailwind-merge)", () => {
-    // Defaults include px-4. Caller passes px-2. tailwind-merge should keep
-    // only the caller's px-2 in the rendered class list. This proves the
-    // override semantics work end-to-end.
+    // Defaults include px-4; tailwind-merge should leave only the caller's
+    // px-2 in the rendered class list.
     render(<Input data-testid="input" className="px-2" />);
     const className = screen.getByTestId("input").className;
     expect(className).toContain("px-2");
@@ -46,10 +45,8 @@ describe("Input", () => {
 
   it("applies the red border class when aria-invalid='true'", () => {
     render(<Input data-testid="input" aria-invalid="true" />);
-    // We assert the static class is present; the actual CSS application is
-    // handled by Tailwind's aria-invalid: modifier at runtime in a browser.
-    // What we can verify in jsdom is that the class name is in the list and
-    // the aria attribute is set correctly so the variant would activate.
+    // jsdom can only confirm the class and aria attribute are present —
+    // Tailwind's aria-invalid: modifier applies in a real browser.
     const input = screen.getByTestId("input");
     expect(input).toHaveAttribute("aria-invalid", "true");
     expect(input.className).toContain("aria-invalid:border-red-500");

@@ -17,11 +17,8 @@ const router = Router();
 // authenticated user can refresh their (or anyone's) /fetcher data.
 router.use(authenticateToken);
 
-// Per-username rate limit for the trigger endpoint. A burst on one
-// username won't affect scrapes for other users. Looser than the legacy
-// SSE limiter (20/15min/IP) because the worker handles the work
-// asynchronously and the per-username partial unique index in SQL
-// already prevents true duplicate work.
+// Keyed per-username so one user's burst can't block others. Can stay loose
+// because the partial unique index already prevents duplicate work.
 const triggerLimiter = rateLimit({
   windowMs: 5 * 60 * 1000,
   max: 10,

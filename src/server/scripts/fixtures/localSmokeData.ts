@@ -59,9 +59,8 @@ export const FIXTURE_FILMS: Array<{
   { film_slug: "smoke-challengers", title: "Challengers", lb_rating: 3.9, poster: "https://placehold.co/230x345?text=Challengers" },
 ];
 
-// 5 "popular" films watched by all users (drives "Most watched" rankings)
-// and 15 "long-tail" films distributed across users. Tuple is
-// [lbusername, film_slug, rating]. liked=true when rating >= 4.
+// [lbusername, film_slug, rating]; liked=true when rating >= 4. 5 films are
+// watched by everyone so "Most watched" has something to rank.
 const RAW_USER_FILMS: Array<[string, string, number]> = [
   // smoke-alice — picky (avg ~3.2), 12 films
   ["smoke-alice", "smoke-inception", 3.5],

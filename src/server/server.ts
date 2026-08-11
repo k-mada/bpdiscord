@@ -37,15 +37,12 @@ const corsOptions = {
     }
 
     if (process.env.NODE_ENV === "production") {
-      // Build allowed origins list
       const allowedOrigins = [];
 
-      // Add custom frontend URL if set
       if (process.env.FRONTEND_URL) {
         allowedOrigins.push(process.env.FRONTEND_URL);
       }
 
-      // Add Vercel URL if available (Vercel automatically sets this)
       if (process.env.VERCEL_URL) {
         allowedOrigins.push(`https://${process.env.VERCEL_URL}`);
       }
@@ -59,7 +56,6 @@ const corsOptions = {
         // /^https:\/\/yourdomain\.com$/,
       ];
 
-      // Check exact matches first, then patterns
       const exactMatch = allowedOrigins.includes(origin);
       const patternMatch = allowedPatterns.some((pattern) =>
         pattern.test(origin),
@@ -141,7 +137,6 @@ app.use((req: Request, res: Response): void => {
   res.status(404).json(response);
 });
 
-// Start server
 const server = app.listen(PORT, (): void => {
   console.log(
     `🚀 Secure TypeScript server running on http://localhost:${PORT}`,
@@ -150,11 +145,8 @@ const server = app.listen(PORT, (): void => {
   console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
 });
 
-// Without this the HTTP server keeps the port bound on Ctrl+C, causing
-// EADDRINUSE on the next yarn dev. The DB pool's own shutdown handler in
-// db/index.ts handles its own cleanup; we just close the HTTP server here.
-// The 5s safety timer (.unref() so it doesn't keep the loop alive itself)
-// force-exits if server.close stalls on a hung connection.
+// Without this the port stays bound on Ctrl+C and the next `yarn dev` hits
+// EADDRINUSE. The .unref()'d timer force-exits if close stalls on a hung conn.
 const shutdown = (signal: string): void => {
   console.log(`\n${signal} received — closing HTTP server`);
   server.close(() => process.exit(0));

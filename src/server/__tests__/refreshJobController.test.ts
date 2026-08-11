@@ -43,10 +43,6 @@ async function readRow(jobId: string) {
   return r[0] ?? null;
 }
 
-// ===========================
-// dbInsertRunningJob
-// ===========================
-
 describe("dbInsertRunningJob", () => {
   it("returns ok with a new id when no job is running", async () => {
     const result = await dbInsertRunningJob(ALICE);
@@ -98,10 +94,6 @@ describe("dbInsertRunningJob", () => {
   });
 });
 
-// ===========================
-// dbGetJob — own-only enforcement
-// ===========================
-
 describe("dbGetJob", () => {
   it("returns the row for its owner", async () => {
     const ins = await dbInsertRunningJob(ALICE);
@@ -135,10 +127,6 @@ describe("dbGetJob", () => {
     expect(row?.id).toBe(ins.jobId);
   });
 });
-
-// ===========================
-// dbCancelJob
-// ===========================
 
 describe("dbCancelJob", () => {
   it("flips status to cancelled and stamps finished_at for own running job", async () => {
@@ -190,10 +178,6 @@ describe("dbCancelJob", () => {
     expect(outcome).toBe("not_found");
   });
 });
-
-// ===========================
-// dbMarkJobFailed
-// ===========================
 
 describe("dbMarkJobFailed", () => {
   it("flips status to failed and appends the message to errors[]", async () => {
