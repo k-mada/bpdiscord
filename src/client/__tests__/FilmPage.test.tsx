@@ -1,8 +1,8 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { Link, MemoryRouter, Route, Routes } from "react-router-dom";
 import FilmPage from "../components/FilmPage";
 import { apiService } from "../services/api";
-import type { FilmDetail } from "../types";
+import type { FilmDetail } from "../../shared/types";
 
 vi.mock("../services/api", () => ({
   apiService: {
@@ -21,7 +21,6 @@ const film: FilmDetail = {
   releaseYear: 1995,
   poster,
   letterboxdUrl: null,
-  tmdbLink: null,
   letterboxdRating: 4.3,
   watchedCount: 5,
   ratedCount: 2,
@@ -73,7 +72,10 @@ describe("FilmPage", () => {
     renderPage();
 
     const img = await screen.findByAltText("Heat poster");
-    expect(img).toHaveAttribute("src", expect.stringContaining("-0-400-0-600-"));
+    expect(img).toHaveAttribute(
+      "src",
+      expect.stringContaining("-0-400-0-600-"),
+    );
     expect(img).toHaveAttribute(
       "srcset",
       expect.stringContaining("-0-600-0-900-crop.jpg 600w"),
@@ -133,7 +135,9 @@ describe("FilmPage", () => {
     renderPage();
 
     expect(
-      await screen.findByText("Nobody in the Discord has logged this film yet."),
+      await screen.findByText(
+        "Nobody in the Discord has logged this film yet.",
+      ),
     ).toBeInTheDocument();
   });
 
@@ -147,6 +151,52 @@ describe("FilmPage", () => {
         expect.any(AbortSignal),
       ),
     );
+  });
+
+  it("renders the error card when the request genuinely fails", async () => {
+    mockGet.mockRejectedValue(new Error("network down"));
+    renderPage();
+
+    expect(await screen.findByText("Failed to load film")).toBeInTheDocument();
+  });
+
+  // Navigating between two films reuses the FilmPage instance, so a poster
+  // failure recorded as a bare boolean used to persist for the whole session.
+  it("re-enables upscaling for the next film after one poster fails", async () => {
+    render(
+      <MemoryRouter initialEntries={["/film/heat"]}>
+        <Link to="/film/collateral">next</Link>
+        <Routes>
+          <Route path="/film/:filmSlug" element={<FilmPage />} />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    const img = await screen.findByAltText("Heat poster");
+    fireEvent.error(img);
+    await waitFor(() => expect(img).toHaveAttribute("src", poster));
+
+    mockGet.mockResolvedValue({
+      data: {
+        ...film,
+        filmSlug: "collateral",
+        title: "Collateral",
+        poster: poster.replace("heat", "collateral"),
+      },
+    });
+    fireEvent.click(screen.getByRole("link", { name: "next" }));
+
+    const nextImg = await screen.findByAltText("Collateral poster");
+    expect(nextImg).toHaveAttribute(
+      "src",
+      expect.stringContaining("-0-400-0-600-"),
+    );
+  });
+
+  it("marks films a user liked", async () => {
+    renderPage();
+
+    expect(await screen.findAllByLabelText("liked")).toHaveLength(1);
   });
 
   it("renders the not-found page for an unknown slug", async () => {

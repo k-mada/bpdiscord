@@ -2,7 +2,7 @@ import { renderHook, waitFor } from "@testing-library/react";
 import { useFilmDetail } from "../hooks/useFilmDetail";
 import { apiService } from "../services/api";
 import { ApiError } from "../lib/apiError";
-import type { FilmDetail } from "../types";
+import type { FilmDetail } from "../../shared/types";
 
 vi.mock("../services/api", () => ({
   apiService: {
@@ -18,7 +18,6 @@ const film: FilmDetail = {
   releaseYear: 1995,
   poster: "",
   letterboxdUrl: null,
-  tmdbLink: null,
   letterboxdRating: 4.3,
   watchedCount: 5,
   ratedCount: 4,
@@ -114,6 +113,43 @@ describe("useFilmDetail", () => {
     expect(signal.aborted).toBe(false);
     unmount();
     expect(signal.aborted).toBe(true);
+  });
+
+  // act() flushes effects before assertions, so the offending frame is only
+  // visible by recording what every render pass returned.
+  it("reports loading on the very first render pass", () => {
+    mockGet.mockReturnValue(new Promise(() => {}));
+    const seen: Array<{ loading: boolean; error: string | null }> = [];
+
+    renderHook(() => {
+      const r = useFilmDetail("heat");
+      seen.push({ loading: r.loading, error: r.error });
+      return r;
+    });
+
+    expect(seen[0]).toEqual({ loading: true, error: null });
+    expect(seen.some((s) => !s.loading)).toBe(false);
+  });
+
+  it("never returns the previous film's data while the next one loads", async () => {
+    mockGet.mockResolvedValue({ data: film });
+    const seen: Array<{ slug: string; data: FilmDetail | null }> = [];
+
+    const { result, rerender } = renderHook(
+      ({ slug }) => {
+        const r = useFilmDetail(slug);
+        seen.push({ slug, data: r.data });
+        return r;
+      },
+      { initialProps: { slug: "heat" } },
+    );
+    await waitFor(() => expect(result.current.data).toEqual(film));
+
+    mockGet.mockReturnValue(new Promise(() => {}));
+    seen.length = 0;
+    rerender({ slug: "collateral" });
+
+    expect(seen.every((s) => s.data === null)).toBe(true);
   });
 
   it("does not fetch without a slug", () => {

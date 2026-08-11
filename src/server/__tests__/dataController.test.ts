@@ -650,6 +650,21 @@ describe('dbGetFilmDetail — rows the standard fixtures do not cover', () => {
     expect(result.data!.ratings).toEqual([]);
   });
 
+  it('picks the most common title when users disagree and no Films row exists', async () => {
+    // Deterministic across calls: frequency first, alphabetical tiebreak.
+    await db.insert(userFilms).values([
+      { lbusername: 'test_user_active', filmSlug: 'detail-untitled', title: 'The Real Title' },
+      { lbusername: 'test_user_minimal', filmSlug: 'detail-untitled', title: 'The Real Title' },
+      { lbusername: 'test_user_non_discord', filmSlug: 'detail-untitled', title: 'A Typo Title' },
+    ]);
+
+    const first = await dc.dbGetFilmDetail('detail-untitled');
+    const second = await dc.dbGetFilmDetail('detail-untitled');
+
+    expect(first.data!.title).toBe('The Real Title');
+    expect(second.data!.title).toBe(first.data!.title);
+  });
+
   it('returns a catalogued film nobody has watched with zeroed stats', async () => {
     const result = await dc.dbGetFilmDetail('detail-unwatched');
 

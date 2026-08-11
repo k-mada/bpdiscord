@@ -5,7 +5,9 @@ export async function getFilmDetail(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const { filmSlug } = req.params;
+  // Letterboxd slugs are lowercase; normalizing keeps /film/Heat and /film/heat
+  // from being two URLs where one 404s.
+  const filmSlug = req.params.filmSlug?.toLowerCase();
 
   if (!filmSlug) {
     res.status(400).json({ error: "Film slug is required" });
@@ -18,9 +20,8 @@ export async function getFilmDetail(
     });
 
     if (!result.success) {
-      res
-        .status(500)
-        .json({ error: result.error || "Failed to get film detail" });
+      console.error("dbGetFilmDetail failed:", result.error);
+      res.status(500).json({ error: "Failed to get film detail" });
       return;
     }
 
@@ -33,16 +34,15 @@ export async function getFilmDetail(
       return;
     }
 
+    // Short TTL: a refresh job can change these numbers at any time, so this
+    // absorbs bursts without making a user's own new rating feel missing.
+    res.set("Cache-Control", "public, max-age=60");
     res.json({
       message: "Film detail retrieved from database",
       data: result.data,
     });
   } catch (error) {
     console.error("Error in getFilmDetail:", error);
-    res.status(500).json({
-      error: `Failed to get film detail: ${
-        error instanceof Error ? error.message : "Unknown error"
-      }`,
-    });
+    res.status(500).json({ error: "Failed to get film detail" });
   }
 }

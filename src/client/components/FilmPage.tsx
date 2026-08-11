@@ -4,7 +4,7 @@ import { useFilmDetail } from "../hooks/useFilmDetail";
 import { posterAtWidth } from "../lib/poster";
 import StarRating from "./StarRating";
 import NotFound from "./NotFound";
-import type { FilmRater } from "../types";
+import type { FilmRater } from "../../shared/types";
 
 const POSTER_WIDTH = 320;
 
@@ -26,6 +26,11 @@ const RaterRow = ({ rater }: { rater: FilmRater }) => (
       {rater.displayName || rater.username}
     </Link>
     <span className="flex items-center gap-2 shrink-0">
+      {rater.liked && (
+        <span role="img" aria-label="liked" className="text-letterboxd-accent">
+          ♥
+        </span>
+      )}
       <StarRating rating={rater.rating} />
       <span className="text-sm tabular-nums text-letterboxd-text-secondary">
         {rater.rating.toFixed(1)}
@@ -42,7 +47,9 @@ const FilmPage = () => {
     filmSlug,
     includeNonDiscord,
   );
-  const [posterFailed, setPosterFailed] = useState(false);
+  // Keyed by URL, not a boolean: one film's missing crop must not disable
+  // upscaling for every film visited afterwards.
+  const [failedPoster, setFailedPoster] = useState<string | null>(null);
 
   if (loading) {
     return (
@@ -72,7 +79,7 @@ const FilmPage = () => {
   const letterboxdUrl =
     data.letterboxdUrl ?? `https://letterboxd.com/film/${data.filmSlug}/`;
   // Falls back to the stored (smaller) poster if a resized crop doesn't exist.
-  const upscale = data.poster && !posterFailed;
+  const upscale = data.poster && failedPoster !== data.poster;
   const posterSrc = upscale
     ? posterAtWidth(data.poster!, POSTER_WIDTH)
     : data.poster;
@@ -105,7 +112,7 @@ const FilmPage = () => {
               alt={`${data.title} poster`}
               width={POSTER_WIDTH}
               height={POSTER_WIDTH * 1.5}
-              onError={() => setPosterFailed(true)}
+              onError={() => setFailedPoster(data.poster)}
               className="w-full aspect-[2/3] object-cover rounded"
             />
           ) : (

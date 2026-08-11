@@ -23,7 +23,7 @@ import {
   CompatibilityRow,
   toNumber,
 } from "../db/queryTypes";
-import { SwapFilm } from "../../shared/types";
+import { FilmDetail, FilmRater, SwapFilm } from "../../shared/types";
 
 export async function dbDeleteUserRatings(
   username: string,
@@ -974,25 +974,19 @@ export async function dbGetFilmsByUser(username: string): Promise<{
   });
 }
 
-export interface FilmRater {
-  username: string;
-  displayName: string | null;
-  rating: number;
-  liked: boolean;
-}
+// Only reached for slugs with no Films row, where users may disagree on the
+// title; picking by frequency (alphabetical tiebreak) keeps it stable per call.
+function mostCommonTitle(rows: Array<{ title: string | null }>): string | null {
+  const counts = new Map<string, number>();
+  for (const { title } of rows) {
+    if (title) counts.set(title, (counts.get(title) ?? 0) + 1);
+  }
 
-export interface FilmDetail {
-  filmSlug: string;
-  title: string;
-  releaseYear: number | null;
-  poster: string | null;
-  letterboxdUrl: string | null;
-  tmdbLink: string | null;
-  letterboxdRating: number | null;
-  watchedCount: number;
-  ratedCount: number;
-  averageRating: number | null;
-  ratings: FilmRater[];
+  return (
+    [...counts.entries()].sort(
+      (a, b) => b[1] - a[1] || a[0].localeCompare(b[0]),
+    )[0]?.[0] ?? null
+  );
 }
 
 export async function dbGetFilmDetail(
@@ -1016,7 +1010,6 @@ export async function dbGetFilmDetail(
           releaseYear: films.releaseYear,
           poster: films.poster,
           url: films.url,
-          tmdbLink: films.tmdbLink,
           lbRating: films.lbRating,
         })
         .from(films)
@@ -1066,14 +1059,10 @@ export async function dbGetFilmDetail(
 
     return {
       filmSlug,
-      title:
-        film?.title ??
-        watchRows.find((r) => r.title)?.title ??
-        filmSlug,
+      title: film?.title ?? mostCommonTitle(watchRows) ?? filmSlug,
       releaseYear: film?.releaseYear ?? null,
       poster: film?.poster ?? null,
       letterboxdUrl: film?.url ?? null,
-      tmdbLink: film?.tmdbLink ?? null,
       letterboxdRating: film?.lbRating ?? null,
       watchedCount: scoped.length,
       ratedCount: rated.length,

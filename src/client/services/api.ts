@@ -4,6 +4,7 @@ import {
   SignupRequest,
   AuthResponse,
   MovieSwapResult,
+  FilmDetail,
 } from "../../shared/types";
 import { ApiError } from "../lib/apiError";
 import {
@@ -25,7 +26,6 @@ import {
   HaterRanking,
   HaterRanking2,
   FilmUserComplete,
-  FilmDetail,
 } from "../types";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || "/api";

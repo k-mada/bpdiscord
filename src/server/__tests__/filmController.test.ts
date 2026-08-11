@@ -17,6 +17,7 @@ interface MockedReqRes {
   res: Response;
   statusCalls: number[];
   jsonCalls: unknown[];
+  headers: Record<string, string>;
 }
 
 function mockReqRes(
@@ -25,7 +26,12 @@ function mockReqRes(
 ): MockedReqRes {
   const statusCalls: number[] = [];
   const jsonCalls: unknown[] = [];
-  const res = {} as { status: (c: number) => unknown; json: (p: unknown) => unknown };
+  const headers: Record<string, string> = {};
+  const res = {} as {
+    status: (c: number) => unknown;
+    json: (p: unknown) => unknown;
+    set: (k: string, v: string) => unknown;
+  };
   res.status = (code: number) => {
     statusCalls.push(code);
     return res;
@@ -34,11 +40,16 @@ function mockReqRes(
     jsonCalls.push(payload);
     return res;
   };
+  res.set = (key: string, value: string) => {
+    headers[key] = value;
+    return res;
+  };
   return {
     req: { params, query } as unknown as Request,
     res: res as unknown as Response,
     statusCalls,
     jsonCalls,
+    headers,
   };
 }
 
@@ -72,6 +83,21 @@ describe('getFilmDetail', () => {
     expect(dbGetFilmDetail).toHaveBeenCalledWith('heat', { includeNonDiscord: true });
   });
 
+  it('sets a short cache window on success', async () => {
+    const { req, res, headers } = mockReqRes({ filmSlug: 'heat' });
+    await getFilmDetail(req, res);
+
+    expect(headers['Cache-Control']).toBe('public, max-age=60');
+  });
+
+  it('normalizes an upper-case slug so it resolves like the canonical one', async () => {
+    const { req, res, statusCalls } = mockReqRes({ filmSlug: 'Heat-1995' });
+    await getFilmDetail(req, res);
+
+    expect(dbGetFilmDetail).toHaveBeenCalledWith('heat-1995', { includeNonDiscord: false });
+    expect(statusCalls).toEqual([]);
+  });
+
   it('404s when the slug resolves to nothing', async () => {
     vi.mocked(dbGetFilmDetail).mockResolvedValue({ success: true, data: null } as never);
     const { req, res, statusCalls } = mockReqRes({ filmSlug: 'ghost' });
@@ -86,7 +112,8 @@ describe('getFilmDetail', () => {
     await getFilmDetail(req, res);
 
     expect(statusCalls).toEqual([500]);
-    expect(jsonCalls[0]).toMatchObject({ error: 'db down' });
+    // The raw DB message is logged, not returned
+    expect(jsonCalls[0]).toMatchObject({ error: 'Failed to get film detail' });
   });
 
   it('500s when the query throws', async () => {
