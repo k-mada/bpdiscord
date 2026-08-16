@@ -27,13 +27,13 @@ module.exports = {
           "bg-secondary": "#2a2d2f", // Slightly lighter background
           "bg-tertiary": "#2c3440", // Even lighter for cards/sections
           "text-primary": "#e0e0e0", // Main text color
-          "text-secondary": "#a0a0a0", // Secondary text
-          "text-muted": "#808080", // Muted text
+          "text-secondary": "#b8b8b8", // Secondary text
+          "text-muted": "#a0a0a0", // Muted text
           accent: "#00ac1c", // Letterboxd green
           "accent-hover": "#009d1a", // Darker green for hover
           pro: "#f5c518", // PRO badge gold
-          border: "#404040", // Border color
-          "border-light": "#505050", // Lighter border
+          border: "#404040", // Decorative dividers only — exempt from WCAG 1.4.11
+          "border-light": "#8a8a8a", // Control boundaries (inputs, selects) — 1.4.11 needs 3:1
           "link-hover": "#40bcf4", // Link hover color
         },
       },
