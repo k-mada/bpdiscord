@@ -11,6 +11,12 @@ alongside any palette change.
 
 ## Color Palette
 
+![The letterboxd palette: every token as a labelled swatch, and the three text tiers rendered on each background](./palette.svg)
+
+`palette.svg` is generated from `tailwind.config.js` and held by a file snapshot in
+`__tests__/palette.contrast.test.ts`, so it cannot drift from the tokens. After changing
+a colour, regenerate it with `yarn test -u` — the test fails until you do.
+
 ### Backgrounds
 
 | Token | Hex | Use |

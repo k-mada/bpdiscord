@@ -208,6 +208,78 @@ const renderCoverage = () =>
     .map(({ label, foregrounds }) => `${label}\n  ${[...foregrounds].sort().join(", ")}`)
     .join("\n");
 
+const SWATCH_GROUPS: Array<{ heading: string; tokens: string[] }> = [
+  { heading: "Backgrounds", tokens: opaqueBackgrounds },
+  {
+    heading: "Text",
+    tokens: tokenNames.filter((k) => k.startsWith("text-")),
+  },
+  { heading: "Accents", tokens: ["accent", "accent-hover", "pro", "link-hover"] },
+  { heading: "Borders", tokens: ["border", "border-light"] },
+];
+
+/**
+ * Swatch grid plus the three text tiers rendered on each background, which is
+ * the part a flat list of hex values cannot show.
+ */
+const renderSwatchSvg = (): string => {
+  const CHIP_W = 168;
+  const CHIP_H = 56;
+  const GAP = 12;
+  const PAD = 24;
+  const width = PAD * 2 + CHIP_W * 4 + GAP * 3;
+  const parts: string[] = [];
+  let y = PAD;
+
+  const label = (text: string, x: number, ly: number, fill: string, size = 12, weight = 400) =>
+    `<text x="${x}" y="${ly}" fill="${fill}" font-family="ui-monospace, SFMono-Regular, Menlo, monospace" font-size="${size}" font-weight="${weight}">${text}</text>`;
+
+  parts.push(`<rect width="${width}" height="100%" fill="${token("bg-primary")}"/>`);
+
+  for (const { heading, tokens } of SWATCH_GROUPS) {
+    y += 18;
+    parts.push(label(heading.toUpperCase(), PAD, y, token("text-muted"), 11, 700));
+    y += 14;
+    tokens.forEach((name, i) => {
+      const col = i % 4;
+      const row = Math.floor(i / 4);
+      const x = PAD + col * (CHIP_W + GAP);
+      const cy = y + row * (CHIP_H + GAP + 30);
+      parts.push(
+        `<rect x="${x}" y="${cy}" width="${CHIP_W}" height="${CHIP_H}" rx="4" fill="${token(name)}" stroke="${token("border-light")}" stroke-width="1"/>`,
+        label(name, x, cy + CHIP_H + 16, token("text-secondary"), 12, 600),
+        label(token(name), x, cy + CHIP_H + 30, token("text-muted"), 11),
+      );
+    });
+    const rows = Math.ceil(tokens.length / 4);
+    y += rows * (CHIP_H + GAP + 30) + 12;
+  }
+
+  y += 18;
+  parts.push(label("TEXT TIERS IN SITU", PAD, y, token("text-muted"), 11, 700));
+  y += 12;
+
+  const panelW = (width - PAD * 2 - GAP * 2) / 3;
+  opaqueBackgrounds.forEach((bgName, i) => {
+    const x = PAD + i * (panelW + GAP);
+    parts.push(
+      `<rect x="${x}" y="${y}" width="${panelW}" height="104" rx="4" fill="${token(bgName)}" stroke="${token("border")}" stroke-width="1"/>`,
+      label(bgName, x + 12, y + 22, token("text-muted"), 10, 700),
+    );
+    ["text-primary", "text-secondary", "text-muted"].forEach((fg, j) => {
+      parts.push(label(`${fg} sample`, x + 12, y + 46 + j * 20, token(fg), 13));
+    });
+  });
+  y += 104 + PAD;
+
+  return [
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${y}" viewBox="0 0 ${width} ${y}" role="img" aria-label="BPDiscord letterboxd colour palette">`,
+    ...parts,
+    "</svg>",
+    "",
+  ].join("\n");
+};
+
 describe("letterboxd palette contrast (WCAG 2.2 AA)", () => {
   /**
    * The matrix is derived, so it cannot be read off the source. This pins it in
@@ -295,6 +367,19 @@ describe("letterboxd palette contrast (WCAG 2.2 AA)", () => {
         contrast(token("text-primary"), token("bg-primary")),
       ).toBeGreaterThanOrEqual(AA_NON_TEXT);
     });
+  });
+
+  /**
+   * THEME.md embeds this. Generated from the tokens and held by a file snapshot
+   * so the picture cannot drift from the palette the way a hand-drawn one would;
+   * regenerate with `yarn test -u` after a token change.
+   *
+   * GitHub renders committed SVGs in markdown but strips inline `style`, and its
+   * backtick colour chips only work in issues and PRs — so this is the only way
+   * to show the real colours in a repo doc without an external badge service.
+   */
+  it("renders the palette swatch embedded in THEME.md", async () => {
+    await expect(renderSwatchSvg()).toMatchFileSnapshot("../palette.svg");
   });
 
   it("keeps text-secondary and text-muted visually distinct", () => {
