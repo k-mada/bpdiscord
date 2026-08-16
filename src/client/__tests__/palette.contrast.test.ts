@@ -6,30 +6,32 @@ import tailwindConfig from "../tailwind.config.js";
  * jsdom cannot evaluate colour contrast — axe needs real layout and computed
  * backgrounds — so this reads the tokens directly and does the maths. Without
  * it nothing in CI stops a palette edit from silently reintroducing a failure.
+ *
+ * The matrix is derived, not enumerated: backgrounds and foregrounds are
+ * discovered by token naming, and translucent surfaces are discovered by
+ * scanning the components that declare them. A new background token, text tier,
+ * or `/NN` overlay is therefore covered the moment it is added, with no edit
+ * here — and the alpha values cannot drift out of sync with the markup.
+ *
+ * This gates the palette, not its usage. Components can still reach for raw
+ * Tailwind colours, which nothing here sees; that gap is closed by the
+ * token-only lint rule tracked in bpdiscord-962.
  */
 
 const AA_TEXT = 4.5;
 const AA_NON_TEXT = 3.0;
 
-type Token =
-  | "bg-primary"
-  | "bg-secondary"
-  | "bg-tertiary"
-  | "text-primary"
-  | "text-secondary"
-  | "text-muted"
-  | "accent"
-  | "accent-hover"
-  | "pro"
-  | "border"
-  | "border-light"
-  | "link-hover";
-
 const palette = (
   tailwindConfig as {
-    theme: { extend: { colors: { letterboxd: Record<Token, string> } } };
+    theme: { extend: { colors: { letterboxd: Record<string, string> } } };
   }
 ).theme.extend.colors.letterboxd;
+
+const token = (name: string): string => {
+  const value = palette[name];
+  if (!value) throw new Error(`Unknown palette token: ${name}`);
+  return value;
+};
 
 interface Rgb {
   r: number;
@@ -54,11 +56,7 @@ const composite = (fg: string, bg: string, alpha: number): string => {
   const f = channels(fg);
   const b = channels(bg);
   const mix = (top: number, bottom: number) => bottom + alpha * (top - bottom);
-  return toHex({
-    r: mix(f.r, b.r),
-    g: mix(f.g, b.g),
-    b: mix(f.b, b.b),
-  });
+  return toHex({ r: mix(f.r, b.r), g: mix(f.g, b.g), b: mix(f.b, b.b) });
 };
 
 const relativeLuminance = (hex: string): number => {
@@ -76,63 +74,197 @@ const contrast = (a: string, b: string): number => {
   return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
 };
 
-const bg = {
-  primary: palette["bg-primary"],
-  secondary: palette["bg-secondary"],
-  tertiary: palette["bg-tertiary"],
+const tokenNames = Object.keys(palette);
+const opaqueBackgrounds = tokenNames.filter((k) => k.startsWith("bg-"));
+
+/**
+ * Foreground tokens and the backgrounds they are allowed on. "all" is the
+ * default; the exception encodes a real design constraint that cannot be
+ * derived from the values — `accent` is a brand colour that stays legal as a
+ * fill, an icon, or a star, but measures 4.14:1 as body copy on bg-tertiary,
+ * so that surface must use text-primary instead.
+ */
+const foregroundPolicy: Record<string, "all" | string[]> = {
+  ...Object.fromEntries(
+    tokenNames.filter((k) => k.startsWith("text-")).map((k) => [k, "all"]),
+  ),
+  pro: "all",
+  "link-hover": "all",
+  accent: ["bg-primary", "bg-secondary"],
 };
 
-// Oscars/Events render rows and winner cells on translucent layers, so the
-// effective background is neither token — it has to be composited first.
-const stripe = composite(bg.secondary, bg.primary, 0.3);
-const winnerTint = composite(palette.pro, bg.primary, 0.1);
+/**
+ * Translucent surfaces, read from the markup that declares them rather than
+ * copied here — e.g. the Oscars row striping and winner tint.
+ *
+ * They are composited over bg-primary because that is the app's actual ground:
+ * MainLayout paints it and `.card` is padding only, contributing no background
+ * of its own. Modelling every opaque token as a possible ground instead would
+ * assert combinations that never render. An overlay nested over some other
+ * surface is a case only the browser axe pass (bpdiscord-962) can see.
+ */
+const sources = import.meta.glob("../components/**/*.tsx", {
+  query: "?raw",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
 
-const surfaces: Array<[string, string]> = [
-  ["bg-primary", bg.primary],
-  ["bg-secondary", bg.secondary],
-  ["bg-tertiary", bg.tertiary],
-  ["row stripe (bg-secondary/30)", stripe],
-  ["winner tint (pro/10)", winnerTint],
-];
+interface Overlay {
+  label: string;
+  hex: string;
+  foregrounds: string[];
+}
+
+/**
+ * Parent/child pairings the scanner cannot see, because the background sits on
+ * a wrapper and the text on a child component. Only the semantics are declared
+ * here — the alpha and the resulting colour still come from the markup, so
+ * these cannot drift the way a hardcoded surface value would.
+ */
+const composedPairings: Record<string, string[]> = {
+  // oscars/PickCell wraps a title and subtitle in the winner tint
+  "pro/10": ["text-primary", "text-muted"],
+  // events/MyPicksPage highlights the selected nominee behind its label
+  "pro/15": ["text-primary"],
+};
+
+/**
+ * A translucent *background* token is still a general ground, so it inherits
+ * the full foreground cross-product. A translucent accent is a localized
+ * decoration: asserting the same cross-product there would invent pairings that
+ * never render — the TasteCompatibility tick marks are 1px rules carrying no
+ * text at all. Those assert only the foregrounds found in the same className,
+ * plus any declared above.
+ */
+const discoverOverlays = (): Overlay[] => {
+  const bgPattern = /bg-letterboxd-((?:bg-)?[a-z-]+?)\/(\d{1,3})\b/;
+  const fgPattern = /text-letterboxd-((?:bg-|text-)?[a-z-]+)\b/g;
+  const found = new Map<string, Overlay>();
+
+  // Scanned per line rather than per string literal: className values are
+  // line-local here, and quote-matching misaligns inside template literals.
+  for (const source of Object.values(sources)) {
+    for (const segment of source.split("\n")) {
+      const bg = bgPattern.exec(segment);
+      if (!bg?.[1] || !bg[2]) continue;
+      const value = palette[bg[1]];
+      if (!value) continue;
+
+      const key = `${bg[1]}/${bg[2]}`;
+      const label = `${key} over bg-primary`;
+      const isGround = bg[1].startsWith("bg-");
+      const entry = found.get(label) ?? {
+        label,
+        hex: composite(value, token("bg-primary"), Number(bg[2]) / 100),
+        foregrounds: isGround
+          ? Object.keys(foregroundPolicy)
+          : [...(composedPairings[key] ?? [])],
+      };
+      for (const [, fg] of segment.matchAll(fgPattern)) {
+        if (fg && palette[fg] && !entry.foregrounds.includes(fg)) {
+          entry.foregrounds.push(fg);
+        }
+      }
+      found.set(label, entry);
+    }
+  }
+  return [...found.values()];
+};
+
+const overlays = discoverOverlays();
+
+const surfaces: Array<{ label: string; hex: string; name: string }> =
+  opaqueBackgrounds.map((name) => ({ label: name, hex: token(name), name }));
+
+const allowedOn = (fg: string, backgroundName: string): boolean => {
+  const policy = foregroundPolicy[fg];
+  if (policy === "all") return true;
+  if (!policy) return false;
+  // A translucent surface inherits the policy of the ground it sits over.
+  return policy.some((allowed) => backgroundName.includes(allowed));
+};
 
 describe("letterboxd palette contrast (WCAG 2.2 AA)", () => {
-  describe.each(surfaces)("on %s", (_name, surface) => {
-    const textTokens: Token[] = ["text-primary", "text-secondary", "text-muted"];
+  it("discovered the translucent overlays declared in components", () => {
+    expect(overlays.length).toBeGreaterThan(0);
+  });
 
-    it.each(textTokens)("%s meets 4.5:1", (token) => {
-      expect(contrast(palette[token], surface)).toBeGreaterThanOrEqual(AA_TEXT);
+  describe.each(surfaces)("on $label", ({ hex, name }) => {
+    const applicable = Object.keys(foregroundPolicy).filter((fg) =>
+      allowedOn(fg, name),
+    );
+
+    it.each(applicable)("%s meets 4.5:1", (fg) => {
+      expect(contrast(token(fg), hex)).toBeGreaterThanOrEqual(AA_TEXT);
     });
   });
 
-  it("btn-primary label meets 4.5:1 on the accent background", () => {
-    expect(contrast("#000000", palette["accent"])).toBeGreaterThanOrEqual(AA_TEXT);
-    expect(contrast("#000000", palette["accent-hover"])).toBeGreaterThanOrEqual(AA_TEXT);
+  describe.each(overlays.filter((o) => o.foregrounds.length > 0))(
+    "on $label",
+    ({ hex, foregrounds }) => {
+      it.each(foregrounds)("%s meets 4.5:1", (fg) => {
+        expect(contrast(token(fg), hex)).toBeGreaterThanOrEqual(AA_TEXT);
+      });
+    },
+  );
+
+  describe("fills used as backgrounds", () => {
+    it("btn-primary's black label passes on accent and its hover", () => {
+      expect(contrast("#000000", token("accent"))).toBeGreaterThanOrEqual(AA_TEXT);
+      expect(contrast("#000000", token("accent-hover"))).toBeGreaterThanOrEqual(
+        AA_TEXT,
+      );
+    });
+
+    it("the active Oscars toggle passes on the pro fill", () => {
+      expect(contrast(token("bg-primary"), token("pro"))).toBeGreaterThanOrEqual(
+        AA_TEXT,
+      );
+    });
   });
 
-  it("control borders meet 3:1 against the field background", () => {
-    expect(
-      contrast(palette["border-light"], bg.secondary),
-    ).toBeGreaterThanOrEqual(AA_NON_TEXT);
-  });
+  describe("non-text contrast (1.4.11)", () => {
+    it("control borders meet 3:1 against the field background", () => {
+      expect(
+        contrast(token("border-light"), token("bg-secondary")),
+      ).toBeGreaterThanOrEqual(AA_NON_TEXT);
+    });
 
-  it("the focus indicator meets 3:1 on every surface", () => {
-    for (const [, surface] of surfaces) {
-      expect(contrast(palette["text-primary"], surface)).toBeGreaterThanOrEqual(
+    it("the invalid-field border stays distinguishable", () => {
+      // Tailwind red-500, applied by ui/Input.tsx via aria-invalid:border-red-500
+      expect(contrast("#ef4444", token("bg-secondary"))).toBeGreaterThanOrEqual(
         AA_NON_TEXT,
       );
-    }
+    });
+
+    it("the focus outline meets 3:1 on every surface", () => {
+      for (const { hex } of surfaces) {
+        expect(contrast(token("text-primary"), hex)).toBeGreaterThanOrEqual(
+          AA_NON_TEXT,
+        );
+      }
+    });
+
+    /**
+     * The outline sits 2px clear of the element, so it is measured against the
+     * page rather than the fill it surrounds. That offset is load-bearing:
+     * text-primary is only 2.30:1 on the accent fill and 1.23:1 on pro, so
+     * removing `outline-offset` would fail 1.4.11 on every primary button.
+     */
+    it("relies on outline-offset to clear the accent and pro fills", () => {
+      expect(contrast(token("text-primary"), token("accent"))).toBeLessThan(
+        AA_NON_TEXT,
+      );
+      expect(
+        contrast(token("text-primary"), token("bg-primary")),
+      ).toBeGreaterThanOrEqual(AA_NON_TEXT);
+    });
   });
 
   it("keeps text-secondary and text-muted visually distinct", () => {
     const ratio =
-      relativeLuminance(palette["text-secondary"]) /
-      relativeLuminance(palette["text-muted"]);
+      relativeLuminance(token("text-secondary")) /
+      relativeLuminance(token("text-muted"));
     expect(ratio).toBeGreaterThan(1.2);
-  });
-
-  // Guards the two call sites this PR fixed; accent is a brand colour and stays
-  // legal as a large-text/graphical accent, just not as body copy on cards.
-  it("accent is not treated as body text on bg-tertiary", () => {
-    expect(contrast(palette["accent"], bg.tertiary)).toBeLessThan(AA_TEXT);
   });
 });

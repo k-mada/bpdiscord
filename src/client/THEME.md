@@ -96,11 +96,17 @@ global indicator.
 
 ## Typography
 
-Loaded in `index.html` from Google Fonts.
+Loaded from Google Fonts in two places: `index.html` links Be Vietnam Pro and
+PT Serif; `index.css` `@import`s Playfair Display.
 
 - `font-sans` (default) — Be Vietnam Pro, falling back to Roboto, Arial, sans-serif
 - `font-letterboxdBody` — PT Serif
 - Playfair Display is applied inline in the Oscars and Events components
+
+`index.css` also `@import`s **Inter**, which appears in no `fontFamily`
+declaration and is referenced nowhere — a render-blocking request for a font
+that never gets used. Safe to delete; left in place here to keep this change
+scoped to colour.
 
 Type scale runs `text-xs` (0.75rem) through `text-4xl` (2.25rem); each step carries a
 paired line-height in `tailwind.config.js`.
