@@ -103,11 +103,19 @@ const foregroundPolicy: Record<string, "all" | string[]> = {
  * assert combinations that never render. An overlay nested over some other
  * surface is a case only the browser axe pass (bpdiscord-962) can see.
  */
-const sources = import.meta.glob("../components/**/*.tsx", {
-  query: "?raw",
-  import: "default",
-  eager: true,
-}) as Record<string, string>;
+const sources: Record<string, string> = {
+  ...(import.meta.glob("../components/**/*.tsx", {
+    query: "?raw",
+    import: "default",
+    eager: true,
+  }) as Record<string, string>),
+  // index.css declares utilities in the same class vocabulary
+  ...(import.meta.glob("../index.css", {
+    query: "?raw",
+    import: "default",
+    eager: true,
+  }) as Record<string, string>),
+};
 
 interface Overlay {
   label: string;
@@ -143,6 +151,9 @@ const discoverOverlays = (): Overlay[] => {
 
   // Scanned per line rather than per string literal: className values are
   // line-local here, and quote-matching misaligns inside template literals.
+  // Caveat: a className wrapped so that a translucent accent and its text token
+  // land on different lines loses that pairing — silently, since nothing turns
+  // red. The snapshot above is what surfaces it, as a removed assertion.
   for (const source of Object.values(sources)) {
     for (const segment of source.split("\n")) {
       const bg = bgPattern.exec(segment);
@@ -171,11 +182,6 @@ const discoverOverlays = (): Overlay[] => {
   return [...found.values()];
 };
 
-const overlays = discoverOverlays();
-
-const surfaces: Array<{ label: string; hex: string; name: string }> =
-  opaqueBackgrounds.map((name) => ({ label: name, hex: token(name), name }));
-
 const allowedOn = (fg: string, backgroundName: string): boolean => {
   const policy = foregroundPolicy[fg];
   if (policy === "all") return true;
@@ -184,29 +190,59 @@ const allowedOn = (fg: string, backgroundName: string): boolean => {
   return policy.some((allowed) => backgroundName.includes(allowed));
 };
 
+/** Every surface/foreground pair this file asserts. Drives both the tests and
+ *  the inline snapshot below, so the two can never disagree. */
+const coverage: Overlay[] = [
+  ...opaqueBackgrounds.map((name) => ({
+    label: name,
+    hex: token(name),
+    foregrounds: Object.keys(foregroundPolicy).filter((fg) =>
+      allowedOn(fg, name),
+    ),
+  })),
+  ...discoverOverlays().filter((o) => o.foregrounds.length > 0),
+];
+
+const renderCoverage = () =>
+  coverage
+    .map(({ label, foregrounds }) => `${label}\n  ${[...foregrounds].sort().join(", ")}`)
+    .join("\n");
+
 describe("letterboxd palette contrast (WCAG 2.2 AA)", () => {
-  it("discovered the translucent overlays declared in components", () => {
-    expect(overlays.length).toBeGreaterThan(0);
+  /**
+   * The matrix is derived, so it cannot be read off the source. This pins it in
+   * a form that shows up in a diff: adding a token or an overlay appears as
+   * added assertions, and — more importantly — coverage quietly disappearing
+   * (a renamed class, a className wrapped across lines) appears as a removal.
+   */
+  it("asserts this coverage matrix", () => {
+    expect(renderCoverage()).toMatchInlineSnapshot(`
+      "bg-primary
+        accent, link-hover, pro, text-muted, text-primary, text-secondary
+      bg-secondary
+        accent, link-hover, pro, text-muted, text-primary, text-secondary
+      bg-tertiary
+        link-hover, pro, text-muted, text-primary, text-secondary
+      bg-secondary/30 over bg-primary
+        accent, link-hover, pro, text-muted, text-primary, text-secondary
+      bg-primary/50 over bg-primary
+        accent, link-hover, pro, text-muted, text-primary, text-secondary
+      pro/20 over bg-primary
+        pro
+      pro/15 over bg-primary
+        text-primary
+      pro/10 over bg-primary
+        text-muted, text-primary
+      bg-primary/95 over bg-primary
+        accent, link-hover, pro, text-muted, text-primary, text-secondary"
+    `);
   });
 
-  describe.each(surfaces)("on $label", ({ hex, name }) => {
-    const applicable = Object.keys(foregroundPolicy).filter((fg) =>
-      allowedOn(fg, name),
-    );
-
-    it.each(applicable)("%s meets 4.5:1", (fg) => {
+  describe.each(coverage)("on $label", ({ hex, foregrounds }) => {
+    it.each(foregrounds)("%s meets 4.5:1", (fg) => {
       expect(contrast(token(fg), hex)).toBeGreaterThanOrEqual(AA_TEXT);
     });
   });
-
-  describe.each(overlays.filter((o) => o.foregrounds.length > 0))(
-    "on $label",
-    ({ hex, foregrounds }) => {
-      it.each(foregrounds)("%s meets 4.5:1", (fg) => {
-        expect(contrast(token(fg), hex)).toBeGreaterThanOrEqual(AA_TEXT);
-      });
-    },
-  );
 
   describe("fills used as backgrounds", () => {
     it("btn-primary's black label passes on accent and its hover", () => {
@@ -238,7 +274,7 @@ describe("letterboxd palette contrast (WCAG 2.2 AA)", () => {
     });
 
     it("the focus outline meets 3:1 on every surface", () => {
-      for (const { hex } of surfaces) {
+      for (const { hex } of coverage) {
         expect(contrast(token("text-primary"), hex)).toBeGreaterThanOrEqual(
           AA_NON_TEXT,
         );

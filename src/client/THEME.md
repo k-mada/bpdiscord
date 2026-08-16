@@ -44,37 +44,47 @@ alongside any palette change.
 | `border-letterboxd-border-light` | `#8a8a8a` | **Control boundaries only** — inputs, selects, checkboxes |
 
 The split is deliberate. WCAG 1.4.11 requires 3:1 for the boundary of a UI component but
-exempts purely decorative separators. `#404040` is 1.34:1 on `bg-secondary`, fine as a
-divider and unusable as a field edge. Do not lighten the decorative token to match — that
-turns the UI into a wireframe.
+exempts purely decorative separators. `#404040` sits far below 3:1 on `bg-secondary` —
+fine as a divider, unusable as a field edge. Do not lighten the decorative token to
+match; that turns the UI into a wireframe.
 
-## Contrast matrix
+## What is gated, and where to read it
 
-Ratios against every surface, including the two alpha-composited backgrounds the
-Oscars/Events tables render on. AA needs **4.5:1** for text and **3:1** for control
-boundaries and focus indicators.
+Thresholds: **4.5:1** for text, **3:1** for control boundaries and focus indicators.
 
-| Foreground | bg-primary | bg-secondary | bg-tertiary | row stripe `/30` | winner tint `/10` |
-| --- | --- | --- | --- | --- | --- |
-| `text-primary` `#e0e0e0` | 13.51 | 10.50 | 9.51 | 12.67 | 11.07 |
-| `text-secondary` `#b8b8b8` | 8.99 | 6.99 | 6.33 | 8.43 | 7.37 |
-| `text-muted` `#a0a0a0` | 6.82 | 5.30 | 4.80 | 6.40 | 5.59 |
+Ratios are deliberately **not** reproduced here. The previous version of this file
+carried hand-copied values and drifted until four of them were wrong; a table of
+numbers maintained by hand rots the same way a table of hex values does. The
+authority is `__tests__/palette.contrast.test.ts`, which computes them from the
+tokens on every run.
 
-Row stripe composites `bg-secondary` at 30% over `bg-primary` (`#1b1e22`); winner tint
-composites `pro` at 10% (`#2b291c`).
+To see exactly which pairings are asserted, read the inline snapshot in that file —
+it pins the whole matrix in source, so coverage changes appear in a diff. To see the
+numbers, run:
 
-Additional gated pairings:
+```bash
+yarn vitest run __tests__/palette.contrast.test.ts --reporter=verbose
+```
 
-| Pairing | Ratio | Requirement |
-| --- | --- | --- |
-| `.btn-primary` black label on `accent` | 6.92 | 4.5:1 |
-| `.btn-primary` black label on `accent-hover` | 5.84 | 4.5:1 |
-| `border-light` on `bg-secondary` | 3.51 | 3:1 |
-| Focus outline `#e0e0e0` on any surface | ≥ 9.5 | 3:1 |
+The matrix is derived rather than listed: backgrounds and foregrounds come from token
+naming, and translucent surfaces are scanned out of the components that declare them.
+A new `bg-*` token, text tier, or `/NN` overlay is therefore gated on arrival with no
+edit to the test.
 
-**`accent` is not a body-text colour.** At `#00ac1c` it measures 4.14:1 on `bg-tertiary`
-and fails. Use it for fills, icons, and stars; use `text-primary` for figures that sit on
-a tertiary surface.
+Two things in it are hand-maintained because they cannot be derived, and both are
+commented in place: the `accent` policy exception below, and the parent/child pairings
+where a background sits on a wrapper and the text on a child component.
+
+### Rules the numbers enforce
+
+- **`accent` is not a body-text colour.** It measures below 4.5:1 on `bg-tertiary`.
+  Use it for fills, icons, and stars; use `text-primary` for figures on a tertiary
+  surface. This is the one foreground with a restricted surface list.
+- **`text-muted` is legal everywhere** — it is the bottom of the hierarchy, not a
+  legibility compromise. Choosing between the three tiers is an emphasis decision.
+- **The focus outline depends on `outline-offset`.** `text-primary` does not clear
+  3:1 against the accent or pro fills; the 2px offset is what puts the outline on the
+  page ground instead. Removing it fails 1.4.11 on every primary button.
 
 ## Focus
 
