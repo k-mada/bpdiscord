@@ -89,7 +89,7 @@ const MovieBarChart = ({
                     {movie.title}
                   </span>
                   {value !== null && (
-                    <span className="movie-stats shrink-0 whitespace-nowrap text-letterboxd-accent">
+                    <span className="movie-stats shrink-0 whitespace-nowrap text-letterboxd-text-primary">
                       {value}
                     </span>
                   )}
