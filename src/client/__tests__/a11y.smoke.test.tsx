@@ -11,6 +11,7 @@ import { DataTable } from "../components/DataTable/DataTable";
 import StarRating from "../components/StarRating";
 import CollapsibleSection from "../components/CollapsibleSection";
 import MovieList from "../components/MovieList";
+import { Modal, ModalHeader, ModalBody } from "../components/Modal";
 import type { LBFilm } from "../types";
 
 vi.mock("../services/api");
@@ -69,6 +70,18 @@ describe("accessibility smoke (axe, structural)", () => {
       />,
     );
     expect(await axeViolations(container)).toEqual([]);
+  });
+
+  it("Modal has no axe violations", async () => {
+    render(
+      <Modal isOpen onClose={() => {}}>
+        <ModalHeader onClose={() => {}}>Nominees</ModalHeader>
+        <ModalBody>
+          <p>Body</p>
+        </ModalBody>
+      </Modal>,
+    );
+    expect(await axeViolations(document.body)).toEqual([]);
   });
 
   it("StarRating has no axe violations", async () => {

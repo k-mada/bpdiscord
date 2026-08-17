@@ -1,4 +1,5 @@
 import { OscarsPrediction } from "../../types";
+import { Modal, ModalHeader, ModalBody } from "../Modal";
 
 interface NomineesModalProps {
   category: string;
@@ -7,28 +8,19 @@ interface NomineesModalProps {
 }
 
 const NomineesModal = ({ category, nominees, onClose }: NomineesModalProps) => (
-  <div
-    className="fixed inset-0 z-50 flex items-end justify-center bg-black/60"
-    onClick={onClose}
+  <Modal
+    isOpen
+    onClose={onClose}
+    placement="bottom"
+    className="bg-letterboxd-bg-secondary"
   >
-    <div
-      className="w-full max-w-lg bg-letterboxd-bg-secondary rounded-t-2xl p-5 pb-8 animate-slide-up"
-      onClick={(e) => e.stopPropagation()}
+    <ModalHeader
+      onClose={onClose}
+      className="border-0 pb-0 text-letterboxd-pro"
     >
-      <div className="flex justify-between items-center mb-4">
-        <h3
-          className="text-lg font-bold text-letterboxd-pro"
-          style={{ fontFamily: "'Playfair Display', serif" }}
-        >
-          {category}
-        </h3>
-        <button
-          onClick={onClose}
-          className="text-letterboxd-text-muted hover:text-letterboxd-text-primary text-2xl leading-none px-2"
-        >
-          &times;
-        </button>
-      </div>
+      <span style={{ fontFamily: "'Playfair Display', serif" }}>{category}</span>
+    </ModalHeader>
+    <ModalBody className="pb-8">
       <p className="text-[10px] uppercase tracking-widest text-letterboxd-text-muted mb-3">
         Nominees
       </p>
@@ -40,13 +32,16 @@ const NomineesModal = ({ category, nominees, onClose }: NomineesModalProps) => (
           >
             {nominee.title}
             {nominee.subtitle && (
-              <span className="text-letterboxd-text-muted"> — {nominee.subtitle}</span>
+              <span className="text-letterboxd-text-muted">
+                {" "}
+                &mdash; {nominee.subtitle}
+              </span>
             )}
           </li>
         ))}
       </ul>
-    </div>
-  </div>
+    </ModalBody>
+  </Modal>
 );
 
 export default NomineesModal;

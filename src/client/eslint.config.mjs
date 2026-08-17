@@ -77,4 +77,17 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // Remediated files hold their rules at error so they cannot regress.
+    files: [
+      "components/Modal.tsx",
+      "components/HaterRankings2.tsx",
+      "components/*/NomineesModal.tsx",
+    ],
+    rules: {
+      "jsx-a11y/click-events-have-key-events": "error",
+      "jsx-a11y/no-static-element-interactions": "error",
+      "jsx-a11y/no-noninteractive-element-interactions": "error",
+    },
+  },
 );
