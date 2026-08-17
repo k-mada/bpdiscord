@@ -1,0 +1,4 @@
+# Generated export with unstable line order — union by record id instead of
+# line-by-line, or unrelated issues collide. See CLAUDE.md for the one-time
+# `git config` each clone needs.
+.beads/issues.jsonl merge=beads-jsonl
