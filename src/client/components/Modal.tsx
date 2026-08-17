@@ -126,15 +126,12 @@ const Modal = ({
   useEffect(() => {
     if (!isOpen) return undefined;
 
-    // No React API reports what was focused, so this stays imperative.
-    const previouslyFocused = document.activeElement as HTMLElement | null;
-    stack.open(dialogId);
+    // No React API reports what was focused, so this stays imperative. The
+    // provider restores it, once the background is no longer inert.
+    stack.open(dialogId, document.activeElement as HTMLElement | null);
     panelRef.current?.focus();
 
-    return () => {
-      stack.close(dialogId);
-      previouslyFocused?.focus?.();
-    };
+    return () => stack.close(dialogId);
   }, [isOpen, stack, dialogId]);
 
   const titleRegistration = useMemo(

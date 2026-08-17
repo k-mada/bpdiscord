@@ -10,7 +10,7 @@ import {
 } from "react";
 
 interface DialogStack {
-  open: (id: string) => void;
+  open: (id: string, restoreFocusTo: HTMLElement | null) => void;
   close: (id: string) => void;
   isTopmost: (id: string) => boolean;
 }
@@ -34,8 +34,17 @@ export function DialogProvider({ children }: { children: ReactNode }) {
   // Read by event handlers, which need the current stack without the identity
   // of isTopmost changing on every open and close.
   const openIdsRef = useRef(openIds);
+  const restoreTargets = useRef(new Map<string, HTMLElement | null>());
+  const pendingRestore = useRef<HTMLElement | null>(null);
+
+  // Focus is restored here rather than in the dialog's own cleanup because a
+  // browser refuses to focus inside an inert subtree, and this effect runs
+  // after React has removed that attribute.
   useEffect(() => {
     openIdsRef.current = openIds;
+    const target = pendingRestore.current;
+    pendingRestore.current = null;
+    target?.focus?.();
   }, [openIds]);
 
   useEffect(() => {
@@ -47,11 +56,17 @@ export function DialogProvider({ children }: { children: ReactNode }) {
     };
   }, [locked]);
 
-  const open = useCallback((id: string) => {
-    setOpenIds((ids) => (ids.includes(id) ? ids : [...ids, id]));
-  }, []);
+  const open = useCallback(
+    (id: string, restoreFocusTo: HTMLElement | null) => {
+      restoreTargets.current.set(id, restoreFocusTo);
+      setOpenIds((ids) => (ids.includes(id) ? ids : [...ids, id]));
+    },
+    [],
+  );
 
   const close = useCallback((id: string) => {
+    pendingRestore.current = restoreTargets.current.get(id) ?? null;
+    restoreTargets.current.delete(id);
     setOpenIds((ids) => ids.filter((openId) => openId !== id));
   }, []);
 
