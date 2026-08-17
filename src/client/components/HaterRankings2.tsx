@@ -72,16 +72,15 @@ const HaterRankings2 = ({
         Hater Rankings
       </h1>
       <h3 className="subheading">
-        Based on differential from average Letterboxd ratings per 100 movies{" "}
-        <span
-          className="text-xs ml-4 cursor-pointer"
-          onClick={() => {
-            setIsOpen(true);
-          }}
-        >
-          How is this calculated?
-        </span>
+        Based on differential from average Letterboxd ratings per 100 movies
       </h3>
+      <button
+        type="button"
+        className="text-xs mb-4 underline text-letterboxd-text-secondary hover:text-letterboxd-text-primary"
+        onClick={() => setIsOpen(true)}
+      >
+        How is this calculated?
+      </button>
       <div>
         {rankings.length === 0 ? (
           <div className="px-6 py-8 text-center text-letterboxd-text-secondary">
