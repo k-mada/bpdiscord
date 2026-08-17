@@ -1,7 +1,30 @@
 import js from "@eslint/js";
 import tseslint from "typescript-eslint";
 import reactHooks from "eslint-plugin-react-hooks";
+import jsxA11y from "eslint-plugin-jsx-a11y";
 import globals from "globals";
+
+// Raw Tailwind palette families. Colour must come from the letterboxd-* tokens
+// so __tests__/palette.contrast.test.ts can actually gate every rendered pair.
+const TAILWIND_PALETTE =
+  "slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|" +
+  "teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose";
+const COLOUR_UTILITY =
+  "(?:bg|text|border|ring|from|via|to|placeholder|divide|outline|decoration|" +
+  `fill|stroke|caret|accent|shadow)-(?:${TAILWIND_PALETTE})-\\d{2,3}`;
+
+const rawColourMessage =
+  "Use a letterboxd-* colour token instead of a raw Tailwind palette colour. " +
+  "Raw colours bypass the contrast gate in __tests__/palette.contrast.test.ts.";
+
+// jsx-a11y and the colour rule land at `warn` so pre-existing findings do not
+// block; each follow-up promotes the rules covering its own files to `error`.
+const a11yWarnings = Object.fromEntries(
+  Object.keys(jsxA11y.flatConfigs.recommended.rules).map((rule) => [
+    rule,
+    "warn",
+  ]),
+);
 
 export default tseslint.config(
   { ignores: ["dist", "build", "coverage", "**/*.config.*"] },
@@ -21,6 +44,36 @@ export default tseslint.config(
       "@typescript-eslint/no-unused-vars": [
         "error",
         { args: "none", ignoreRestSiblings: true },
+      ],
+      "no-restricted-syntax": [
+        "warn",
+        {
+          selector: `Literal[value=/${COLOUR_UTILITY}/]`,
+          message: rawColourMessage,
+        },
+        {
+          selector: `TemplateElement[value.raw=/${COLOUR_UTILITY}/]`,
+          message: rawColourMessage,
+        },
+      ],
+    },
+  },
+  {
+    files: ["**/*.tsx"],
+    ...jsxA11y.flatConfigs.recommended,
+    rules: {
+      ...a11yWarnings,
+      // Deprecated in favour of label-has-associated-control, which is also in
+      // recommended; keeping both reports every label twice.
+      "jsx-a11y/label-has-for": "off",
+      // Defaults only inspect onMouseOver/onMouseOut; the hover-only
+      // disclosures in this codebase use onMouseEnter/onMouseLeave.
+      "jsx-a11y/mouse-events-have-key-events": [
+        "warn",
+        {
+          hoverInHandlers: ["onMouseOver", "onMouseEnter"],
+          hoverOutHandlers: ["onMouseOut", "onMouseLeave"],
+        },
       ],
     },
   },
