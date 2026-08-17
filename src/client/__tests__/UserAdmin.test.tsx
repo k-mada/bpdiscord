@@ -5,6 +5,7 @@ import { MemoryRouter } from "react-router-dom";
 import UserAdmin from "../components/admin/UserAdmin";
 import apiService from "../services/api";
 import { AuthProvider } from "../contexts/AuthContext";
+import { DialogProvider } from "../contexts/DialogContext";
 import type { AccountView, CurrentUser } from "../types";
 import { installFakeLocalStorage } from "./helpers/localStorage";
 import { futureJwt } from "./helpers/jwt";
@@ -70,9 +71,11 @@ const allLetterboxdUsers = [
 function renderPage() {
   return render(
     <AuthProvider>
-      <MemoryRouter>
-        <UserAdmin />
-      </MemoryRouter>
+      <DialogProvider>
+        <MemoryRouter>
+          <UserAdmin />
+        </MemoryRouter>
+      </DialogProvider>
     </AuthProvider>,
   );
 }
@@ -229,20 +232,22 @@ describe("UserAdmin — edit flow", () => {
         .getByText("bob@example.com")
         .closest("tr")! as HTMLTableRowElement;
       expect(within(newBobRow).getByText("Bobby")).toBeInTheDocument();
-      expect(within(newBobRow).getByRole("link", { name: "unclaimed-1" }))
-        .toBeInTheDocument();
+      expect(
+        within(newBobRow).getByRole("link", { name: "unclaimed-1" }),
+      ).toBeInTheDocument();
     });
   });
 
   it("does not call the API when nothing changed", async () => {
-
     renderPage();
     await waitFor(() =>
       expect(screen.getByText("admin@example.com")).toBeInTheDocument(),
     );
 
     const adminRow = screen.getByText("admin@example.com").closest("tr")!;
-    await userEvent.click(within(adminRow).getByRole("button", { name: "Edit" }));
+    await userEvent.click(
+      within(adminRow).getByRole("button", { name: "Edit" }),
+    );
 
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
 
@@ -270,7 +275,9 @@ describe("UserAdmin — edit flow", () => {
     );
 
     const carolRow = screen.getByText("carol@example.com").closest("tr")!;
-    await userEvent.click(within(carolRow).getByRole("button", { name: "Edit" }));
+    await userEvent.click(
+      within(carolRow).getByRole("button", { name: "Edit" }),
+    );
 
     const lbInput = screen.getByLabelText(
       "Letterboxd username",
@@ -289,7 +296,6 @@ describe("UserAdmin — edit flow", () => {
   });
 
   it("rejects an invalid lbusername format before round-trip", async () => {
-
     renderPage();
     await waitFor(() =>
       expect(screen.getByText("bob@example.com")).toBeInTheDocument(),
@@ -306,9 +312,7 @@ describe("UserAdmin — edit flow", () => {
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
 
     expect(apiService.updateAccount).not.toHaveBeenCalled();
-    expect(
-      screen.getByText(/2–15 characters/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/2–15 characters/)).toBeInTheDocument();
   });
 
   it("surfaces a 409 conflict from the server inline", async () => {
@@ -343,20 +347,21 @@ describe("UserAdmin — edit flow", () => {
   });
 
   it("offers the current user's lbusername in the datalist (even though it's 'claimed')", async () => {
-
     renderPage();
     await waitFor(() =>
       expect(screen.getByText("carol@example.com")).toBeInTheDocument(),
     );
 
     const carolRow = screen.getByText("carol@example.com").closest("tr")!;
-    await userEvent.click(within(carolRow).getByRole("button", { name: "Edit" }));
+    await userEvent.click(
+      within(carolRow).getByRole("button", { name: "Edit" }),
+    );
 
     await waitFor(() => {
       const datalist = document.getElementById("unclaimed-lb-usernames");
       expect(datalist).toBeTruthy();
-      const values = Array.from(datalist!.querySelectorAll("option")).map(
-        (o) => o.getAttribute("value"),
+      const values = Array.from(datalist!.querySelectorAll("option")).map((o) =>
+        o.getAttribute("value"),
       );
       // carol-lb is current → included; admin-lb is claimed by someone else → excluded.
       expect(values).toContain("carol-lb");
@@ -388,14 +393,13 @@ describe("UserAdmin — delete flow", () => {
     const bobRow = screen.getByText("bob@example.com").closest("tr")!;
     await userEvent.click(within(bobRow).getByRole("button", { name: "Edit" }));
 
-    await userEvent.click(screen.getByRole("button", { name: "Delete account" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Delete account" }),
+    );
     await userEvent.click(screen.getByRole("button", { name: "Yes, delete" }));
 
     await waitFor(() =>
-      expect(apiService.deleteAccount).toHaveBeenCalledWith(
-        "bob-id",
-        TOKEN,
-      ),
+      expect(apiService.deleteAccount).toHaveBeenCalledWith("bob-id", TOKEN),
     );
     await waitFor(() =>
       expect(screen.queryByText("bob@example.com")).not.toBeInTheDocument(),
@@ -403,15 +407,18 @@ describe("UserAdmin — delete flow", () => {
   });
 
   it("disables the delete button when editing your own account", async () => {
-
     renderPage();
     await waitFor(() =>
       expect(screen.getByText("admin@example.com")).toBeInTheDocument(),
     );
 
     const adminRow = screen.getByText("admin@example.com").closest("tr")!;
-    await userEvent.click(within(adminRow).getByRole("button", { name: "Edit" }));
+    await userEvent.click(
+      within(adminRow).getByRole("button", { name: "Edit" }),
+    );
 
-    expect(screen.getByRole("button", { name: "Delete account" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Delete account" }),
+    ).toBeDisabled();
   });
 });

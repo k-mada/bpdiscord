@@ -37,7 +37,9 @@ const HaterRankings2 = ({
     );
   }
 
-  const RankingsContent = () => (
+  // A component declared here would be a new type every render, remounting
+  // the subtree and destroying the dialog trigger's focus-return target.
+  const rankingsContent = (
     <div>
       <Modal isOpen={isOpen} onClose={handleClose}>
         <ModalHeader onClose={handleClose}>
@@ -151,13 +153,7 @@ const HaterRankings2 = ({
     </div>
   );
 
-  // Public version with header and full page layout
-  if (isPublic) {
-    return <RankingsContent />;
-  }
-
-  // Dashboard version (embedded within authenticated layout)
-  return <RankingsContent />;
+  return rankingsContent;
 };
 
 export default HaterRankings2;
