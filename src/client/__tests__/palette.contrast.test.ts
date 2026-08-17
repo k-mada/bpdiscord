@@ -1,22 +1,7 @@
 import tailwindConfig from "../tailwind.config.js";
 
-/**
- * Contrast gate for the letterboxd-* palette (WCAG 2.2 AA).
- *
- * jsdom cannot evaluate colour contrast — axe needs real layout and computed
- * backgrounds — so this reads the tokens directly and does the maths. Without
- * it nothing in CI stops a palette edit from silently reintroducing a failure.
- *
- * The matrix is derived, not enumerated: backgrounds and foregrounds are
- * discovered by token naming, and translucent surfaces are discovered by
- * scanning the components that declare them. A new background token, text tier,
- * or `/NN` overlay is therefore covered the moment it is added, with no edit
- * here — and the alpha values cannot drift out of sync with the markup.
- *
- * This gates the palette, not its usage. Components can still reach for raw
- * Tailwind colours, which nothing here sees; that gap is closed by the
- * token-only lint rule tracked in bpdiscord-962.
- */
+// axe cannot evaluate contrast under jsdom, so the palette is measured straight
+// from the tokens. Gates the palette, not its usage in components.
 
 const AA_TEXT = 4.5;
 const AA_NON_TEXT = 3.0;
@@ -77,13 +62,8 @@ const contrast = (a: string, b: string): number => {
 const tokenNames = Object.keys(palette);
 const opaqueBackgrounds = tokenNames.filter((k) => k.startsWith("bg-"));
 
-/**
- * Foreground tokens and the backgrounds they are allowed on. "all" is the
- * default; the exception encodes a real design constraint that cannot be
- * derived from the values — `accent` is a brand colour that stays legal as a
- * fill, an icon, or a star, but measures 4.14:1 as body copy on bg-tertiary,
- * so that surface must use text-primary instead.
- */
+// accent stays legal as a fill, icon, or star but fails as body copy on
+// bg-tertiary, so its surfaces are restricted rather than "all".
 const foregroundPolicy: Record<string, "all" | string[]> = {
   ...Object.fromEntries(
     tokenNames.filter((k) => k.startsWith("text-")).map((k) => [k, "all"]),
@@ -93,16 +73,6 @@ const foregroundPolicy: Record<string, "all" | string[]> = {
   accent: ["bg-primary", "bg-secondary"],
 };
 
-/**
- * Translucent surfaces, read from the markup that declares them rather than
- * copied here — e.g. the Oscars row striping and winner tint.
- *
- * They are composited over bg-primary because that is the app's actual ground:
- * MainLayout paints it and `.card` is padding only, contributing no background
- * of its own. Modelling every opaque token as a possible ground instead would
- * assert combinations that never render. An overlay nested over some other
- * surface is a case only the browser axe pass (bpdiscord-962) can see.
- */
 const sources: Record<string, string> = {
   ...(import.meta.glob("../components/**/*.tsx", {
     query: "?raw",
@@ -123,12 +93,8 @@ interface Overlay {
   foregrounds: string[];
 }
 
-/**
- * Parent/child pairings the scanner cannot see, because the background sits on
- * a wrapper and the text on a child component. Only the semantics are declared
- * here — the alpha and the resulting colour still come from the markup, so
- * these cannot drift the way a hardcoded surface value would.
- */
+// Pairings the line scanner cannot see: background on a wrapper, text in a
+// child component. Semantics only — the colour still comes from the markup.
 const composedPairings: Record<string, string[]> = {
   // oscars/PickCell wraps a title and subtitle in the winner tint
   "pro/10": ["text-primary", "text-muted"],
@@ -136,24 +102,15 @@ const composedPairings: Record<string, string[]> = {
   "pro/15": ["text-primary"],
 };
 
-/**
- * A translucent *background* token is still a general ground, so it inherits
- * the full foreground cross-product. A translucent accent is a localized
- * decoration: asserting the same cross-product there would invent pairings that
- * never render — the TasteCompatibility tick marks are 1px rules carrying no
- * text at all. Those assert only the foregrounds found in the same className,
- * plus any declared above.
- */
+// A translucent background is still a general ground; a translucent accent is
+// decoration, so it claims only foregrounds it actually appears with.
 const discoverOverlays = (): Overlay[] => {
   const bgPattern = /bg-letterboxd-((?:bg-)?[a-z-]+?)\/(\d{1,3})\b/;
   const fgPattern = /text-letterboxd-((?:bg-|text-)?[a-z-]+)\b/g;
   const found = new Map<string, Overlay>();
 
-  // Scanned per line rather than per string literal: className values are
-  // line-local here, and quote-matching misaligns inside template literals.
-  // Caveat: a className wrapped so that a translucent accent and its text token
-  // land on different lines loses that pairing — silently, since nothing turns
-  // red. The snapshot above is what surfaces it, as a removed assertion.
+  // Per line, not per string literal: quote-matching misaligns in template
+  // literals. A className wrapped across lines silently loses its pairing.
   for (const source of Object.values(sources)) {
     for (const segment of source.split("\n")) {
       const bg = bgPattern.exec(segment);
@@ -190,8 +147,7 @@ const allowedOn = (fg: string, backgroundName: string): boolean => {
   return policy.some((allowed) => backgroundName.includes(allowed));
 };
 
-/** Every surface/foreground pair this file asserts. Drives both the tests and
- *  the inline snapshot below, so the two can never disagree. */
+// Drives both the assertions and the snapshot, so the two cannot disagree.
 const coverage: Overlay[] = [
   ...opaqueBackgrounds.map((name) => ({
     label: name,
@@ -218,10 +174,7 @@ const SWATCH_GROUPS: Array<{ heading: string; tokens: string[] }> = [
   { heading: "Borders", tokens: ["border", "border-light"] },
 ];
 
-/**
- * Swatch grid plus the three text tiers rendered on each background, which is
- * the part a flat list of hex values cannot show.
- */
+// Text tiers are drawn on each background; a hex list cannot show that.
 const renderSwatchSvg = (): string => {
   const CHIP_W = 168;
   const CHIP_H = 56;
@@ -281,12 +234,8 @@ const renderSwatchSvg = (): string => {
 };
 
 describe("letterboxd palette contrast (WCAG 2.2 AA)", () => {
-  /**
-   * The matrix is derived, so it cannot be read off the source. This pins it in
-   * a form that shows up in a diff: adding a token or an overlay appears as
-   * added assertions, and — more importantly — coverage quietly disappearing
-   * (a renamed class, a className wrapped across lines) appears as a removal.
-   */
+  // Pins the derived matrix so coverage changes — especially coverage quietly
+  // disappearing — show up in a diff.
   it("asserts this coverage matrix", () => {
     expect(renderCoverage()).toMatchInlineSnapshot(`
       "bg-primary
@@ -353,12 +302,8 @@ describe("letterboxd palette contrast (WCAG 2.2 AA)", () => {
       }
     });
 
-    /**
-     * The outline sits 2px clear of the element, so it is measured against the
-     * page rather than the fill it surrounds. That offset is load-bearing:
-     * text-primary is only 2.30:1 on the accent fill and 1.23:1 on pro, so
-     * removing `outline-offset` would fail 1.4.11 on every primary button.
-     */
+    // outline-offset is load-bearing: the indicator fails against the accent
+    // and pro fills, and only passes because it sits clear of them.
     it("relies on outline-offset to clear the accent and pro fills", () => {
       expect(contrast(token("text-primary"), token("accent"))).toBeLessThan(
         AA_NON_TEXT,
@@ -369,15 +314,8 @@ describe("letterboxd palette contrast (WCAG 2.2 AA)", () => {
     });
   });
 
-  /**
-   * THEME.md embeds this. Generated from the tokens and held by a file snapshot
-   * so the picture cannot drift from the palette the way a hand-drawn one would;
-   * regenerate with `yarn test -u` after a token change.
-   *
-   * GitHub renders committed SVGs in markdown but strips inline `style`, and its
-   * backtick colour chips only work in issues and PRs — so this is the only way
-   * to show the real colours in a repo doc without an external badge service.
-   */
+  // Embedded by THEME.md. Snapshotted so the picture cannot drift from the
+  // tokens; regenerate with `yarn test -u`.
   it("renders the palette swatch embedded in THEME.md", async () => {
     await expect(renderSwatchSvg()).toMatchFileSnapshot("../palette.svg");
   });

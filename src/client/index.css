@@ -26,9 +26,8 @@ layer(base);
     border-color: var(--color-gray-200, currentcolor);
   }
 
-  /* Neutral rather than accent: an accent outline on .btn-primary would sit at
-     1:1 against its own background, and outline survives the overflow-hidden
-     containers that clip a ring. */
+  /* Neutral, not accent: an accent outline on .btn-primary would sit at 1:1
+     against its own background. Outline also survives overflow-hidden. */
   :focus-visible {
     outline: 2px solid theme(colors.letterboxd.text-primary);
     outline-offset: 2px;
