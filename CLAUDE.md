@@ -167,6 +167,29 @@ If the user asks for changes while the local branch is `main`:
 
 This rule has no exceptions — not for tiny fixes, not for "obvious" changes, not for docs-only commits. PR-only workflow is enforced because (a) it preserves the review trail visible in `git log`, (b) it keeps CI gates intact, and (c) it gives the user a chance to catch problems before they hit `main`.
 
+### Resolving PR conflicts
+
+**Never resolve a conflict in GitHub's web editor.** Merge locally instead:
+
+```bash
+git checkout <branch>
+git merge origin/main   # resolve anything reported, then commit
+git push
+```
+
+GitHub then sees the branch as mergeable.
+
+This matters most for `.beads/issues.jsonl`. It is a generated export that `bd` rewrites on every command with unstable line order, so branches touching unrelated issues collide anyway. A merge driver resolves it automatically — but **only locally**, because GitHub cannot run repo-supplied merge code. GitHub will still report the file as conflicted; ignore that and merge locally.
+
+Resolving it by hand duplicates records. `main` was carrying a duplicated memory from an earlier hand-resolution. If you ever must, take either side and run `bd export --all -o .beads/issues.jsonl` — the local Dolt DB is the source of truth.
+
+One-time per clone, or the driver is silently skipped:
+
+```bash
+git config merge.beads-jsonl.name "beads JSONL union merge"
+git config merge.beads-jsonl.driver "node scripts/merge-beads-jsonl.mjs %O %A %B"
+```
+
 ### PR descriptions
 
 **Hard ceiling: ~200 words.** A reviewer should get the shape of the change in about 30 seconds. Follow `.github/pull_request_template.md`.
@@ -192,19 +215,6 @@ bd close <id>         # Complete work
 - Use `bd` for ALL task tracking — do NOT use TodoWrite, TaskCreate, or markdown TODO lists
 - Run `bd prime` for detailed command reference and session close protocol
 - Use `bd remember` for persistent knowledge — do NOT use MEMORY.md files
-
-### `.beads/issues.jsonl` merge conflicts — one-time setup per clone
-
-```bash
-git config merge.beads-jsonl.name "beads JSONL union merge"
-git config merge.beads-jsonl.driver "node scripts/merge-beads-jsonl.mjs %O %A %B"
-```
-
-`.beads/issues.jsonl` is a generated export that `bd` rewrites on **every** command, and its line order is not stable — the same records re-export in a different order. Git merges it line by line, so two branches touching unrelated issues still collide, and the natural resolution (keep both sides) silently duplicates records. `main` carried a duplicated memory from exactly that.
-
-`.gitattributes` routes the file to `scripts/merge-beads-jsonl.mjs`, which unions by record id, keeps the most recently updated copy of anything present on both sides, and writes the result sorted so the next merge starts from a stable order. Git needs the `git config` above to locate the driver; that part cannot be committed.
-
-Do not hand-resolve this file. If a conflict ever reaches you, take either side and run `bd export --all -o .beads/issues.jsonl` — the local Dolt DB is the source of truth and the export is derived from it.
 
 ## Keeping CLAUDE.md in sync
 
