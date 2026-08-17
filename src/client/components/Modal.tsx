@@ -1,7 +1,14 @@
-import React, { createContext, useContext, useEffect, useId, useRef } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useId,
+  useRef,
+} from "react";
 import { createPortal } from "react-dom";
 import { XMarkIcon } from "@heroicons/react/24/solid";
 import { cn } from "../lib/utils";
+import { useDialogStack } from "../contexts/DialogContext";
 
 type Placement = "center" | "bottom";
 
@@ -40,7 +47,8 @@ const FOCUSABLE = [
 const PLACEMENT: Record<Placement, { wrapper: string; panel: string }> = {
   center: {
     wrapper: "items-center justify-center p-4",
-    panel: "max-w-lg w-full max-h-[90vh] rounded-md border border-letterboxd-border",
+    panel:
+      "max-w-lg w-full max-h-[90vh] rounded-md border border-letterboxd-border",
   },
   bottom: {
     wrapper: "items-end justify-center",
@@ -58,6 +66,7 @@ const Modal = ({
 }: ModalProps) => {
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
+  const stack = useDialogStack();
 
   useEffect(() => {
     if (!isOpen) return;
@@ -97,24 +106,16 @@ const Modal = ({
   useEffect(() => {
     if (!isOpen) return undefined;
 
+    // No React API reports what was focused, so this stays imperative.
     const previouslyFocused = document.activeElement as HTMLElement | null;
-    const root = document.getElementById("root");
-    const originalOverflow = document.documentElement.style.overflow;
-    document.documentElement.style.overflow = "hidden";
-
-    // inert blocks pointer and focus in browsers; aria-hidden is what screen
-    // readers and jsdom-based tests actually observe.
-    root?.setAttribute("aria-hidden", "true");
-    root?.setAttribute("inert", "");
+    stack.open();
     panelRef.current?.focus();
 
     return () => {
-      document.documentElement.style.overflow = originalOverflow;
-      root?.removeAttribute("aria-hidden");
-      root?.removeAttribute("inert");
+      stack.close();
       previouslyFocused?.focus?.();
     };
-  }, [isOpen]);
+  }, [isOpen, stack]);
 
   if (!isOpen) return null;
 
@@ -164,7 +165,10 @@ const ModalHeader = ({
         className,
       )}
     >
-      <h2 id={titleId} className="text-lg sm:text-xl text-letterboxd-text-primary">
+      <h2
+        id={titleId}
+        className="text-lg sm:text-xl text-letterboxd-text-primary"
+      >
         {children}
       </h2>
       <button
