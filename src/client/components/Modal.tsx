@@ -3,7 +3,9 @@ import React, {
   useContext,
   useEffect,
   useId,
+  useMemo,
   useRef,
+  useState,
 } from "react";
 import { createPortal } from "react-dom";
 import { XMarkIcon } from "@heroicons/react/24/solid";
@@ -33,7 +35,12 @@ interface ModalBodyProps {
   className?: string;
 }
 
-const TitleIdContext = createContext<string | undefined>(undefined);
+interface TitleRegistration {
+  titleId: string;
+  register: () => void;
+}
+
+const TitleContext = createContext<TitleRegistration | undefined>(undefined);
 
 const FOCUSABLE = [
   "a[href]",
@@ -43,6 +50,14 @@ const FOCUSABLE = [
   "textarea:not([disabled])",
   '[tabindex]:not([tabindex="-1"])',
 ].join(",");
+
+// A browser refuses to focus a hidden element, so an unfiltered list lets focus
+// escape the dialog entirely at the wrap point.
+const isFocusable = (el: HTMLElement) => {
+  if (el.closest("[inert],[hidden]")) return false;
+  const style = getComputedStyle(el);
+  return style.display !== "none" && style.visibility !== "hidden";
+};
 
 const PLACEMENT: Record<Placement, { wrapper: string; panel: string }> = {
   center: {
@@ -65,13 +80,16 @@ const Modal = ({
   label,
 }: ModalProps) => {
   const titleId = useId();
+  const dialogId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
   const stack = useDialogStack();
+  const [hasTitle, setHasTitle] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (!stack.isTopmost(dialogId)) return;
       if (e.key === "Escape") {
         onClose();
         return;
@@ -80,7 +98,9 @@ const Modal = ({
 
       const panel = panelRef.current;
       if (!panel) return;
-      const items = [...panel.querySelectorAll<HTMLElement>(FOCUSABLE)];
+      const items = [...panel.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(
+        isFocusable,
+      );
       if (items.length === 0) {
         e.preventDefault();
         return;
@@ -101,21 +121,26 @@ const Modal = ({
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, stack, dialogId]);
 
   useEffect(() => {
     if (!isOpen) return undefined;
 
     // No React API reports what was focused, so this stays imperative.
     const previouslyFocused = document.activeElement as HTMLElement | null;
-    stack.open();
+    stack.open(dialogId);
     panelRef.current?.focus();
 
     return () => {
-      stack.close();
+      stack.close(dialogId);
       previouslyFocused?.focus?.();
     };
-  }, [isOpen, stack]);
+  }, [isOpen, stack, dialogId]);
+
+  const titleRegistration = useMemo(
+    () => ({ titleId, register: () => setHasTitle(true) }),
+    [titleId],
+  );
 
   if (!isOpen) return null;
 
@@ -140,11 +165,11 @@ const Modal = ({
         role="dialog"
         aria-modal="true"
         aria-label={label}
-        aria-labelledby={label ? undefined : titleId}
+        aria-labelledby={!label && hasTitle ? titleId : undefined}
       >
-        <TitleIdContext.Provider value={titleId}>
+        <TitleContext.Provider value={titleRegistration}>
           {children}
-        </TitleIdContext.Provider>
+        </TitleContext.Provider>
       </div>
     </div>
   );
@@ -157,7 +182,8 @@ const ModalHeader = ({
   onClose,
   className = "",
 }: ModalHeaderProps) => {
-  const titleId = useContext(TitleIdContext);
+  const title = useContext(TitleContext);
+  useEffect(() => title?.register(), [title]);
   return (
     <div
       className={cn(
@@ -166,7 +192,7 @@ const ModalHeader = ({
       )}
     >
       <h2
-        id={titleId}
+        id={title?.titleId}
         className="text-lg sm:text-xl text-letterboxd-text-primary"
       >
         {children}

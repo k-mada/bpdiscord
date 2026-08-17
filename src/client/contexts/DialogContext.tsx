@@ -4,30 +4,39 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 
 interface DialogStack {
-  open: () => void;
-  close: () => void;
+  open: (id: string) => void;
+  close: (id: string) => void;
+  isTopmost: (id: string) => boolean;
 }
 
 const DialogStackContext = createContext<DialogStack | null>(null);
 
 /**
- * Owns the state a dialog shares with the rest of the app — background hiding
- * and scroll lock. Held here rather than in Modal because both are global: two
- * dialogs setting them independently means the first to close releases them
- * while the other is still open.
+ * Owns the state a dialog shares with the rest of the app — background hiding,
+ * scroll lock, and stacking order. Held here rather than in Modal because all
+ * three are global: two dialogs managing them independently means the first to
+ * close releases them while the other is still open.
  *
  * Dialogs portal into document.body, so they sit outside the inert container in
  * the DOM while remaining inside it in the React tree, which is what lets
  * context reach them.
  */
 export function DialogProvider({ children }: { children: ReactNode }) {
-  const [openCount, setOpenCount] = useState(0);
-  const locked = openCount > 0;
+  const [openIds, setOpenIds] = useState<string[]>([]);
+  const locked = openIds.length > 0;
+
+  // Read by event handlers, which need the current stack without the identity
+  // of isTopmost changing on every open and close.
+  const openIdsRef = useRef(openIds);
+  useEffect(() => {
+    openIdsRef.current = openIds;
+  }, [openIds]);
 
   useEffect(() => {
     if (!locked) return undefined;
@@ -38,9 +47,23 @@ export function DialogProvider({ children }: { children: ReactNode }) {
     };
   }, [locked]);
 
-  const open = useCallback(() => setOpenCount((n) => n + 1), []);
-  const close = useCallback(() => setOpenCount((n) => Math.max(0, n - 1)), []);
-  const stack = useMemo(() => ({ open, close }), [open, close]);
+  const open = useCallback((id: string) => {
+    setOpenIds((ids) => (ids.includes(id) ? ids : [...ids, id]));
+  }, []);
+
+  const close = useCallback((id: string) => {
+    setOpenIds((ids) => ids.filter((openId) => openId !== id));
+  }, []);
+
+  const isTopmost = useCallback(
+    (id: string) => openIdsRef.current.at(-1) === id,
+    [],
+  );
+
+  const stack = useMemo(
+    () => ({ open, close, isTopmost }),
+    [open, close, isTopmost],
+  );
 
   return (
     <DialogStackContext.Provider value={stack}>

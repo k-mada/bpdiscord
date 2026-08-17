@@ -128,4 +128,49 @@ describe("Modal", () => {
     await userEvent.click(screen.getByRole("button", { name: "Open" }));
     expect(screen.getByRole("dialog").className).toContain("rounded-t-2xl");
   });
+
+  it("Escape closes only the topmost dialog", async () => {
+    render(<TwoDialogs />);
+    expect(screen.getAllByRole("dialog")).toHaveLength(2);
+
+    await userEvent.keyboard("{Escape}");
+    const remaining = screen.getAllByRole("dialog");
+    expect(remaining).toHaveLength(1);
+    expect(
+      screen.getByRole("dialog", { name: "First dialog" }),
+    ).toBeInTheDocument();
+
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("never points aria-labelledby at an element that does not exist", () => {
+    render(
+      <DialogProvider>
+        <Modal isOpen onClose={() => {}}>
+          <ModalBody>body</ModalBody>
+        </Modal>
+      </DialogProvider>,
+    );
+    const target = screen
+      .getByRole("dialog")
+      .getAttribute("aria-labelledby");
+    expect(target === null || document.getElementById(target)).toBeTruthy();
+  });
+
+  it("skips hidden elements when wrapping focus", async () => {
+    render(
+      <DialogProvider>
+        <Modal isOpen onClose={() => {}} label="Trap">
+          <ModalBody>
+            <button style={{ display: "none" }}>Hidden</button>
+            <button>Visible</button>
+          </ModalBody>
+        </Modal>
+      </DialogProvider>,
+    );
+    screen.getByRole("button", { name: "Visible" }).focus();
+    await userEvent.tab();
+    expect(screen.getByRole("button", { name: "Visible" })).toHaveFocus();
+  });
 });
