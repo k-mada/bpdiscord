@@ -165,6 +165,17 @@ If the user asks for changes while the local branch is `main`:
 
 This rule has no exceptions — not for tiny fixes, not for "obvious" changes, not for docs-only commits. PR-only workflow is enforced because (a) it preserves the review trail visible in `git log`, (b) it keeps CI gates intact, and (c) it gives the user a chance to catch problems before they hit `main`.
 
+### PR descriptions
+
+**Hard ceiling: ~200 words.** A reviewer should get the shape of the change in about 30 seconds. Follow `.github/pull_request_template.md`.
+
+- Lead with what changed and why. Tables over prose for anything enumerable.
+- Include only what the diff cannot say: deviations from the ticket, decisions a reviewer would question, and findings that came out of the work.
+- Cut process narration ("first I…, then I…"), restatements of the diff, and measurements that support a decision rather than being the decision.
+- Detailed reasoning that doesn't fit goes in the **commit body**, not the description. The description is for reviewing; the commit body is for the archaeology later.
+
+The comment policy sends narrative out of source and into the PR. That is right, but the PR is not an unbounded destination — the same discipline applies.
+
 ## Beads issue tracker
 
 This project uses **bd (beads)** for issue tracking. Run `bd prime` to see full workflow context and commands.
