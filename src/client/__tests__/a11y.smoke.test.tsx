@@ -12,6 +12,7 @@ import StarRating from "../components/StarRating";
 import CollapsibleSection from "../components/CollapsibleSection";
 import MovieList from "../components/MovieList";
 import { Modal, ModalHeader, ModalBody } from "../components/Modal";
+import { DialogProvider } from "../contexts/DialogContext";
 import type { LBFilm } from "../types";
 
 vi.mock("../services/api");
@@ -74,12 +75,14 @@ describe("accessibility smoke (axe, structural)", () => {
 
   it("Modal has no axe violations", async () => {
     render(
-      <Modal isOpen onClose={() => {}}>
-        <ModalHeader onClose={() => {}}>Nominees</ModalHeader>
-        <ModalBody>
-          <p>Body</p>
-        </ModalBody>
-      </Modal>,
+      <DialogProvider>
+        <Modal isOpen onClose={() => {}}>
+          <ModalHeader onClose={() => {}}>Nominees</ModalHeader>
+          <ModalBody>
+            <p>Body</p>
+          </ModalBody>
+        </Modal>
+      </DialogProvider>,
     );
     expect(await axeViolations(document.body)).toEqual([]);
   });
