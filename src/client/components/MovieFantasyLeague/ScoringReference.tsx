@@ -141,7 +141,7 @@ const ScoringReference = () => {
             value="nominations"
             name="bordered-checkbox"
             checked={showNominationsOnly}
-            className="w-4 h-4 border border-default-medium rounded-xs bg-neutral-secondary-medium focus:ring-2 focus:ring-brand-soft"
+            className="w-4 h-4 rounded-xs border border-letterboxd-border-light bg-letterboxd-bg-secondary"
             onChange={(e) =>
               handleFilterChange("nominations", e.target.checked)
             }
@@ -160,7 +160,7 @@ const ScoringReference = () => {
             value="wins"
             name="bordered-checkbox"
             checked={showWinsOnly}
-            className="w-4 h-4 border border-default-medium rounded-xs bg-neutral-secondary-medium focus:ring-2 focus:ring-brand-soft"
+            className="w-4 h-4 rounded-xs border border-letterboxd-border-light bg-letterboxd-bg-secondary"
             onChange={(e) => handleFilterChange("wins", e.target.checked)}
           />
           <label
