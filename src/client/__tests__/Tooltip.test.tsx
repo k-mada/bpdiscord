@@ -71,6 +71,57 @@ describe("Tooltip", () => {
     expect(tooltip).not.toBeVisible();
   });
 
+  // 1.4.13 persistent: hover and focus are independent sources, so losing one
+  // while the other still holds must not hide the description.
+  it("stays visible while focused after the pointer leaves", () => {
+    renderWithButton();
+    const trigger = screen.getByRole("button", { name: "info" });
+    const wrapper = trigger.parentElement!;
+    const tooltip = screen.getByRole("tooltip", { hidden: true });
+
+    trigger.focus();
+    fireEvent.focus(trigger);
+    fireEvent.mouseEnter(wrapper);
+    fireEvent.mouseLeave(wrapper);
+
+    expect(document.activeElement).toBe(trigger);
+    expect(tooltip).toBeVisible();
+  });
+
+  it("stays visible while hovered after focus moves away", () => {
+    render(
+      <>
+        <button type="button">outside</button>
+        <Tooltip content="what this means">
+          <button type="button">info</button>
+        </Tooltip>
+      </>,
+    );
+    const trigger = screen.getByRole("button", { name: "info" });
+    const wrapper = trigger.parentElement!;
+    const tooltip = screen.getByRole("tooltip", { hidden: true });
+
+    fireEvent.focus(trigger);
+    fireEvent.mouseEnter(wrapper);
+    fireEvent.blur(trigger);
+
+    expect(tooltip).toBeVisible();
+  });
+
+  it("re-arms after Escape once both triggers are gone", () => {
+    const { container } = renderWithButton();
+    const wrapper = container.firstElementChild!;
+    const tooltip = screen.getByRole("tooltip", { hidden: true });
+
+    fireEvent.mouseEnter(wrapper);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(tooltip).not.toBeVisible();
+
+    fireEvent.mouseLeave(wrapper);
+    fireEvent.mouseEnter(wrapper);
+    expect(tooltip).toBeVisible();
+  });
+
   it("adds no tab stop of its own around a non-focusable child", () => {
     const { container } = render(
       <Tooltip content="decorative">

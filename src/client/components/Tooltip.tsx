@@ -3,6 +3,7 @@ import React, {
   isValidElement,
   useEffect,
   useId,
+  useReducer,
   useRef,
   useState,
 } from "react";
@@ -13,20 +14,50 @@ interface TooltipProps {
   className?: string;
 }
 
+interface TriggerState {
+  hovered: boolean;
+  focused: boolean;
+  dismissed: boolean;
+}
+
+type TriggerEvent =
+  | "hoverIn"
+  | "hoverOut"
+  | "focusIn"
+  | "focusOut"
+  | "dismiss";
+
+const TRANSITIONS: Record<TriggerEvent, (s: TriggerState) => TriggerState> = {
+  hoverIn: (s) => ({ ...s, hovered: true }),
+  hoverOut: (s) => ({ ...s, hovered: false }),
+  focusIn: (s) => ({ ...s, focused: true }),
+  focusOut: (s) => ({ ...s, focused: false }),
+  dismiss: (s) => ({ ...s, dismissed: true }),
+};
+
+// 1.4.13 persistent: hover and focus are independent, so losing one while the
+// other holds must not hide anything. Esc re-arms once both are gone.
+const reduceTrigger = (s: TriggerState, event: TriggerEvent): TriggerState => {
+  const next = TRANSITIONS[event](s);
+  return { ...next, dismissed: next.dismissed && (next.hovered || next.focused) };
+};
+
+const IDLE: TriggerState = { hovered: false, focused: false, dismissed: false };
+
 const Tooltip = ({ content, children, className = "" }: TooltipProps) => {
-  const [isVisible, setIsVisible] = useState(false);
+  const [trigger, dispatch] = useReducer(reduceTrigger, IDLE);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const tooltipRef = useRef<HTMLDivElement>(null);
   const tooltipId = useId();
 
-  const show = (e: React.MouseEvent | React.FocusEvent) => {
-    setIsVisible(true);
-    updatePosition(e);
-  };
+  const isVisible = (trigger.hovered || trigger.focused) && !trigger.dismissed;
 
-  const hide = () => {
-    setIsVisible(false);
-  };
+  const open =
+    (event: "hoverIn" | "focusIn") =>
+    (e: React.MouseEvent | React.FocusEvent) => {
+      dispatch(event);
+      updatePosition(e);
+    };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (isVisible) {
@@ -63,7 +94,7 @@ const Tooltip = ({ content, children, className = "" }: TooltipProps) => {
   useEffect(() => {
     if (!isVisible) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setIsVisible(false);
+      if (e.key === "Escape") dispatch("dismiss");
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
@@ -71,20 +102,22 @@ const Tooltip = ({ content, children, className = "" }: TooltipProps) => {
 
   // Tooltip does not own the trigger, so aria-describedby cannot live on the
   // wrapper — it has to land on the focusable child itself.
-  const trigger = isValidElement<{ "aria-describedby"?: string }>(children)
+  const describedTrigger = isValidElement<{ "aria-describedby"?: string }>(
+    children,
+  )
     ? cloneElement(children, { "aria-describedby": tooltipId })
     : children;
 
   return (
     <div
       className={`relative inline-block ${className}`}
-      onMouseEnter={show}
-      onMouseLeave={hide}
+      onMouseEnter={open("hoverIn")}
+      onMouseLeave={() => dispatch("hoverOut")}
       onMouseMove={handleMouseMove}
-      onFocus={show}
-      onBlur={hide}
+      onFocus={open("focusIn")}
+      onBlur={() => dispatch("focusOut")}
     >
-      {trigger}
+      {describedTrigger}
       <div
         ref={tooltipRef}
         id={tooltipId}
