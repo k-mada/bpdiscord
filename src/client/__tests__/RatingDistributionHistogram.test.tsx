@@ -63,6 +63,37 @@ describe("RatingDistributionHistogram", () => {
     ).toHaveLength(0);
   });
 
+  // UserRatings carries 0 for unrated and dbGetUserRatings does not filter it out.
+  // Counting it would make the caption disagree with the rows beneath it.
+  it("ignores buckets outside the 0.5-5 range", () => {
+    render(
+      <RatingDistributionHistogram
+        distribution={[...distribution, { rating: 0, count: 480 }]}
+      />,
+    );
+
+    const table = screen.getByRole("table", { name: /Rating distribution/ });
+    expect(table).toHaveAccessibleName("Rating distribution, 20 ratings");
+    expect(
+      within(table).queryByRole("rowheader", { name: /^0 star/ }),
+    ).toBeNull();
+
+    const row = within(table)
+      .getByRole("rowheader", { name: "4.5 stars" })
+      .closest("tr")!;
+    expect(within(row).getByText("60.0%")).toBeTruthy();
+  });
+
+  it("reports 0.0% for every rating when nothing is rated", () => {
+    render(
+      <RatingDistributionHistogram distribution={[{ rating: 0, count: 12 }]} />,
+    );
+
+    const table = screen.getByRole("table", { name: /Rating distribution/ });
+    expect(table).toHaveAccessibleName("Rating distribution, 0 ratings");
+    expect(within(table).getAllByText("0.0%")).toHaveLength(ALL_RATINGS.length);
+  });
+
   it("renders a placeholder when there is no data", () => {
     render(<RatingDistributionHistogram distribution={[]} />);
 

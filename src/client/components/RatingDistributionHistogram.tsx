@@ -14,7 +14,7 @@ const formatStars = (rating: number): string => {
 };
 
 const formatShare = (count: number, totalCount: number): string =>
-  `${totalCount > 0 ? ((count / totalCount) * 100).toFixed(1) : 0}%`;
+  `${totalCount > 0 ? ((count / totalCount) * 100).toFixed(1) : "0.0"}%`;
 
 const RatingDistributionHistogram = ({
   distribution,
@@ -27,11 +27,15 @@ const RatingDistributionHistogram = ({
     );
   }
 
-  const maxCount = Math.max(...distribution.map((d) => d.count));
-  const totalCount = distribution.reduce((sum, d) => sum + d.count, 0);
-
-  // Create a map for easy access and ensure we have all ratings from 0.5 to 5
-  const distributionMap = new Map(distribution.map((d) => [d.rating, d.count]));
+  // Every derived number comes from the rows actually rendered. A bucket outside
+  // ALL_RATINGS (UserRatings carries 0 for unrated) must not skew heights or shares.
+  const counts = new Map(distribution.map((d) => [d.rating, d.count]));
+  const rows = ALL_RATINGS.map((rating) => ({
+    rating,
+    count: counts.get(rating) ?? 0,
+  }));
+  const maxCount = Math.max(...rows.map((r) => r.count));
+  const totalCount = rows.reduce((sum, r) => sum + r.count, 0);
 
   return (
     <div className={className}>
@@ -39,9 +43,7 @@ const RatingDistributionHistogram = ({
        * table row. The sr-only table below is the text alternative. */}
       <div className={`histogram-${size}`} aria-hidden="true">
         {size === "md" && <span className="rating-star">★</span>}
-        {ALL_RATINGS.map((rating) => {
-          const count = distributionMap.get(rating) || 0;
-
+        {rows.map(({ rating, count }) => {
           const percentage = maxCount > 0 ? count / maxCount : 0;
           const heightScale = size === "sm" ? 60 : 100;
           // Use a more pronounced height calculation - minimum 4px for any data, max 60px
@@ -97,18 +99,15 @@ const RatingDistributionHistogram = ({
           </tr>
         </thead>
         <tbody>
-          {ALL_RATINGS.map((rating) => {
-            const count = distributionMap.get(rating) || 0;
-            return (
-              <tr key={rating}>
-                <th scope="row">
-                  {rating} {rating === 1 ? "star" : "stars"}
-                </th>
-                <td>{count.toLocaleString()}</td>
-                <td>{formatShare(count, totalCount)}</td>
-              </tr>
-            );
-          })}
+          {rows.map(({ rating, count }) => (
+            <tr key={rating}>
+              <th scope="row">
+                {rating} {rating === 1 ? "star" : "stars"}
+              </th>
+              <td>{count.toLocaleString()}</td>
+              <td>{formatShare(count, totalCount)}</td>
+            </tr>
+          ))}
         </tbody>
       </table>
     </div>
