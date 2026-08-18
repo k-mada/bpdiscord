@@ -34,7 +34,9 @@
     "dev": "vite",
     "lint": "yarn lint-js && yarn lint-ts",
     "lint-js": "eslint .",
-    "lint-ts": "tsc --noEmit"
+    "lint-ts": "tsc --noEmit",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "browserslist": {
     "production": [
@@ -50,6 +52,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/postcss": "^4.3.1",
     "@types/eslint-plugin-jsx-a11y": "^6",
     "@types/jsdom": "^28",

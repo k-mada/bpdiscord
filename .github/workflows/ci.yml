@@ -22,6 +22,36 @@ jobs:
       - run: yarn lint
       - run: yarn test:lite
 
+  e2e:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/client
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Activate Yarn 4
+        run: corepack enable && corepack prepare yarn@4.13.0 --activate
+      - run: yarn install --immutable
+      - name: Resolve Playwright version
+        id: pw
+        run: echo "version=$(yarn playwright --version | awk '{print $2}')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        id: pw-cache
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+      - name: Install Chromium
+        if: steps.pw-cache.outputs.cache-hit != 'true'
+        run: yarn playwright install --with-deps chromium
+      # Cache hit still needs the system libs the browser links against
+      - name: Install system deps
+        if: steps.pw-cache.outputs.cache-hit == 'true'
+        run: yarn playwright install-deps chromium
+      - run: yarn test:e2e
+
   server:
     runs-on: ubuntu-latest
     defaults:
