@@ -1,8 +1,10 @@
 import React, {
   cloneElement,
   isValidElement,
+  useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useReducer,
   useRef,
   useState,
@@ -47,47 +49,50 @@ const IDLE: TriggerState = { hovered: false, focused: false, dismissed: false };
 const Tooltip = ({ content, children, className = "" }: TooltipProps) => {
   const [trigger, dispatch] = useReducer(reduceTrigger, IDLE);
   const [position, setPosition] = useState({ x: 0, y: 0 });
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const tooltipId = useId();
 
   const isVisible = (trigger.hovered || trigger.focused) && !trigger.dismissed;
 
-  const open =
-    (event: "hoverIn" | "focusIn") =>
-    (e: React.MouseEvent | React.FocusEvent) => {
-      dispatch(event);
-      updatePosition(e);
-    };
+  const reposition = useCallback(() => {
+    const wrapper = wrapperRef.current;
+    const tooltip = tooltipRef.current;
+    if (!wrapper || !tooltip) return;
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (isVisible) {
-      updatePosition(e);
-    }
-  };
-
-  const updatePosition = (e: React.MouseEvent | React.FocusEvent) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const tooltipWidth = tooltipRef.current?.offsetWidth || 0;
-    const tooltipHeight = tooltipRef.current?.offsetHeight || 0;
+    const rect = wrapper.getBoundingClientRect();
+    const tooltipWidth = tooltip.offsetWidth;
+    const tooltipHeight = tooltip.offsetHeight;
 
     let x = rect.left + rect.width / 2 - tooltipWidth / 2;
-    // Fixed vertical position - always show above the element with consistent spacing
     let y = rect.top - tooltipHeight - 12;
 
-    // Ensure tooltip doesn't go off screen horizontally
     const padding = 8;
     if (x < padding) x = padding;
     if (x + tooltipWidth > window.innerWidth - padding) {
       x = window.innerWidth - tooltipWidth - padding;
     }
-
-    // If there's not enough room above, show below with consistent spacing
+    // Flip below when there is no room above
     if (y < padding) {
       y = rect.bottom + 12;
     }
 
     setPosition({ x, y });
-  };
+  }, []);
+
+  // Tab scrolls an off-screen trigger into view after focus fires, and a fixed
+  // popup does not travel with the scroll — so measure post-layout, not on event.
+  useLayoutEffect(() => {
+    if (!isVisible) return;
+    reposition();
+    // capture phase so a scrolling ancestor, not just the window, counts
+    window.addEventListener("scroll", reposition, true);
+    window.addEventListener("resize", reposition);
+    return () => {
+      window.removeEventListener("scroll", reposition, true);
+      window.removeEventListener("resize", reposition);
+    };
+  }, [isVisible, reposition]);
 
   // Document-level, not on the wrapper: hover can open this while focus is
   // elsewhere, and 1.4.13 requires Esc to dismiss it from there too.
@@ -111,10 +116,10 @@ const Tooltip = ({ content, children, className = "" }: TooltipProps) => {
   return (
     <div
       className={`relative inline-block ${className}`}
-      onMouseEnter={open("hoverIn")}
+      ref={wrapperRef}
+      onMouseEnter={() => dispatch("hoverIn")}
       onMouseLeave={() => dispatch("hoverOut")}
-      onMouseMove={handleMouseMove}
-      onFocus={open("focusIn")}
+      onFocus={() => dispatch("focusIn")}
       onBlur={() => dispatch("focusOut")}
     >
       {describedTrigger}
