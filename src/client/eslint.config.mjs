@@ -17,14 +17,21 @@ const rawColourMessage =
   "Use a letterboxd-* colour token instead of a raw Tailwind palette colour. " +
   "Raw colours bypass the contrast gate in __tests__/palette.contrast.test.ts.";
 
+// Severity-only override. A bare string would drop recommended's options, and
+// several rules' schema defaults are far wider than what recommended sets.
+const atSeverity = (severity) => (rule) => {
+  const config = jsxA11y.flatConfigs.recommended.rules[rule];
+  return [rule, Array.isArray(config) ? [severity, ...config.slice(1)] : severity];
+};
+
 // jsx-a11y and the colour rule land at `warn` so pre-existing findings do not
 // block; each follow-up promotes the rules covering its own files to `error`.
 const a11yWarnings = Object.fromEntries(
-  Object.keys(jsxA11y.flatConfigs.recommended.rules).map((rule) => [
-    rule,
-    "warn",
-  ]),
+  Object.keys(jsxA11y.flatConfigs.recommended.rules).map(atSeverity("warn")),
 );
+
+const a11yErrors = (...rules) =>
+  Object.fromEntries(rules.map(atSeverity("error")));
 
 export default tseslint.config(
   { ignores: ["dist", "build", "coverage", "**/*.config.*"] },
@@ -84,10 +91,31 @@ export default tseslint.config(
       "components/HaterRankings2.tsx",
       "components/*/NomineesModal.tsx",
     ],
+    rules: a11yErrors(
+      "jsx-a11y/click-events-have-key-events",
+      "jsx-a11y/no-static-element-interactions",
+      "jsx-a11y/no-noninteractive-element-interactions",
+    ),
+  },
+  {
+    files: [
+      "components/Tooltip.tsx",
+      "components/TasteCompatibility.tsx",
+      "components/RatingDistributionHistogram.tsx",
+    ],
     rules: {
-      "jsx-a11y/click-events-have-key-events": "error",
-      "jsx-a11y/no-static-element-interactions": "error",
-      "jsx-a11y/no-noninteractive-element-interactions": "error",
+      ...a11yErrors(
+        "jsx-a11y/no-noninteractive-tabindex",
+        "jsx-a11y/no-static-element-interactions",
+        "jsx-a11y/click-events-have-key-events",
+      ),
+      "jsx-a11y/mouse-events-have-key-events": [
+        "error",
+        {
+          hoverInHandlers: ["onMouseOver", "onMouseEnter"],
+          hoverOutHandlers: ["onMouseOut", "onMouseLeave"],
+        },
+      ],
     },
   },
 );

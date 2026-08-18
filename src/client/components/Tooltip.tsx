@@ -1,4 +1,11 @@
-import React, { useState, useRef } from "react";
+import React, {
+  cloneElement,
+  isValidElement,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+} from "react";
 
 interface TooltipProps {
   content: string;
@@ -10,13 +17,14 @@ const Tooltip = ({ content, children, className = "" }: TooltipProps) => {
   const [isVisible, setIsVisible] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const tooltipId = useId();
 
-  const handleMouseEnter = (e: React.MouseEvent) => {
+  const show = (e: React.MouseEvent | React.FocusEvent) => {
     setIsVisible(true);
     updatePosition(e);
   };
 
-  const handleMouseLeave = () => {
+  const hide = () => {
     setIsVisible(false);
   };
 
@@ -26,7 +34,7 @@ const Tooltip = ({ content, children, className = "" }: TooltipProps) => {
     }
   };
 
-  const updatePosition = (e: React.MouseEvent) => {
+  const updatePosition = (e: React.MouseEvent | React.FocusEvent) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const tooltipWidth = tooltipRef.current?.offsetWidth || 0;
     const tooltipHeight = tooltipRef.current?.offsetHeight || 0;
@@ -50,16 +58,37 @@ const Tooltip = ({ content, children, className = "" }: TooltipProps) => {
     setPosition({ x, y });
   };
 
+  // Document-level, not on the wrapper: hover can open this while focus is
+  // elsewhere, and 1.4.13 requires Esc to dismiss it from there too.
+  useEffect(() => {
+    if (!isVisible) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setIsVisible(false);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isVisible]);
+
+  // Tooltip does not own the trigger, so aria-describedby cannot live on the
+  // wrapper — it has to land on the focusable child itself.
+  const trigger = isValidElement<{ "aria-describedby"?: string }>(children)
+    ? cloneElement(children, { "aria-describedby": tooltipId })
+    : children;
+
   return (
     <div
       className={`relative inline-block ${className}`}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
+      onMouseEnter={show}
+      onMouseLeave={hide}
       onMouseMove={handleMouseMove}
+      onFocus={show}
+      onBlur={hide}
     >
-      {children}
+      {trigger}
       <div
         ref={tooltipRef}
+        id={tooltipId}
+        role="tooltip"
         className={`fixed z-50 px-3 py-2 text-sm text-letterboxd-text-primary bg-letterboxd-bg-primary border border-letterboxd-border rounded-md shadow-letterboxd-lg pointer-events-none transition-opacity duration-300 max-w-xs ${
           isVisible ? "opacity-100" : "opacity-0"
         }`}
