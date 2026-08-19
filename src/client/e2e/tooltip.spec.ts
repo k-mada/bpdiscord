@@ -1,7 +1,7 @@
 import { test, expect, type Page, type Locator } from "@playwright/test";
 
-// Everything here needs real layout, real scrolling, or real Tab. jsdom has
-// none of the three, so these cases cannot regress into the vitest suite.
+// Only what needs real layout, scrolling, or sequential Tab. Everything jsdom
+// can assert lives in __tests__/Tooltip.test.tsx and runs ~100x faster.
 
 const HARNESS = "/e2e/harness/";
 
@@ -117,36 +117,8 @@ test("the tooltip re-anchors after a viewport resize", async ({ page }) => {
     .toBeLessThanOrEqual(2);
 });
 
-test("stays visible while focused after the pointer leaves (SC 1.4.13)", async ({
-  page,
-}) => {
-  const trigger = page.getByTestId("trigger");
-  await trigger.focus();
-  await expect(await tooltipOf(page)).toBeVisible();
-
-  await trigger.hover();
-  await page.getByTestId("before").hover();
-
-  await expect(trigger).toBeFocused();
-  await expect(await tooltipOf(page)).toBeVisible();
-});
-
-test("Escape dismisses without moving focus, and refocus re-arms", async ({
-  page,
-}) => {
-  const trigger = page.getByTestId("trigger");
-  await trigger.focus();
-  await expect(await tooltipOf(page)).toBeVisible();
-
-  await page.keyboard.press("Escape");
-  await expect(await tooltipOf(page)).toBeHidden();
-  await expect(trigger).toBeFocused();
-
-  await page.getByTestId("before").focus();
-  await trigger.focus();
-  await expect(await tooltipOf(page)).toBeVisible();
-});
-
+// The jsdom twin queries focusable selectors; this walks real focus, the only
+// way to catch something the browser treats as tabbable and the list misses.
 test("the histogram adds no tab stops to real keyboard navigation", async ({
   page,
 }) => {
