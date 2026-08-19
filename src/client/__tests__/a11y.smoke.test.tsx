@@ -12,6 +12,8 @@ import StarRating from "../components/StarRating";
 import CollapsibleSection from "../components/CollapsibleSection";
 import MovieList from "../components/MovieList";
 import { Modal, ModalHeader, ModalBody } from "../components/Modal";
+import RatingDistributionHistogram from "../components/RatingDistributionHistogram";
+import TasteCompatibility from "../components/TasteCompatibility";
 import { DialogProvider } from "../contexts/DialogContext";
 import type { LBFilm } from "../types";
 
@@ -104,6 +106,38 @@ describe("accessibility smoke (axe, structural)", () => {
   it("MovieList has no axe violations", async () => {
     const { container } = render(
       withProviders(<MovieList movies={films} animated={false} showRating />),
+    );
+    expect(await axeViolations(container)).toEqual([]);
+  });
+
+  it("RatingDistributionHistogram has no axe violations", async () => {
+    const { container } = render(
+      <table>
+        <tbody>
+          <tr>
+            <td>
+              <RatingDistributionHistogram
+                distribution={[
+                  { rating: 2, count: 4 },
+                  { rating: 4, count: 9 },
+                ]}
+              />
+            </td>
+          </tr>
+        </tbody>
+      </table>,
+    );
+    expect(await axeViolations(container)).toEqual([]);
+  });
+
+  it("TasteCompatibility has no axe violations", async () => {
+    const { container } = render(
+      <TasteCompatibility
+        user1Data={{ username: "rooney" }}
+        user2Data={{ username: "mara" }}
+        moviesInCommon={[]}
+        compatibility={{ pearson: 0.4, mad: 0.8, sampleSize: 20 }}
+      />,
     );
     expect(await axeViolations(container)).toEqual([]);
   });

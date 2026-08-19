@@ -223,13 +223,13 @@ const TasteCompatibility = ({
               : getPearsonLabel(pearson)}
           </div>
           <Tooltip content={TOOLTIP_EXPLANATION}>
-            <span
+            <button
+              type="button"
               className="text-letterboxd-text-muted hover:text-letterboxd-text-primary cursor-help text-sm"
-              aria-label="What does this mean?"
-              tabIndex={0}
             >
-              ⓘ
-            </span>
+              <span aria-hidden="true">ⓘ</span>
+              <span className="sr-only">What does this mean?</span>
+            </button>
           </Tooltip>
         </div>
         <div className="text-xs text-letterboxd-text-muted mt-2">

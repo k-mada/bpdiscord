@@ -133,3 +133,9 @@ backfill-film-years-failures.json
 # Yarn Berry install cache — regenerated on every install, must never be tracked.
 # Glob so it matches the per-package .yarn dirs (src/client, src/server), not just root.
 **/.yarn/install-state.gz
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
+.playwright-mcp/
