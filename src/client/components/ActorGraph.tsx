@@ -131,11 +131,11 @@ export const ActorComboBox = ({
     };
   }, [query, open, selected]);
 
-  // A new list renumbers the options, so a held index would point at a
-  // different actor — and aria-activedescendant at a stale id.
+  // Either input renumbers the options — excludeId shrinks the list when the
+  // other picker chooses — so a held index would point at a different actor.
   useEffect(() => {
     setActiveIndex(-1);
-  }, [results]);
+  }, [results, excludeId]);
 
   // aria-activedescendant moves no viewport; the popup scrolls past ~5 options.
   useEffect(() => {
@@ -298,6 +298,9 @@ export const ActorComboBox = ({
           role="listbox"
           aria-label={label}
           aria-busy={loading}
+          // Unarms Enter when a pointer merely crosses the list; nothing focusable.
+          // eslint-disable-next-line jsx-a11y/mouse-events-have-key-events
+          onMouseLeave={() => setActiveIndex(-1)}
           className="list-none m-0 p-0"
         >
           {filteredResults.map((actor, index) => (

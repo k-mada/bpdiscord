@@ -138,6 +138,55 @@ describe("ActorComboBox", () => {
     expect(input).not.toHaveAttribute("aria-activedescendant");
   });
 
+  // The pointer sets the active option; if it leaves without a reset, Enter
+  // still fires on whatever it last crossed.
+  it("unarms Enter when the pointer leaves the list", async () => {
+    const { input, onSelect } = setup();
+    await userEvent.type(input, "tom");
+    await waitFor(() => expect(options()).toHaveLength(3));
+
+    fireEvent.mouseEnter(options()[2]!);
+    expect(input).toHaveAttribute("aria-activedescendant", options()[2]!.id);
+
+    fireEvent.mouseLeave(screen.getByRole("listbox"));
+    fireEvent.keyDown(input, { key: "Enter" });
+
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(input).not.toHaveAttribute("aria-activedescendant");
+  });
+
+  // excludeId shrinks the list without `results` changing identity.
+  it("drops the active option when the other picker excludes one", async () => {
+    const onSelect = vi.fn();
+    const { rerender } = render(
+      <ActorComboBox label="Actor 1" selected={null} onSelect={onSelect} />,
+    );
+    const input = screen.getByRole("combobox", { name: "Actor 1" });
+    await userEvent.type(input, "tom");
+    await waitFor(() => expect(options()).toHaveLength(3));
+
+    fireEvent.keyDown(input, { key: "End" });
+    expect(input).toHaveAttribute("aria-activedescendant", options()[2]!.id);
+
+    rerender(
+      <ActorComboBox
+        label="Actor 1"
+        selected={null}
+        onSelect={onSelect}
+        excludeId={3}
+      />,
+    );
+    await waitFor(() => expect(options()).toHaveLength(2));
+
+    expect(input).not.toHaveAttribute("aria-activedescendant");
+
+    // The index is genuinely reset, not merely pointing past the end: the next
+    // ArrowDown must land on the first option. A stale 2 would land on the
+    // second, since the wrap is modulo the new length.
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    expect(input).toHaveAttribute("aria-activedescendant", options()[0]!.id);
+  });
+
   it("announces the result count politely", async () => {
     const { input } = setup();
     await userEvent.type(input, "tom");
