@@ -55,7 +55,11 @@ const CompareWithUser = ({
         </div>
       </div>
 
-      {error && <div className="card text-red-400 text-sm">{error}</div>}
+      {error && (
+        <div role="alert" className="card text-letterboxd-error text-sm">
+          {error}
+        </div>
+      )}
 
       {loading && <TasteCompatibilitySkeleton />}
 

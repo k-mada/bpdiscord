@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import MovieSwapPage from "../components/MovieSwapPage";
 import CompareWithUser from "../components/CompareWithUser";
@@ -57,6 +58,28 @@ describe("form control labelling", () => {
       </MemoryRouter>,
     );
     expect(await screen.findByLabelText("Select a user")).toBeInTheDocument();
+  });
+
+  // The error only exists once a comparison target is picked, so the failure
+  // is action-triggered — exactly the case that has to announce.
+  it("announces a CompareWithUser fetch failure", async () => {
+    vi.mocked(apiService.getMoviesInCommon).mockRejectedValue(
+      new Error("boom"),
+    );
+    render(
+      <MemoryRouter>
+        <CompareWithUser baseUsername="alice" />
+      </MemoryRouter>,
+    );
+
+    await userEvent.selectOptions(
+      await screen.findByLabelText("Select a user"),
+      "bob",
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /failed to load movies in common/i,
+    );
   });
 
   it("labels the MovieSelector select", () => {
