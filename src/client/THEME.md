@@ -32,7 +32,6 @@ a colour, regenerate it with `yarn test -u` — the test fails until you do.
 | `text-letterboxd-text-primary` | `#e0e0e0` | Headings and body copy |
 | `text-letterboxd-text-secondary` | `#b8b8b8` | Labels, table headers, descriptions |
 | `text-letterboxd-text-muted` | `#a0a0a0` | Placeholders, timestamps, subtitles |
-| `text-letterboxd-text-error` | `#f87171` | Validation and failure copy. 4.54:1 on `bg-tertiary` — the tightest pairing in the palette |
 
 ### Accents
 
@@ -42,6 +41,7 @@ a colour, regenerate it with `yarn test -u` — the test fails until you do.
 | `letterboxd-accent-hover` | `#009d1a` | Primary button hover |
 | `letterboxd-pro` | `#f5c518` | PRO badge, Oscars headers and winner rings |
 | `letterboxd-link-hover` | `#40bcf4` | Link hover |
+| `letterboxd-error` | `#f87171` | Error copy and its border tint. 4.54:1 on `bg-tertiary` — the palette's tightest pairing |
 
 ### Borders
 

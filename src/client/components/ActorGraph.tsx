@@ -286,7 +286,7 @@ export const ActorComboBox = ({
           <div
             className={`px-4 py-3 text-sm ${
               error
-                ? "text-letterboxd-text-error"
+                ? "text-letterboxd-error"
                 : "text-letterboxd-text-secondary"
             }`}
           >
@@ -473,7 +473,7 @@ const ActorGraph = () => {
       {loading && <Spinner />}
 
       {!loading && error && (
-        <div className="bg-letterboxd-bg-secondary border border-red-500/40 text-red-300 rounded-lg px-4 py-3">
+        <div className="bg-letterboxd-bg-secondary border border-letterboxd-error/40 text-letterboxd-error rounded-lg px-4 py-3">
           {error}
         </div>
       )}

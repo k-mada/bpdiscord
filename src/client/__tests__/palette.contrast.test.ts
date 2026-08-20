@@ -70,6 +70,7 @@ const foregroundPolicy: Record<string, "all" | string[]> = {
   ),
   pro: "all",
   "link-hover": "all",
+  error: "all",
   accent: ["bg-primary", "bg-secondary"],
 };
 
@@ -239,15 +240,15 @@ describe("letterboxd palette contrast (WCAG 2.2 AA)", () => {
   it("asserts this coverage matrix", () => {
     expect(renderCoverage()).toMatchInlineSnapshot(`
       "bg-primary
-        accent, link-hover, pro, text-error, text-muted, text-primary, text-secondary
+        accent, error, link-hover, pro, text-muted, text-primary, text-secondary
       bg-secondary
-        accent, link-hover, pro, text-error, text-muted, text-primary, text-secondary
+        accent, error, link-hover, pro, text-muted, text-primary, text-secondary
       bg-tertiary
-        link-hover, pro, text-error, text-muted, text-primary, text-secondary
+        error, link-hover, pro, text-muted, text-primary, text-secondary
       bg-secondary/30 over bg-primary
-        accent, link-hover, pro, text-error, text-muted, text-primary, text-secondary
+        accent, error, link-hover, pro, text-muted, text-primary, text-secondary
       bg-primary/50 over bg-primary
-        accent, link-hover, pro, text-error, text-muted, text-primary, text-secondary
+        accent, error, link-hover, pro, text-muted, text-primary, text-secondary
       pro/20 over bg-primary
         pro
       pro/15 over bg-primary
@@ -255,7 +256,7 @@ describe("letterboxd palette contrast (WCAG 2.2 AA)", () => {
       pro/10 over bg-primary
         text-muted, text-primary
       bg-primary/95 over bg-primary
-        accent, link-hover, pro, text-error, text-muted, text-primary, text-secondary"
+        accent, error, link-hover, pro, text-muted, text-primary, text-secondary"
     `);
   });
 
