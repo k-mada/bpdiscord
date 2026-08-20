@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useComparison } from "../hooks/useComparison";
 import MovieSwap from "./MovieSwap";
 
@@ -6,6 +6,8 @@ const MovieSwapPage = () => {
   const { usernames } = useComparison();
   const [selectedUser1, setSelectedUser1] = useState<string>("");
   const [selectedUser2, setSelectedUser2] = useState<string>("");
+  const user1Id = useId();
+  const user2Id = useId();
 
   const labelFor = (username: string) =>
     usernames.find((u) => u.username === username)?.displayName || username;
@@ -21,7 +23,13 @@ const MovieSwapPage = () => {
       <div className="card">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="select-wrapper">
+            {/* sr-only is position:absolute, so it cannot disturb the
+              * wrapper's ::after arrow. Text matches the placeholder (2.5.3). */}
+            <label htmlFor={user1Id} className="sr-only">
+              Select User 1
+            </label>
             <select
+              id={user1Id}
               value={selectedUser1}
               onChange={(e) => setSelectedUser1(e.target.value)}
               className="input-field w-full"
@@ -35,7 +43,11 @@ const MovieSwapPage = () => {
             </select>
           </div>
           <div className="select-wrapper">
+            <label htmlFor={user2Id} className="sr-only">
+              Select User 2
+            </label>
             <select
+              id={user2Id}
               value={selectedUser2}
               onChange={(e) => setSelectedUser2(e.target.value)}
               className="input-field w-full"

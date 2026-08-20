@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useComparison } from "../hooks/useComparison";
 import { useMoviesInCommon } from "../hooks/useMoviesInCommon";
 import TasteCompatibility, {
@@ -17,6 +17,7 @@ const CompareWithUser = ({
 }: CompareWithUserProps) => {
   const { usernames } = useComparison();
   const [selected, setSelected] = useState("");
+  const selectId = useId();
   const { data, loading, error } = useMoviesInCommon(
     baseUsername,
     selected || null,
@@ -35,7 +36,11 @@ const CompareWithUser = ({
           Compare taste with…
         </h4>
         <div className="select-wrapper max-w-sm">
+          <label htmlFor={selectId} className="sr-only">
+            Select a user
+          </label>
           <select
+            id={selectId}
             value={selected}
             onChange={(e) => setSelected(e.target.value)}
             className="input-field w-full"

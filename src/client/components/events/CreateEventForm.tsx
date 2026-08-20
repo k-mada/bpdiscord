@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useAwardShows } from "../../hooks/useAwardShows";
 import { apiService } from "../../services/api";
 
@@ -19,6 +19,7 @@ const CreateEventForm = ({ token, onSuccess, onCancel }: CreateEventFormProps) =
   const [awardsDate, setAwardsDate] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const fieldId = useId();
 
   const handleAwardShowChange = (id: string) => {
     setAwardShowId(id);
@@ -79,10 +80,14 @@ const CreateEventForm = ({ token, onSuccess, onCancel }: CreateEventFormProps) =
       )}
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm text-letterboxd-text-secondary mb-1">
+          <label
+            htmlFor={`${fieldId}-award-show`}
+            className="block text-sm text-letterboxd-text-secondary mb-1"
+          >
             Award Show
           </label>
           <select
+            id={`${fieldId}-award-show`}
             value={awardShowId}
             onChange={(e) => handleAwardShowChange(e.target.value)}
             className="input-field w-full"
@@ -97,10 +102,14 @@ const CreateEventForm = ({ token, onSuccess, onCancel }: CreateEventFormProps) =
           </select>
         </div>
         <div>
-          <label className="block text-sm text-letterboxd-text-secondary mb-1">
+          <label
+            htmlFor={`${fieldId}-slug`}
+            className="block text-sm text-letterboxd-text-secondary mb-1"
+          >
             Slug (URL-friendly)
           </label>
           <input
+            id={`${fieldId}-slug`}
             type="text"
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
@@ -111,10 +120,14 @@ const CreateEventForm = ({ token, onSuccess, onCancel }: CreateEventFormProps) =
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm text-letterboxd-text-secondary mb-1">
+            <label
+              htmlFor={`${fieldId}-year`}
+              className="block text-sm text-letterboxd-text-secondary mb-1"
+            >
               Year
             </label>
             <input
+              id={`${fieldId}-year`}
               type="number"
               value={year}
               onChange={(e) => setYear(parseInt(e.target.value))}
@@ -123,10 +136,14 @@ const CreateEventForm = ({ token, onSuccess, onCancel }: CreateEventFormProps) =
             />
           </div>
           <div>
-            <label className="block text-sm text-letterboxd-text-secondary mb-1">
+            <label
+              htmlFor={`${fieldId}-edition`}
+              className="block text-sm text-letterboxd-text-secondary mb-1"
+            >
               Edition Number
             </label>
             <input
+              id={`${fieldId}-edition`}
               type="number"
               value={editionNumber}
               onChange={(e) => setEditionNumber(e.target.value)}
@@ -136,10 +153,14 @@ const CreateEventForm = ({ token, onSuccess, onCancel }: CreateEventFormProps) =
           </div>
         </div>
         <div>
-          <label className="block text-sm text-letterboxd-text-secondary mb-1">
+          <label
+            htmlFor={`${fieldId}-nominations-date`}
+            className="block text-sm text-letterboxd-text-secondary mb-1"
+          >
             Nominations Date
           </label>
           <input
+            id={`${fieldId}-nominations-date`}
             type="date"
             value={nominationsDate}
             onChange={(e) => setNominationsDate(e.target.value)}
@@ -147,10 +168,14 @@ const CreateEventForm = ({ token, onSuccess, onCancel }: CreateEventFormProps) =
           />
         </div>
         <div>
-          <label className="block text-sm text-letterboxd-text-secondary mb-1">
+          <label
+            htmlFor={`${fieldId}-awards-date`}
+            className="block text-sm text-letterboxd-text-secondary mb-1"
+          >
             Awards Date
           </label>
           <input
+            id={`${fieldId}-awards-date`}
             type="date"
             value={awardsDate}
             onChange={(e) => setAwardsDate(e.target.value)}
