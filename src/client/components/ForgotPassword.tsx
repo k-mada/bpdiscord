@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import apiService from "../services/api";
-import { FormError } from "./ui/FormError";
+import { FormError, FormSuccess } from "./ui/FormMessage";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -63,11 +63,7 @@ const ForgotPassword = () => {
 
             <FormError message={error} />
 
-            {success && (
-              <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4">
-                <p className="text-green-400 text-sm">{success}</p>
-              </div>
-            )}
+            <FormSuccess message={success} />
 
             <button
               type="submit"

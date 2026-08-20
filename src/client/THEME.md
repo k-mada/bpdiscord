@@ -42,6 +42,9 @@ a colour, regenerate it with `yarn test -u` — the test fails until you do.
 | `letterboxd-pro` | `#f5c518` | PRO badge, Oscars headers and winner rings |
 | `letterboxd-link-hover` | `#40bcf4` | Link hover |
 | `letterboxd-error` | `#f87171` | Error copy and its border tint. 4.54:1 on `bg-tertiary` — the palette's tightest pairing |
+| `letterboxd-error-surface` | `#7f1d1d` | Ground beneath error copy, used at `/20`. Dark on purpose — tinting with `error` sinks contrast below AA |
+| `letterboxd-success` | `#4ade80` | Confirmation copy and its border tint |
+| `letterboxd-success-surface` | `#14532d` | Ground beneath success copy, used at `/20`. Same dark-ground rule as `error-surface` |
 
 ### Borders
 

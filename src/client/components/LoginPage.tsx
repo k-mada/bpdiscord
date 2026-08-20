@@ -4,7 +4,7 @@ import apiService from "../services/api";
 import { AuthRequest } from "../../shared/types";
 import { Input } from "./ui/Input";
 import { useAuth } from "../contexts/AuthContext";
-import { FormError } from "./ui/FormError";
+import { FormError, FormSuccess } from "./ui/FormMessage";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -66,10 +66,8 @@ const LoginPage = () => {
           </h2>
 
           {resetSuccess && (
-            <div className="mb-4 p-3 bg-green-900/20 border border-green-600/30 rounded-md">
-              <p className="text-green-300 text-sm text-center">
-                Password updated. Please log in with your new password.
-              </p>
+            <div className="mb-4">
+              <FormSuccess message="Password updated. Please log in with your new password." />
             </div>
           )}
 

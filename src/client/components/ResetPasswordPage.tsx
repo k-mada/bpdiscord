@@ -4,7 +4,7 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { Subheading } from "./Subheading";
 import { Input } from "./ui/Input";
-import { FormError } from "./ui/FormError";
+import { FormError } from "./ui/FormMessage";
 
 type Status = "verifying" | "ready" | "invalid";
 

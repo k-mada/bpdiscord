@@ -4,7 +4,7 @@ import apiService from "../services/api";
 import { SignupRequest } from "../../shared/types";
 import { Input } from "./ui/Input";
 import { useAuth } from "../contexts/AuthContext";
-import { FormError } from "./ui/FormError";
+import { FormError, FormSuccess } from "./ui/FormMessage";
 
 // Mirrors LBUSERNAME_FORMAT in src/server/lib/lbusername.ts. UX-only pre-check
 // before round-trip; server remains the source of truth.
@@ -212,11 +212,7 @@ const SignupPage = () => {
 
             <FormError message={error} />
 
-            {message && (
-              <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4">
-                <p className="text-green-400 text-sm p-0">{message}</p>
-              </div>
-            )}
+            <FormSuccess message={message} />
 
             <button
               type="submit"
