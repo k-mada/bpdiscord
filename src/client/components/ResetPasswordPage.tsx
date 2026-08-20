@@ -4,18 +4,18 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { Subheading } from "./Subheading";
 import { Input } from "./ui/Input";
-import { Notification } from "./ui/Notification";
+import { Notification, Status } from "./ui/Notification";
 
-type Status = "verifying" | "ready" | "invalid";
+type LinkStatus = "verifying" | "ready" | "invalid";
 
 const ResetPasswordPage = () => {
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const [status, setStatus] = useState<Status>("verifying");
+  const [linkStatus, setLinkStatus] = useState<LinkStatus>("verifying");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<Status>({ type: "idle" });
 
   // detectSessionInUrl has already parsed the recovery code from the hash;
   // no session here means the link was invalid or expired.
@@ -23,7 +23,7 @@ const ResetPasswordPage = () => {
     let cancelled = false;
     void supabase.auth.getSession().then(({ data }) => {
       if (cancelled) return;
-      setStatus(data.session ? "ready" : "invalid");
+      setLinkStatus(data.session ? "ready" : "invalid");
     });
     return () => {
       cancelled = true;
@@ -32,14 +32,17 @@ const ResetPasswordPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
+    setStatus({ type: "idle" });
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+      setStatus({ type: "error", message: "Passwords do not match." });
       return;
     }
     if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
+      setStatus({
+        type: "error",
+        message: "Password must be at least 6 characters.",
+      });
       return;
     }
 
@@ -47,7 +50,7 @@ const ResetPasswordPage = () => {
     try {
       const { error: updateErr } = await supabase.auth.updateUser({ password });
       if (updateErr) {
-        setError(updateErr.message);
+        setStatus({ type: "error", message: updateErr.message });
         setLoading(false);
         return;
       }
@@ -61,9 +64,11 @@ const ResetPasswordPage = () => {
         state: { resetSuccess: true },
       });
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to update password.",
-      );
+      setStatus({
+        type: "error",
+        message:
+          err instanceof Error ? err.message : "Failed to update password.",
+      });
       setLoading(false);
     }
   };
@@ -83,15 +88,21 @@ const ResetPasswordPage = () => {
             Reset your password
           </h2>
 
-          {status === "verifying" && (
+          {linkStatus === "verifying" && (
             <p className="text-letterboxd-text-secondary text-center">
               Verifying your reset link…
             </p>
           )}
 
-          {status === "invalid" && (
+          {linkStatus === "invalid" && (
             <div className="space-y-4">
-              <Notification notificationType="error" message="This reset link is invalid or has expired. Please request a new one." />
+              <Notification
+                status={{
+                  type: "error",
+                  message:
+                    "This reset link is invalid or has expired. Please request a new one.",
+                }}
+              />
               <Link
                 to="/login"
                 className="block text-center text-letterboxd-accent hover:text-letterboxd-accent-hover font-medium transition-colors duration-200"
@@ -101,7 +112,7 @@ const ResetPasswordPage = () => {
             </div>
           )}
 
-          {status === "ready" && (
+          {linkStatus === "ready" && (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label
@@ -145,9 +156,7 @@ const ResetPasswordPage = () => {
                 />
               </div>
 
-              {error && (
-                <Notification notificationType="error" message={error} />
-              )}
+              <Notification status={status} />
 
               <button
                 type="submit"

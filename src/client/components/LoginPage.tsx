@@ -4,7 +4,7 @@ import apiService from "../services/api";
 import { AuthRequest } from "../../shared/types";
 import { Input } from "./ui/Input";
 import { useAuth } from "../contexts/AuthContext";
-import { Notification } from "./ui/Notification";
+import { Notification, Status } from "./ui/Notification";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -15,10 +15,17 @@ const LoginPage = () => {
     password: "",
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [loginRequired, setLoginRequired] = useState<boolean>(false);
   const resetSuccess = Boolean(
     (location.state as { resetSuccess?: boolean } | null)?.resetSuccess,
+  );
+  const [status, setStatus] = useState<Status>(() =>
+    resetSuccess
+      ? {
+          type: "success",
+          message: "Password updated. Please log in with your new password.",
+        }
+      : { type: "idle" },
   );
 
   useEffect(() => {
@@ -29,7 +36,7 @@ const LoginPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
+    setStatus({ type: "idle" });
 
     try {
       const response = await apiService.login(formData);
@@ -44,7 +51,10 @@ const LoginPage = () => {
         console.error("No access token in response:", response);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Authentication failed");
+      setStatus({
+        type: "error",
+        message: err instanceof Error ? err.message : "Authentication failed",
+      });
     } finally {
       setLoading(false);
     }
@@ -65,17 +75,14 @@ const LoginPage = () => {
             Log in to your account
           </h2>
 
-          {resetSuccess && (
-            <div className="mb-4">
-              <Notification notificationType="success" message="Password updated. Please log in with your new password." />
-            </div>
-          )}
-
           {loginRequired && (
-            <div className="mb-4 p-3 bg-yellow-900/20 border border-yellow-600/30 rounded-md">
-              <p className="text-yellow-200 text-sm text-center">
-                Please login to access that page.
-              </p>
+            <div className="mb-4">
+              <Notification
+                status={{
+                  type: "info",
+                  message: "Please login to access that page.",
+                }}
+              />
             </div>
           )}
 
@@ -120,9 +127,7 @@ const LoginPage = () => {
               />
             </div>
 
-            {error && (
-              <Notification notificationType="error" message={error} />
-            )}
+            <Notification status={status} />
 
             <button
               type="submit"
