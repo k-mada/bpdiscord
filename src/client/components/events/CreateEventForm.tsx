@@ -1,5 +1,6 @@
 import { useId, useState } from "react";
 import { useAwardShows } from "../../hooks/useAwardShows";
+import { Notification } from "../ui/Notification";
 import { apiService } from "../../services/api";
 
 interface CreateEventFormProps {
@@ -74,8 +75,11 @@ const CreateEventForm = ({ token, onSuccess, onCancel }: CreateEventFormProps) =
         Create Event
       </h2>
       {(formError || awardShowsError) && (
-        <div className="mb-4 p-3 bg-red-500/20 text-red-400 text-sm rounded-sm">
-          {formError || awardShowsError}
+        <div className="mb-4">
+          <Notification
+            notificationType="error"
+            message={formError || awardShowsError}
+          />
         </div>
       )}
       <form onSubmit={handleSubmit} className="space-y-4">

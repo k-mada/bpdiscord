@@ -4,7 +4,7 @@ import apiService from "../services/api";
 import { AuthRequest } from "../../shared/types";
 import { Input } from "./ui/Input";
 import { useAuth } from "../contexts/AuthContext";
-import { FormError, FormSuccess } from "./ui/FormMessage";
+import { Notification } from "./ui/Notification";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -67,7 +67,7 @@ const LoginPage = () => {
 
           {resetSuccess && (
             <div className="mb-4">
-              <FormSuccess message="Password updated. Please log in with your new password." />
+              <Notification notificationType="success" message="Password updated. Please log in with your new password." />
             </div>
           )}
 
@@ -120,7 +120,7 @@ const LoginPage = () => {
               />
             </div>
 
-            <FormError message={error} />
+            <Notification notificationType="error" message={error} />
 
             <button
               type="submit"

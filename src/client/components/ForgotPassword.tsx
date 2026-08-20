@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import apiService from "../services/api";
-import { FormError, FormSuccess } from "./ui/FormMessage";
+import { Notification } from "./ui/Notification";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -61,9 +61,9 @@ const ForgotPassword = () => {
               />
             </div>
 
-            <FormError message={error} />
+            <Notification notificationType="error" message={error} />
 
-            <FormSuccess message={success} />
+            <Notification notificationType="success" message={success} />
 
             <button
               type="submit"

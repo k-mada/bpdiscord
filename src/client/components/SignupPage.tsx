@@ -4,7 +4,7 @@ import apiService from "../services/api";
 import { SignupRequest } from "../../shared/types";
 import { Input } from "./ui/Input";
 import { useAuth } from "../contexts/AuthContext";
-import { FormError, FormSuccess } from "./ui/FormMessage";
+import { Notification } from "./ui/Notification";
 
 // Mirrors LBUSERNAME_FORMAT in src/server/lib/lbusername.ts. UX-only pre-check
 // before round-trip; server remains the source of truth.
@@ -210,9 +210,9 @@ const SignupPage = () => {
               )}
             </div>
 
-            <FormError message={error} />
+            <Notification notificationType="error" message={error} />
 
-            <FormSuccess message={message} />
+            <Notification notificationType="success" message={message} />
 
             <button
               type="submit"
