@@ -19,6 +19,32 @@ describe("ForgotPassword", () => {
     vi.clearAllMocks();
   });
 
+  // The banners are mutually exclusive by discipline in the handler, which
+  // resets the other on submit. Nothing in the render enforces it, so assert it.
+  it("never shows the error and success banners together", async () => {
+    vi.mocked(apiService.requestPasswordReset).mockRejectedValue(
+      new Error("Too many requests"),
+    );
+    renderPage();
+    const submit = screen.getByRole("button", { name: "Send Reset Email" });
+    await userEvent.type(
+      screen.getByLabelText("Email Address"),
+      "u@example.test",
+    );
+    await userEvent.click(submit);
+
+    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+
+    vi.mocked(apiService.requestPasswordReset).mockResolvedValue({
+      message: "Check your inbox",
+    });
+    await userEvent.click(submit);
+
+    await waitFor(() => expect(screen.getByRole("status")).toBeInTheDocument());
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
   it("renders the email field and a back-to-login link", () => {
     renderPage();
     expect(screen.getByLabelText("Email Address")).toBeInTheDocument();

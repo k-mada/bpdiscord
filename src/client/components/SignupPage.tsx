@@ -210,9 +210,13 @@ const SignupPage = () => {
               )}
             </div>
 
-            <Notification notificationType="error" message={error} />
+            {error && (
+              <Notification notificationType="error" message={error} />
+            )}
 
-            <Notification notificationType="success" message={message} />
+            {message && (
+              <Notification notificationType="success" message={message} />
+            )}
 
             <button
               type="submit"

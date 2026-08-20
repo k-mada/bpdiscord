@@ -21,6 +21,7 @@ const CreateEventForm = ({ token, onSuccess, onCancel }: CreateEventFormProps) =
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const fieldId = useId();
+  const bannerError = formError || awardShowsError;
 
   const handleAwardShowChange = (id: string) => {
     setAwardShowId(id);
@@ -74,12 +75,9 @@ const CreateEventForm = ({ token, onSuccess, onCancel }: CreateEventFormProps) =
       >
         Create Event
       </h2>
-      {(formError || awardShowsError) && (
+      {bannerError && (
         <div className="mb-4">
-          <Notification
-            notificationType="error"
-            message={formError || awardShowsError}
-          />
+          <Notification notificationType="error" message={bannerError} />
         </div>
       )}
       <form onSubmit={handleSubmit} className="space-y-4">

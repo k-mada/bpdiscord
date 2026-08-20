@@ -145,7 +145,9 @@ const ResetPasswordPage = () => {
                 />
               </div>
 
-              <Notification notificationType="error" message={error} />
+              {error && (
+                <Notification notificationType="error" message={error} />
+              )}
 
               <button
                 type="submit"

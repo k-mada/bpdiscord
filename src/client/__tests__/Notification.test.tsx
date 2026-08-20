@@ -2,13 +2,6 @@ import { render, screen } from "@testing-library/react";
 import { Notification } from "../components/ui/Notification";
 
 describe("Notification", () => {
-  it("renders nothing without a message", () => {
-    const { container } = render(
-      <Notification notificationType="error" message={null} />,
-    );
-    expect(container).toBeEmptyDOMElement();
-  });
-
   // Only a failure interrupts; the other two wait their turn.
   it.each([
     ["error", "alert"],

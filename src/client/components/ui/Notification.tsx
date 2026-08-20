@@ -4,8 +4,7 @@ export type NotificationType = "success" | "error" | "info";
 
 interface NotificationProps {
   notificationType: NotificationType;
-  /** Rendered only when truthy, so call sites can pass state straight through. */
-  message?: string | null | undefined;
+  message: string;
 }
 
 // Both the background and the text colour must stay on one line per entry:
@@ -31,8 +30,6 @@ export function Notification({ notificationType, message }: NotificationProps) {
   // Owned here rather than passed in: every notification gets a stable unique
   // id for a future aria-describedby without any call site having to invent one.
   const id = useId();
-
-  if (!message) return null;
 
   return (
     <div

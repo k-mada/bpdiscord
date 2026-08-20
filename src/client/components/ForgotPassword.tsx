@@ -61,9 +61,13 @@ const ForgotPassword = () => {
               />
             </div>
 
-            <Notification notificationType="error" message={error} />
+            {error && (
+              <Notification notificationType="error" message={error} />
+            )}
 
-            <Notification notificationType="success" message={success} />
+            {success && (
+              <Notification notificationType="success" message={success} />
+            )}
 
             <button
               type="submit"
