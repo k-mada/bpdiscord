@@ -256,7 +256,9 @@ describe("letterboxd palette contrast (WCAG 2.2 AA)", () => {
       pro/10 over bg-primary
         text-muted, text-primary
       bg-primary/95 over bg-primary
-        accent, error, link-hover, pro, text-muted, text-primary, text-secondary"
+        accent, error, link-hover, pro, text-muted, text-primary, text-secondary
+      error-surface/20 over bg-primary
+        error"
     `);
   });
 

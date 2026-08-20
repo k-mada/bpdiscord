@@ -70,7 +70,7 @@ describe("ForgotPassword", () => {
     await userEvent.click(screen.getByRole("button", { name: "Send Reset Email" }));
 
     await waitFor(() => {
-      expect(screen.getByText("Too many requests")).toBeInTheDocument();
+      expect(screen.getByRole("alert")).toHaveTextContent("Too many requests");
     });
   });
 });

@@ -4,6 +4,7 @@ import apiService from "../services/api";
 import { AuthRequest } from "../../shared/types";
 import { Input } from "./ui/Input";
 import { useAuth } from "../contexts/AuthContext";
+import { FormError } from "./ui/FormError";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -121,11 +122,7 @@ const LoginPage = () => {
               />
             </div>
 
-            {error && (
-              <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
-                <p className="text-red-400 text-sm">{error}</p>
-              </div>
-            )}
+            <FormError message={error} />
 
             <button
               type="submit"

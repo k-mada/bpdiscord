@@ -82,7 +82,7 @@ describe("LoginPage", () => {
     await userEvent.click(screen.getByRole("button", { name: "Login" }));
 
     await waitFor(() => {
-      expect(screen.getByText("Invalid credentials")).toBeInTheDocument();
+      expect(screen.getByRole("alert")).toHaveTextContent("Invalid credentials");
     });
     expect(localStorage.getItem("token")).toBeNull();
   });

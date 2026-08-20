@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { Subheading } from "./Subheading";
 import { Input } from "./ui/Input";
+import { FormError } from "./ui/FormError";
 
 type Status = "verifying" | "ready" | "invalid";
 
@@ -90,12 +91,7 @@ const ResetPasswordPage = () => {
 
           {status === "invalid" && (
             <div className="space-y-4">
-              <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
-                <p className="text-red-400 text-sm">
-                  This reset link is invalid or has expired. Please request a
-                  new one.
-                </p>
-              </div>
+              <FormError message="This reset link is invalid or has expired. Please request a new one." />
               <Link
                 to="/login"
                 className="block text-center text-letterboxd-accent hover:text-letterboxd-accent-hover font-medium transition-colors duration-200"
@@ -149,11 +145,7 @@ const ResetPasswordPage = () => {
                 />
               </div>
 
-              {error && (
-                <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
-                  <p className="text-red-400 text-sm">{error}</p>
-                </div>
-              )}
+              <FormError message={error} />
 
               <button
                 type="submit"
