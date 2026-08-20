@@ -35,6 +35,9 @@ module.exports = {
           border: "#404040", // Decorative dividers only — exempt from WCAG 1.4.11
           "border-light": "#8a8a8a", // Control boundaries (inputs, selects) — 1.4.11 needs 3:1
           "link-hover": "#40bcf4", // Link hover color
+          // Error text and its border tint. 4.54:1 on bg-tertiary — passes AA
+          // with little headroom, so the gate keeps a background tweak honest.
+          error: "#f87171",
         },
       },
       fontFamily: {

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { apiService } from "../services/api";
 import { ActorPath, ActorPathStep } from "../hooks/useActorGraph";
 import Spinner from "./Spinner";
@@ -42,7 +42,7 @@ interface ActorComboBoxProps {
   excludeId?: number;
 }
 
-const ActorComboBox = ({
+export const ActorComboBox = ({
   label,
   selected,
   onSelect,
@@ -55,21 +55,46 @@ const ActorComboBox = ({
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  const baseId = useId();
+  const inputId = `${baseId}-input`;
+  const listboxId = `${baseId}-listbox`;
+  const optionId = useCallback(
+    (index: number) => `${baseId}-option-${index}`,
+    [baseId],
+  );
+
+  const filteredResults = excludeId
+    ? results.filter((r) => r.tmdbId !== excludeId)
+    : results;
+
+  // One source of truth: `open` alone would claim expanded while the popup is
+  // not rendered — handleClear sets it with an empty query.
+  const isOpen = open && (query.trim().length > 0 || loading);
+  const activeOption =
+    activeIndex >= 0 ? filteredResults[activeIndex] : undefined;
 
   // Debounced search — fires 200ms after the user stops typing.
   useEffect(() => {
     const trimmed = query.trim();
-    if (!open) return;
-    // The /search endpoint requires q to be at least 2 chars.
+
+    // Every early exit clears `loading`. Returning without it strands the
+    // spinner on forever once the popup reopens.
     if (trimmed.length < 2) {
       setResults([]);
+      setError(null);
       setLoading(false);
       return;
     }
     if (selected && trimmed === selected.name) {
-      // Don't refetch when the input still shows the chosen actor's name.
+      setLoading(false);
+      return;
+    }
+    if (!open) {
+      setLoading(false);
       return;
     }
 
@@ -106,6 +131,20 @@ const ActorComboBox = ({
     };
   }, [query, open, selected]);
 
+  // Either input renumbers the options — excludeId shrinks the list when the
+  // other picker chooses — so a held index would point at a different actor.
+  useEffect(() => {
+    setActiveIndex(-1);
+  }, [results, excludeId]);
+
+  // aria-activedescendant moves no viewport; the popup scrolls past ~5 options.
+  useEffect(() => {
+    if (activeIndex < 0) return;
+    document
+      .getElementById(optionId(activeIndex))
+      ?.scrollIntoView({ block: "nearest" });
+  }, [activeIndex, optionId]);
+
   // Close dropdown on outside click
   useEffect(() => {
     function handleClick(event: MouseEvent) {
@@ -124,27 +163,85 @@ const ActorComboBox = ({
     onSelect(actor);
     setQuery(actor.name);
     setOpen(false);
+    setActiveIndex(-1);
   };
 
   const handleClear = () => {
     onSelect(null);
     setQuery("");
     setResults([]);
+    setActiveIndex(-1);
     setOpen(true);
   };
 
-  const filteredResults = excludeId
-    ? results.filter((r) => r.tmdbId !== excludeId)
-    : results;
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    const count = filteredResults.length;
+
+    if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+      event.preventDefault();
+      if (!open) {
+        setOpen(true);
+        return;
+      }
+      if (count === 0) return;
+      const step = event.key === "ArrowDown" ? 1 : -1;
+      setActiveIndex((index) => {
+        if (index === -1) return step === 1 ? 0 : count - 1;
+        return (index + step + count) % count;
+      });
+      return;
+    }
+
+    if (event.key === "Home" || event.key === "End") {
+      if (!isOpen || count === 0) return;
+      event.preventDefault();
+      setActiveIndex(event.key === "Home" ? 0 : count - 1);
+      return;
+    }
+
+    if (event.key === "Enter" && activeOption) {
+      event.preventDefault();
+      handleSelect(activeOption);
+      return;
+    }
+
+    if (event.key === "Escape") {
+      setOpen(false);
+      setActiveIndex(-1);
+    }
+  };
+
+  // Options are not focusable, so a real blur means focus left the widget.
+  const handleBlur = (event: React.FocusEvent<HTMLDivElement>) => {
+    if (!containerRef.current?.contains(event.relatedTarget as Node | null)) {
+      setOpen(false);
+      setActiveIndex(-1);
+    }
+  };
+
+  const statusMessage = loading
+    ? "Searching…"
+    : error
+      ? error
+      : query.trim().length < 2
+        ? "Type at least 2 characters"
+        : filteredResults.length === 0
+          ? "No matches"
+          : null;
 
   return (
-    <div ref={containerRef} className="relative w-full">
-      <label className="block text-sm text-letterboxd-text-secondary mb-2">
+    <div ref={containerRef} className="relative w-full" onBlur={handleBlur}>
+      <label
+        htmlFor={inputId}
+        className="block text-sm text-letterboxd-text-secondary mb-2"
+      >
         {label}
       </label>
       <div className="relative">
         <input
+          id={inputId}
           type="text"
+          role="combobox"
           className="input-field w-full pr-9"
           placeholder="Type an actor's name..."
           value={query}
@@ -154,63 +251,88 @@ const ActorComboBox = ({
             setOpen(true);
           }}
           onFocus={() => setOpen(true)}
+          onKeyDown={handleKeyDown}
           aria-autocomplete="list"
-          aria-expanded={open}
+          aria-expanded={isOpen}
+          aria-controls={listboxId}
+          {...(activeOption
+            ? { "aria-activedescendant": optionId(activeIndex) }
+            : {})}
         />
         {query && (
           <button
             type="button"
             onClick={handleClear}
             aria-label="Clear"
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-letterboxd-text-muted hover:text-letterboxd-text-primary px-2"
+            className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center min-w-6 min-h-6 text-letterboxd-text-muted hover:text-letterboxd-text-primary"
           >
             ×
           </button>
         )}
       </div>
 
-      {open && (query.trim().length > 0 || loading) && (
-        <div className="absolute left-0 right-0 z-10 mt-1 bg-letterboxd-bg-secondary border border-letterboxd-border rounded-lg shadow-letterboxd-lg max-h-80 overflow-y-auto">
-          {loading && (
-            <div className="px-4 py-3 text-sm text-letterboxd-text-secondary">
-              Searching…
-            </div>
-          )}
-          {!loading && error && (
-            <div className="px-4 py-3 text-sm text-red-400">{error}</div>
-          )}
-          {!loading && !error && filteredResults.length === 0 && (
-            <div className="px-4 py-3 text-sm text-letterboxd-text-secondary">
-              {query.trim().length < 2
-                ? "Type at least 2 characters"
-                : "No matches"}
-            </div>
-          )}
-          {!loading &&
-            !error &&
-            filteredResults.map((actor) => (
-              <button
-                key={actor.tmdbId}
-                type="button"
-                onClick={() => handleSelect(actor)}
-                className="flex items-center gap-3 w-full px-3 py-2 text-left hover:bg-letterboxd-bg-tertiary transition-colors"
-              >
-                <img
-                  src={buildImageUrl(actor.profilePath) || PLACEHOLDER_ACTOR}
-                  alt=""
-                  className="w-10 h-14 object-cover rounded-sm"
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).src =
-                      PLACEHOLDER_ACTOR;
-                  }}
-                />
-                <span className="text-letterboxd-text-primary">
-                  {actor.name}
-                </span>
-              </button>
-            ))}
-        </div>
-      )}
+      <div aria-live="polite" className="sr-only">
+        {isOpen && !loading && !error && filteredResults.length > 0
+          ? `${filteredResults.length} results`
+          : ""}
+      </div>
+
+      {/* Rendered even when closed so aria-controls always resolves. */}
+      <div
+        hidden={!isOpen}
+        className="absolute left-0 right-0 z-10 mt-1 bg-letterboxd-bg-secondary border border-letterboxd-border rounded-lg shadow-letterboxd-lg max-h-80 overflow-y-auto"
+      >
+        {statusMessage && (
+          <div
+            className={`px-4 py-3 text-sm ${
+              error
+                ? "text-letterboxd-error"
+                : "text-letterboxd-text-secondary"
+            }`}
+          >
+            {statusMessage}
+          </div>
+        )}
+        <ul
+          id={listboxId}
+          role="listbox"
+          aria-label={label}
+          aria-busy={loading}
+          // Unarms Enter when a pointer merely crosses the list; nothing focusable.
+          // eslint-disable-next-line jsx-a11y/mouse-events-have-key-events
+          onMouseLeave={() => setActiveIndex(-1)}
+          className="list-none m-0 p-0"
+        >
+          {filteredResults.map((actor, index) => (
+            // Activated via the input's keydown handler; never focusable itself.
+            // eslint-disable-next-line jsx-a11y/click-events-have-key-events
+            <li
+              key={actor.tmdbId}
+              id={optionId(index)}
+              role="option"
+              aria-selected={index === activeIndex}
+              // Keeps focus on the input so blur cannot beat the click.
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => handleSelect(actor)}
+              // eslint-disable-next-line jsx-a11y/mouse-events-have-key-events
+              onMouseEnter={() => setActiveIndex(index)}
+              className={`flex items-center gap-3 w-full px-3 py-2 text-left cursor-pointer transition-colors ${
+                index === activeIndex ? "bg-letterboxd-bg-tertiary" : ""
+              }`}
+            >
+              <img
+                src={buildImageUrl(actor.profilePath) || PLACEHOLDER_ACTOR}
+                alt=""
+                className="w-10 h-14 object-cover rounded-sm"
+                onError={(e) => {
+                  (e.currentTarget as HTMLImageElement).src = PLACEHOLDER_ACTOR;
+                }}
+              />
+              <span className="text-letterboxd-text-primary">{actor.name}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 };
@@ -351,7 +473,7 @@ const ActorGraph = () => {
       {loading && <Spinner />}
 
       {!loading && error && (
-        <div className="bg-letterboxd-bg-secondary border border-red-500/40 text-red-300 rounded-lg px-4 py-3">
+        <div className="bg-letterboxd-bg-secondary border border-letterboxd-error/40 text-letterboxd-error rounded-lg px-4 py-3">
           {error}
         </div>
       )}
