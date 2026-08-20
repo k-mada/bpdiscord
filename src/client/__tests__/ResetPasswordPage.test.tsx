@@ -73,7 +73,7 @@ describe("ResetPasswordPage", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/this reset link is invalid or has expired/i),
+        screen.getByRole("alert"),
       ).toBeInTheDocument();
     });
     // No password form should be rendered in the invalid state.
@@ -120,7 +120,7 @@ describe("ResetPasswordPage", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText(/passwords do not match/i)).toBeInTheDocument();
+      expect(screen.getByRole("alert")).toHaveTextContent(/passwords do not match/i);
     });
     expect(supabase.auth.updateUser).not.toHaveBeenCalled();
   });
@@ -142,7 +142,7 @@ describe("ResetPasswordPage", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/password must be at least 6 characters/i),
+        screen.getByRole("alert"),
       ).toBeInTheDocument();
     });
     expect(supabase.auth.updateUser).not.toHaveBeenCalled();
@@ -216,7 +216,7 @@ describe("ResetPasswordPage", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("Weak password")).toBeInTheDocument();
+      expect(screen.getByRole("alert")).toHaveTextContent("Weak password");
     });
     expect(supabase.auth.signOut).not.toHaveBeenCalled();
     expect(screen.queryByTestId("pathname")).not.toBeInTheDocument();

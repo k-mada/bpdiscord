@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useId, useState, useEffect } from "react";
 import RatingDistributionHistogram from "./RatingDistributionHistogram";
 import TasteCompatibility from "./TasteCompatibility";
 import { useComparison } from "../hooks/useComparison";
@@ -27,6 +27,8 @@ const UserComparison = () => {
   const { usernames, getUserComplete } = useComparison();
   const [selectedUser1, setSelectedUser1] = useState<string>("");
   const [selectedUser2, setSelectedUser2] = useState<string>("");
+  const user1Id = useId();
+  const user2Id = useId();
   const [user1Data, setUser1Data] = useState<UserData | null>(null);
   const [user2Data, setUser2Data] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(false);
@@ -140,7 +142,11 @@ const UserComparison = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="relative">
             <div className="select-wrapper">
+              <label htmlFor={user1Id} className="sr-only">
+                Select User 1
+              </label>
               <select
+                id={user1Id}
                 value={selectedUser1}
                 onChange={(e) => handleUser1Change(e.target.value)}
                 disabled={isLoading}
@@ -157,7 +163,11 @@ const UserComparison = () => {
           </div>
           <div>
             <div className="select-wrapper">
+              <label htmlFor={user2Id} className="sr-only">
+                Select User 2
+              </label>
               <select
+                id={user2Id}
                 value={selectedUser2}
                 onChange={(e) => handleUser2Change(e.target.value)}
                 disabled={isLoading}

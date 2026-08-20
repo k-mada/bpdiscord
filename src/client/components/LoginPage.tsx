@@ -4,6 +4,7 @@ import apiService from "../services/api";
 import { AuthRequest } from "../../shared/types";
 import { Input } from "./ui/Input";
 import { useAuth } from "../contexts/AuthContext";
+import { Notification } from "./ui/Notification";
 
 const LoginPage = () => {
   const navigate = useNavigate();
@@ -65,10 +66,8 @@ const LoginPage = () => {
           </h2>
 
           {resetSuccess && (
-            <div className="mb-4 p-3 bg-green-900/20 border border-green-600/30 rounded-md">
-              <p className="text-green-300 text-sm text-center">
-                Password updated. Please log in with your new password.
-              </p>
+            <div className="mb-4">
+              <Notification notificationType="success" message="Password updated. Please log in with your new password." />
             </div>
           )}
 
@@ -122,9 +121,7 @@ const LoginPage = () => {
             </div>
 
             {error && (
-              <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
-                <p className="text-red-400 text-sm">{error}</p>
-              </div>
+              <Notification notificationType="error" message={error} />
             )}
 
             <button

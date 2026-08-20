@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import apiService from "../services/api";
+import { Notification } from "./ui/Notification";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -61,15 +62,11 @@ const ForgotPassword = () => {
             </div>
 
             {error && (
-              <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
-                <p className="text-red-400 text-sm">{error}</p>
-              </div>
+              <Notification notificationType="error" message={error} />
             )}
 
             {success && (
-              <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4">
-                <p className="text-green-400 text-sm">{success}</p>
-              </div>
+              <Notification notificationType="success" message={success} />
             )}
 
             <button

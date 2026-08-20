@@ -118,4 +118,19 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    files: [
+      "components/ActorGraph.tsx",
+      "components/CompareWithUser.tsx",
+      "components/MovieSwapPage.tsx",
+      "components/UserComparison.tsx",
+      "components/MovieFantasyLeague/MovieSelector.tsx",
+      "components/events/CreateEventForm.tsx",
+    ],
+    rules: a11yErrors(
+      "jsx-a11y/label-has-associated-control",
+      "jsx-a11y/role-supports-aria-props",
+      "jsx-a11y/role-has-required-aria-props",
+    ),
+  },
 );

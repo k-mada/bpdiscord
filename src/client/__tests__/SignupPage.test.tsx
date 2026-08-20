@@ -194,7 +194,7 @@ describe("SignupPage", () => {
     await userEvent.click(screen.getByRole("button", { name: "Sign Up" }));
 
     await waitFor(() => {
-      expect(screen.getByText("Email already in use")).toBeInTheDocument();
+      expect(screen.getByRole("alert")).toHaveTextContent("Email already in use");
     });
     expect(localStorage.getItem("token")).toBeNull();
   });

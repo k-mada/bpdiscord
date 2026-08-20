@@ -4,6 +4,7 @@ import apiService from "../services/api";
 import { SignupRequest } from "../../shared/types";
 import { Input } from "./ui/Input";
 import { useAuth } from "../contexts/AuthContext";
+import { Notification } from "./ui/Notification";
 
 // Mirrors LBUSERNAME_FORMAT in src/server/lib/lbusername.ts. UX-only pre-check
 // before round-trip; server remains the source of truth.
@@ -185,7 +186,9 @@ const SignupPage = () => {
                 autoCapitalize="none"
                 spellCheck={false}
                 aria-invalid={lbError ? true : undefined}
-                aria-describedby="lbusername-help"
+                aria-describedby={
+                  lbError ? "lbusername-help lbusername-error" : "lbusername-help"
+                }
                 className="w-full"
                 placeholder="e.g. davidehrlich"
               />
@@ -197,22 +200,22 @@ const SignupPage = () => {
                 assign it later. We'll fetch your data automatically.
               </p>
               {lbError && (
-                <p role="alert" className="text-xs text-red-400 mt-1">
+                <p
+                  id="lbusername-error"
+                  role="alert"
+                  className="text-xs text-letterboxd-error mt-1"
+                >
                   {lbError}
                 </p>
               )}
             </div>
 
             {error && (
-              <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
-                <p className="text-red-400 text-sm mb-0">{error}</p>
-              </div>
+              <Notification notificationType="error" message={error} />
             )}
 
             {message && (
-              <div className="bg-green-900/20 border border-green-500/30 rounded-lg p-4">
-                <p className="text-green-400 text-sm p-0">{message}</p>
-              </div>
+              <Notification notificationType="success" message={message} />
             )}
 
             <button

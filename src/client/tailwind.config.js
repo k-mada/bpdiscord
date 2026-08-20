@@ -38,6 +38,13 @@ module.exports = {
           // Error text and its border tint. 4.54:1 on bg-tertiary — passes AA
           // with little headroom, so the gate keeps a background tweak honest.
           error: "#f87171",
+          // The ground error copy sits on. Deliberately dark: tinting with
+          // `error` itself lightens the surface and sinks contrast below AA.
+          "error-surface": "#7f1d1d",
+          success: "#4ade80",
+          // Same dark-ground rule as error-surface: tinting with `success`
+          // itself lightens the surface and sinks contrast below AA.
+          "success-surface": "#14532d",
         },
       },
       fontFamily: {
