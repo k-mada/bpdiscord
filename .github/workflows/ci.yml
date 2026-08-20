@@ -24,6 +24,8 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    # Any hang otherwise runs to GitHub's 6h default before failing.
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: src/client
@@ -43,13 +45,11 @@ jobs:
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+      # No --with-deps: it runs apt-get update, which stalled on the azure
+      # mirror for 6h. ubuntu-latest already ships Chromium's shared libraries.
       - name: Install Chromium
         if: steps.pw-cache.outputs.cache-hit != 'true'
-        run: yarn playwright install --with-deps chromium
-      # Cache hit still needs the system libs the browser links against
-      - name: Install system deps
-        if: steps.pw-cache.outputs.cache-hit == 'true'
-        run: yarn playwright install-deps chromium
+        run: yarn playwright install chromium
       - run: yarn test:e2e
 
   server:
