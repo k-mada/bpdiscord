@@ -285,7 +285,9 @@ export const ActorComboBox = ({
         {statusMessage && (
           <div
             className={`px-4 py-3 text-sm ${
-              error ? "text-red-400" : "text-letterboxd-text-secondary"
+              error
+                ? "text-letterboxd-text-error"
+                : "text-letterboxd-text-secondary"
             }`}
           >
             {statusMessage}

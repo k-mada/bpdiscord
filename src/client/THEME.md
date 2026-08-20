@@ -32,6 +32,7 @@ a colour, regenerate it with `yarn test -u` — the test fails until you do.
 | `text-letterboxd-text-primary` | `#e0e0e0` | Headings and body copy |
 | `text-letterboxd-text-secondary` | `#b8b8b8` | Labels, table headers, descriptions |
 | `text-letterboxd-text-muted` | `#a0a0a0` | Placeholders, timestamps, subtitles |
+| `text-letterboxd-text-error` | `#f87171` | Validation and failure copy. 4.54:1 on `bg-tertiary` — the tightest pairing in the palette |
 
 ### Accents
 
