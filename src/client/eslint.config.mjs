@@ -33,6 +33,17 @@ const a11yWarnings = Object.fromEntries(
 const a11yErrors = (...rules) =>
   Object.fromEntries(rules.map(atSeverity("error")));
 
+// Same two selectors at either severity: files cleaned by the burn-down are
+// promoted to `error` so they cannot regress, the rest stay at `warn`.
+const rawColour = (severity) => [
+  severity,
+  { selector: `Literal[value=/${COLOUR_UTILITY}/]`, message: rawColourMessage },
+  {
+    selector: `TemplateElement[value.raw=/${COLOUR_UTILITY}/]`,
+    message: rawColourMessage,
+  },
+];
+
 export default tseslint.config(
   { ignores: ["dist", "build", "coverage", "**/*.config.*"] },
   js.configs.recommended,
@@ -52,17 +63,7 @@ export default tseslint.config(
         "error",
         { args: "none", ignoreRestSiblings: true },
       ],
-      "no-restricted-syntax": [
-        "warn",
-        {
-          selector: `Literal[value=/${COLOUR_UTILITY}/]`,
-          message: rawColourMessage,
-        },
-        {
-          selector: `TemplateElement[value.raw=/${COLOUR_UTILITY}/]`,
-          message: rawColourMessage,
-        },
-      ],
+      "no-restricted-syntax": rawColour("warn"),
     },
   },
   {
@@ -117,6 +118,10 @@ export default tseslint.config(
         },
       ],
     },
+  },
+  {
+    files: ["components/JobProgress.tsx"],
+    rules: { "no-restricted-syntax": rawColour("error") },
   },
   {
     files: [
