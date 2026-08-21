@@ -7,18 +7,23 @@ describe("Notification", () => {
     ["error", "alert"],
     ["success", "status"],
     ["info", "status"],
-  ] as const)("announces %s as role=%s", (notificationType, role) => {
-    render(
-      <Notification notificationType={notificationType} message="Heads up" />,
-    );
+  ] as const)("announces %s as role=%s", (type, role) => {
+    render(<Notification status={{ type, message: "Heads up" }} />);
     expect(screen.getByRole(role)).toHaveTextContent("Heads up");
+  });
+
+  it("renders nothing when idle, so no call site has to gate", () => {
+    const { container } = render(<Notification status={{ type: "idle" }} />);
+    expect(container).toBeEmptyDOMElement();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
   it("gives each instance a distinct id without the caller supplying one", () => {
     render(
       <>
-        <Notification notificationType="info" message="one" />
-        <Notification notificationType="info" message="two" />
+        <Notification status={{ type: "info", message: "one" }} />
+        <Notification status={{ type: "info", message: "two" }} />
       </>,
     );
     const [a, b] = screen.getAllByRole("status");
@@ -28,13 +33,13 @@ describe("Notification", () => {
 
   it("carries a distinct tone per type", () => {
     const { container: err } = render(
-      <Notification notificationType="error" message="x" />,
+      <Notification status={{ type: "error", message: "x" }} />,
     );
     const { container: ok } = render(
-      <Notification notificationType="success" message="x" />,
+      <Notification status={{ type: "success", message: "x" }} />,
     );
     const { container: info } = render(
-      <Notification notificationType="info" message="x" />,
+      <Notification status={{ type: "info", message: "x" }} />,
     );
     const cls = (c: HTMLElement) => c.firstElementChild!.className;
     expect(cls(err)).toContain("text-letterboxd-error");

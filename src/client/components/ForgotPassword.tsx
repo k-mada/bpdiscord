@@ -1,30 +1,32 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import apiService from "../services/api";
-import { Notification } from "./ui/Notification";
+import { Notification, Status } from "./ui/Notification";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [status, setStatus] = useState<Status>({ type: "idle" });
 
   const handleRequestReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
-    setSuccess(null);
+    setStatus({ type: "idle" });
 
     try {
       const response = await apiService.requestPasswordReset(email);
-      setSuccess(
-        response.message ||
+      setStatus({
+        type: "success",
+        message:
+          response.message ||
           "Password reset email sent. Please check your email.",
-      );
+      });
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Failed to send reset email",
-      );
+      setStatus({
+        type: "error",
+        message:
+          err instanceof Error ? err.message : "Failed to send reset email",
+      });
     } finally {
       setLoading(false);
     }
@@ -61,13 +63,7 @@ const ForgotPassword = () => {
               />
             </div>
 
-            {error && (
-              <Notification notificationType="error" message={error} />
-            )}
-
-            {success && (
-              <Notification notificationType="success" message={success} />
-            )}
+            <Notification status={status} />
 
             <button
               type="submit"

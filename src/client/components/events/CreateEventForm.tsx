@@ -1,6 +1,6 @@
 import { useId, useState } from "react";
 import { useAwardShows } from "../../hooks/useAwardShows";
-import { Notification } from "../ui/Notification";
+import { Notification, Status } from "../ui/Notification";
 import { apiService } from "../../services/api";
 
 interface CreateEventFormProps {
@@ -19,9 +19,14 @@ const CreateEventForm = ({ token, onSuccess, onCancel }: CreateEventFormProps) =
   const [nominationsDate, setNominationsDate] = useState("");
   const [awardsDate, setAwardsDate] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
+  const [formStatus, setFormStatus] = useState<Status>({ type: "idle" });
   const fieldId = useId();
-  const bannerError = formError || awardShowsError;
+  const banner: Status =
+    formStatus.type !== "idle"
+      ? formStatus
+      : awardShowsError
+        ? { type: "error", message: awardShowsError }
+        : { type: "idle" };
 
   const handleAwardShowChange = (id: string) => {
     setAwardShowId(id);
@@ -34,12 +39,12 @@ const CreateEventForm = ({ token, onSuccess, onCancel }: CreateEventFormProps) =
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!awardShowId) {
-      setFormError("Please select an award show");
+      setFormStatus({ type: "error", message: "Please select an award show" });
       return;
     }
     try {
       setSubmitting(true);
-      setFormError(null);
+      setFormStatus({ type: "idle" });
       const eventData: {
         awardShowId: string;
         name: string;
@@ -55,7 +60,10 @@ const CreateEventForm = ({ token, onSuccess, onCancel }: CreateEventFormProps) =
       await apiService.createEvent(eventData, token);
       onSuccess();
     } catch {
-      setFormError("Failed to create event. Please try again.");
+      setFormStatus({
+        type: "error",
+        message: "Failed to create event. Please try again.",
+      });
     } finally {
       setSubmitting(false);
     }
@@ -75,11 +83,11 @@ const CreateEventForm = ({ token, onSuccess, onCancel }: CreateEventFormProps) =
       >
         Create Event
       </h2>
-      {bannerError && (
-        <div className="mb-4">
-          <Notification notificationType="error" message={bannerError} />
-        </div>
-      )}
+      {/* empty:mb-0 — an idle Notification renders null, and no space-y parent
+          here would otherwise absorb the leftover margin. */}
+      <div className="mb-4 empty:mb-0">
+        <Notification status={banner} />
+      </div>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <label

@@ -11,10 +11,10 @@ vi.mock("../components/Subheading", () => ({
   Subheading: () => <div data-testid="subheading" />,
 }));
 
-function renderPage() {
+function renderPage(state?: { resetSuccess?: boolean }) {
   return render(
     <AuthProvider>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[{ pathname: "/login", state }]}>
         <LoginPage />
       </MemoryRouter>
     </AuthProvider>,
@@ -85,5 +85,32 @@ describe("LoginPage", () => {
       expect(screen.getByRole("alert")).toHaveTextContent("Invalid credentials");
     });
     expect(localStorage.getItem("token")).toBeNull();
+  });
+
+  it("shows the post-reset confirmation carried in route state", () => {
+    renderPage({ resetSuccess: true });
+    expect(screen.getByRole("status")).toHaveTextContent(/password updated/i);
+  });
+
+  it("replaces the post-reset confirmation with a failure, never both at once", async () => {
+    vi.mocked(apiService.login).mockRejectedValue(new Error("Invalid credentials"));
+
+    renderPage({ resetSuccess: true });
+    await userEvent.type(screen.getByLabelText("Email"), "u@example.test");
+    await userEvent.type(screen.getByLabelText("Password"), "wrong");
+    await userEvent.click(screen.getByRole("button", { name: "Login" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("alert")).toHaveTextContent("Invalid credentials");
+    });
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
+  it("announces the login-required hint politely", () => {
+    localStorage.setItem("redirectAfterLogin", "/dashboard");
+    renderPage();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      /please login to access that page/i,
+    );
   });
 });

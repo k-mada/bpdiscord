@@ -4,7 +4,7 @@ import apiService from "../services/api";
 import { SignupRequest } from "../../shared/types";
 import { Input } from "./ui/Input";
 import { useAuth } from "../contexts/AuthContext";
-import { Notification } from "./ui/Notification";
+import { Notification, Status } from "./ui/Notification";
 
 // Mirrors LBUSERNAME_FORMAT in src/server/lib/lbusername.ts. UX-only pre-check
 // before round-trip; server remains the source of truth.
@@ -26,16 +26,14 @@ const SignupPage = () => {
     lbusername: "",
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<Status>({ type: "idle" });
   const [lbError, setLbError] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
+    setStatus({ type: "idle" });
     setLbError(null);
-    setMessage(null);
 
     const trimmedLb = formData.lbusername.trim().toLowerCase();
 
@@ -71,9 +69,12 @@ const SignupPage = () => {
       // Signup worked but auto-login didn't — usually Supabase requiring email
       // confirmation, so surface the server's message verbatim.
       if (response.message) {
-        setMessage(response.message);
+        setStatus({ type: "success", message: response.message });
       } else {
-        setError("Account created, but no session was issued. Please log in.");
+        setStatus({
+          type: "error",
+          message: "Account created, but no session was issued. Please log in.",
+        });
       }
     } catch (err) {
       const raw = err instanceof Error ? err.message : "Signup failed";
@@ -82,7 +83,7 @@ const SignupPage = () => {
       if (/already been claimed/i.test(raw)) {
         setLbError(raw);
       } else {
-        setError(raw);
+        setStatus({ type: "error", message: raw });
       }
     } finally {
       setLoading(false);
@@ -210,13 +211,7 @@ const SignupPage = () => {
               )}
             </div>
 
-            {error && (
-              <Notification notificationType="error" message={error} />
-            )}
-
-            {message && (
-              <Notification notificationType="success" message={message} />
-            )}
+            <Notification status={status} />
 
             <button
               type="submit"
