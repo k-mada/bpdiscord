@@ -45,6 +45,10 @@ a colour, regenerate it with `yarn test -u` — the test fails until you do.
 | `letterboxd-error-surface` | `#7f1d1d` | Ground beneath error copy, used at `/20`. Dark on purpose — tinting with `error` sinks contrast below AA |
 | `letterboxd-success` | `#4ade80` | Confirmation copy and its border tint |
 | `letterboxd-success-surface` | `#14532d` | Ground beneath success copy, used at `/20`. Same dark-ground rule as `error-surface` |
+| `letterboxd-warning` | `#facc15` | Caution copy — cancelled/blocked job states. 11.65:1 on `bg-primary` |
+| `letterboxd-warning-surface` | `#713f12` | Ground beneath warning copy, used at `/20`. Same dark-ground rule |
+| `letterboxd-info` | `#7dd3fc` | In-progress copy — running job states. 10.70:1 on `bg-primary` |
+| `letterboxd-info-surface` | `#0c4a6e` | Ground beneath info copy, used at `/20`. Same dark-ground rule |
 
 ### Borders
 

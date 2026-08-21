@@ -28,21 +28,31 @@ function phaseRowStatus(
   return "pending";
 }
 
+// Background and text must stay on one line per entry: palette.contrast.test.ts
+// discovers overlay pairings by scanning line by line.
+const TONE = {
+  info: "bg-letterboxd-info-surface/20 text-letterboxd-info",
+  success: "bg-letterboxd-success-surface/20 text-letterboxd-success",
+  warning: "bg-letterboxd-warning-surface/20 text-letterboxd-warning",
+  error: "bg-letterboxd-error-surface/20 text-letterboxd-error",
+  neutral: "bg-letterboxd-bg-secondary text-letterboxd-text-secondary",
+} as const;
+
 export function statusBadge(status: RefreshJobStatus): {
   text: string;
   cls: string;
 } {
   switch (status) {
     case "running":
-      return { text: "Running", cls: "bg-blue-500/20 text-blue-300" };
+      return { text: "Running", cls: TONE.info };
     case "completed":
-      return { text: "Completed", cls: "bg-green-500/20 text-green-300" };
+      return { text: "Completed", cls: TONE.success };
     case "cancelled":
-      return { text: "Cancelled", cls: "bg-yellow-500/20 text-yellow-300" };
+      return { text: "Cancelled", cls: TONE.warning };
     case "failed":
-      return { text: "Failed", cls: "bg-red-500/20 text-red-300" };
+      return { text: "Failed", cls: TONE.error };
     default:
-      return { text: status, cls: "bg-gray-500/20 text-gray-300" };
+      return { text: status, cls: TONE.neutral };
   }
 }
 
@@ -59,9 +69,9 @@ function BlockedBanner() {
   return (
     <div
       role="status"
-      className="card border-l-2 border-yellow-500/50 bg-yellow-500/10"
+      className="card border-l-2 border-letterboxd-warning-surface/60 bg-letterboxd-warning-surface/20"
     >
-      <p className="text-sm text-yellow-200">
+      <p className="text-sm text-letterboxd-warning">
         <span className="font-semibold">
           Letterboxd is temporarily blocking requests from the server.
         </span>{" "}
@@ -113,9 +123,9 @@ function PhaseRow({
         className={
           "text-xl w-6 text-center " +
           (s === "running"
-            ? "text-blue-400"
+            ? "text-letterboxd-info"
             : s === "done"
-              ? "text-green-400"
+              ? "text-letterboxd-success"
               : "text-letterboxd-text-secondary")
         }
       >
@@ -162,7 +172,7 @@ function ErrorsPanel({ errors }: { errors: RefreshJob["errors"] }) {
         onClick={() => setOpen((v) => !v)}
         className="w-full text-left flex items-center justify-between"
       >
-        <span className="font-semibold text-red-400">
+        <span className="font-semibold text-letterboxd-error">
           Errors ({errors.length})
         </span>
         <span className="text-letterboxd-text-secondary">
@@ -174,7 +184,7 @@ function ErrorsPanel({ errors }: { errors: RefreshJob["errors"] }) {
           {errors.map((e, i) => (
             <li
               key={`${e.at}-${i}`}
-              className="border-l-2 border-red-500/40 pl-3"
+              className="border-l-2 border-letterboxd-error-surface/60 pl-3"
             >
               <div className="text-letterboxd-text-secondary">{e.at}</div>
               <div className="text-letterboxd-text-primary">
@@ -202,7 +212,7 @@ function ErrorsPanel({ errors }: { errors: RefreshJob["errors"] }) {
 const JobProgress = ({ job }: { job: RefreshJob }) => {
   const blocked = isLetterboxdBlocked(job);
   const badge = blocked
-    ? { text: "Blocked", cls: "bg-yellow-500/20 text-yellow-300" }
+    ? { text: "Blocked", cls: TONE.warning }
     : statusBadge(job.status);
   return (
     <>
