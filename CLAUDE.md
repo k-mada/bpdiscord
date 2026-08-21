@@ -1,9 +1,11 @@
 # Other md files
 
-.claude/unit-tests.md
-.claude/react.md
-.claude/tailwind.md
-.claude/security.md
+Both are committed — `.gitignore` re-includes them out of an otherwise-ignored `.claude/`, so they ship with a clone and get reviewed like code.
+
+- `.claude/security.md` — authorization, mutation safety, input validation, client token handling. Every rule maps to a real incident in this codebase.
+- `.claude/unit-tests.md` — test file layout, the shared fetch-hook factory, and helper rules.
+
+Anything else under `.claude/` (settings, hooks, worktrees) is local-only and must not be relied on in docs or tooling.
 
 # Code style
 

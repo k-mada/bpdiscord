@@ -113,9 +113,13 @@ dist/
 
 # Local Netlify folder
 .netlify
-.claude
 settings.local.json
 .vercel
+
+# Claude Code: local config and hooks stay out; committed guidance is re-included
+.claude/*
+!.claude/security.md
+!.claude/unit-tests.md
 
 
 supabase/.temp/
