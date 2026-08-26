@@ -83,7 +83,9 @@ const MyPicksPage = () => {
   if (error || !event) {
     return (
       <div className="flex justify-center items-center min-h-[200px]">
-        <Notification status={{ type: "error", message: error || "Event not found" }} />
+        <Notification
+          status={{ type: "error", message: error || "Event not found" }}
+        />
       </div>
     );
   }

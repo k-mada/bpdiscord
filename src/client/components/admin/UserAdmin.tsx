@@ -83,7 +83,9 @@ const UserAdmin = () => {
       </div>
 
       {error && (
-        <Notification status={{ type: "error", message: error }} />
+        <Notification
+          status={{ type: "error", message: `Error loading accounts: ${error}` }}
+        />
       )}
 
       {loading ? (
