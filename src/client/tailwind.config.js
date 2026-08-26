@@ -45,6 +45,12 @@ module.exports = {
           // Same dark-ground rule as error-surface: tinting with `success`
           // itself lightens the surface and sinks contrast below AA.
           "success-surface": "#14532d",
+          // Same two-token rule as error/success: light text, deliberately dark
+          // ground. Both verified before use — see THEME.md for the ratios.
+          warning: "#facc15",
+          "warning-surface": "#713f12",
+          info: "#7dd3fc",
+          "info-surface": "#0c4a6e",
         },
       },
       fontFamily: {

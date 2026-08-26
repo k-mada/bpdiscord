@@ -72,6 +72,8 @@ const foregroundPolicy: Record<string, "all" | string[]> = {
   "link-hover": "all",
   error: "all",
   success: "all",
+  warning: "all",
+  info: "all",
   accent: ["bg-primary", "bg-secondary"],
 };
 
@@ -166,7 +168,7 @@ const renderCoverage = () =>
     .map(({ label, foregrounds }) => `${label}\n  ${[...foregrounds].sort().join(", ")}`)
     .join("\n");
 
-const SWATCH_GROUPS: Array<{ heading: string; tokens: string[] }> = [
+const NAMED_GROUPS: Array<{ heading: string; tokens: string[] }> = [
   { heading: "Backgrounds", tokens: opaqueBackgrounds },
   {
     heading: "Text",
@@ -175,6 +177,14 @@ const SWATCH_GROUPS: Array<{ heading: string; tokens: string[] }> = [
   { heading: "Accents", tokens: ["accent", "accent-hover", "pro", "link-hover"] },
   { heading: "Borders", tokens: ["border", "border-light"] },
 ];
+
+// Trailing catch-all, so a token added to the config cannot go unrendered —
+// THEME.md's alt text promises the swatch shows every one.
+const grouped = new Set(NAMED_GROUPS.flatMap((g) => g.tokens));
+const SWATCH_GROUPS = [
+  ...NAMED_GROUPS,
+  { heading: "States", tokens: tokenNames.filter((k) => !grouped.has(k)) },
+].filter((g) => g.tokens.length > 0);
 
 // Text tiers are drawn on each background; a hex list cannot show that.
 const renderSwatchSvg = (): string => {
@@ -241,15 +251,23 @@ describe("letterboxd palette contrast (WCAG 2.2 AA)", () => {
   it("asserts this coverage matrix", () => {
     expect(renderCoverage()).toMatchInlineSnapshot(`
       "bg-primary
-        accent, error, link-hover, pro, success, text-muted, text-primary, text-secondary
+        accent, error, info, link-hover, pro, success, text-muted, text-primary, text-secondary, warning
       bg-secondary
-        accent, error, link-hover, pro, success, text-muted, text-primary, text-secondary
+        accent, error, info, link-hover, pro, success, text-muted, text-primary, text-secondary, warning
       bg-tertiary
-        error, link-hover, pro, success, text-muted, text-primary, text-secondary
+        error, info, link-hover, pro, success, text-muted, text-primary, text-secondary, warning
+      info-surface/20 over bg-primary
+        info
+      success-surface/20 over bg-primary
+        success
+      warning-surface/20 over bg-primary
+        warning
+      error-surface/20 over bg-primary
+        error
       bg-secondary/30 over bg-primary
-        accent, error, link-hover, pro, success, text-muted, text-primary, text-secondary
+        accent, error, info, link-hover, pro, success, text-muted, text-primary, text-secondary, warning
       bg-primary/50 over bg-primary
-        accent, error, link-hover, pro, success, text-muted, text-primary, text-secondary
+        accent, error, info, link-hover, pro, success, text-muted, text-primary, text-secondary, warning
       pro/20 over bg-primary
         pro
       pro/15 over bg-primary
@@ -257,11 +275,7 @@ describe("letterboxd palette contrast (WCAG 2.2 AA)", () => {
       pro/10 over bg-primary
         text-muted, text-primary
       bg-primary/95 over bg-primary
-        accent, error, link-hover, pro, success, text-muted, text-primary, text-secondary
-      error-surface/20 over bg-primary
-        error
-      success-surface/20 over bg-primary
-        success"
+        accent, error, info, link-hover, pro, success, text-muted, text-primary, text-secondary, warning"
     `);
   });
 

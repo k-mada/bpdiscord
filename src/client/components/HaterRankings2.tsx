@@ -111,12 +111,12 @@ const HaterRankings2 = ({
                     <td className="px-6 py-1 whitespace-nowrap">
                       <div className="flex items-center space-x-2">
                         {index === 0 && (
-                          <TrophyIcon className="h-5 w-5 text-yellow-500" />
+                          <TrophyIcon className="h-5 w-5 text-letterboxd-pro" />
                         )}
                         <span
                           className={`font-medium text-xl ${
                             index === 0
-                              ? "text-yellow-600 dark:text-yellow-400"
+                              ? "text-letterboxd-pro"
                               : "text-letterboxd-text-primary"
                           }`}
                         >
