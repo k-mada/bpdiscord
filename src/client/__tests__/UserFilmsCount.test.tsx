@@ -60,8 +60,10 @@ describe("UserFilmsCount", () => {
 
       render(<UserFilmsCount />);
 
+      // status, not alert: Stats renders this widget alongside its own
+      // page-level alert, and two assertive regions clobber each other.
       await waitFor(() => {
-        expect(screen.getByRole("alert")).toBeInTheDocument();
+        expect(screen.getByRole("status")).toBeInTheDocument();
       });
 
       // The count span should not be in the document while the error is shown.

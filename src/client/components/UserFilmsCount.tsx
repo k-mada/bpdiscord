@@ -10,7 +10,7 @@ const UserFilmsCount = () => {
       {loading ? (
         <Spinner size="sm" />
       ) : error ? (
-        <p className="text-letterboxd-error" role="alert">
+        <p className="text-letterboxd-error" role="status">
           {error}
         </p>
       ) : (

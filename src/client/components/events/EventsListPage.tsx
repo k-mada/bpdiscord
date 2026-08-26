@@ -2,7 +2,6 @@ import { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { EventSummary } from "../../types";
 import { apiService } from "../../services/api";
-import { Notification } from "../ui/Notification";
 
 /**
  * Groups events by award show name and sorts each group by year descending.
@@ -67,7 +66,9 @@ const EventsListPage = () => {
   if (error) {
     return (
       <div className="flex justify-center items-center min-h-[200px]">
-        <Notification status={{ type: "error", message: error }} />
+        <div role="status" className="text-letterboxd-error">
+          {error}
+        </div>
       </div>
     );
   }

@@ -46,7 +46,7 @@ const UserAdmin = () => {
     // Role is sourced from the /me response. The server enforces the real gate
     // (authorizeAdmin middleware), so this is a UX guard, not a security one.
     return (
-      <div className="card border rounded-lg border-letterboxd-error-surface/60 bg-letterboxd-error-surface/20">
+      <div className="card border rounded-lg border-letterboxd-error-surface/60 bg-letterboxd-error-surface/20 text-letterboxd-text-primary">
         <p className="font-semibold text-letterboxd-error">Access denied</p>
         <p className="text-letterboxd-text-primary text-sm mt-1">
           This page is only available to admin accounts.
@@ -83,9 +83,7 @@ const UserAdmin = () => {
       </div>
 
       {error && (
-        <Notification
-          status={{ type: "error", message: `Error loading accounts: ${error}` }}
-        />
+        <Notification status={{ type: "error", message: error }} />
       )}
 
       {loading ? (

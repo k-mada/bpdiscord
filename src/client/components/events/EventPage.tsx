@@ -7,7 +7,6 @@ import NomineesModal from "./NomineesModal";
 import DesktopTable from "./DesktopTable";
 import MobileTable from "./MobileTable";
 import { getOrdinalSuffix } from "./utils";
-import { Notification } from "../ui/Notification";
 
 const EventPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -52,9 +51,9 @@ const EventPage = () => {
   if (error || !event) {
     return (
       <div className="flex justify-center items-center min-h-[200px]">
-        <Notification
-          status={{ type: "error", message: error || "Event not found" }}
-        />
+        <div role="status" className="text-letterboxd-error">
+          {error || "Event not found"}
+        </div>
       </div>
     );
   }
