@@ -12,7 +12,7 @@ const baseClasses =
   "px-4 py-3 text-letterboxd-text-primary placeholder-letterboxd-text-muted " +
   "transition-all duration-200 " +
   "disabled:opacity-50 disabled:cursor-not-allowed " +
-  "aria-invalid:border-red-500";
+  "aria-invalid:border-letterboxd-error";
 
 export function Input({ className, ref, ...props }: InputProps) {
   return <input ref={ref} className={cn(baseClasses, className)} {...props} />;

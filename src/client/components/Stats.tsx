@@ -83,7 +83,9 @@ const Dashboard = () => {
       </div>
 
       {error ? (
-        <p className="body-text -prose text-red-400">{error}</p>
+        <p role="alert" className="body-text -prose text-letterboxd-error">
+          {error}
+        </p>
       ) : isInitialLoad ? (
         <Spinner />
       ) : (

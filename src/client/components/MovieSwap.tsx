@@ -4,6 +4,7 @@ import { swapFilmColumns } from "./DataTable/columns";
 import CollapsibleSection from "./CollapsibleSection";
 import Spinner from "./Spinner";
 import type { SwapFilm } from "../../shared/types";
+import { Notification } from "./ui/Notification";
 
 interface MovieSwapProps {
   user1: string;
@@ -54,9 +55,7 @@ const MovieSwap = ({
       {loading && <Spinner />}
 
       {error && (
-        <div className="card border-red-500/30 bg-red-900/10">
-          <p className="text-red-300">{error}</p>
-        </div>
+        <Notification status={{ type: "error", message: error }} />
       )}
 
       {data && !loading && (

@@ -7,6 +7,7 @@ import StarRating from "./StarRating";
 import { DataTable } from "./DataTable/DataTable";
 import { moviesInCommonColumns } from "./DataTable/columns";
 import { MovieInCommon } from "../types";
+import { Notification } from "./ui/Notification";
 
 interface Rating {
   rating: number;
@@ -185,10 +186,7 @@ const UserComparison = () => {
         </div>
       </div>
       {displayError && (
-        <div className="card border-red-500/30 bg-red-900/10">
-          <h3 className="text-lg font-semibold text-red-400 mb-2">Error</h3>
-          <p className="text-red-300">{displayError}</p>
-        </div>
+        <Notification status={{ type: "error", message: displayError }} />
       )}
 
       {moviesInCommonData && user1Data && user2Data && (

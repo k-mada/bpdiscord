@@ -49,6 +49,6 @@ describe("Input", () => {
     // Tailwind's aria-invalid: modifier applies in a real browser.
     const input = screen.getByTestId("input");
     expect(input).toHaveAttribute("aria-invalid", "true");
-    expect(input.className).toContain("aria-invalid:border-red-500");
+    expect(input.className).toContain("aria-invalid:border-letterboxd-error");
   });
 });

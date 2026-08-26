@@ -5,6 +5,7 @@ import { posterAtWidth } from "../lib/poster";
 import StarRating from "./StarRating";
 import NotFound from "./NotFound";
 import type { FilmRater } from "../../shared/types";
+import { Notification } from "./ui/Notification";
 
 const POSTER_WIDTH = 320;
 
@@ -70,9 +71,9 @@ const FilmPage = () => {
 
   if (error || !data) {
     return (
-      <div className="card text-red-400 text-sm">
-        {error ?? "Failed to load film"}
-      </div>
+      <Notification
+        status={{ type: "error", message: error ?? "Failed to load film" }}
+      />
     );
   }
 

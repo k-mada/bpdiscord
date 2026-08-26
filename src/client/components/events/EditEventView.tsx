@@ -190,7 +190,7 @@ const EditEventView = ({
                     e.stopPropagation();
                     handleDeleteCategory(cat.id);
                   }}
-                  className="text-red-400 hover:text-red-300 text-xs"
+                  className="text-letterboxd-error hover:underline text-xs"
                 >
                   Delete
                 </button>
@@ -239,7 +239,7 @@ const EditEventView = ({
                         </button>
                         <button
                           onClick={() => handleDeleteNominee(nominee.id)}
-                          className="text-red-400 hover:text-red-300 text-xs"
+                          className="text-letterboxd-error hover:underline text-xs"
                         >
                           Delete
                         </button>
