@@ -4,6 +4,7 @@ import { EventData, EventCategory, EventUserPick } from "../../types";
 import { apiService } from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 import { formatNominee } from "./utils";
+import { Notification } from "../ui/Notification";
 
 const MyPicksPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -82,7 +83,9 @@ const MyPicksPage = () => {
   if (error || !event) {
     return (
       <div className="flex justify-center items-center min-h-[200px]">
-        <div className="text-red-400">{error || "Event not found"}</div>
+        <div role="status" className="text-letterboxd-error">
+          {error || "Event not found"}
+        </div>
       </div>
     );
   }
@@ -122,8 +125,8 @@ const MyPicksPage = () => {
       </div>
 
       {pickError && (
-        <div className="mb-4 p-3 bg-red-500/20 text-red-400 text-sm rounded-sm">
-          {pickError}
+        <div className="mb-4">
+          <Notification status={{ type: "error", message: pickError }} />
         </div>
       )}
 

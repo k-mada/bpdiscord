@@ -120,7 +120,17 @@ export default tseslint.config(
     },
   },
   {
-    files: ["components/JobProgress.tsx"],
+    // Inverted ratchet: raw colour is an error everywhere except the files the
+    // burn-down has not reached, so new code starts protected by default.
+    files: ["**/*.{ts,tsx}"],
+    ignores: [
+      "components/TasteCompatibility.tsx",
+      "components/RatingDistributionHistogram.tsx",
+      "components/MovieList.tsx",
+      "components/UserProfile.tsx",
+      // Unrouted and slated for deprecation — see bpdiscord-y6q.
+      "components/HaterRankings.tsx",
+    ],
     rules: { "no-restricted-syntax": rawColour("error") },
   },
   {

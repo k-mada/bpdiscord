@@ -51,7 +51,9 @@ const EventPage = () => {
   if (error || !event) {
     return (
       <div className="flex justify-center items-center min-h-[200px]">
-        <div className="text-red-400">{error || "Event not found"}</div>
+        <div role="status" className="text-letterboxd-error">
+          {error || "Event not found"}
+        </div>
       </div>
     );
   }

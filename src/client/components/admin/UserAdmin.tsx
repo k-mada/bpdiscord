@@ -8,6 +8,7 @@ import { Input } from "../ui/Input";
 import { Modal, ModalBody, ModalHeader } from "../Modal";
 import Spinner from "../Spinner";
 import type { AccountUpdateRequest, AccountView } from "../../types";
+import { Notification } from "../ui/Notification";
 
 // UX-only pre-check. Server is the source of truth — keep in sync with
 // src/server/lib/lbusername.ts.
@@ -45,8 +46,8 @@ const UserAdmin = () => {
     // Role is sourced from the /me response. The server enforces the real gate
     // (authorizeAdmin middleware), so this is a UX guard, not a security one.
     return (
-      <div className="card border border-red-500/40">
-        <p className="text-red-400 font-semibold">Access denied</p>
+      <div className="card border rounded-lg border-letterboxd-error-surface/60 bg-letterboxd-error-surface/20 text-letterboxd-text-primary">
+        <p className="font-semibold text-letterboxd-error">Access denied</p>
         <p className="text-letterboxd-text-primary text-sm mt-1">
           This page is only available to admin accounts.
         </p>
@@ -82,10 +83,7 @@ const UserAdmin = () => {
       </div>
 
       {error && (
-        <div className="card border border-red-500/40" role="alert">
-          <p className="text-red-400 font-semibold">Error loading accounts</p>
-          <p className="text-letterboxd-text-primary text-sm mt-1">{error}</p>
-        </div>
+        <Notification status={{ type: "error", message: error }} />
       )}
 
       {loading ? (
@@ -353,12 +351,7 @@ const EditAccountModal = ({
           </div>
 
           {error && (
-            <div
-              role="alert"
-              className="bg-red-900/20 border border-red-500/40 text-red-300 px-3 py-2 rounded-sm"
-            >
-              {error}
-            </div>
+            <Notification status={{ type: "error", message: error }} />
           )}
 
           <div className="flex justify-between items-center gap-2 pt-2 border-t border-letterboxd-border">
@@ -367,7 +360,7 @@ const EditAccountModal = ({
                 type="button"
                 onClick={() => setConfirmingDelete(true)}
                 disabled={submitting || isSelf}
-                className="btn-secondary text-sm text-red-400 hover:text-red-300"
+                className="btn-secondary text-sm text-letterboxd-error hover:underline"
                 title={
                   isSelf
                     ? "You cannot delete your own account here. Use the Supabase dashboard."
@@ -383,7 +376,7 @@ const EditAccountModal = ({
                   type="button"
                   onClick={handleDelete}
                   disabled={submitting}
-                  className="btn-primary bg-red-600 hover:bg-red-500"
+                  className="btn-primary bg-letterboxd-error hover:bg-letterboxd-error/85"
                 >
                   {submitting ? "Deleting…" : "Yes, delete"}
                 </button>

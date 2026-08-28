@@ -4,6 +4,7 @@ import {
 } from "../lib/ratingsCompatibility";
 import { useCompatibilityExtremes } from "../hooks/useCompatibilityExtremes";
 import type { CompatibilityExtreme } from "../types";
+import { Notification } from "./ui/Notification";
 
 interface Props {
   username: string;
@@ -39,7 +40,7 @@ const CompatibilityExtremes = ({ username }: Props) => {
     );
   }
   if (error) {
-    return <div className="card text-red-400 text-sm">{error}</div>;
+    return <Notification status={{ type: "error", message: error }} />;
   }
 
   const most = data?.mostCompatible ?? [];

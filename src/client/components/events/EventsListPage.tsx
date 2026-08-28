@@ -66,7 +66,9 @@ const EventsListPage = () => {
   if (error) {
     return (
       <div className="flex justify-center items-center min-h-[200px]">
-        <div className="text-red-400">{error}</div>
+        <div role="status" className="text-letterboxd-error">
+          {error}
+        </div>
       </div>
     );
   }

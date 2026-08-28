@@ -29,7 +29,9 @@ const HaterRankings2 = ({
   if (error) {
     return (
       <div className="text-center">
-        <div className="text-red-500 mb-4">{error}</div>
+        <div className="text-letterboxd-error mb-4" role="alert">
+          {error}
+        </div>
         <button onClick={refetch} className="btn-primary">
           Try Again
         </button>

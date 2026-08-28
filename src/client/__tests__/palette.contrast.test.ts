@@ -263,7 +263,7 @@ describe("letterboxd palette contrast (WCAG 2.2 AA)", () => {
       warning-surface/20 over bg-primary
         warning
       error-surface/20 over bg-primary
-        error
+        error, text-primary
       bg-secondary/30 over bg-primary
         accent, error, info, link-hover, pro, success, text-muted, text-primary, text-secondary, warning
       bg-primary/50 over bg-primary
@@ -308,10 +308,10 @@ describe("letterboxd palette contrast (WCAG 2.2 AA)", () => {
     });
 
     it("the invalid-field border stays distinguishable", () => {
-      // Tailwind red-500, applied by ui/Input.tsx via aria-invalid:border-red-500
-      expect(contrast("#ef4444", token("bg-secondary"))).toBeGreaterThanOrEqual(
-        AA_NON_TEXT,
-      );
+      // ui/Input.tsx tints the border with `error` while aria-invalid is set.
+      expect(
+        contrast(token("error"), token("bg-secondary")),
+      ).toBeGreaterThanOrEqual(AA_NON_TEXT);
     });
 
     it("the focus outline meets 3:1 on every surface", () => {

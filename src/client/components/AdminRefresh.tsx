@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 
 import { useRefreshJob } from "../hooks/useRefreshJob";
 import JobProgress from "./JobProgress";
+import { Notification } from "./ui/Notification";
 
 const AdminRefresh = () => {
   const navigate = useNavigate();
@@ -52,10 +53,7 @@ const AdminRefresh = () => {
       </div>
 
       {error && (
-        <div className="card border border-red-500/40">
-          <p className="text-red-400 font-semibold">Error</p>
-          <p className="text-letterboxd-text-primary text-sm mt-1">{error}</p>
-        </div>
+        <Notification status={{ type: "error", message: error }} />
       )}
 
       {!job && !error && (

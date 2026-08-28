@@ -153,11 +153,15 @@ describe("FilmPage", () => {
     );
   });
 
-  it("renders the error card when the request genuinely fails", async () => {
+  it("announces the error card when the request genuinely fails", async () => {
     mockGet.mockRejectedValue(new Error("network down"));
     renderPage();
 
-    expect(await screen.findByText("Failed to load film")).toBeInTheDocument();
+    // getByRole, not getByText: the card is inserted after the fetch rejects,
+    // so role="alert" is what carries it to a screen reader.
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Failed to load film",
+    );
   });
 
   // Navigating between two films reuses the FilmPage instance, so a poster
