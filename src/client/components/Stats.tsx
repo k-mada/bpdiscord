@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import RatingDistributionHistogram from "./RatingDistributionHistogram";
 import UserFilmsCount from "./UserFilmsCount";
 import { useRatingsDistribution } from "../hooks/useRatingsDistribution";
@@ -9,16 +10,29 @@ import { cn } from "../lib/utils";
 
 const FIRST_YEAR = 1910;
 
+// Out-of-range values fall back to all-years so the <select> never holds a
+// value with no matching <option>, and the server never sees a year it 400s on.
+const parseYear = (raw: string | null, currentYear: number): number | null => {
+  if (!raw) return null;
+  const year = Number(raw);
+  return Number.isInteger(year) && year >= FIRST_YEAR && year <= currentYear
+    ? year
+    : null;
+};
+
 const Dashboard = () => {
-  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<"rated" | "watched">("rated");
+
+  const currentYear = new Date().getFullYear();
+  const selectedYear = parseYear(searchParams.get("year"), currentYear);
 
   const { data: allRatings, loading: ratingsLoading } = useRatingsDistribution();
   const { topRated, topWatched, loading, error } =
     useTopFilmsByYear(selectedYear);
 
   const years: number[] = [];
-  for (let y = new Date().getFullYear(); y >= FIRST_YEAR; y--) years.push(y);
+  for (let y = currentYear; y >= FIRST_YEAR; y--) years.push(y);
 
   const ratedHeading =
     selectedYear === null
@@ -69,9 +83,15 @@ const Dashboard = () => {
           id="top-films-year"
           className="input-field"
           value={selectedYear ?? ""}
-          onChange={(e) =>
-            setSelectedYear(e.target.value ? Number(e.target.value) : null)
-          }
+          onChange={(e) => {
+            const { value } = e.target;
+            setSearchParams((prev) => {
+              const next = new URLSearchParams(prev);
+              if (value) next.set("year", value);
+              else next.delete("year");
+              return next;
+            });
+          }}
         >
           <option value="">All years</option>
           {years.map((y) => (
@@ -128,6 +148,7 @@ const Dashboard = () => {
           </div>
 
           <div
+            aria-busy={loading}
             className={cn(
               "flex flex-row justify-between max-md:justify-center max-md:flex-col m-auto w-full transition-opacity",
               loading && "opacity-50",
