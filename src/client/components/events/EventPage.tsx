@@ -80,7 +80,7 @@ const EventPage = () => {
       </div>
 
       {isDesktop ? (
-        <DesktopTable categories={categories} />
+        <DesktopTable categories={categories} onCategoryTap={setModalCategory} />
       ) : (
         <MobileTable
           categories={categories}

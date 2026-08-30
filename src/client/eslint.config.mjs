@@ -148,4 +148,35 @@ export default tseslint.config(
       "jsx-a11y/role-has-required-aria-props",
     ),
   },
+  {
+    files: [
+      "components/oscars/CategoryLabel.tsx",
+      "components/oscars/DesktopTable.tsx",
+      "components/oscars/MobileTable.tsx",
+      "components/oscars/PickCell.tsx",
+      "components/oscars/WinnerCell.tsx",
+      "components/oscars/StickyToggle.tsx",
+      "components/events/CategoryLabel.tsx",
+      "components/events/DesktopTable.tsx",
+      "components/events/MobileTable.tsx",
+      "components/events/WinnerCell.tsx",
+    ],
+    rules: {
+      ...a11yErrors(
+        "jsx-a11y/aria-role",
+        "jsx-a11y/role-has-required-aria-props",
+        "jsx-a11y/role-supports-aria-props",
+        "jsx-a11y/no-static-element-interactions",
+        "jsx-a11y/click-events-have-key-events",
+        "jsx-a11y/interactive-supports-focus",
+      ),
+      "jsx-a11y/mouse-events-have-key-events": [
+        "error",
+        {
+          hoverInHandlers: ["onMouseOver", "onMouseEnter"],
+          hoverOutHandlers: ["onMouseOut", "onMouseLeave"],
+        },
+      ],
+    },
+  },
 );
