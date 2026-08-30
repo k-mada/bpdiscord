@@ -113,16 +113,45 @@ describe("Oscars MobileTable", () => {
 });
 
 describe("StickyToggle", () => {
-  it("reports which view mode is active", () => {
+  it("reports the active view mode and keeps one tab stop", () => {
     render(<StickyToggle viewMode="will_win" setViewMode={() => {}} />);
 
-    expect(screen.getByRole("group", { name: "View mode" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Who Will Win" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
     expect(
-      screen.getByRole("button", { name: "Who Should Win" }),
-    ).toHaveAttribute("aria-pressed", "false");
+      screen.getByRole("radiogroup", { name: "View mode" }),
+    ).toBeInTheDocument();
+
+    const active = screen.getByRole("radio", { name: "Who Will Win" });
+    const inactive = screen.getByRole("radio", { name: "Who Should Win" });
+    expect(active).toBeChecked();
+    expect(inactive).not.toBeChecked();
+    expect(active).toHaveAttribute("tabindex", "0");
+    expect(inactive).toHaveAttribute("tabindex", "-1");
+  });
+
+  it("moves between modes with the arrow keys", async () => {
+    const setViewMode = vi.fn();
+    render(<StickyToggle viewMode="will_win" setViewMode={setViewMode} />);
+
+    screen.getByRole("radio", { name: "Who Will Win" }).focus();
+    await userEvent.keyboard("{ArrowRight}");
+    expect(setViewMode).toHaveBeenCalledWith("should_win");
+  });
+
+  it("moves back with the arrow keys", async () => {
+    const setViewMode = vi.fn();
+    render(<StickyToggle viewMode="should_win" setViewMode={setViewMode} />);
+
+    screen.getByRole("radio", { name: "Who Should Win" }).focus();
+    await userEvent.keyboard("{ArrowLeft}");
+    expect(setViewMode).toHaveBeenCalledWith("will_win");
+  });
+
+  it("selects the focused mode with Space", async () => {
+    const setViewMode = vi.fn();
+    render(<StickyToggle viewMode="will_win" setViewMode={setViewMode} />);
+
+    await userEvent.click(screen.getByRole("radio", { name: "Who Should Win" }));
+
+    expect(setViewMode).toHaveBeenCalledWith("should_win");
   });
 });

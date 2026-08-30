@@ -168,6 +168,7 @@ export default tseslint.config(
         "jsx-a11y/role-supports-aria-props",
         "jsx-a11y/no-static-element-interactions",
         "jsx-a11y/click-events-have-key-events",
+        "jsx-a11y/interactive-supports-focus",
       ),
       "jsx-a11y/mouse-events-have-key-events": [
         "error",
