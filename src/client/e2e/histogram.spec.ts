@@ -12,25 +12,47 @@ test.beforeEach(async ({ page }) => {
 
 // The jsdom twin queries focusable selectors; this walks real focus, the only
 // way to catch something the browser treats as tabbable and the list misses.
-test("the histogram adds no tab stops to real keyboard navigation", async ({
+// One stop is the contract: the counts disclosure. Ten focusable bars is what
+// the aria-hidden decorative markup exists to avoid.
+test("the histogram costs exactly one tab stop, and no bar is focusable", async ({
   page,
 }) => {
   await page.getByTestId("before").focus();
 
-  const visited: string[] = [];
-  for (let i = 0; i < 6; i++) {
+  const stopsInsideHistogram: string[] = [];
+
+  // Sweep one pass of the page order and stop at its last control; Tab past
+  // that wraps back around and would count the same stop twice.
+  for (let i = 0; i < 8; i++) {
     await page.keyboard.press("Tab");
-    visited.push(
-      await page.evaluate(
-        () => document.activeElement?.getAttribute("data-testid") ?? "",
-      ),
-    );
-    const insideHistogram = await page.evaluate(() =>
-      document
-        .querySelector('[data-testid="histogram"]')!
-        .contains(document.activeElement),
-    );
-    expect(insideHistogram).toBe(false);
+    const stop = await page.evaluate(() => {
+      const active = document.activeElement!;
+      const histogram = document.querySelector('[data-testid="histogram"]')!;
+      return {
+        inside: histogram.contains(active),
+        tag: active.tagName.toLowerCase(),
+        onBar: !!active.closest(".histogram-bar"),
+        testid: active.getAttribute("data-testid"),
+      };
+    });
+
+    expect(stop.onBar).toBe(false);
+    if (stop.inside) stopsInsideHistogram.push(stop.tag);
+    if (stop.testid === "after") break;
   }
-  expect(visited).not.toContain("histogram");
+
+  expect(stopsInsideHistogram).toEqual(["summary"]);
+});
+
+test("the counts stay reachable without a pointer", async ({ page }) => {
+  await page.getByTestId("before").focus();
+  await page.keyboard.press("Tab");
+
+  await expect(page.locator("details summary")).toBeFocused();
+  expect(await page.locator("details").evaluate((d: HTMLDetailsElement) => d.open)).toBe(false);
+
+  await page.keyboard.press("Enter");
+
+  expect(await page.locator("details").evaluate((d: HTMLDetailsElement) => d.open)).toBe(true);
+  await expect(page.locator("details tbody tr")).toHaveCount(10);
 });
