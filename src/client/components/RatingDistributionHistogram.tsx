@@ -1,17 +1,10 @@
 import { ALL_RATINGS } from "../constants";
-import Tooltip from "./Tooltip";
 
 interface RatingDistributionHistogramProps {
   distribution: Array<{ rating: number; count: number }>;
   size?: string;
   className?: string;
 }
-
-const formatStars = (rating: number): string => {
-  const fullStars = Math.floor(rating);
-  const hasHalf = rating % 1 !== 0;
-  return "★".repeat(fullStars) + (hasHalf ? "½" : "");
-};
 
 const formatShare = (count: number, totalCount: number): string =>
   `${totalCount > 0 ? ((count / totalCount) * 100).toFixed(1) : "0.0"}%`;
@@ -53,31 +46,22 @@ const RatingDistributionHistogram = ({
           // Check if this bar has the maximum count (tallest bar)
           const isTallestBar = count > 0 && count === maxCount;
 
-          const tooltipContent =
-            count === 0
-              ? `${formatStars(rating)} ratings (0%)`
-              : `${count.toLocaleString()} ${formatStars(
-                  rating,
-                )} ratings (${formatShare(count, totalCount)})`;
-
           return (
-            <Tooltip key={rating} content={tooltipContent}>
-              <div className="histogram-bar">
-                <div
-                  className={`rounded-xs transition-all cursor-help ${
-                    count === 0
-                      ? "bg-green-800 opacity-30"
-                      : isTallestBar
-                        ? "bg-letterboxd-accent hover:bg-letterboxd-accent-hover"
-                        : "bg-green-800 hover:bg-green-900"
-                  }`}
-                  style={{
-                    height: `${heightPx}px`,
-                    minHeight: "2px",
-                  }}
-                />
-              </div>
-            </Tooltip>
+            <div key={rating} className="histogram-bar">
+              <div
+                className={`rounded-xs ${
+                  count === 0
+                    ? "bg-green-800 opacity-30"
+                    : isTallestBar
+                      ? "bg-letterboxd-accent"
+                      : "bg-green-800"
+                }`}
+                style={{
+                  height: `${heightPx}px`,
+                  minHeight: "2px",
+                }}
+              />
+            </div>
           );
         })}
         {size === "md" && (
