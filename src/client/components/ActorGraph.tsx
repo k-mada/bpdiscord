@@ -131,11 +131,13 @@ export const ActorComboBox = ({
     };
   }, [query, open, selected]);
 
-  // Either input renumbers the options — excludeId shrinks the list when the
-  // other picker chooses — so a held index would point at a different actor.
+  // Keyed on the ids, not on `results`: a re-fetch hands back a fresh array for
+  // the same actors, and dropping the highlight there loses a screen reader
+  // user their place mid-list. Renumbering is what must reset it.
+  const optionIds = filteredResults.map((r) => r.tmdbId).join(",");
   useEffect(() => {
     setActiveIndex(-1);
-  }, [results, excludeId]);
+  }, [optionIds]);
 
   // aria-activedescendant moves no viewport; the popup scrolls past ~5 options.
   useEffect(() => {

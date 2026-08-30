@@ -86,6 +86,34 @@ describe("ActorComboBox", () => {
     expect(input).toHaveAttribute("aria-activedescendant", options()[2]!.id);
   });
 
+  // The highlight used to drop whenever `results` got a new array identity —
+  // a re-fetch returning the same actors was enough. Reproduced as a re-render
+  // that renumbers nothing.
+  it("keeps the active option when the option ids are unchanged", async () => {
+    const onSelect = vi.fn();
+    const { rerender } = render(
+      <ActorComboBox label="Actor 1" selected={null} onSelect={onSelect} />,
+    );
+    const input = screen.getByRole("combobox", { name: "Actor 1" });
+
+    await userEvent.type(input, "tom");
+    await waitFor(() => expect(options()).toHaveLength(3));
+    fireEvent.keyDown(input, { key: "ArrowDown" });
+    const active = input.getAttribute("aria-activedescendant");
+    expect(active).toBeTruthy();
+
+    rerender(
+      <ActorComboBox
+        label="Actor 1"
+        selected={null}
+        onSelect={onSelect}
+        excludeId={999}
+      />,
+    );
+
+    expect(input).toHaveAttribute("aria-activedescendant", active!);
+  });
+
   it("selects the active option on Enter", async () => {
     const { input, onSelect } = setup();
     await userEvent.type(input, "tom");
