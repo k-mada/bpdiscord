@@ -13,6 +13,9 @@ interface MobileTableProps {
   onCategoryTap: (cat: OscarsCategory) => void;
 }
 
+const HEADER_CELL =
+  "px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider text-letterboxd-pro";
+
 const MobileTable = ({
   categories,
   getSeanPick,
@@ -20,17 +23,23 @@ const MobileTable = ({
   viewMode,
   onCategoryTap,
 }: MobileTableProps) => (
-  <div className="space-y-1">
+  <div className="space-y-1" role="table" aria-label="Predictions by category">
     <div
+      role="row"
       className={`grid grid-cols-3 sticky ${STICKY_TOGGLE_HEIGHT} z-10 bg-letterboxd-bg-secondary shadow-md border-b border-letterboxd-pro/30 rounded-t-lg`}
     >
-      <div className="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider text-letterboxd-pro">
+      {/* sr-only is position:absolute, so this consumes no grid track. It is
+          here because each row leads with a category rowheader. */}
+      <div role="columnheader" className="sr-only">
+        Category
+      </div>
+      <div role="columnheader" className={HEADER_CELL}>
         Sean
       </div>
-      <div className="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider text-letterboxd-pro">
+      <div role="columnheader" className={HEADER_CELL}>
         Amanda
       </div>
-      <div className="px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider text-letterboxd-pro">
+      <div role="columnheader" className={HEADER_CELL}>
         Winner
       </div>
     </div>
@@ -41,26 +50,25 @@ const MobileTable = ({
       return (
         <div
           key={cat.order}
-          className={`border-b border-letterboxd-border/50 ${
+          role="row"
+          className={`grid grid-cols-3 border-b border-letterboxd-border/50 ${
             i % 2 === 0 ? "bg-letterboxd-bg-secondary/30" : ""
           }`}
         >
-          <div className="px-3 pt-3 pb-1 text-center">
+          <div role="rowheader" className="col-span-3 px-3 pt-3 pb-1 text-center">
             <MobileCategoryLabel category={cat} onTap={onCategoryTap} />
           </div>
-          <div className="grid grid-cols-3 min-h-[56px]">
-            <PickCell
-              pick={seanPick}
-              isWinner={cat.winner === "sean" && viewMode === "will_win"}
-              isCorrectPick={isCorrectPick(seanPick, cat)}
-            />
-            <PickCell
-              pick={amandaPick}
-              isWinner={cat.winner === "amanda" && viewMode === "will_win"}
-              isCorrectPick={isCorrectPick(amandaPick, cat)}
-            />
-            <WinnerCell cat={cat} />
-          </div>
+          <PickCell
+            pick={seanPick}
+            isWinner={cat.winner === "sean" && viewMode === "will_win"}
+            isCorrectPick={isCorrectPick(seanPick, cat)}
+          />
+          <PickCell
+            pick={amandaPick}
+            isWinner={cat.winner === "amanda" && viewMode === "will_win"}
+            isCorrectPick={isCorrectPick(amandaPick, cat)}
+          />
+          <WinnerCell cat={cat} />
         </div>
       );
     })}

@@ -9,10 +9,16 @@ interface ToggleProps {
 const StickyToggle = ({ viewMode, setViewMode }: ToggleProps) => (
   <div className="sticky top-0 z-20 bg-letterboxd-bg-primary/95 backdrop-blur-xs border-b border-letterboxd-border/30 -mx-2 sm:-mx-4 px-2 sm:px-4">
     <div className="flex justify-center py-2">
-      <div className="inline-flex rounded-lg border border-letterboxd-border overflow-hidden">
+      <div
+        role="group"
+        aria-label="View mode"
+        className="inline-flex rounded-lg border border-letterboxd-border overflow-hidden"
+      >
         {VIEW_MODE_TABS.map(({ value, label }) => (
           <button
             key={value}
+            type="button"
+            aria-pressed={viewMode === value}
             onClick={() => setViewMode(value)}
             className={`px-4 sm:px-5 py-1.5 text-sm font-semibold transition-colors ${
               viewMode === value

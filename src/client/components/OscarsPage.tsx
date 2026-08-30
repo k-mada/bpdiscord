@@ -74,6 +74,7 @@ const OscarsPage = () => {
           getSeanPick={getSeanPick}
           getAmandaPick={getAmandaPick}
           viewMode={viewMode}
+          onCategoryTap={setModalCategory}
         />
       ) : (
         <MobileTable

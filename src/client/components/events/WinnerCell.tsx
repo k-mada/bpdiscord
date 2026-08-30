@@ -7,7 +7,10 @@ interface WinnerCellProps {
 }
 
 const WinnerCell = ({ winners, displayMode }: WinnerCellProps) => (
-  <div className="flex items-center justify-center text-center px-2 py-2 md:px-3">
+  <div
+    role="cell"
+    className="flex items-center justify-center text-center px-2 py-2 md:px-3 min-h-[56px]"
+  >
     {winners.length > 0 ? (
       <div className="flex flex-col gap-2">
         {winners.map((winner) => {
@@ -31,7 +34,12 @@ const WinnerCell = ({ winners, displayMode }: WinnerCellProps) => (
         })}
       </div>
     ) : (
-      <span className="text-letterboxd-text-muted text-xs">&mdash;</span>
+      <>
+        <span aria-hidden="true" className="text-letterboxd-text-muted text-xs">
+          &mdash;
+        </span>
+        <span className="sr-only">Not announced</span>
+      </>
     )}
   </div>
 );
