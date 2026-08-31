@@ -263,23 +263,31 @@ class ApiService {
     return this.request<MFLMovieScore[]>(`/mfl/movie-score/${filmSlug}`);
   }
 
+  // Payload object rather than positional args: token goes last by convention,
+  // and scoringId is optional, so it cannot sit before a required parameter.
   async upsertMflMovieScore(
-    filmSlug: string,
-    pointsAwarded: number,
-    metricId: number,
-    scoringId?: number,
+    data: {
+      filmSlug: string;
+      pointsAwarded: number;
+      metricId: number;
+      scoringId?: number;
+    },
+    token: string,
   ): Promise<ApiResponse<unknown>> {
-    return this.request<unknown>(`/mfl/upsert-movie-score`, {
+    return this.request<unknown>("/mfl/admin/movie-score", {
       method: "POST",
-      body: JSON.stringify({ filmSlug, pointsAwarded, metricId, scoringId }),
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(data),
     });
   }
 
-  async deleteMflScoringMetric(
+  async deleteMflMovieScore(
     scoringId: number,
+    token: string,
   ): Promise<ApiResponse<unknown>> {
-    return this.request<unknown>(`/mfl/delete-scoring-metric/${scoringId}`, {
+    return this.request<unknown>(`/mfl/admin/movie-score/${scoringId}`, {
       method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
     });
   }
 

@@ -65,6 +65,8 @@ Routes are defined under `src/server/routes/`. Quick map:
   - `actors/:id`, `movies/:id`, `actors/:id/costars`, `actors/:a1/common-movies/:a2` — cache-through; ingestion rate-limited 120 req / 5 min per IP.
   - Public despite being cache-through writers: writes are bounded (top-15 cast per ingestion), source is TMDB (itself public), per-IP rate limiters cap abuse. Requires `TMDB_READ_API_TOKEN` (503 if unset).
 - `/api/users` — JWT-protected CRUD for app accounts (admin-only for list/edit/delete of others).
+- `/api/mfl` — Movie Fantasy League. The four reads are **public**; the two writes are **admin only** and live under `/mfl/admin/*` (`POST /admin/movie-score`, `DELETE /admin/movie-score/:scoringId`). Both write `MFLScoringTally` — a film's award of one scoring metric — despite the legacy "scoring metric" naming that survived until bpdiscord-ayy. Editing the metrics themselves is bpdiscord-s6t and does not exist yet.
+- `/api/events` — public award-show/event reads plus `POST /picks` for any logged-in user; everything under `/events/admin/*` is admin only. The reference for how a mixed public/admin router applies middleware **per route** rather than via `router.use`.
 
 ### Actor-graph controller error handling
 

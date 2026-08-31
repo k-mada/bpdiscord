@@ -45,17 +45,22 @@ export const useMflData = () => {
     return response.data ?? [];
   };
 
+  // Token is a parameter rather than read from useAuth here: three PUBLIC
+  // components consume this hook and must not be coupled to auth.
   const upsertMovieScore = async (
-    filmSlug: string,
-    pointsAwarded: number,
-    metricId: number,
-    scoringId?: number
+    data: {
+      filmSlug: string;
+      pointsAwarded: number;
+      metricId: number;
+      scoringId?: number;
+    },
+    token: string
   ) => {
-    return apiService.upsertMflMovieScore(filmSlug, pointsAwarded, metricId, scoringId);
+    return apiService.upsertMflMovieScore(data, token);
   };
 
-  const deleteScore = async (scoringId: number) => {
-    return apiService.deleteMflScoringMetric(scoringId);
+  const deleteScore = async (scoringId: number, token: string) => {
+    return apiService.deleteMflMovieScore(scoringId, token);
   };
 
   return {
