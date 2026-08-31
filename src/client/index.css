@@ -399,8 +399,16 @@ layer(base);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bar-grow {
+  .bar-grow,
+  .animate-slide-up {
     animation: none;
+  }
+
+  /* .movie-poster-fade-in li starts at opacity 0 and relies on the animation
+     to reveal it, so `animation: none` alone hides the list permanently. */
+  .movie-poster-fade-in li {
+    animation: none;
+    opacity: 1;
   }
 }
 

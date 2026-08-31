@@ -80,6 +80,7 @@ export function DataTable<T, HeaderCtx = unknown>({
             return (
               <th
                 key={column.key as string}
+                scope="col"
                 aria-sort={ariaSort(
                   canSort,
                   isActiveSort,

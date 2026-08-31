@@ -21,7 +21,10 @@ const rawColourMessage =
 // several rules' schema defaults are far wider than what recommended sets.
 const atSeverity = (severity) => (rule) => {
   const config = jsxA11y.flatConfigs.recommended.rules[rule];
-  return [rule, Array.isArray(config) ? [severity, ...config.slice(1)] : severity];
+  return [
+    rule,
+    Array.isArray(config) ? [severity, ...config.slice(1)] : severity,
+  ];
 };
 
 // jsx-a11y and the colour rule land at `warn` so pre-existing findings do not
@@ -166,6 +169,27 @@ export default tseslint.config(
       "jsx-a11y/label-has-associated-control",
       "jsx-a11y/role-supports-aria-props",
       "jsx-a11y/role-has-required-aria-props",
+    ),
+  },
+  {
+    files: [
+      "components/Stats.tsx",
+      "components/MovieList.tsx",
+      "components/MovieBarChart.tsx",
+      "components/Dashboard.tsx",
+      "components/UserProfile.tsx",
+      "components/UserFilmsCount.tsx",
+      "components/DataTable/DataTable.tsx",
+    ],
+    rules: a11yErrors(
+      "jsx-a11y/alt-text",
+      "jsx-a11y/img-redundant-alt",
+      "jsx-a11y/heading-has-content",
+      "jsx-a11y/aria-role",
+      "jsx-a11y/role-has-required-aria-props",
+      "jsx-a11y/role-supports-aria-props",
+      "jsx-a11y/interactive-supports-focus",
+      "jsx-a11y/no-noninteractive-tabindex",
     ),
   },
   {

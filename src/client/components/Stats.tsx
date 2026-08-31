@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import RatingDistributionHistogram from "./RatingDistributionHistogram";
 import UserFilmsCount from "./UserFilmsCount";
@@ -7,8 +7,14 @@ import { useTopFilmsByYear } from "../hooks/useTopFilmsByYear";
 import Spinner from "./Spinner";
 import MovieBarChart from "./MovieBarChart";
 import { cn } from "../lib/utils";
+import { useMediaQuery } from "../hooks/useMediaQuery";
 
 const FIRST_YEAR = 1910;
+
+const TABS = [
+  { value: "rated", label: "Highest rated" },
+  { value: "watched", label: "Most watched" },
+] as const;
 
 // Out-of-range values fall back to all-years so the <select> never holds a
 // value with no matching <option>, and the server never sees a year it 400s on.
@@ -23,11 +29,16 @@ const parseYear = (raw: string | null, currentYear: number): number | null => {
 const Dashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<"rated" | "watched">("rated");
+  // Above md both panels are shown side by side, so there is no tablist to
+  // label them and the tab roles have to go with it.
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+  const tablistRef = useRef<HTMLDivElement>(null);
 
   const currentYear = new Date().getFullYear();
   const selectedYear = parseYear(searchParams.get("year"), currentYear);
 
-  const { data: allRatings, loading: ratingsLoading } = useRatingsDistribution();
+  const { data: allRatings, loading: ratingsLoading } =
+    useRatingsDistribution();
   const { topRated, topWatched, loading, error } =
     useTopFilmsByYear(selectedYear);
 
@@ -56,8 +67,28 @@ const Dashboard = () => {
   const isInitialLoad =
     loading && topRated.length === 0 && topWatched.length === 0;
 
+  // onKeyDown sits on each tab, not the tablist: the container is not
+  // focusable, and hanging keyboard handling off it only looks correct.
+  const handleTabKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    const from = TABS.findIndex((tab) => tab.value === activeTab);
+    let next: number;
+    if (event.key === "ArrowRight") next = (from + 1) % TABS.length;
+    else if (event.key === "ArrowLeft")
+      next = (from - 1 + TABS.length) % TABS.length;
+    else if (event.key === "Home") next = 0;
+    else if (event.key === "End") next = TABS.length - 1;
+    else return;
+
+    event.preventDefault();
+    setActiveTab(TABS[next]!.value);
+    tablistRef.current?.querySelectorAll("button")[next]?.focus();
+  };
+
   return (
     <div>
+      {/* Visually absent by design: the page opens on the welcome copy, and the
+          logo is the visible title. The hierarchy still needs a root. */}
+      <h1 className="sr-only">Discord stats</h1>
       <div className="body-text -prose">
         <p>
           Welcome to the Big Picture Discord. This is a fun project meant to
@@ -66,7 +97,7 @@ const Dashboard = () => {
         </p>
       </div>
       <UserFilmsCount />
-      <h3 className="subheading">How we rated all of our movies:</h3>
+      <h2 className="subheading">How we rated all of our movies:</h2>
       <div className="flex mb-4 justify-center">
         {ratingsLoading ? (
           <Spinner />
@@ -110,42 +141,35 @@ const Dashboard = () => {
         <Spinner />
       ) : (
         <>
-          <div
-            role="tablist"
-            aria-label="Top films category"
-            className="md:hidden flex mb-4 border-b border-letterboxd-border"
-          >
-            <button
-              role="tab"
-              id="tab-rated"
-              aria-selected={activeTab === "rated"}
-              aria-controls="panel-rated"
-              onClick={() => setActiveTab("rated")}
-              className={cn(
-                "flex-1 -mb-px border-b-2 py-2 text-center font-medium transition-colors",
-                activeTab === "rated"
-                  ? "border-letterboxd-accent text-letterboxd-text-primary"
-                  : "border-transparent text-letterboxd-text-secondary",
-              )}
+          {!isDesktop && (
+            <div
+              ref={tablistRef}
+              role="tablist"
+              aria-label="Top films category"
+              className="flex mb-4 border-b border-letterboxd-border"
             >
-              Highest rated
-            </button>
-            <button
-              role="tab"
-              id="tab-watched"
-              aria-selected={activeTab === "watched"}
-              aria-controls="panel-watched"
-              onClick={() => setActiveTab("watched")}
-              className={cn(
-                "flex-1 -mb-px border-b-2 py-2 text-center font-medium transition-colors",
-                activeTab === "watched"
-                  ? "border-letterboxd-accent text-letterboxd-text-primary"
-                  : "border-transparent text-letterboxd-text-secondary",
-              )}
-            >
-              Most watched
-            </button>
-          </div>
+              {TABS.map(({ value, label }) => (
+                <button
+                  key={value}
+                  role="tab"
+                  id={`tab-${value}`}
+                  aria-selected={activeTab === value}
+                  aria-controls={`panel-${value}`}
+                  tabIndex={activeTab === value ? 0 : -1}
+                  onClick={() => setActiveTab(value)}
+                  onKeyDown={handleTabKeyDown}
+                  className={cn(
+                    "flex-1 -mb-px border-b-2 py-2 text-center font-medium transition-colors",
+                    activeTab === value
+                      ? "border-letterboxd-accent text-letterboxd-text-primary"
+                      : "border-transparent text-letterboxd-text-secondary",
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
 
           <div
             aria-busy={loading}
@@ -155,15 +179,15 @@ const Dashboard = () => {
             )}
           >
             <div
-              id="panel-rated"
-              role="tabpanel"
-              aria-labelledby="tab-rated"
+              id={`panel-rated`}
+              role={isDesktop ? undefined : "tabpanel"}
+              aria-labelledby={isDesktop ? undefined : `tab-rated`}
               className={cn(
                 "flex-1 min-w-0 md:mr-2",
                 activeTab !== "rated" && "max-md:hidden",
               )}
             >
-              <h3 className="subheading max-md:text-base">{ratedHeading}</h3>
+              <h2 className="subheading max-md:text-base">{ratedHeading}</h2>
               <MovieBarChart
                 movies={topRated}
                 showRating={true}
@@ -172,15 +196,15 @@ const Dashboard = () => {
             </div>
 
             <div
-              id="panel-watched"
-              role="tabpanel"
-              aria-labelledby="tab-watched"
+              id={`panel-watched`}
+              role={isDesktop ? undefined : "tabpanel"}
+              aria-labelledby={isDesktop ? undefined : `tab-watched`}
               className={cn(
                 "flex-1 min-w-0 md:ml-2",
                 activeTab !== "watched" && "max-md:hidden",
               )}
             >
-              <h3 className="subheading max-md:text-base">{watchedHeading}</h3>
+              <h2 className="subheading max-md:text-base">{watchedHeading}</h2>
               <MovieBarChart
                 movies={topWatched}
                 showCount={true}

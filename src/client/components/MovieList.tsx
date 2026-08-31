@@ -36,7 +36,8 @@ const MovieList = ({
           <div className="ml-4">
             {showRating && (
               <span>
-                ★&nbsp;
+                <span aria-hidden="true">★&nbsp;</span>
+                <span className="sr-only">Average rating </span>
                 <span className="font-bold">
                   {movie.average_rating.toFixed(2)}
                 </span>
@@ -44,7 +45,8 @@ const MovieList = ({
             )}
             {showCount && (
               <span>
-                👀&nbsp;
+                <span aria-hidden="true">👀&nbsp;</span>
+                <span className="sr-only">Watched by </span>
                 <span className="font-bold">{movie.watch_count}</span>
               </span>
             )}
@@ -75,7 +77,7 @@ const MovieList = ({
                     <div className="w-full aspect-[2/3] bg-slate-800" />
                   )}
                 </Link>
-                <div className="pointer-events-none absolute inset-0 hidden items-end bg-gradient-to-b from-transparent to-slate-900 py-5 text-xl opacity-0 transition-opacity duration-500 ease-in-out group-hover:opacity-100 hover-desktop:flex">
+                <div className="pointer-events-none absolute inset-0 hidden items-end bg-gradient-to-b from-transparent to-slate-900 py-5 text-xl opacity-0 transition-opacity duration-500 ease-in-out group-hover:opacity-100 group-has-[:focus-visible]:opacity-100 hover-desktop:flex">
                   {statLine}
                 </div>
               </div>

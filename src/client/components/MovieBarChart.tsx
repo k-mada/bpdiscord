@@ -67,7 +67,7 @@ const MovieBarChart = ({
               {movie.poster ? (
                 <img
                   src={movie.poster}
-                  alt={`${movie.title} poster`}
+                  alt=""
                   width={48}
                   height={72}
                   loading="lazy"

@@ -96,10 +96,10 @@ const HaterRankings2 = ({
             <table className="w-full">
               <thead>
                 <tr className="table-heading-row">
-                  <th>Rank</th>
-                  <th>User</th>
-                  <th>Total films rated</th>
-                  <th className="flex items-center">
+                  <th scope="col">Rank</th>
+                  <th scope="col">User</th>
+                  <th scope="col">Total films rated</th>
+                  <th scope="col" className="flex items-center">
                     Differential (per 100 rated movies)
                   </th>
                 </tr>

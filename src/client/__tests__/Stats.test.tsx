@@ -195,3 +195,97 @@ describe("Stats year URL parameter", () => {
     ).toHaveAttribute("aria-busy", "true");
   });
 });
+
+const setViewport = (desktop: boolean) => {
+  window.matchMedia = ((query: string) => ({
+    matches: desktop,
+    media: query,
+    onchange: null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    addListener: () => {},
+    removeListener: () => {},
+    dispatchEvent: () => false,
+  })) as typeof window.matchMedia;
+};
+
+describe("Stats top-films tabs", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    withFilms();
+    setViewport(false);
+  });
+
+  it("puts one tab in the tab order and moves the other out", () => {
+    renderAt("/");
+
+    const [rated, watched] = screen.getAllByRole("tab");
+    expect(rated).toHaveAttribute("aria-selected", "true");
+    expect(rated).toHaveAttribute("tabindex", "0");
+    expect(watched).toHaveAttribute("tabindex", "-1");
+  });
+
+  it("moves selection and focus with the arrow keys, wrapping", async () => {
+    renderAt("/");
+    const [rated, watched] = screen.getAllByRole("tab");
+    rated!.focus();
+
+    await userEvent.keyboard("{ArrowRight}");
+    expect(watched).toHaveFocus();
+    expect(watched).toHaveAttribute("aria-selected", "true");
+    expect(rated).toHaveAttribute("tabindex", "-1");
+
+    // Wrapping is what stops the last tab being a keyboard dead end.
+    await userEvent.keyboard("{ArrowRight}");
+    expect(rated).toHaveFocus();
+    expect(rated).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("jumps to either end with Home and End", async () => {
+    renderAt("/");
+    const [rated, watched] = screen.getAllByRole("tab");
+    rated!.focus();
+
+    await userEvent.keyboard("{End}");
+    expect(watched).toHaveAttribute("aria-selected", "true");
+
+    await userEvent.keyboard("{Home}");
+    expect(rated).toHaveAttribute("aria-selected", "true");
+  });
+
+  it("leaves other keys alone", async () => {
+    renderAt("/");
+    const [rated] = screen.getAllByRole("tab");
+    rated!.focus();
+
+    await userEvent.keyboard("{ArrowDown}");
+
+    expect(rated).toHaveAttribute("aria-selected", "true");
+  });
+
+  // Above md both panels are visible side by side. Keeping the tabpanel roles
+  // there leaves them pointing aria-labelledby at tabs that do not exist.
+  it("drops the tab roles at the desktop breakpoint", () => {
+    setViewport(true);
+    renderAt("/");
+
+    expect(screen.queryAllByRole("tab")).toHaveLength(0);
+    expect(screen.queryByRole("tablist")).toBeNull();
+    expect(screen.queryAllByRole("tabpanel")).toHaveLength(0);
+    expect(document.querySelector("[aria-labelledby]")).toBeNull();
+  });
+
+  it("still renders both sets of films on desktop", () => {
+    setViewport(true);
+    renderAt("/");
+
+    expect(
+      screen.getByRole("heading", {
+        name: "Our highest rated movies (20+ ratings)",
+      }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { name: "Our most watched movies" }),
+    ).toBeTruthy();
+  });
+});
