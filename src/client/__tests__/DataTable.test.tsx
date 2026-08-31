@@ -87,6 +87,18 @@ describe("DataTable", () => {
     });
   });
 
+  describe("header semantics", () => {
+    it("scopes every header cell to its column", () => {
+      render(<DataTable data={rows} columns={basicColumns} />);
+
+      const headers = screen.getAllByRole("columnheader");
+      expect(headers.length).toBeGreaterThan(0);
+      for (const header of headers) {
+        expect(header).toHaveAttribute("scope", "col");
+      }
+    });
+  });
+
   describe("rows", () => {
     it("renders cell values by column key", () => {
       const { container } = render(
@@ -231,9 +243,7 @@ describe("DataTable", () => {
     it("renders sortable headers as keyboard-accessible buttons", () => {
       render(<DataTable data={rows} columns={basicColumns} enableSort />);
 
-      expect(
-        screen.getByRole("button", { name: "Score" }),
-      ).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Score" })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Name" })).toBeInTheDocument();
     });
 

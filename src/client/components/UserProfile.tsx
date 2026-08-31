@@ -66,9 +66,9 @@ const UserProfile = () => {
     <div className="space-y-8">
       <div className="card flex justify-start md:justify-between flex-col md:flex-row items-center">
         <div>
-          <h2 className="text-xl md:text-3xl font-bold text-letterboxd-text-primary">
+          <h1 className="text-xl md:text-3xl font-bold text-letterboxd-text-primary">
             {displayName}
-          </h2>
+          </h1>
           <a
             href={`https://letterboxd.com/${profile.username}`}
             target="_blank"

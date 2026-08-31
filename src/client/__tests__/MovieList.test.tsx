@@ -47,4 +47,19 @@ describe("MovieList", () => {
 
     expect(screen.getByRole("link")).toHaveAttribute("href", "/film/heat");
   });
+
+  // ★ and 👀 were the only thing telling a rating from a watch count, and
+  // neither has a name a screen reader can read out.
+  it("labels the rating and watch-count glyphs", () => {
+    render(
+      <MemoryRouter>
+        <MovieList movies={[film]} showRating showCount />
+      </MemoryRouter>,
+    );
+
+    // Rendered twice: the hover overlay and the static line below the poster,
+    // one of which CSS hides at any given breakpoint.
+    expect(screen.getAllByText("Average rating")).not.toHaveLength(0);
+    expect(screen.getAllByText("Watched by")).not.toHaveLength(0);
+  });
 });

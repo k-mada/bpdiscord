@@ -41,9 +41,9 @@ const Dashboard = () => {
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <div className="card hover:bg-letterboxd-bg-tertiary transition-colors">
-          <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-2">
+          <h2 className="text-xl font-semibold text-letterboxd-text-primary mb-2">
             Profile
-          </h3>
+          </h2>
           <p className="text-letterboxd-text-secondary mb-4">
             View your ratings, compatibility, and top films
           </p>
@@ -58,9 +58,9 @@ const Dashboard = () => {
 
         {isDevMode && (
           <div className="card hover:bg-letterboxd-bg-tertiary transition-colors">
-            <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-2">
+            <h2 className="text-xl font-semibold text-letterboxd-text-primary mb-2">
               Data Fetcher
-            </h3>
+            </h2>
             <p className="text-letterboxd-text-secondary mb-4">
               Scrape and analyze Letterboxd rating data
             </p>
@@ -74,9 +74,9 @@ const Dashboard = () => {
         )}
 
         <div className="card hover:bg-letterboxd-bg-tertiary transition-colors">
-          <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-2">
+          <h2 className="text-xl font-semibold text-letterboxd-text-primary mb-2">
             Compare Users
-          </h3>
+          </h2>
           <p className="text-letterboxd-text-secondary mb-4">
             Compare rating patterns between users
           </p>
@@ -90,9 +90,9 @@ const Dashboard = () => {
 
         {isAdmin && isDevMode && (
           <div className="card hover:bg-letterboxd-bg-tertiary transition-colors">
-            <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-2">
+            <h2 className="text-xl font-semibold text-letterboxd-text-primary mb-2">
               Refresh user film data
-            </h3>
+            </h2>
             <p className="text-letterboxd-text-secondary mb-4">
               Re-scrape every user's films and refresh Letterboxd ratings
             </p>
@@ -107,9 +107,9 @@ const Dashboard = () => {
 
         {isAdmin && (
           <div className="card hover:bg-letterboxd-bg-tertiary transition-colors">
-            <h3 className="text-xl font-semibold text-letterboxd-text-primary mb-2">
+            <h2 className="text-xl font-semibold text-letterboxd-text-primary mb-2">
               User management
-            </h3>
+            </h2>
             <p className="text-letterboxd-text-secondary mb-4">
               List, edit, and unlink user accounts
             </p>

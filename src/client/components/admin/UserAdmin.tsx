@@ -82,9 +82,7 @@ const UserAdmin = () => {
         </div>
       </div>
 
-      {error && (
-        <Notification status={{ type: "error", message: error }} />
-      )}
+      {error && <Notification status={{ type: "error", message: error }} />}
 
       {loading ? (
         <div className="card text-center py-12">
@@ -99,29 +97,41 @@ const UserAdmin = () => {
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-letterboxd-border">
-                <th className="py-3 px-4 text-letterboxd-text-secondary font-medium">
+                <th
+                  scope="col"
+                  className="py-3 px-4 text-letterboxd-text-secondary font-medium"
+                >
                   Email
                 </th>
-                <th className="py-3 px-4 text-letterboxd-text-secondary font-medium">
+                <th
+                  scope="col"
+                  className="py-3 px-4 text-letterboxd-text-secondary font-medium"
+                >
                   Name
                 </th>
-                <th className="py-3 px-4 text-letterboxd-text-secondary font-medium">
+                <th
+                  scope="col"
+                  className="py-3 px-4 text-letterboxd-text-secondary font-medium"
+                >
                   Letterboxd
                 </th>
-                <th className="py-3 px-4 text-letterboxd-text-secondary font-medium">
+                <th
+                  scope="col"
+                  className="py-3 px-4 text-letterboxd-text-secondary font-medium"
+                >
                   Created
                 </th>
-                <th className="py-3 px-4 text-letterboxd-text-secondary font-medium">
+                <th
+                  scope="col"
+                  className="py-3 px-4 text-letterboxd-text-secondary font-medium"
+                >
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody>
               {accounts.map((a) => (
-                <tr
-                  key={a.id}
-                  className="border-b border-letterboxd-border/50"
-                >
+                <tr key={a.id} className="border-b border-letterboxd-border/50">
                   <td className="py-3 px-4 text-letterboxd-text-primary">
                     {a.email ?? "—"}
                   </td>
@@ -350,9 +360,7 @@ const EditAccountModal = ({
             </p>
           </div>
 
-          {error && (
-            <Notification status={{ type: "error", message: error }} />
-          )}
+          {error && <Notification status={{ type: "error", message: error }} />}
 
           <div className="flex justify-between items-center gap-2 pt-2 border-t border-letterboxd-border">
             {!confirmingDelete ? (
