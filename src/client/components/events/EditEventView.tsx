@@ -168,40 +168,45 @@ const EditEventView = ({
             key={cat.id}
             className="bg-letterboxd-bg-secondary rounded-lg border border-letterboxd-border/50"
           >
-            <div
-              className="flex items-center justify-between p-4 cursor-pointer"
-              onClick={() =>
-                setExpandedCategory(
-                  expandedCategory === cat.id ? null : cat.id
-                )
-              }
-            >
-              <div>
-                <p className="text-letterboxd-text-primary font-semibold">
-                  {cat.name}
-                </p>
-                <p className="text-xs text-letterboxd-text-muted">
-                  {cat.nominees.length} nominees &middot; {cat.displayMode}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteCategory(cat.id);
-                  }}
-                  className="text-letterboxd-error hover:underline text-xs"
-                >
-                  Delete
-                </button>
-                <span className="text-letterboxd-text-muted">
+            <div className="flex items-center justify-between p-4 gap-2">
+              {/* The chevron rides inside the toggle rather than beside Delete:
+                  a button cannot nest another button. */}
+              <button
+                type="button"
+                aria-expanded={expandedCategory === cat.id}
+                aria-controls={`category-panel-${cat.id}`}
+                onClick={() =>
+                  setExpandedCategory(
+                    expandedCategory === cat.id ? null : cat.id,
+                  )
+                }
+                className="flex flex-1 items-center justify-between gap-2 text-left cursor-pointer"
+              >
+                <span className="block">
+                  <span className="block text-letterboxd-text-primary font-semibold">
+                    {cat.name}
+                  </span>
+                  <span className="block text-xs text-letterboxd-text-muted">
+                    {cat.nominees.length} nominees &middot; {cat.displayMode}
+                  </span>
+                </span>
+                <span className="text-letterboxd-text-muted" aria-hidden="true">
                   {expandedCategory === cat.id ? "▲" : "▼"}
                 </span>
-              </div>
+              </button>
+              <button
+                onClick={() => handleDeleteCategory(cat.id)}
+                className="text-letterboxd-error hover:underline text-xs"
+              >
+                Delete
+              </button>
             </div>
 
             {expandedCategory === cat.id && (
-              <div className="px-4 pb-4 border-t border-letterboxd-border/30">
+              <div
+                id={`category-panel-${cat.id}`}
+                className="px-4 pb-4 border-t border-letterboxd-border/30"
+              >
                 <div className="mt-3 space-y-2">
                   {cat.nominees.map((nominee) => (
                     <div
