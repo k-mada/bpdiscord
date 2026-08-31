@@ -96,7 +96,8 @@ layer(base);
   }
 
   .histogram-md {
-    @apply flex items-end space-x-1 h-32;
+    /* Shrink-wrapped so the focus ring hugs the chart instead of the column. */
+    @apply flex items-end space-x-1 h-32 w-fit;
   }
 
   .histogram-bar {

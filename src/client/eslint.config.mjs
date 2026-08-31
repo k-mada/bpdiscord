@@ -105,10 +105,31 @@ export default tseslint.config(
     ],
     rules: {
       ...a11yErrors(
-        "jsx-a11y/no-noninteractive-tabindex",
         "jsx-a11y/no-static-element-interactions",
         "jsx-a11y/click-events-have-key-events",
       ),
+      // The histogram is one focusable role="group" per chart, so a keyboard
+      // user can reach the per-bar readout without ten stops per chart.
+      "jsx-a11y/no-noninteractive-tabindex": [
+        "error",
+        { tags: [], roles: ["tabpanel", "group"], allowExpressionValues: true },
+      ],
+      // Same container owns the arrow keys that move the readout. Every other
+      // handler stays guarded; e2e/histogram.spec.ts covers the shape itself.
+      "jsx-a11y/no-noninteractive-element-interactions": [
+        "error",
+        {
+          handlers: [
+            "onClick",
+            "onError",
+            "onLoad",
+            "onMouseDown",
+            "onMouseUp",
+            "onKeyPress",
+            "onKeyUp",
+          ],
+        },
+      ],
       "jsx-a11y/mouse-events-have-key-events": [
         "error",
         {
