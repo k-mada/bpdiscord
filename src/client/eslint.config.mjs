@@ -100,7 +100,6 @@ export default tseslint.config(
   },
   {
     files: [
-      "components/Tooltip.tsx",
       "components/TasteCompatibility.tsx",
       "components/RatingDistributionHistogram.tsx",
     ],

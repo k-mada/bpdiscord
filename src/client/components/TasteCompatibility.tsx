@@ -10,7 +10,7 @@ import {
   type PearsonZone,
 } from "../lib/ratingsCompatibility";
 import type { MovieInCommon, TasteCompatibility as TasteCompatibilityMetrics } from "../types";
-import Tooltip from "./Tooltip";
+import CollapsibleSection from "./CollapsibleSection";
 import StarRating from "./StarRating";
 
 interface UserHeader {
@@ -27,7 +27,7 @@ interface TasteCompatibilityProps {
 
 // Deliberately avoids "correlation"/"Pearson" and frames the three zones by
 // predictability — Aligned and Opposite are both predictable, Independent isn't.
-const TOOLTIP_EXPLANATION =
+const SCORE_EXPLANATION =
   "higher means you tend to react the same way to the same films. lower means you tend to react in opposite directions — when one of you loves it, the other reliably hates it. the middle means there's no pattern: sometimes you agree, sometimes you don't, but you can't predict it from each other.";
 
 const ZONE_MARKER_COLOR: Record<PearsonZone, string> = {
@@ -216,26 +216,23 @@ const TasteCompatibility = ({
         <div className="text-3xl font-bold text-letterboxd-text-primary leading-none">
           {pearson === null ? "—" : formatSignedPercent(pearson)}
         </div>
-        <div className="flex items-center justify-center gap-1.5 mt-1">
-          <div className="text-sm font-medium text-letterboxd-accent">
-            {pearson === null
-              ? "Not enough rating variation"
-              : getPearsonLabel(pearson)}
-          </div>
-          <Tooltip content={TOOLTIP_EXPLANATION}>
-            <button
-              type="button"
-              className="text-letterboxd-text-muted hover:text-letterboxd-text-primary cursor-help text-sm"
-            >
-              <span aria-hidden="true">ⓘ</span>
-              <span className="sr-only">What does this mean?</span>
-            </button>
-          </Tooltip>
+        <div className="text-sm font-medium text-letterboxd-accent mt-1">
+          {pearson === null
+            ? "Not enough rating variation"
+            : getPearsonLabel(pearson)}
         </div>
         <div className="text-xs text-letterboxd-text-muted mt-2">
           {sampleSize} films in common
           {mad !== null && ` · ${mad.toFixed(2)}★ apart on average`}
         </div>
+      </div>
+
+      <div className="mt-4">
+        <CollapsibleSection title="What does this mean?" defaultOpen={false}>
+          <p className="text-sm text-letterboxd-text-muted">
+            {SCORE_EXPLANATION}
+          </p>
+        </CollapsibleSection>
       </div>
 
       {hasAnchors && (
