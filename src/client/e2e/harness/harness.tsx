@@ -19,7 +19,7 @@ const Harness = () => (
     <div data-testid="spacer" style={{ height: "150vh" }} />
 
     <div data-testid="histogram" style={{ marginTop: 48 }}>
-      <RatingDistributionHistogram distribution={DISTRIBUTION} />
+      <RatingDistributionHistogram distribution={DISTRIBUTION} size="md" />
     </div>
 
     <div style={{ height: "150vh" }} />
