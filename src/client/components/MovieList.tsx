@@ -56,7 +56,7 @@ const MovieList = ({
         return (
           <li
             key={movie.film_slug}
-            className="flex items-center gap-4 mb-8 max-md:justify-start before:[counter-increment:movie] before:content-[counter(movie)] before:min-w-12 before:min-h-12 before:border before:border-slate-700 before:flex before:items-center before:justify-center before:font-letterboxdBody before:text-2xl before:movie-counter-text before:rounded-full before:bg-slate-800"
+            className="flex items-center gap-4 mb-8 max-md:justify-start before:[counter-increment:movie] before:content-[counter(movie)] before:min-w-12 before:min-h-12 before:border before:border-letterboxd-border before:flex before:items-center before:justify-center before:font-letterboxdBody before:text-2xl before:movie-counter-text before:rounded-full before:bg-letterboxd-bg-secondary"
             style={
               animated ? { animationDelay: `${index * 0.2 + 0.5}s` } : undefined
             }
