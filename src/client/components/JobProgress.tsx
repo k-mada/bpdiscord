@@ -83,7 +83,7 @@ function BlockedBanner() {
 
 function phaseRowIcon(s: PhaseRowStatus) {
   if (s === "done") return "✓";
-  if (s === "running") return <Spinner />;
+  if (s === "running") return <Spinner label={null} />;
   return "○";
 }
 
