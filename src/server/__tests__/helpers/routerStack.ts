@@ -3,17 +3,14 @@ import type { Router } from "express";
 export interface RouteStack {
   method: string;
   path: string;
-  /** Router-level middleware first, then the route's own, by function name. */
+  /** Router-level first, then route-level, by function name. */
   middleware: string[];
 }
 
 /**
- * Flattens a router's middleware, route-level and router-level alike.
- *
- * router.stack is Express internals, written against express 4.21.2. A layer
- * with no `.route` is router.use middleware applying to everything declared
- * after it, so reading route.stack alone makes a router that calls
- * router.use(authenticateToken) look unauthenticated.
+ * Express internals, written against 4.21.2. A layer with no `.route` is
+ * router.use middleware, so reading route.stack alone makes a router that
+ * calls router.use(authenticateToken) look unauthenticated.
  */
 export function routeStacks(router: Router): RouteStack[] {
   interface Layer {
