@@ -1,8 +1,7 @@
 import { test, expect } from "@playwright/test";
 
-// Only what needs real layout, a real pointer, or real :focus-visible.
-// Everything jsdom can assert lives in
-// __tests__/RatingDistributionHistogram.test.tsx and runs ~100x faster.
+// Only what needs real layout, a real pointer, or real :focus-visible. The
+// jsdom twin is __tests__/RatingDistributionHistogram.test.tsx.
 
 const HARNESS = "/e2e/harness/";
 
@@ -14,9 +13,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 // The jsdom twin queries focusable selectors; this walks real focus, the only
-// way to catch something the browser treats as tabbable and the list misses.
-// One stop is the contract: the chart. Ten focusable bars is what Hater
-// Rankings, at 30 charts per page, cannot afford.
+// way to catch what the browser treats as tabbable and that list misses.
 test("the histogram costs exactly one tab stop, and no bar is focusable", async ({
   page,
 }) => {
@@ -47,11 +44,8 @@ test("the histogram costs exactly one tab stop, and no bar is focusable", async 
   expect(stopsInsideHistogram).toEqual(["group"]);
 });
 
-// 1.4.13 hoverable. The old Tooltip failed exactly here: its panel was
-// pointer-events-none and sat across a margin, so travelling toward it fired
-// mouseleave. The panel is now a DOM descendant of the bar, and the gap is
-// padding inside the panel wrapper, so neither geometry nor hit-testing
-// interrupts the trip.
+// 1.4.13 hoverable, the one clause the deleted Tooltip failed. mouseleave
+// resolves by DOM containment, so a descendant panel survives the trip.
 test("the pointer can travel onto the panel without it closing", async ({
   page,
 }) => {
