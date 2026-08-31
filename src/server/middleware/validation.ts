@@ -38,6 +38,14 @@ export const validateUUIDParam: ValidationChain[] = [
     .withMessage('Invalid ID format — expected a UUID')
 ];
 
+// No .toInt(): it would mutate req.params to a number while Express still
+// types it string, and a type lie is worse than parsing in the controller.
+export const validateIntParam = (name: string): ValidationChain[] => [
+  param(name)
+    .isInt({ min: 1 })
+    .withMessage(`Invalid ${name} — expected a positive integer`)
+];
+
 // Deliberately permissive — a stricter charset would 400 on legitimate
 // Letterboxd slugs, and a real miss is better served by the 404.
 export const validateFilmSlug: ValidationChain[] = [

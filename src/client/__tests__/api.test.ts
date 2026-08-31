@@ -196,9 +196,13 @@ describe("ApiService", () => {
   });
 
   describe("upsertMflMovieScore", () => {
-    it("calls POST with all fields", async () => {
-      await apiService.upsertMflMovieScore("dune", 10, 1, 42);
-      expectFetch("/mfl/upsert-movie-score", "POST");
+    it("calls POST with all fields and the bearer token", async () => {
+      await apiService.upsertMflMovieScore(
+        { filmSlug: "dune", pointsAwarded: 10, metricId: 1, scoringId: 42 },
+        "tok",
+      );
+      expectFetch("/mfl/admin/movie-score", "POST");
+      expectAuth("tok");
       expectBody({
         filmSlug: "dune",
         pointsAwarded: 10,
@@ -208,15 +212,19 @@ describe("ApiService", () => {
     });
 
     it("sends undefined scoringId when omitted", async () => {
-      await apiService.upsertMflMovieScore("dune", 10, 1);
+      await apiService.upsertMflMovieScore(
+        { filmSlug: "dune", pointsAwarded: 10, metricId: 1 },
+        "tok",
+      );
       expectBody({ filmSlug: "dune", pointsAwarded: 10, metricId: 1 });
     });
   });
 
-  describe("deleteMflScoringMetric", () => {
-    it("calls DELETE /mfl/delete-scoring-metric/:id", async () => {
-      await apiService.deleteMflScoringMetric(42);
-      expectFetch("/mfl/delete-scoring-metric/42", "DELETE");
+  describe("deleteMflMovieScore", () => {
+    it("calls DELETE /mfl/admin/movie-score/:id with the bearer token", async () => {
+      await apiService.deleteMflMovieScore(42, "tok");
+      expectFetch("/mfl/admin/movie-score/42", "DELETE");
+      expectAuth("tok");
     });
   });
 

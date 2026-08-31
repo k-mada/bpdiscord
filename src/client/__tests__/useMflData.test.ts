@@ -244,14 +244,15 @@ describe("useMflData", () => {
       const result = await renderLoadedHook();
 
       await act(async () => {
-        await result.current.upsertMovieScore("the-brutalist", 10, 1);
+        await result.current.upsertMovieScore(
+          { filmSlug: "the-brutalist", pointsAwarded: 10, metricId: 1 },
+          "tok"
+        );
       });
 
       expect(apiService.upsertMflMovieScore).toHaveBeenCalledWith(
-        "the-brutalist",
-        10,
-        1,
-        undefined
+        { filmSlug: "the-brutalist", pointsAwarded: 10, metricId: 1 },
+        "tok"
       );
     });
 
@@ -263,31 +264,42 @@ describe("useMflData", () => {
       const result = await renderLoadedHook();
 
       await act(async () => {
-        await result.current.upsertMovieScore("the-brutalist", 15, 1, 42);
+        await result.current.upsertMovieScore(
+          {
+            filmSlug: "the-brutalist",
+            pointsAwarded: 15,
+            metricId: 1,
+            scoringId: 42,
+          },
+          "tok"
+        );
       });
 
       expect(apiService.upsertMflMovieScore).toHaveBeenCalledWith(
-        "the-brutalist",
-        15,
-        1,
-        42
+        {
+          filmSlug: "the-brutalist",
+          pointsAwarded: 15,
+          metricId: 1,
+          scoringId: 42,
+        },
+        "tok"
       );
     });
   });
 
   describe("deleteScore", () => {
-    it("calls API with the scoring ID", async () => {
-      vi.mocked(apiService.deleteMflScoringMetric).mockResolvedValue({
+    it("passes the scoring ID and the token straight through", async () => {
+      vi.mocked(apiService.deleteMflMovieScore).mockResolvedValue({
         data: { success: true },
       });
 
       const result = await renderLoadedHook();
 
       await act(async () => {
-        await result.current.deleteScore(42);
+        await result.current.deleteScore(42, "tok");
       });
 
-      expect(apiService.deleteMflScoringMetric).toHaveBeenCalledWith(42);
+      expect(apiService.deleteMflMovieScore).toHaveBeenCalledWith(42, "tok");
     });
   });
 });

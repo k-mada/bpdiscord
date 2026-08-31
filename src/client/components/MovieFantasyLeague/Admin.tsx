@@ -4,6 +4,7 @@ import { MFLScoringMetric, MFLMovieScore } from "../../types";
 import { Modal, ModalHeader, ModalBody } from "../Modal";
 import Spinner from "../Spinner";
 import { useMflData } from "../../hooks/useMflData";
+import { useAuth } from "../../contexts/AuthContext";
 
 const getMetricById = (
   scoringMetrics: MFLScoringMetric[],
@@ -20,6 +21,8 @@ const getMovieScoreByMetricId = (
 };
 
 const MFLAdmin = () => {
+  const { token, user, loading: authLoading } = useAuth();
+  const isAdmin = user?.role === "admin";
   const {
     movies,
     scoringMetrics: rawScoringMetrics,
@@ -122,17 +125,23 @@ const MFLAdmin = () => {
       if (existingScore && selectedScoringId > 0) {
         console.log("updating existing score", existingScore);
         response = await upsertMovieScore(
-          existingScore.filmSlug,
-          inputPointsAwarded,
-          selectedMetric.metricId,
-          existingScore.scoringId,
+          {
+            filmSlug: existingScore.filmSlug,
+            pointsAwarded: inputPointsAwarded,
+            metricId: selectedMetric.metricId,
+            scoringId: existingScore.scoringId,
+          },
+          token ?? "",
         );
       } else {
         console.log("creating new score");
         response = await upsertMovieScore(
-          currentSelectedMovie,
-          inputPointsAwarded,
-          selectedMetric.metricId,
+          {
+            filmSlug: currentSelectedMovie,
+            pointsAwarded: inputPointsAwarded,
+            metricId: selectedMetric.metricId,
+          },
+          token ?? "",
         );
       }
 
@@ -198,7 +207,7 @@ const MFLAdmin = () => {
 
   const handleConfirmDeleteMetric = async () => {
     if (selectedScoringId > 0) {
-      const response = await deleteScore(selectedScoringId);
+      const response = await deleteScore(selectedScoringId, token ?? "");
       if (response.error) {
         console.error("Error deleting metric", response.error);
       } else {
@@ -245,6 +254,29 @@ const MFLAdmin = () => {
       </button>
     );
   };
+
+  // Wait for /me to resolve before judging the gate — otherwise an admin sees
+  // a flash of "Access denied" while the identity round-trip is in flight.
+  if (authLoading) {
+    return (
+      <div className="card text-center py-12">
+        <Spinner />
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    // Same treatment as admin/UserAdmin.tsx. UX only — the real gate is
+    // authorizeAdmin on /api/mfl/admin/*.
+    return (
+      <div className="card border rounded-lg border-letterboxd-error-surface/60 bg-letterboxd-error-surface/20 text-letterboxd-text-primary">
+        <p className="font-semibold text-letterboxd-error">Access denied</p>
+        <p className="text-letterboxd-text-primary text-sm mt-1">
+          This page is only available to admin accounts.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div>

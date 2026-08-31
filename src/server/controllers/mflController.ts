@@ -6,7 +6,7 @@ import {
   dbGetMFLMovies,
   dbGetMflMovieScore,
   dbUpsertMflMovieScore,
-  dbDeleteMflScoringMetric,
+  dbDeleteMflMovieScore,
 } from "./dataController";
 
 export async function getMFLScoringMetrics(
@@ -73,7 +73,7 @@ export async function getMFLMovies(req: Request, res: Response): Promise<void> {
     }));
 
     const response: ApiResponse = {
-      message: "MFL user scores retrieved successfully",
+      message: "MFL movies retrieved successfully",
       data: mflMovies,
     };
 
@@ -148,26 +148,18 @@ export async function upsertMflMovieScore(
   }
 }
 
-export async function deleteMflScoringMetric(
+// Deletes an MFLScoringTally row — a movie's award of one metric — not the
+// metric itself. validateIntParam has already rejected a non-integer id.
+export async function deleteMflMovieScore(
   req: Request,
   res: Response
 ): Promise<void> {
-  const { scoringId } = req.params;
-
-  const parsedScoringId = parseInt(scoringId || "");
-  if (!scoringId || isNaN(parsedScoringId)) {
-    res.status(400).json({ error: "Scoring ID is required" });
-    return;
-  }
-
-  const dbResult = await dbDeleteMflScoringMetric(parsedScoringId);
+  const dbResult = await dbDeleteMflMovieScore(Number(req.params.scoringId));
   if (dbResult.success) {
-    res
-      .status(200)
-      .json({ message: "MFL scoring metric deleted successfully" });
+    res.status(200).json({ message: "MFL movie score deleted successfully" });
   } else {
     res
       .status(500)
-      .json({ error: dbResult.error || "Failed to delete MFL scoring metric" });
+      .json({ error: dbResult.error || "Failed to delete MFL movie score" });
   }
 }

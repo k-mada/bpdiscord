@@ -1389,7 +1389,7 @@ export async function dbUpsertMflMovieScore(
   });
 }
 
-export async function dbDeleteMflScoringMetric(scoringId: number): Promise<{
+export async function dbDeleteMflMovieScore(scoringId: number): Promise<{
   success: boolean;
   error?: string;
 }> {
