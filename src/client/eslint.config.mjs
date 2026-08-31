@@ -27,14 +27,18 @@ const atSeverity = (severity) => (rule) => {
   ];
 };
 
-// jsx-a11y and the colour rule land at `warn` so pre-existing findings do not
-// block; each follow-up promotes the rules covering its own files to `error`.
-const a11yWarnings = Object.fromEntries(
-  Object.keys(jsxA11y.flatConfigs.recommended.rules).map(atSeverity("warn")),
+// Every jsx-a11y rule is an error. No list of PROTECTED files: an unmatched
+// flat-config `files` pattern is silent, so a rename downgraded one to `warn`.
+const a11yErrors = Object.fromEntries(
+  Object.keys(jsxA11y.flatConfigs.recommended.rules).map(atSeverity("error")),
 );
 
-const a11yErrors = (...rules) =>
-  Object.fromEntries(rules.map(atSeverity("error")));
+// Defaults only inspect onMouseOver/onMouseOut; the hover-revealed content in
+// this codebase uses onMouseEnter/onMouseLeave. Declared once, on purpose.
+const MOUSE_EVENT_OPTIONS = {
+  hoverInHandlers: ["onMouseOver", "onMouseEnter"],
+  hoverOutHandlers: ["onMouseOut", "onMouseLeave"],
+};
 
 // Same two selectors at either severity: files cleaned by the burn-down are
 // promoted to `error` so they cannot regress, the rest stay at `warn`.
@@ -73,52 +77,22 @@ export default tseslint.config(
     files: ["**/*.tsx"],
     ...jsxA11y.flatConfigs.recommended,
     rules: {
-      ...a11yWarnings,
+      ...a11yErrors,
       // Deprecated in favour of label-has-associated-control, which is also in
       // recommended; keeping both reports every label twice.
       "jsx-a11y/label-has-for": "off",
-      // Defaults only inspect onMouseOver/onMouseOut; the hover-only
-      // disclosures in this codebase use onMouseEnter/onMouseLeave.
-      "jsx-a11y/mouse-events-have-key-events": [
-        "warn",
-        {
-          hoverInHandlers: ["onMouseOver", "onMouseEnter"],
-          hoverOutHandlers: ["onMouseOut", "onMouseLeave"],
-        },
-      ],
+      "jsx-a11y/mouse-events-have-key-events": ["error", MOUSE_EVENT_OPTIONS],
     },
   },
   {
-    // Remediated files hold their rules at error so they cannot regress.
-    files: [
-      "components/Modal.tsx",
-      "components/HaterRankings2.tsx",
-      "components/*/NomineesModal.tsx",
-    ],
-    rules: a11yErrors(
-      "jsx-a11y/click-events-have-key-events",
-      "jsx-a11y/no-static-element-interactions",
-      "jsx-a11y/no-noninteractive-element-interactions",
-    ),
-  },
-  {
-    files: [
-      "components/TasteCompatibility.tsx",
-      "components/RatingDistributionHistogram.tsx",
-    ],
+    // Not a promotion: both stay at `error`, options widened for one shape —
+    // a focusable role="group" chart owning the arrow keys that move its readout.
+    files: ["components/RatingDistributionHistogram.tsx"],
     rules: {
-      ...a11yErrors(
-        "jsx-a11y/no-static-element-interactions",
-        "jsx-a11y/click-events-have-key-events",
-      ),
-      // The histogram is one focusable role="group" per chart, so a keyboard
-      // user can reach the per-bar readout without ten stops per chart.
       "jsx-a11y/no-noninteractive-tabindex": [
         "error",
         { tags: [], roles: ["tabpanel", "group"], allowExpressionValues: true },
       ],
-      // Same container owns the arrow keys that move the readout. Every other
-      // handler stays guarded; e2e/histogram.spec.ts covers the shape itself.
       "jsx-a11y/no-noninteractive-element-interactions": [
         "error",
         {
@@ -131,13 +105,6 @@ export default tseslint.config(
             "onKeyPress",
             "onKeyUp",
           ],
-        },
-      ],
-      "jsx-a11y/mouse-events-have-key-events": [
-        "error",
-        {
-          hoverInHandlers: ["onMouseOver", "onMouseEnter"],
-          hoverOutHandlers: ["onMouseOut", "onMouseLeave"],
         },
       ],
     },
@@ -155,87 +122,5 @@ export default tseslint.config(
       "components/HaterRankings.tsx",
     ],
     rules: { "no-restricted-syntax": rawColour("error") },
-  },
-  {
-    files: [
-      "components/ActorGraph.tsx",
-      "components/CompareWithUser.tsx",
-      "components/MovieSwapPage.tsx",
-      "components/UserComparison.tsx",
-      "components/MovieFantasyLeague/MovieSelector.tsx",
-      "components/events/CreateEventForm.tsx",
-    ],
-    rules: a11yErrors(
-      "jsx-a11y/label-has-associated-control",
-      "jsx-a11y/role-supports-aria-props",
-      "jsx-a11y/role-has-required-aria-props",
-    ),
-  },
-  {
-    files: [
-      "components/Stats.tsx",
-      "components/MovieList.tsx",
-      "components/MovieBarChart.tsx",
-      "components/Dashboard.tsx",
-      "components/UserProfile.tsx",
-      "components/UserFilmsCount.tsx",
-      "components/DataTable/DataTable.tsx",
-    ],
-    rules: a11yErrors(
-      "jsx-a11y/alt-text",
-      "jsx-a11y/img-redundant-alt",
-      "jsx-a11y/heading-has-content",
-      "jsx-a11y/aria-role",
-      "jsx-a11y/role-has-required-aria-props",
-      "jsx-a11y/role-supports-aria-props",
-      "jsx-a11y/interactive-supports-focus",
-      "jsx-a11y/no-noninteractive-tabindex",
-    ),
-  },
-  {
-    files: [
-      "components/MainLayout.tsx",
-      "components/Header.tsx",
-      "components/Spinner.tsx",
-    ],
-    rules: a11yErrors(
-      "jsx-a11y/anchor-is-valid",
-      "jsx-a11y/aria-props",
-      "jsx-a11y/aria-role",
-      "jsx-a11y/no-noninteractive-tabindex",
-      "jsx-a11y/role-supports-aria-props",
-      "jsx-a11y/control-has-associated-label",
-    ),
-  },
-  {
-    files: [
-      "components/oscars/CategoryLabel.tsx",
-      "components/oscars/DesktopTable.tsx",
-      "components/oscars/MobileTable.tsx",
-      "components/oscars/PickCell.tsx",
-      "components/oscars/WinnerCell.tsx",
-      "components/oscars/StickyToggle.tsx",
-      "components/events/CategoryLabel.tsx",
-      "components/events/DesktopTable.tsx",
-      "components/events/MobileTable.tsx",
-      "components/events/WinnerCell.tsx",
-    ],
-    rules: {
-      ...a11yErrors(
-        "jsx-a11y/aria-role",
-        "jsx-a11y/role-has-required-aria-props",
-        "jsx-a11y/role-supports-aria-props",
-        "jsx-a11y/no-static-element-interactions",
-        "jsx-a11y/click-events-have-key-events",
-        "jsx-a11y/interactive-supports-focus",
-      ),
-      "jsx-a11y/mouse-events-have-key-events": [
-        "error",
-        {
-          hoverInHandlers: ["onMouseOver", "onMouseEnter"],
-          hoverOutHandlers: ["onMouseOut", "onMouseLeave"],
-        },
-      ],
-    },
   },
 );

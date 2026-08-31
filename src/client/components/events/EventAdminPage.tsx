@@ -120,10 +120,14 @@ const EventAdminPage = () => {
         </h2>
         <form onSubmit={handleCreateAwardShow} className="space-y-4">
           <div>
-            <label className="block text-sm text-letterboxd-text-secondary mb-1">
+            <label
+              htmlFor="award-show-name"
+              className="block text-sm text-letterboxd-text-secondary mb-1"
+            >
               Name
             </label>
             <input
+              id="award-show-name"
               type="text"
               value={showName}
               onChange={(e) => setShowName(e.target.value)}
@@ -133,10 +137,14 @@ const EventAdminPage = () => {
             />
           </div>
           <div>
-            <label className="block text-sm text-letterboxd-text-secondary mb-1">
+            <label
+              htmlFor="award-show-slug"
+              className="block text-sm text-letterboxd-text-secondary mb-1"
+            >
               Slug
             </label>
             <input
+              id="award-show-slug"
               type="text"
               value={showSlug}
               onChange={(e) => setShowSlug(e.target.value)}
@@ -146,10 +154,14 @@ const EventAdminPage = () => {
             />
           </div>
           <div>
-            <label className="block text-sm text-letterboxd-text-secondary mb-1">
+            <label
+              htmlFor="award-show-description"
+              className="block text-sm text-letterboxd-text-secondary mb-1"
+            >
               Description (optional)
             </label>
             <input
+              id="award-show-description"
               type="text"
               value={showDescription}
               onChange={(e) => setShowDescription(e.target.value)}

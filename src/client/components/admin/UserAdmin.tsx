@@ -351,7 +351,9 @@ const EditAccountModal = ({
             />
             <datalist id="unclaimed-lb-usernames">
               {unclaimed.map((u) => (
-                <option key={u} value={u} />
+                <option key={u} value={u}>
+                  {u}
+                </option>
               ))}
             </datalist>
             <p className="text-xs text-letterboxd-text-muted mt-1">
