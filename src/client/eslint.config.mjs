@@ -170,6 +170,21 @@ export default tseslint.config(
   },
   {
     files: [
+      "components/MainLayout.tsx",
+      "components/Header.tsx",
+      "components/Spinner.tsx",
+    ],
+    rules: a11yErrors(
+      "jsx-a11y/anchor-is-valid",
+      "jsx-a11y/aria-props",
+      "jsx-a11y/aria-role",
+      "jsx-a11y/no-noninteractive-tabindex",
+      "jsx-a11y/role-supports-aria-props",
+      "jsx-a11y/control-has-associated-label",
+    ),
+  },
+  {
+    files: [
       "components/oscars/CategoryLabel.tsx",
       "components/oscars/DesktopTable.tsx",
       "components/oscars/MobileTable.tsx",

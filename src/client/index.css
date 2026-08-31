@@ -34,6 +34,18 @@ layer(base);
   }
 }
 
+@utility skip-link {
+  @apply sr-only;
+  /* Every part of sr-only is undone explicitly; :focus outranks the base rule
+     on specificity, so nothing here depends on utility emission order. */
+  &:focus {
+    @apply fixed left-4 top-4 z-50 h-auto w-auto overflow-visible whitespace-normal rounded-lg border border-letterboxd-border-light bg-letterboxd-bg-tertiary px-4 py-2 text-letterboxd-text-primary;
+    clip: auto;
+    clip-path: none;
+    margin: 0;
+  }
+}
+
 @utility main-content {
   @apply max-w-5xl mx-auto py-8 px-4;
   &:has(.oscars-page) {
