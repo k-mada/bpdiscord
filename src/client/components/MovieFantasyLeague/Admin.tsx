@@ -107,7 +107,7 @@ const MFLAdmin = () => {
   const movieTitle = useMemo(() => {
     return movies.find((movie) => movie.filmSlug === movieScore[0]?.filmSlug)
       ?.title;
-  }, [movieScore]);
+  }, [movieScore, movies]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
