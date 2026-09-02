@@ -135,9 +135,13 @@ export const ActorComboBox = ({
   // the same actors, and dropping the highlight there loses a screen reader
   // user their place mid-list. Renumbering is what must reset it.
   const optionIds = filteredResults.map((r) => r.tmdbId).join(",");
-  useEffect(() => {
+  // Reset during render: a passive effect flushes after the new list is in the
+  // DOM, painting a stale idref and clobbering a keypress that lands between.
+  const [renderedOptionIds, setRenderedOptionIds] = useState(optionIds);
+  if (renderedOptionIds !== optionIds) {
+    setRenderedOptionIds(optionIds);
     setActiveIndex(-1);
-  }, [optionIds]);
+  }
 
   // aria-activedescendant moves no viewport; the popup scrolls past ~5 options.
   useEffect(() => {
