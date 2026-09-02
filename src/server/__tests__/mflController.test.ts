@@ -11,7 +11,7 @@
  */
 
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import type { Request, Response } from 'express';
+import { mockReqRes } from "./helpers/mockReqRes";
 
 // Hoisted so the controller picks up the stub at import time. Covers the
 // response contract only; the queries are dataController.test.ts's job.
@@ -30,35 +30,7 @@ import {
   dbGetMFLUserScores,
 } from '../controllers/dataController';
 
-interface MockedReqRes {
-  req: Request;
-  res: Response;
-  statusCalls: number[];
-  jsonCalls: unknown[];
-}
 
-function mockReqRes(params: Record<string, string> = {}): MockedReqRes {
-  const statusCalls: number[] = [];
-  const jsonCalls: unknown[] = [];
-  const res = {} as {
-    status: (c: number) => unknown;
-    json: (p: unknown) => unknown;
-  };
-  res.status = (code: number) => {
-    statusCalls.push(code);
-    return res;
-  };
-  res.json = (payload: unknown) => {
-    jsonCalls.push(payload);
-    return res;
-  };
-  return {
-    req: { params, query: {} } as unknown as Request,
-    res: res as unknown as Response,
-    statusCalls,
-    jsonCalls,
-  };
-}
 
 beforeEach(() => {
   vi.resetAllMocks();
@@ -133,9 +105,9 @@ describe('getMFLUserScores', () => {
       data: [row],
     } as never);
 
-    const { req, res, statusCalls, jsonCalls } = mockReqRes({
+    const { req, res, statusCalls, jsonCalls } = mockReqRes({ params: {
       username: 'alice_lb',
-    });
+    } });
     await getMFLUserScores(req, res);
 
     expect(statusCalls).toEqual([]);
@@ -149,7 +121,7 @@ describe('getMFLUserScores', () => {
       data: [row],
     } as never);
 
-    const { req, res, jsonCalls } = mockReqRes({ username: 'alice_lb' });
+    const { req, res, jsonCalls } = mockReqRes({ params: { username: 'alice_lb' } });
     await getMFLUserScores(req, res);
 
     const [score] = (jsonCalls[0] as { data: Record<string, unknown>[] }).data;
@@ -162,7 +134,7 @@ describe('getMFLUserScores', () => {
   });
 
   it('400s without a username', async () => {
-    const { req, res, statusCalls } = mockReqRes({});
+    const { req, res, statusCalls } = mockReqRes({ params: {} });
     await getMFLUserScores(req, res);
 
     expect(statusCalls).toEqual([400]);
@@ -175,7 +147,7 @@ describe('getMFLUserScores', () => {
       error: 'boom',
     } as never);
 
-    const { req, res, statusCalls } = mockReqRes({ username: 'alice_lb' });
+    const { req, res, statusCalls } = mockReqRes({ params: { username: 'alice_lb' } });
     await getMFLUserScores(req, res);
 
     expect(statusCalls).toEqual([500]);

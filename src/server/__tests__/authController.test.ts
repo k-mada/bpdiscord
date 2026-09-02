@@ -18,7 +18,9 @@
 
 import { sql } from 'drizzle-orm';
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import type { Request, Response } from 'express';
+import type { Request } from 'express';
+import { mockReqRes } from "./helpers/mockReqRes";
+import type { MockedReqRes } from "./helpers/mockReqRes";
 
 import { AuthController, humanizeSupabaseAuthError } from '../controllers/authController';
 import { LBUSERNAME_FORMAT } from '../lib/lbusername';
@@ -51,32 +53,7 @@ beforeEach(async () => {
   `);
 });
 
-interface MockedResponse {
-  req: Request;
-  res: Response;
-  statusCalls: number[];
-  jsonCalls: unknown[];
-}
 
-function mockReqRes(body: Record<string, unknown>): MockedResponse {
-  const statusCalls: number[] = [];
-  const jsonCalls: unknown[] = [];
-  const res = {} as { status: (c: number) => unknown; json: (p: unknown) => unknown };
-  res.status = (code: number) => {
-    statusCalls.push(code);
-    return res;
-  };
-  res.json = (payload: unknown) => {
-    jsonCalls.push(payload);
-    return res;
-  };
-  return {
-    req: { body } as Request,
-    res: res as unknown as Response,
-    statusCalls,
-    jsonCalls,
-  };
-}
 
 // Simulates an already-claimed username. The Users row is required because
 // app_users.lbusername has a FK to "Users"(lbusername).
@@ -92,12 +69,12 @@ async function seedClaimedLbusername(lbusername: string): Promise<void> {
 
 describe('AuthController.signup — format validation (returns before auth)', () => {
   it('rejects an lbusername with characters outside [a-z0-9_-]', async () => {
-    const { req, res, statusCalls, jsonCalls } = mockReqRes({
+    const { req, res, statusCalls, jsonCalls } = mockReqRes({ body: {
       email: 'authcontroller-test-fmt1@example.test',
       password: 'irrelevant',
       name: 'Test',
       lbusername: 'invalid name with spaces',
-    });
+    } });
 
     await AuthController.signup(req, res);
 
@@ -108,12 +85,12 @@ describe('AuthController.signup — format validation (returns before auth)', ()
   });
 
   it('rejects an lbusername shorter than 2 chars', async () => {
-    const { req, res, statusCalls } = mockReqRes({
+    const { req, res, statusCalls } = mockReqRes({ body: {
       email: 'authcontroller-test-fmt2@example.test',
       password: 'irrelevant',
       name: 'Test',
       lbusername: 'a',
-    });
+    } });
 
     await AuthController.signup(req, res);
 
@@ -121,12 +98,12 @@ describe('AuthController.signup — format validation (returns before auth)', ()
   });
 
   it('rejects an lbusername longer than 15 chars', async () => {
-    const { req, res, statusCalls } = mockReqRes({
+    const { req, res, statusCalls } = mockReqRes({ body: {
       email: 'authcontroller-test-fmt3@example.test',
       password: 'irrelevant',
       name: 'Test',
       lbusername: 'a'.repeat(16),
-    });
+    } });
 
     await AuthController.signup(req, res);
 
@@ -232,12 +209,12 @@ describe('AuthController.signup — fast-path uniqueness check', () => {
   it('returns 409 when an lbusername is already claimed', async () => {
     await seedClaimedLbusername('claimed_name');
 
-    const { req, res, statusCalls, jsonCalls } = mockReqRes({
+    const { req, res, statusCalls, jsonCalls } = mockReqRes({ body: {
       email: 'authcontroller-test-dup@example.test',
       password: 'irrelevant',
       name: 'Test',
       lbusername: 'claimed_name',
-    });
+    } });
 
     await AuthController.signup(req, res);
 
@@ -250,12 +227,12 @@ describe('AuthController.signup — fast-path uniqueness check', () => {
   it('normalizes lbusername (uppercase/whitespace) before the uniqueness lookup', async () => {
     await seedClaimedLbusername('claimed_name');
 
-    const { req, res, statusCalls } = mockReqRes({
+    const { req, res, statusCalls } = mockReqRes({ body: {
       email: 'authcontroller-test-norm@example.test',
       password: 'irrelevant',
       name: 'Test',
       lbusername: '  Claimed_Name  ',
-    });
+    } });
 
     await AuthController.signup(req, res);
 
@@ -269,8 +246,8 @@ describe('AuthController.signup — fast-path uniqueness check', () => {
 // authenticateToken middleware would). mockReqRes only sets body.
 function mockMeReqRes(
   user: { id: string; email?: string; role?: string } | null,
-): MockedResponse {
-  const base = mockReqRes({});
+): MockedReqRes {
+  const base = mockReqRes({ body: {} });
   (base.req as Request).user = user
     ? ({
         id: user.id,
