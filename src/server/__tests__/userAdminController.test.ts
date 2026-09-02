@@ -11,6 +11,7 @@
 
 import { sql, eq } from 'drizzle-orm';
 import { vi, describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { mockReqRes } from "./helpers/mockReqRes";
 import type { Request, Response, NextFunction } from 'express';
 
 // Hoisted mock so the controller picks it up at import time.
@@ -64,39 +65,7 @@ function installSdkMock(): SdkMock {
   return mock;
 }
 
-interface MockedResponse {
-  req: Request;
-  res: Response;
-  statusCalls: number[];
-  jsonCalls: unknown[];
-}
 
-function mockReqRes(args: {
-  body?: Record<string, unknown>;
-  params?: Record<string, string>;
-  user?: { id: string; user_metadata?: Record<string, unknown> };
-}): MockedResponse {
-  const statusCalls: number[] = [];
-  const jsonCalls: unknown[] = [];
-  const res = {} as {
-    status: (c: number) => unknown;
-    json: (p: unknown) => unknown;
-  };
-  res.status = (code: number) => {
-    statusCalls.push(code);
-    return res;
-  };
-  res.json = (payload: unknown) => {
-    jsonCalls.push(payload);
-    return res;
-  };
-  const req = {
-    body: args.body ?? {},
-    params: args.params ?? {},
-    user: args.user,
-  } as unknown as Request;
-  return { req, res: res as unknown as Response, statusCalls, jsonCalls };
-}
 
 function adminReq(extras: Parameters<typeof mockReqRes>[0]): MockedResponse {
   return mockReqRes({

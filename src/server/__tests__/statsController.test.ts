@@ -1,5 +1,5 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-import type { Request, Response } from 'express';
+import { mockReqRes } from "./helpers/mockReqRes";
 
 // Hoisted so the controller picks up the stub at import time. Covers only
 // branch logic; the DB query itself is dataController.test.ts's job.
@@ -11,32 +11,7 @@ vi.mock('../controllers/dataController', () => ({
 import { getTopFilmsByYear } from '../controllers/statsController';
 import { dbGetTopUserFilms, TopUserFilmsOrder } from '../controllers/dataController';
 
-interface MockedReqRes {
-  req: Request;
-  res: Response;
-  statusCalls: number[];
-  jsonCalls: unknown[];
-}
 
-function mockReqRes(params: Record<string, string>): MockedReqRes {
-  const statusCalls: number[] = [];
-  const jsonCalls: unknown[] = [];
-  const res = {} as { status: (c: number) => unknown; json: (p: unknown) => unknown };
-  res.status = (code: number) => {
-    statusCalls.push(code);
-    return res;
-  };
-  res.json = (payload: unknown) => {
-    jsonCalls.push(payload);
-    return res;
-  };
-  return {
-    req: { params } as unknown as Request,
-    res: res as unknown as Response,
-    statusCalls,
-    jsonCalls,
-  };
-}
 
 const okRows = { success: true, data: [] as unknown[] };
 
@@ -47,7 +22,7 @@ describe('getTopFilmsByYear', () => {
   });
 
   it('defaults to all-time (no year filter, 20-rating bar) when no :year param', async () => {
-    const { req, res, jsonCalls } = mockReqRes({});
+    const { req, res, jsonCalls } = mockReqRes({ params: {} });
     await getTopFilmsByYear(req, res);
 
     const calls = vi.mocked(dbGetTopUserFilms).mock.calls.map((c) => c[0]);
@@ -62,7 +37,7 @@ describe('getTopFilmsByYear', () => {
   });
 
   it('scopes to the release year with the looser 5-rating bar when :year is present', async () => {
-    const { req, res, jsonCalls } = mockReqRes({ year: '2021' });
+    const { req, res, jsonCalls } = mockReqRes({ params: { year: '2021' } });
     await getTopFilmsByYear(req, res);
 
     const calls = vi.mocked(dbGetTopUserFilms).mock.calls.map((c) => c[0]);
@@ -75,7 +50,7 @@ describe('getTopFilmsByYear', () => {
   });
 
   it('400s on an out-of-range year and never touches the DB', async () => {
-    const { req, res, statusCalls, jsonCalls } = mockReqRes({ year: '1700' });
+    const { req, res, statusCalls, jsonCalls } = mockReqRes({ params: { year: '1700' } });
     await getTopFilmsByYear(req, res);
 
     expect(statusCalls[0]).toBe(400);
@@ -84,7 +59,7 @@ describe('getTopFilmsByYear', () => {
   });
 
   it('400s on a non-numeric year', async () => {
-    const { req, res, statusCalls } = mockReqRes({ year: 'abc' });
+    const { req, res, statusCalls } = mockReqRes({ params: { year: 'abc' } });
     await getTopFilmsByYear(req, res);
 
     expect(statusCalls[0]).toBe(400);

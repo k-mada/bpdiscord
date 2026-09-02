@@ -1,5 +1,6 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import type { Request, Response } from 'express';
+import { mockReqRes } from "./helpers/mockReqRes";
 
 // Hoisted so the controller picks up the stub at import time. Covers only
 // branch logic; the DB query itself is dataController.test.ts's job.
@@ -12,46 +13,7 @@ import { dbGetFilmDetail } from '../controllers/dataController';
 import { validateFilmSlug } from '../middleware/validation';
 import { handleValidationErrors } from '../middleware/errorHandler';
 
-interface MockedReqRes {
-  req: Request;
-  res: Response;
-  statusCalls: number[];
-  jsonCalls: unknown[];
-  headers: Record<string, string>;
-}
 
-function mockReqRes(
-  params: Record<string, string>,
-  query: Record<string, string> = {},
-): MockedReqRes {
-  const statusCalls: number[] = [];
-  const jsonCalls: unknown[] = [];
-  const headers: Record<string, string> = {};
-  const res = {} as {
-    status: (c: number) => unknown;
-    json: (p: unknown) => unknown;
-    set: (k: string, v: string) => unknown;
-  };
-  res.status = (code: number) => {
-    statusCalls.push(code);
-    return res;
-  };
-  res.json = (payload: unknown) => {
-    jsonCalls.push(payload);
-    return res;
-  };
-  res.set = (key: string, value: string) => {
-    headers[key] = value;
-    return res;
-  };
-  return {
-    req: { params, query } as unknown as Request,
-    res: res as unknown as Response,
-    statusCalls,
-    jsonCalls,
-    headers,
-  };
-}
 
 const film = { filmSlug: 'heat', title: 'Heat', watchedCount: 3 };
 
@@ -62,7 +24,7 @@ describe('getFilmDetail', () => {
   });
 
   it('returns the film payload', async () => {
-    const { req, res, statusCalls, jsonCalls } = mockReqRes({ filmSlug: 'heat' });
+    const { req, res, statusCalls, jsonCalls } = mockReqRes({ params: { filmSlug: 'heat' } });
     await getFilmDetail(req, res);
 
     expect(statusCalls).toEqual([]);
@@ -70,28 +32,28 @@ describe('getFilmDetail', () => {
   });
 
   it('defaults to discord-only scoping', async () => {
-    const { req, res } = mockReqRes({ filmSlug: 'heat' });
+    const { req, res } = mockReqRes({ params: { filmSlug: 'heat' } });
     await getFilmDetail(req, res);
 
     expect(dbGetFilmDetail).toHaveBeenCalledWith('heat', { includeNonDiscord: false });
   });
 
   it('threads includeNonDiscord=true through to the query', async () => {
-    const { req, res } = mockReqRes({ filmSlug: 'heat' }, { includeNonDiscord: 'true' });
+    const { req, res } = mockReqRes({ params: { filmSlug: 'heat' }, query: { includeNonDiscord: 'true' } });
     await getFilmDetail(req, res);
 
     expect(dbGetFilmDetail).toHaveBeenCalledWith('heat', { includeNonDiscord: true });
   });
 
   it('sets a short cache window on success', async () => {
-    const { req, res, headers } = mockReqRes({ filmSlug: 'heat' });
+    const { req, res, headers } = mockReqRes({ params: { filmSlug: 'heat' } });
     await getFilmDetail(req, res);
 
     expect(headers['Cache-Control']).toBe('public, max-age=60');
   });
 
   it('normalizes an upper-case slug so it resolves like the canonical one', async () => {
-    const { req, res, statusCalls } = mockReqRes({ filmSlug: 'Heat-1995' });
+    const { req, res, statusCalls } = mockReqRes({ params: { filmSlug: 'Heat-1995' } });
     await getFilmDetail(req, res);
 
     expect(dbGetFilmDetail).toHaveBeenCalledWith('heat-1995', { includeNonDiscord: false });
@@ -100,7 +62,7 @@ describe('getFilmDetail', () => {
 
   it('404s when the slug resolves to nothing', async () => {
     vi.mocked(dbGetFilmDetail).mockResolvedValue({ success: true, data: null } as never);
-    const { req, res, statusCalls } = mockReqRes({ filmSlug: 'ghost' });
+    const { req, res, statusCalls } = mockReqRes({ params: { filmSlug: 'ghost' } });
     await getFilmDetail(req, res);
 
     expect(statusCalls).toEqual([404]);
@@ -108,7 +70,7 @@ describe('getFilmDetail', () => {
 
   it('500s when the query fails', async () => {
     vi.mocked(dbGetFilmDetail).mockResolvedValue({ success: false, error: 'db down' } as never);
-    const { req, res, statusCalls, jsonCalls } = mockReqRes({ filmSlug: 'heat' });
+    const { req, res, statusCalls, jsonCalls } = mockReqRes({ params: { filmSlug: 'heat' } });
     await getFilmDetail(req, res);
 
     expect(statusCalls).toEqual([500]);
@@ -118,7 +80,7 @@ describe('getFilmDetail', () => {
 
   it('500s when the query throws', async () => {
     vi.mocked(dbGetFilmDetail).mockRejectedValue(new Error('boom'));
-    const { req, res, statusCalls } = mockReqRes({ filmSlug: 'heat' });
+    const { req, res, statusCalls } = mockReqRes({ params: { filmSlug: 'heat' } });
     await getFilmDetail(req, res);
 
     expect(statusCalls).toEqual([500]);
