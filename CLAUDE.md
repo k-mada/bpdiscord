@@ -215,6 +215,7 @@ The filter only changes what git stores; the working-tree file stays in whatever
 - Include only what the diff cannot say: deviations from the ticket, decisions a reviewer would question, and findings that came out of the work.
 - Cut process narration ("first I…, then I…"), restatements of the diff, and measurements that support a decision rather than being the decision.
 - Detailed reasoning that doesn't fit goes in the **commit body**, not the description. The description is for reviewing; the commit body is for the archaeology later.
+- **Keep it self-contained.** Describe the change on its own terms, so a reviewer needs nothing but the diff and the description. Don't name other issues, branches or PRs to carry the explanation — say "a later change drops this table", not the issue id. Cite one only when it is a real dependency a reviewer must act on, such as a PR that has to merge first. Issue ids belong in the title and the commit trailer, where they are already tracked.
 
 The comment policy sends narrative out of source and into the PR. That is right, but the PR is not an unbounded destination — the same discipline applies.
 
