@@ -6,6 +6,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { sql } from 'drizzle-orm';
 import * as dc from '../controllers/dataController';
 import {
   resetDatabase,
@@ -18,7 +19,15 @@ import {
   expectedResults,
 } from './fixtures/testData';
 import { db } from '../db';
-import { users, films, userFilms } from '../db/schema';
+import {
+  users,
+  films,
+  userFilms,
+  mflFilms,
+  mflUserPicks,
+  mflScoringMetrics,
+  mflScoringTally,
+} from '../db/schema';
 
 beforeAll(async () => {
   assertTestEnvironment();
@@ -391,6 +400,78 @@ describe('dataController', () => {
 
       expect(result.success).toBe(true);
       expect(result.data).toEqual([]);
+    });
+
+    describe('with a seeded season', () => {
+      const PICKER = 'test_user_active';
+      const OTHER = 'test_user_minimal';
+
+      beforeAll(async () => {
+        await db.insert(mflFilms).values([
+          { filmSlug: 'zulu-dawn', title: 'Zulu Dawn', price: 10 },
+          { filmSlug: 'anatomy-of-a-fall', title: 'Anatomy of a Fall', price: 30 },
+          { filmSlug: 'nobody-picked-me', title: 'Nobody Picked Me', price: 5 },
+        ]);
+        await db.insert(mflScoringMetrics).values([
+          { metricId: 9001, metricName: 'Oscars', category: 'awards', pointValue: 25 },
+          { metricId: 9002, metricName: 'Box Office', category: 'box_office', pointValue: 10 },
+        ]);
+        await db.insert(mflScoringTally).values([
+          { filmSlug: 'anatomy-of-a-fall', metricId: 9001, pointsAwarded: 25 },
+          { filmSlug: 'anatomy-of-a-fall', metricId: 9002, pointsAwarded: 10 },
+          { filmSlug: 'nobody-picked-me', metricId: 9001, pointsAwarded: 25 },
+        ]);
+        await db.insert(mflUserPicks).values([
+          { lbusername: PICKER, filmSlug: 'anatomy-of-a-fall' },
+        ]);
+      });
+
+      afterAll(async () => {
+        await db.delete(mflScoringTally).where(sql`1=1`);
+        await db.delete(mflScoringMetrics).where(sql`1=1`);
+        await db.delete(mflUserPicks).where(sql`1=1`);
+        await db.delete(mflFilms).where(sql`1=1`);
+      });
+
+      it('dbGetMFLMovies lists a film nobody picked', async () => {
+        const result = await dc.dbGetMFLMovies();
+
+        expect(result.data!.map((m) => m.film_slug)).toContain('nobody-picked-me');
+      });
+
+      it('dbGetMFLMovies orders by title and returns one row per film', async () => {
+        const result = await dc.dbGetMFLMovies();
+
+        expect(result.data).toEqual([
+          { title: 'Anatomy of a Fall', film_slug: 'anatomy-of-a-fall' },
+          { title: 'Nobody Picked Me', film_slug: 'nobody-picked-me' },
+          { title: 'Zulu Dawn', film_slug: 'zulu-dawn' },
+        ]);
+      });
+
+      it('dbGetMFLUserScores resolves through the user picks', async () => {
+        const result = await dc.dbGetMFLUserScores(PICKER);
+
+        expect(result.success).toBe(true);
+        expect(result.data).toEqual([
+          { username: PICKER, metric_id: 9001, points_awarded: 25, category: 'awards' },
+          { username: PICKER, metric_id: 9002, points_awarded: 10, category: 'box_office' },
+        ]);
+      });
+
+      it('dbGetMFLUserScores excludes awards for films the user did not pick', async () => {
+        const result = await dc.dbGetMFLUserScores(PICKER);
+
+        expect(result.data!.every((r) => r.points_awarded !== 25 || r.metric_id === 9001)).toBe(true);
+        expect(result.data).toHaveLength(2);
+      });
+
+      it('dbGetMFLUserScores returns empty for a user with no picks', async () => {
+        const result = await dc.dbGetMFLUserScores(OTHER);
+
+        expect(result.success).toBe(true);
+        expect(result.data).toEqual([]);
+      });
     });
   });
 
