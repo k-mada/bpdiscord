@@ -7,7 +7,6 @@ import {
   bigserial,
   date,
   real,
-  doublePrecision,
   boolean,
   timestamp,
   primaryKey,
@@ -102,16 +101,6 @@ export const films = pgTable('Films', {
   releaseYear: integer('release_year'),
 });
 
-export const mflUserMovies = pgTable(
-  'MFLUserMovies',
-  {
-    username: varchar('username').notNull(),
-    title: varchar('title').notNull(),
-    filmSlug: text('film_slug'),
-  },
-  (table) => [primaryKey({ columns: [table.username, table.title] })]
-);
-
 export const mflScoringMetrics = pgTable('MFLScoringMetrics', {
   metricId: bigint('metric_id', { mode: 'number' }).primaryKey(),
   metric: text('metric'),
@@ -177,18 +166,6 @@ export const mflUserPicksRelations = relations(mflUserPicks, ({ one }) => ({
     references: [users.lbusername],
   }),
 }));
-
-export const mflMovieData = pgTable('MFLMovieData', {
-  title: text('title'),
-  price: real('price'),
-  rosters: bigint('rosters', { mode: 'number' }),
-  boxOfficePoints: text('box_office_points'),
-  awardsPoints: bigint('awards_points', { mode: 'number' }),
-  criticalPerfPoints: text('critical_perf_points'),
-  totalPoints: bigint('total_points', { mode: 'number' }),
-  pointsPerDollar: doublePrecision('points_per_dollar'),
-  filmSlug: text('film_slug'),
-});
 
 export const awardShows = pgTable('AwardShows', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -433,17 +410,11 @@ export type NewFilmRating = typeof filmRatings.$inferInsert;
 export type Film = typeof films.$inferSelect;
 export type NewFilm = typeof films.$inferInsert;
 
-export type MFLUserMovie = typeof mflUserMovies.$inferSelect;
-export type NewMFLUserMovie = typeof mflUserMovies.$inferInsert;
-
 export type MFLScoringMetric = typeof mflScoringMetrics.$inferSelect;
 export type NewMFLScoringMetric = typeof mflScoringMetrics.$inferInsert;
 
 export type MFLScoringTallyRow = typeof mflScoringTally.$inferSelect;
 export type NewMFLScoringTally = typeof mflScoringTally.$inferInsert;
-
-export type MFLMovieDataRow = typeof mflMovieData.$inferSelect;
-export type NewMFLMovieData = typeof mflMovieData.$inferInsert;
 
 export type MFLFilmRow = typeof mflFilms.$inferSelect;
 export type NewMFLFilm = typeof mflFilms.$inferInsert;
