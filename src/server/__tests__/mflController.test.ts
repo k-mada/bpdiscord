@@ -24,10 +24,15 @@ vi.mock('../controllers/dataController', () => ({
   dbDeleteMflMovieScore: vi.fn(),
 }));
 
-import { getMFLMovies, getMFLUserScores } from '../controllers/mflController';
+import {
+  getMFLMovies,
+  getMFLUserScores,
+  upsertMflMovieScore,
+} from '../controllers/mflController';
 import {
   dbGetMFLMovies,
   dbGetMFLUserScores,
+  dbUpsertMflMovieScore,
 } from '../controllers/dataController';
 
 
@@ -149,6 +154,96 @@ describe('getMFLUserScores', () => {
 
     const { req, res, statusCalls } = mockReqRes({ params: { username: 'alice_lb' } });
     await getMFLUserScores(req, res);
+
+    expect(statusCalls).toEqual([500]);
+  });
+});
+
+describe('upsertMflMovieScore', () => {
+  const award = { filmSlug: 'zulu-dawn', pointsAwarded: 25, metricId: 9001 };
+
+  it('accepts an award of zero points', async () => {
+    vi.mocked(dbUpsertMflMovieScore).mockResolvedValue({ success: true });
+
+    const { req, res, statusCalls } = mockReqRes({
+      body: { ...award, pointsAwarded: 0 },
+    });
+    await upsertMflMovieScore(req, res);
+
+    expect(statusCalls).toEqual([200]);
+    expect(dbUpsertMflMovieScore).toHaveBeenCalledWith(
+      'zulu-dawn',
+      0,
+      9001,
+      undefined,
+    );
+  });
+
+  it('accepts a negative award', async () => {
+    vi.mocked(dbUpsertMflMovieScore).mockResolvedValue({ success: true });
+
+    const { req, res, statusCalls } = mockReqRes({
+      body: { ...award, pointsAwarded: -10 },
+    });
+    await upsertMflMovieScore(req, res);
+
+    expect(statusCalls).toEqual([200]);
+  });
+
+  it('passes scoringId through on the update branch', async () => {
+    vi.mocked(dbUpsertMflMovieScore).mockResolvedValue({ success: true });
+
+    const { req, res, statusCalls } = mockReqRes({
+      body: { ...award, scoringId: 7 },
+    });
+    await upsertMflMovieScore(req, res);
+
+    expect(statusCalls).toEqual([200]);
+    expect(dbUpsertMflMovieScore).toHaveBeenCalledWith('zulu-dawn', 25, 9001, 7);
+  });
+
+  it.each([
+    ['a missing film slug', { pointsAwarded: 25, metricId: 9001 }],
+    ['a blank film slug', { ...award, filmSlug: '   ' }],
+    ['missing points', { filmSlug: 'zulu-dawn', metricId: 9001 }],
+    ['fractional points', { ...award, pointsAwarded: 1.5 }],
+    ['numeric-string points', { ...award, pointsAwarded: '25' }],
+    ['NaN points', { ...award, pointsAwarded: Number.NaN }],
+    ['a missing metric id', { filmSlug: 'zulu-dawn', pointsAwarded: 25 }],
+    ['a zero metric id', { ...award, metricId: 0 }],
+    ['a fractional scoring id', { ...award, scoringId: 1.5 }],
+  ])('400s on %s without touching the DB', async (_label, body) => {
+    const { req, res, statusCalls } = mockReqRes({ body });
+    await upsertMflMovieScore(req, res);
+
+    expect(statusCalls).toEqual([400]);
+    expect(dbUpsertMflMovieScore).not.toHaveBeenCalled();
+  });
+
+  it('409s on a duplicate film/metric award and names the conflict', async () => {
+    vi.mocked(dbUpsertMflMovieScore).mockResolvedValue({
+      success: false,
+      conflict: true,
+      error: 'Film zulu-dawn already has an award for metric 9001.',
+    });
+
+    const { req, res, statusCalls, jsonCalls } = mockReqRes({ body: award });
+    await upsertMflMovieScore(req, res);
+
+    expect(statusCalls).toEqual([409]);
+    expect(jsonCalls[0]).toEqual({
+      error: 'Film zulu-dawn already has an award for metric 9001.',
+    });
+  });
+
+  it('500s on any other DB failure', async () => {
+    vi.mocked(dbUpsertMflMovieScore).mockResolvedValue({
+      success: false,
+      error: 'boom',
+    });
+
+    const { req, res, statusCalls } = mockReqRes({ body: award });
+    await upsertMflMovieScore(req, res);
 
     expect(statusCalls).toEqual([500]);
   });

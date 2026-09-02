@@ -88,3 +88,18 @@ export async function dbTransaction(
     };
   }
 }
+
+/**
+ * True when `e` is a Postgres unique-violation (23505) raised by the named
+ * constraint. Lets a caller turn a specific collision into a 409 while any
+ * other failure stays a 500.
+ */
+export function isUniqueViolation(e: unknown, constraint: string): boolean {
+  // Drizzle wraps postgres-js errors in `cause`, so check both levels.
+  for (const candidate of [e, (e as { cause?: unknown })?.cause]) {
+    if (typeof candidate !== 'object' || candidate === null) continue;
+    const err = candidate as Record<string, unknown>;
+    if (err.code === '23505' && err.constraint_name === constraint) return true;
+  }
+  return false;
+}

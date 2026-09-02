@@ -122,17 +122,34 @@ export async function getMflMovieScore(
   }
 }
 
+function isPositiveInt(value: unknown): value is number {
+  return Number.isInteger(value) && (value as number) > 0;
+}
+
 export async function upsertMflMovieScore(
   req: Request,
   res: Response
 ): Promise<void> {
   const { filmSlug, pointsAwarded, metricId, scoringId } = req.body;
-  if (!filmSlug || !pointsAwarded) {
-    res
-      .status(400)
-      .json({ error: "Film slug and points awarded are required" });
+
+  if (typeof filmSlug !== "string" || filmSlug.trim() === "") {
+    res.status(400).json({ error: "Film slug is required" });
     return;
   }
+  // Zero is a legitimate award, so this tests the type, not the truthiness.
+  if (!Number.isInteger(pointsAwarded)) {
+    res.status(400).json({ error: "Points awarded must be an integer" });
+    return;
+  }
+  if (!isPositiveInt(metricId)) {
+    res.status(400).json({ error: "Metric id must be a positive integer" });
+    return;
+  }
+  if (scoringId !== undefined && !isPositiveInt(scoringId)) {
+    res.status(400).json({ error: "Scoring id must be a positive integer" });
+    return;
+  }
+
   const dbResult = await dbUpsertMflMovieScore(
     filmSlug,
     pointsAwarded,
@@ -141,6 +158,10 @@ export async function upsertMflMovieScore(
   );
   if (dbResult.success) {
     res.status(200).json({ message: "MFL movie score upserted successfully" });
+  } else if (dbResult.conflict) {
+    res
+      .status(409)
+      .json({ error: dbResult.error || "This film already has that award" });
   } else {
     res
       .status(500)
