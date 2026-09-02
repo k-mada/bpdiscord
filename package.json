@@ -59,5 +59,6 @@
     "letterboxd"
   ],
   "author": "Your Name",
-  "license": "MIT"
+  "license": "MIT",
+  "packageManager": "yarn@4.13.0"
 }
