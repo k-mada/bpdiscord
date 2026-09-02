@@ -11,7 +11,11 @@ export default defineConfig({
     env: {
       NODE_ENV: 'test',
     },
-    // Run tests sequentially to avoid database conflicts
+    // Every DB-backed file truncates shared tables in beforeEach, so two files
+    // running at once delete each other's rows mid-test. sequence.concurrent
+    // only orders tests *within* a file — fileParallelism is what stops vitest
+    // running the files themselves in parallel workers.
+    fileParallelism: false,
     sequence: {
       concurrent: false,
     },

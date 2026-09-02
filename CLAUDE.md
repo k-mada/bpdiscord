@@ -146,7 +146,7 @@ Server startup breadcrumb confirms which mode:
 
 **Known limitation**: `WORKER_URL` is unset in `.env.smoke` by design. `/api/scrape-user/*` and `/api/admin/refresh-rankings` return 500 *"Worker not configured"* in smoke mode — test worker scenarios in staging or against prod with a non-prod Letterboxd username.
 
-**Test DB caveat**: smoke-seeded fixtures live in the same local Supabase instance the test suite uses. Run `yarn test` *before* `yarn setup:local` for a clean test run. Isolation fix tracked in `bpdiscord-141`.
+**Test DB note**: smoke-seeded fixtures live in the same local Supabase instance the test suite uses. The suite tolerates that — every DB-backed test file resets what it touches — so the two can be run in either order. See `.claude/unit-tests.md` before changing test parallelism or a `beforeEach`.
 
 ## Database migrations
 

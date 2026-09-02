@@ -43,6 +43,9 @@ beforeEach(async () => {
   // Per-test reset so claimed-lbusername state doesn't leak between cases.
   // Also nukes the seeded auth.users rows; recreate as needed.
   await db.delete(appUsers).where(sql`1=1`);
+  // Users rows too, or the lbusernames this file seeds leak into any later
+  // file that counts them. appUsers first — it references Users.
+  await db.delete(users).where(sql`1=1`);
   await db.execute(sql`
     DELETE FROM auth.users WHERE email LIKE 'authcontroller-test-%@example.test'
   `);
