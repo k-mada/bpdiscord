@@ -8,7 +8,8 @@ import {
   filmRatings,
   mflScoringMetrics,
   mflScoringTally,
-  mflUserMovies,
+  mflFilms,
+  mflUserPicks,
 } from "../db/schema";
 import {
   dbOperation,
@@ -1266,6 +1267,8 @@ export async function dbGetMFLUserScores(username: string): Promise<{
   error?: string;
 }> {
   return dbOperation(async () => {
+    // Joined, not an IN-subquery on a string table name, so a later rename is a
+    // compile error. The picks PK stops the join duplicating a tally row.
     const result = await db
       .select({
         metric_id: mflScoringTally.metricId,
@@ -1273,12 +1276,17 @@ export async function dbGetMFLUserScores(username: string): Promise<{
         category: mflScoringMetrics.category,
       })
       .from(mflScoringTally)
+      .innerJoin(
+        mflUserPicks,
+        and(
+          eq(mflUserPicks.filmSlug, mflScoringTally.filmSlug),
+          eq(mflUserPicks.lbusername, username),
+        ),
+      )
       .leftJoin(
         mflScoringMetrics,
         eq(mflScoringTally.metricId, mflScoringMetrics.metricId),
-      ).where(sql`${mflScoringTally.filmSlug} IN (
-        SELECT film_slug FROM "MFLUserMovies" WHERE username = ${username}
-      )`);
+      );
 
     return result.map((r) => ({
       username,
@@ -1344,20 +1352,15 @@ export async function dbGetMFLMovies(): Promise<{
   error?: string;
 }> {
   return dbOperation(async () => {
-    // Matches RPC: get_mfl_movies
-    // Uses MFLUserMovies table, not MFLScoringTally
-    const result = await db
-      .selectDistinct({
-        title: mflUserMovies.title,
-        film_slug: mflUserMovies.filmSlug,
+    // The season catalogue, not the roster: a film nobody picked still belongs
+    // in the dropdown. film_slug is the primary key, so no DISTINCT is needed.
+    return db
+      .select({
+        title: mflFilms.title,
+        film_slug: mflFilms.filmSlug,
       })
-      .from(mflUserMovies)
-      .orderBy(asc(mflUserMovies.title));
-
-    return result.map((r) => ({
-      title: r.title ?? "",
-      film_slug: r.film_slug ?? "",
-    }));
+      .from(mflFilms)
+      .orderBy(asc(mflFilms.title));
   });
 }
 
