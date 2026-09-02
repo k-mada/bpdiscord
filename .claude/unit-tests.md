@@ -38,3 +38,17 @@ An assertion inside a helper reports the failure at the helper, not the test tha
 Logic used by both workspaces lives in `src/shared/`, and its test cases live beside it. `parseRatingFromTitle` and `extractRatingCount` are the worked example: both are defined once in `src/shared/utilities.ts`, `src/client/utilities.ts` imports them rather than reimplementing, and the input/expected pairs live once in `src/shared/testFixtures/ratingTestCases.ts`.
 
 Run shared cases with `it.each(cases)`. If you find the same helper written out in both `src/client/` and `src/server/`, move it to `src/shared/` rather than adding a second set of tests to keep in sync.
+
+## 6. Server tests share one database — never run the files in parallel
+
+Every DB-backed server test file truncates shared tables in `beforeEach`. Two files running at once therefore delete each other's rows mid-test, and the failures surface far from the cause as foreign-key violations in whichever file lost the race.
+
+`fileParallelism: false` in the server Vitest config is what prevents this. Note that `sequence.concurrent` is **not** the same setting — it only orders tests within a single file, so a config carrying just that one looks correct while the files still run in parallel workers. Don't "optimise" the parallelism back on; the whole server suite runs in a couple of seconds serially.
+
+The symptom, if it regresses: failure counts that change between identical runs. A suite that reports a different number each time is not gating anything, and the only safe way to attribute a change is to diff failing test *names* against a stashed baseline.
+
+## 7. A DB-backed test file resets everything it writes
+
+`cleanDatabase()` in `beforeEach` is the default — it clears every table in FK-safe order. A file that resets only its own tables must still clear anything it inserted transitively, `Users` especially: seeding an account and leaving the row behind changes the answer for any later file that counts users.
+
+This is also what keeps the smoke fixtures out of the way. `yarn setup:local` seeds into the same local Supabase instance the tests use, so per-file reset is the only reason `yarn setup:local && yarn test` passes.

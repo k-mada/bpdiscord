@@ -31,13 +31,16 @@ afterAll(async () => {
 
 describe('dataController', () => {
   describe('User Ratings', () => {
-    it('dbGetAllUsernames returns users who have ratings', async () => {
+    it('dbGetAllUsernames returns every user, ratings imported or not', async () => {
       const result = await dc.dbGetAllUsernames();
 
       expect(result.success).toBe(true);
       expect(result.data).toBeDefined();
-      // Only users with entries in userRatings table are returned (3 of 4 test users)
-      expect(result.data!.length).toBe(3);
+      // Reads Users directly rather than joining UserRatings, so an account that
+      // has not imported ratings yet still appears. All 4 test users, including
+      // test_user_no_films.
+      expect(result.data!.length).toBe(4);
+      expect(result.data!.map((u) => u.username)).toContain('test_user_no_films');
 
       const activeUser = result.data!.find(u => u.username === 'test_user_active');
       expect(activeUser?.displayName).toBe('Active Test User');

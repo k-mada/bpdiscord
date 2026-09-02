@@ -140,6 +140,9 @@ beforeEach(async () => {
   vi.clearAllMocks();
   await db.delete(userScrapeJobs).where(sql`1=1`);
   await db.delete(appUsers).where(sql`1=1`);
+  // Users rows too, or the lbusernames this file seeds leak into any later
+  // file that counts them. appUsers first — it references Users.
+  await db.delete(users).where(sql`1=1`);
   await db.execute(sql`
     DELETE FROM auth.users WHERE email LIKE 'useradmin-test-%@example.test'
   `);
