@@ -54,7 +54,6 @@ The **MFL** tables also have semantics the columns don't show:
 - **`MFLFilms`** is the season's catalogue — every film available to pick, whether or not anyone picked it. Admin upload populates it; scraping never does. Deliberately **no FK to `Films`**: an MFL film may not be scraped yet, and `Films` carries a release year where MFL needs a full date. There is no season key, so rollover is a manual truncate.
 - **`MFLUserPicks`** is the roster edge. Its two foreign keys behave differently on purpose — deleting a user cascades to their picks, but deleting a film somebody picked is **refused**, so correcting a mistyped slug can't silently wipe everyone's roster.
 - **`MFLScoringTally`** holds one row per film per awarded metric, unique on that pair: a film can be awarded a given metric once. Both columns are `NOT NULL` so that uniqueness actually holds — Postgres treats repeated NULLs as distinct.
-- **`MFLMovieData`** and **`MFLUserMovies`** are legacy and unread. Don't build on them.
 
 ## API surface
 
