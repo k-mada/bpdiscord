@@ -19,6 +19,7 @@ import { and, eq, sql } from "drizzle-orm";
 
 import { db } from "../db";
 import { refreshJobs, userScrapeJobs } from "../db/schema";
+import { isUniqueViolation } from "../db/utils";
 
 export type JobTable = "refresh_jobs" | "user_scrape_jobs";
 
@@ -243,15 +244,5 @@ export async function callWorker(
 }
 
 function isUniqueViolationOnRunningIndex(e: unknown, table: JobTable): boolean {
-  const expected = RUNNING_CONSTRAINT[table];
-  // Drizzle wraps postgres-js errors in `cause`. Check both.
-  const candidates = [e, (e as { cause?: unknown })?.cause];
-  for (const c of candidates) {
-    if (typeof c !== "object" || c === null) continue;
-    const err = c as Record<string, unknown>;
-    if (err.code === "23505" && err.constraint_name === expected) {
-      return true;
-    }
-  }
-  return false;
+  return isUniqueViolation(e, RUNNING_CONSTRAINT[table]);
 }

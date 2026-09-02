@@ -12,6 +12,7 @@ import {
   dbQueryWithCount,
   dbMutation,
   dbTransaction,
+  isUniqueViolation,
 } from "../db/utils";
 
 describe("dbOperation", () => {
@@ -156,5 +157,41 @@ describe("dbTransaction", () => {
       success: false,
       error: "Insert failed",
     });
+  });
+});
+
+describe("isUniqueViolation", () => {
+  const pgError = (constraint: string, code = "23505") =>
+    Object.assign(new Error("duplicate key value"), {
+      code,
+      constraint_name: constraint,
+    });
+
+  it("matches a 23505 raised by the named constraint", () => {
+    expect(isUniqueViolation(pgError("films_pkey"), "films_pkey")).toBe(true);
+  });
+
+  it("unwraps the postgres-js error Drizzle nests under cause", () => {
+    const wrapped = Object.assign(new Error("Failed query"), {
+      cause: pgError("films_pkey"),
+    });
+
+    expect(isUniqueViolation(wrapped, "films_pkey")).toBe(true);
+  });
+
+  it("does not match a violation of a different constraint", () => {
+    expect(isUniqueViolation(pgError("other_key"), "films_pkey")).toBe(false);
+  });
+
+  it("does not match a different SQLSTATE on the same constraint", () => {
+    expect(isUniqueViolation(pgError("films_pkey", "23503"), "films_pkey")).toBe(
+      false,
+    );
+  });
+
+  it("tolerates a non-object throw", () => {
+    expect(isUniqueViolation("boom", "films_pkey")).toBe(false);
+    expect(isUniqueViolation(null, "films_pkey")).toBe(false);
+    expect(isUniqueViolation(undefined, "films_pkey")).toBe(false);
   });
 });
