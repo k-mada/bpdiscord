@@ -49,6 +49,13 @@ The **actor-graph** tables have semantics that aren't obvious from the columns:
 - **`ag_actors`** / **`ag_films`** — both carry a `fully_fetched` / `cast_fully_fetched` flag. Lightweight inserts (e.g. a film discovered via an actor's filmography, or an actor discovered via a movie's cast) leave the flag `false`. Only a full `/person/:id?append_to_response=movie_credits` or `/movie/:id?append_to_response=credits` hydrates the row and sets it `true`. **Never let a lightweight upsert clobber a richer row's flag back to false.**
 - **`ag_acted_in`** — actor↔film edges. `billing_order` (lower = more prominent) is used by the path-finder to prune long-tail credits (extras, voice roles). The reverse-direction index `idx_ag_acted_in_movie_actor` on `(movie_tmdb_id, actor_tmdb_id)` is required by the BFS, which joins on `movie_tmdb_id` to find co-stars. Created in `supabase/migrations/20260505013813_add_ag_graph_indexes.sql` alongside `pg_trgm` GIN indexes on `ag_actors.name` / `ag_films.title` that power the search endpoint.
 
+The **MFL** tables also have semantics the columns don't show:
+
+- **`MFLFilms`** is the season's catalogue — every film available to pick, whether or not anyone picked it. Admin upload populates it; scraping never does. Deliberately **no FK to `Films`**: an MFL film may not be scraped yet, and `Films` carries a release year where MFL needs a full date. There is no season key, so rollover is a manual truncate.
+- **`MFLUserPicks`** is the roster edge. Its two foreign keys behave differently on purpose — deleting a user cascades to their picks, but deleting a film somebody picked is **refused**, so correcting a mistyped slug can't silently wipe everyone's roster.
+- **`MFLScoringTally`** holds one row per film per awarded metric, unique on that pair: a film can be awarded a given metric once. Both columns are `NOT NULL` so that uniqueness actually holds — Postgres treats repeated NULLs as distinct.
+- **`MFLMovieData`** and **`MFLUserMovies`** are legacy and unread. Don't build on them.
+
 ## API surface
 
 Routes are defined under `src/server/routes/`. Quick map:

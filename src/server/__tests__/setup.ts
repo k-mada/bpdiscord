@@ -12,7 +12,10 @@ import {
   films,
   filmRatings,
   mflUserMovies,
+  mflUserPicks,
+  mflFilms,
   mflScoringTally,
+  mflScoringMetrics,
   eventUserPicks,
   eventNominees,
   eventCategories,
@@ -44,7 +47,13 @@ export async function cleanDatabase(): Promise<void> {
   await db.delete(events).where(sql`1=1`);
   await db.delete(awardShows).where(sql`1=1`);
   await db.delete(mflScoringTally).where(sql`1=1`);
+  // Metrics after the tally rows that reference them via fk_metric_id.
+  await db.delete(mflScoringMetrics).where(sql`1=1`);
   await db.delete(mflUserMovies).where(sql`1=1`);
+  // Picks before films: the film_slug FK is ON DELETE RESTRICT. Both before
+  // Users, whose delete would otherwise trip the lbusername FK.
+  await db.delete(mflUserPicks).where(sql`1=1`);
+  await db.delete(mflFilms).where(sql`1=1`);
   await db.delete(filmRatings).where(sql`1=1`);
   await db.delete(userFilms).where(sql`1=1`);
   await db.delete(userRatings).where(sql`1=1`);
