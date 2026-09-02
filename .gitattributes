@@ -1,4 +1,7 @@
-# Generated export with unstable line order — union by record id instead of
-# line-by-line, or unrelated issues collide. See CLAUDE.md for the one-time
-# `git config` each clone needs.
-.beads/issues.jsonl merge=beads-jsonl
+# Generated export with unstable line order — the 5 `bd remember` memory records
+# come out of a Go map, so every bd command reshuffles them. `clean` canonicalises
+# to sorted order so git never sees the churn; `merge` unions by record id so
+# branches touching unrelated issues don't collide. Both need the one-time
+# `git config` per clone documented in CLAUDE.md — an unconfigured driver or
+# filter is silently skipped.
+.beads/issues.jsonl merge=beads-jsonl filter=beads-jsonl

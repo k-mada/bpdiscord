@@ -185,16 +185,20 @@ git push
 
 GitHub then sees the branch as mergeable.
 
-This matters most for `.beads/issues.jsonl`. It is a generated export that `bd` rewrites on every command with unstable line order, so branches touching unrelated issues collide anyway. A merge driver resolves it automatically — but **only locally**, because GitHub cannot run repo-supplied merge code. GitHub will still report the file as conflicted; ignore that and merge locally.
+This matters most for `.beads/issues.jsonl`. It is a generated export that `bd` rewrites on every command with unstable line order — the five `bd remember` memory records come out of a Go map, so their order changes on every single command while the issue records stay put. A **clean filter** canonicalises the file to sorted order so git never sees that churn, and a **merge driver** unions by record id so branches touching unrelated issues don't collide. The merge driver works **only locally**, because GitHub cannot run repo-supplied merge code. GitHub will still report the file as conflicted; ignore that and merge locally.
 
 Resolving it by hand duplicates records. `main` was carrying a duplicated memory from an earlier hand-resolution. If you ever must, take either side and run `bd export --all -o .beads/issues.jsonl` — the local Dolt DB is the source of truth.
 
-One-time per clone, or the driver is silently skipped:
+One-time per clone. Both are named by `.gitattributes`, and git **silently skips** either one when it isn't configured — an unconfigured clone commits unsorted exports and reintroduces the churn for everyone else:
 
 ```bash
 git config merge.beads-jsonl.name "beads JSONL union merge"
 git config merge.beads-jsonl.driver "node scripts/merge-beads-jsonl.mjs %O %A %B"
+git config filter.beads-jsonl.clean "LC_ALL=C sort"
+git config filter.beads-jsonl.smudge cat
 ```
+
+The filter only changes what git stores; the working-tree file stays in whatever order `bd` last wrote. `git diff` on a file `bd` has just rewritten should be empty — if it isn't, check `git check-attr filter -- .beads/issues.jsonl` and the config above. `LC_ALL=C` is required: a locale-dependent sort is not the same canonical form on every machine.
 
 ### PR descriptions
 
