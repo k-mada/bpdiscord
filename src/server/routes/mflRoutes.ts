@@ -9,6 +9,7 @@ import {
   getMflMovieScore,
   upsertMflMovieScore,
   deleteMflMovieScore,
+  bulkUpsertMflFilms,
 } from "../controllers/mflController";
 
 const router = Router();
@@ -20,7 +21,7 @@ router.get("/movie-score/:filmSlug", getMflMovieScore);
 router.get("/movies", getMFLMovies);
 
 // Admin — per-route middleware, not router.use, because the reads above stay
-// public. Both handlers write MFLScoringTally.
+// public.
 router.post(
   "/admin/movie-score",
   authenticateToken,
@@ -34,6 +35,12 @@ router.delete(
   ...validateIntParam("scoringId"),
   handleValidationErrors,
   deleteMflMovieScore,
+);
+router.post(
+  "/admin/films/bulk",
+  authenticateToken,
+  authorizeAdmin,
+  bulkUpsertMflFilms,
 );
 
 export default router;

@@ -22,17 +22,20 @@ vi.mock('../controllers/dataController', () => ({
   dbGetMflMovieScore: vi.fn(),
   dbUpsertMflMovieScore: vi.fn(),
   dbDeleteMflMovieScore: vi.fn(),
+  dbBulkUpsertMflFilms: vi.fn(),
 }));
 
 import {
   getMFLMovies,
   getMFLUserScores,
   upsertMflMovieScore,
+  bulkUpsertMflFilms,
 } from '../controllers/mflController';
 import {
   dbGetMFLMovies,
   dbGetMFLUserScores,
   dbUpsertMflMovieScore,
+  dbBulkUpsertMflFilms,
 } from '../controllers/dataController';
 
 
@@ -244,6 +247,123 @@ describe('upsertMflMovieScore', () => {
 
     const { req, res, statusCalls } = mockReqRes({ body: award });
     await upsertMflMovieScore(req, res);
+
+    expect(statusCalls).toEqual([500]);
+  });
+});
+
+describe('bulkUpsertMflFilms', () => {
+  const anora = {
+    title: 'Anora',
+    film_slug: 'anora',
+    release_date: '10/18/2026',
+    price: '40',
+  };
+  const bad = { ...anora, film_slug: 'hamnet', title: '' };
+
+  it('upserts the normalised rows and reports the count', async () => {
+    vi.mocked(dbBulkUpsertMflFilms).mockResolvedValue({ success: true });
+
+    const { req, res, statusCalls, jsonCalls } = mockReqRes({
+      body: { rows: [anora] },
+    });
+    await bulkUpsertMflFilms(req, res);
+
+    expect(statusCalls).toEqual([200]);
+    expect(dbBulkUpsertMflFilms).toHaveBeenCalledWith([
+      { filmSlug: 'anora', title: 'Anora', releaseDate: '2026-10-18', price: 40 },
+    ]);
+    expect(jsonCalls[0]).toMatchObject({
+      data: { dryRun: false, accepted: [{ row: 1, filmSlug: 'anora' }], rejected: [] },
+    });
+  });
+
+  it('writes nothing and 400s when any row is invalid', async () => {
+    const { req, res, statusCalls, jsonCalls } = mockReqRes({
+      body: { rows: [anora, bad] },
+    });
+    await bulkUpsertMflFilms(req, res);
+
+    expect(statusCalls).toEqual([400]);
+    expect(dbBulkUpsertMflFilms).not.toHaveBeenCalled();
+    expect(jsonCalls[0]).toMatchObject({
+      data: { rejected: [{ row: 2, reasons: ['title is required'] }] },
+    });
+  });
+
+  it('200s a dryRun that finds bad rows — reporting them is the point', async () => {
+    const { req, res, statusCalls, jsonCalls } = mockReqRes({
+      body: { rows: [anora, bad], dryRun: true },
+    });
+    await bulkUpsertMflFilms(req, res);
+
+    expect(statusCalls).toEqual([200]);
+    expect(dbBulkUpsertMflFilms).not.toHaveBeenCalled();
+    expect(jsonCalls[0]).toMatchObject({ data: { dryRun: true } });
+  });
+
+  it('never writes on a dryRun, even when every row is valid', async () => {
+    const { req, res, statusCalls } = mockReqRes({
+      body: { rows: [anora], dryRun: true },
+    });
+    await bulkUpsertMflFilms(req, res);
+
+    expect(statusCalls).toEqual([200]);
+    expect(dbBulkUpsertMflFilms).not.toHaveBeenCalled();
+  });
+
+  it('gives the preview and the commit the same verdict for one file', async () => {
+    vi.mocked(dbBulkUpsertMflFilms).mockResolvedValue({ success: true });
+    const rows = [anora, { ...anora, film_slug: 'sinners' }];
+
+    const preview = mockReqRes({ body: { rows, dryRun: true } });
+    await bulkUpsertMflFilms(preview.req, preview.res);
+    const commit = mockReqRes({ body: { rows } });
+    await bulkUpsertMflFilms(commit.req, commit.res);
+
+    const verdictOf = (calls: unknown[]) => {
+      const { accepted, rejected } = (calls[0] as {
+        data: { accepted: unknown; rejected: unknown };
+      }).data;
+      return { accepted, rejected };
+    };
+    expect(verdictOf(preview.jsonCalls)).toEqual(verdictOf(commit.jsonCalls));
+  });
+
+  it.each([
+    ['rows is missing', {}],
+    ['rows is not an array', { rows: 'anora' }],
+    ['rows is empty', { rows: [] }],
+    ['dryRun is not a boolean', { rows: [anora], dryRun: 'yes' }],
+  ])('400s when %s', async (_label, body) => {
+    const { req, res, statusCalls } = mockReqRes({ body });
+    await bulkUpsertMflFilms(req, res);
+
+    expect(statusCalls).toEqual([400]);
+    expect(dbBulkUpsertMflFilms).not.toHaveBeenCalled();
+  });
+
+  it('413s a payload over the row cap without validating it', async () => {
+    const rows = Array.from({ length: 1001 }, (_, i) => ({
+      ...anora,
+      film_slug: `film-${i}`,
+    }));
+
+    const { req, res, statusCalls } = mockReqRes({ body: { rows } });
+    await bulkUpsertMflFilms(req, res);
+
+    expect(statusCalls).toEqual([413]);
+    expect(dbBulkUpsertMflFilms).not.toHaveBeenCalled();
+  });
+
+  it('500s when the transaction fails', async () => {
+    vi.mocked(dbBulkUpsertMflFilms).mockResolvedValue({
+      success: false,
+      error: 'deadlock detected',
+    });
+
+    const { req, res, statusCalls } = mockReqRes({ body: { rows: [anora] } });
+    await bulkUpsertMflFilms(req, res);
 
     expect(statusCalls).toEqual([500]);
   });

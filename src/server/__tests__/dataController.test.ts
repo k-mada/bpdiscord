@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { sql } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import * as dc from '../controllers/dataController';
 import {
   resetDatabase,
@@ -823,5 +823,91 @@ describe('dbGetTopUserFilms — highest-rated membership gate', () => {
     ]);
     expect(result.data![0]!.average_rating).toBeCloseTo(5.0, 2);
     expect(result.data![1]!.average_rating).toBeCloseTo(4.5, 2);
+  });
+});
+
+describe('dbBulkUpsertMflFilms', () => {
+  const read = async (slug: string) =>
+    (await db.select().from(mflFilms).where(eq(mflFilms.filmSlug, slug)))[0];
+
+  afterAll(async () => {
+    await db.delete(mflFilms).where(sql`1=1`);
+  });
+
+  it('inserts a fresh catalogue', async () => {
+    const result = await dc.dbBulkUpsertMflFilms([
+      { filmSlug: 'bulk-anora', title: 'Anora', releaseDate: '2026-10-18', price: 40 },
+      { filmSlug: 'bulk-hamnet', title: 'Hamnet', releaseDate: null, price: null },
+    ]);
+
+    expect(result.success).toBe(true);
+    expect(await read('bulk-anora')).toMatchObject({
+      title: 'Anora',
+      releaseDate: '2026-10-18',
+      price: 40,
+    });
+    expect(await read('bulk-hamnet')).toMatchObject({
+      releaseDate: null,
+      price: null,
+    });
+  });
+
+  it('updates an existing film in place rather than duplicating it', async () => {
+    const before = await read('bulk-anora');
+
+    await dc.dbBulkUpsertMflFilms([
+      { filmSlug: 'bulk-anora', title: 'Anora (2026)', releaseDate: '2026-11-01', price: 55 },
+    ]);
+
+    const rows = await db
+      .select()
+      .from(mflFilms)
+      .where(eq(mflFilms.filmSlug, 'bulk-anora'));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      title: 'Anora (2026)',
+      releaseDate: '2026-11-01',
+      price: 55,
+    });
+    // created_at is the film's first appearance; updated_at tracks the re-upload.
+    expect(rows[0]!.createdAt).toEqual(before!.createdAt);
+    expect(rows[0]!.updatedAt.getTime()).toBeGreaterThan(
+      before!.updatedAt.getTime(),
+    );
+  });
+
+  it('clears a value that the new upload leaves blank', async () => {
+    await dc.dbBulkUpsertMflFilms([
+      { filmSlug: 'bulk-anora', title: 'Anora', releaseDate: null, price: null },
+    ]);
+
+    expect(await read('bulk-anora')).toMatchObject({
+      releaseDate: null,
+      price: null,
+    });
+  });
+
+  it('leaves films the payload does not name alone', async () => {
+    await dc.dbBulkUpsertMflFilms([
+      { filmSlug: 'bulk-anora', title: 'Anora', releaseDate: null, price: 1 },
+    ]);
+
+    expect(await read('bulk-hamnet')).toBeDefined();
+  });
+
+  it('rolls the whole batch back when one row violates the schema', async () => {
+    const result = await dc.dbBulkUpsertMflFilms([
+      { filmSlug: 'bulk-sinners', title: 'Sinners', releaseDate: null, price: 20 },
+      { filmSlug: 'bulk-broken', title: null as never, releaseDate: null, price: 20 },
+    ]);
+
+    expect(result.success).toBe(false);
+    expect(await read('bulk-sinners')).toBeUndefined();
+  });
+
+  it('treats an empty payload as a no-op', async () => {
+    const result = await dc.dbBulkUpsertMflFilms([]);
+
+    expect(result.success).toBe(true);
   });
 });

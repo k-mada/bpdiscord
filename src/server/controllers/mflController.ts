@@ -7,7 +7,13 @@ import {
   dbGetMflMovieScore,
   dbUpsertMflMovieScore,
   dbDeleteMflMovieScore,
+  dbBulkUpsertMflFilms,
 } from "./dataController";
+import {
+  MAX_IMPORT_ROWS,
+  FilmImportRow,
+  validateFilmRows,
+} from "./mflFilmImport";
 
 export async function getMFLScoringMetrics(
   req: Request,
@@ -183,4 +189,79 @@ export async function deleteMflMovieScore(
       .status(500)
       .json({ error: dbResult.error || "Failed to delete MFL movie score" });
   }
+}
+
+/**
+ * POST /admin/films/bulk — validates the rows a client parsed out of films.csv
+ * and, unless dryRun, upserts them.
+ *
+ * A preview always answers 200 because reporting bad rows is what it is for.
+ * A commit carrying any bad row answers 400 and writes nothing, so the
+ * catalogue only ever matches a file that validated whole.
+ */
+export async function bulkUpsertMflFilms(
+  req: Request,
+  res: Response
+): Promise<void> {
+  const { rows, dryRun } = req.body;
+
+  if (!Array.isArray(rows)) {
+    res.status(400).json({ error: "rows must be an array" });
+    return;
+  }
+  if (rows.length === 0) {
+    res.status(400).json({ error: "rows must not be empty" });
+    return;
+  }
+  if (rows.length > MAX_IMPORT_ROWS) {
+    res.status(413).json({
+      error: `Too many rows — ${rows.length} submitted, ${MAX_IMPORT_ROWS} is the maximum`,
+    });
+    return;
+  }
+  if (dryRun !== undefined && typeof dryRun !== "boolean") {
+    res.status(400).json({ error: "dryRun must be a boolean" });
+    return;
+  }
+
+  const { accepted, rejected, films } = validateFilmRows(
+    rows as FilmImportRow[]
+  );
+  const verdict = { dryRun: dryRun === true, accepted, rejected };
+
+  if (rejected.length > 0) {
+    if (dryRun === true) {
+      res.status(200).json({
+        message: `${rejected.length} of ${rows.length} rows would be rejected`,
+        data: verdict,
+      });
+      return;
+    }
+    res.status(400).json({
+      error: `${rejected.length} of ${rows.length} rows are invalid — nothing was written`,
+      data: verdict,
+    });
+    return;
+  }
+
+  if (dryRun === true) {
+    res.status(200).json({
+      message: `${accepted.length} rows would be upserted`,
+      data: verdict,
+    });
+    return;
+  }
+
+  const dbResult = await dbBulkUpsertMflFilms(films);
+  if (!dbResult.success) {
+    res
+      .status(500)
+      .json({ error: dbResult.error || "Failed to upsert MFL films" });
+    return;
+  }
+
+  res.status(200).json({
+    message: `${accepted.length} films upserted successfully`,
+    data: verdict,
+  });
 }
