@@ -18,6 +18,7 @@ import {
   dbTransaction,
   isUniqueViolation,
 } from "../db/utils";
+import { ValidFilm } from "./mflFilmImport";
 import {
   HaterRankingRow,
   MissingFilmsRow,
@@ -1406,6 +1407,35 @@ export async function dbUpsertMflMovieScore(
       error: error instanceof Error ? error.message : "Unknown database error",
     };
   }
+}
+
+/** Upserts the rows the payload names; films absent from it are untouched. */
+export async function dbBulkUpsertMflFilms(
+  films: ValidFilm[],
+): Promise<{ success: boolean; error?: string }> {
+  if (films.length === 0) return { success: true };
+
+  return dbTransaction(async (tx) => {
+    await tx
+      .insert(mflFilms)
+      .values(
+        films.map((film) => ({
+          filmSlug: film.filmSlug,
+          title: film.title,
+          releaseDate: film.releaseDate,
+          price: film.price,
+        })),
+      )
+      .onConflictDoUpdate({
+        target: mflFilms.filmSlug,
+        set: {
+          title: sql`excluded.title`,
+          releaseDate: sql`excluded.release_date`,
+          price: sql`excluded.price`,
+          updatedAt: new Date(),
+        },
+      });
+  });
 }
 
 export async function dbDeleteMflMovieScore(scoringId: number): Promise<{

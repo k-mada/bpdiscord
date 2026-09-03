@@ -15,6 +15,7 @@ import {
   uniqueIndex,
   index,
   jsonb,
+  check,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { relations } from 'drizzle-orm';
@@ -131,14 +132,18 @@ export const mflScoringTallyRelations = relations(mflScoringTally, ({ one }) => 
   }),
 }));
 
-export const mflFilms = pgTable('MFLFilms', {
-  filmSlug: text('film_slug').primaryKey(),
-  title: text('title').notNull(),
-  releaseDate: date('release_date'),
-  price: integer('price'),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
-});
+export const mflFilms = pgTable(
+  'MFLFilms',
+  {
+    filmSlug: text('film_slug').primaryKey(),
+    title: text('title').notNull(),
+    releaseDate: date('release_date'),
+    price: integer('price'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [check('mfl_films_price_non_negative', sql`${table.price} >= 0`)]
+);
 
 export const mflUserPicks = pgTable(
   'MFLUserPicks',
