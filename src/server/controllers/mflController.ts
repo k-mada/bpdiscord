@@ -224,31 +224,33 @@ export async function bulkUpsertMflFilms(
     return;
   }
 
-  const { accepted, rejected, films } = validateFilmRows(
-    rows as FilmImportRow[]
-  );
-  const verdict = { dryRun: dryRun === true, accepted, rejected };
+  const { valid, invalid, films } = validateFilmRows(rows as FilmImportRow[]);
+  // Names what validation found, never what the DB did, so the preview and the
+  // commit return the same verdict for the same file.
+  const verdict = { dryRun: dryRun === true, valid, invalid };
 
-  if (rejected.length > 0) {
+  if (invalid.length > 0) {
     if (dryRun === true) {
-      res.status(200).json({
-        message: `${rejected.length} of ${rows.length} rows would be rejected`,
+      const response: ApiResponse = {
+        message: `${invalid.length} of ${rows.length} rows would be rejected`,
         data: verdict,
-      });
+      };
+      res.status(200).json(response);
       return;
     }
     res.status(400).json({
-      error: `${rejected.length} of ${rows.length} rows are invalid — nothing was written`,
+      error: `${invalid.length} of ${rows.length} rows are invalid — nothing was written`,
       data: verdict,
     });
     return;
   }
 
   if (dryRun === true) {
-    res.status(200).json({
-      message: `${accepted.length} rows would be upserted`,
+    const response: ApiResponse = {
+      message: `${valid.length} rows would be upserted`,
       data: verdict,
-    });
+    };
+    res.status(200).json(response);
     return;
   }
 
@@ -260,8 +262,9 @@ export async function bulkUpsertMflFilms(
     return;
   }
 
-  res.status(200).json({
-    message: `${accepted.length} films upserted successfully`,
+  const response: ApiResponse = {
+    message: `${valid.length} films upserted successfully`,
     data: verdict,
-  });
+  };
+  res.status(200).json(response);
 }

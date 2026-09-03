@@ -905,6 +905,17 @@ describe('dbBulkUpsertMflFilms', () => {
     expect(await read('bulk-sinners')).toBeUndefined();
   });
 
+  it('is refused by the DB when a price is negative', async () => {
+    // The validator blocks this before it reaches here; the constraint is what
+    // holds for the row-level CRUD and any direct write.
+    const result = await dc.dbBulkUpsertMflFilms([
+      { filmSlug: 'bulk-negative', title: 'Negative', releaseDate: null, price: -1 },
+    ]);
+
+    expect(result.success).toBe(false);
+    expect(await read('bulk-negative')).toBeUndefined();
+  });
+
   it('treats an empty payload as a no-op', async () => {
     const result = await dc.dbBulkUpsertMflFilms([]);
 

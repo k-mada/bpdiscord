@@ -274,7 +274,7 @@ describe('bulkUpsertMflFilms', () => {
       { filmSlug: 'anora', title: 'Anora', releaseDate: '2026-10-18', price: 40 },
     ]);
     expect(jsonCalls[0]).toMatchObject({
-      data: { dryRun: false, accepted: [{ row: 1, filmSlug: 'anora' }], rejected: [] },
+      data: { dryRun: false, valid: [{ row: 1, filmSlug: 'anora' }], invalid: [] },
     });
   });
 
@@ -287,8 +287,12 @@ describe('bulkUpsertMflFilms', () => {
     expect(statusCalls).toEqual([400]);
     expect(dbBulkUpsertMflFilms).not.toHaveBeenCalled();
     expect(jsonCalls[0]).toMatchObject({
-      data: { rejected: [{ row: 2, reasons: ['title is required'] }] },
+      data: { invalid: [{ row: 2, reasons: ['title is required'] }] },
     });
+    // The rows that passed are reported as valid, never as written.
+    expect((jsonCalls[0] as { data: { valid: unknown[] } }).data.valid).toEqual([
+      { row: 1, filmSlug: 'anora' },
+    ]);
   });
 
   it('200s a dryRun that finds bad rows — reporting them is the point', async () => {
@@ -312,21 +316,24 @@ describe('bulkUpsertMflFilms', () => {
     expect(dbBulkUpsertMflFilms).not.toHaveBeenCalled();
   });
 
-  it('gives the preview and the commit the same verdict for one file', async () => {
+  const verdictOf = (calls: unknown[]) => {
+    const { valid, invalid } = (calls[0] as {
+      data: { valid: unknown; invalid: unknown };
+    }).data;
+    return { valid, invalid };
+  };
+
+  it.each([
+    ['a clean file', [anora, { ...anora, film_slug: 'sinners' }]],
+    ['a file with bad rows', [anora, bad, { ...anora, film_slug: 'sinners' }]],
+  ])('gives the preview and the commit the same verdict for %s', async (_l, rows) => {
     vi.mocked(dbBulkUpsertMflFilms).mockResolvedValue({ success: true });
-    const rows = [anora, { ...anora, film_slug: 'sinners' }];
 
     const preview = mockReqRes({ body: { rows, dryRun: true } });
     await bulkUpsertMflFilms(preview.req, preview.res);
     const commit = mockReqRes({ body: { rows } });
     await bulkUpsertMflFilms(commit.req, commit.res);
 
-    const verdictOf = (calls: unknown[]) => {
-      const { accepted, rejected } = (calls[0] as {
-        data: { accepted: unknown; rejected: unknown };
-      }).data;
-      return { accepted, rejected };
-    };
     expect(verdictOf(preview.jsonCalls)).toEqual(verdictOf(commit.jsonCalls));
   });
 
