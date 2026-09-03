@@ -1,7 +1,6 @@
 /**
- * The bulk upload's verdict is what the admin sees before anything is written,
- * so these assert the rejection REASONS, not just the count. A preview that
- * says "3 rows rejected" without saying why is a preview nobody can act on.
+ * Asserts the rejection REASONS, not just the count — a preview that cannot say
+ * why is one nobody can act on.
  *
  * Run with: yarn test
  */

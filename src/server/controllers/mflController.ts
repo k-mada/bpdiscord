@@ -192,12 +192,8 @@ export async function deleteMflMovieScore(
 }
 
 /**
- * POST /admin/films/bulk — validates the rows a client parsed out of films.csv
- * and, unless dryRun, upserts them.
- *
- * A preview always answers 200 because reporting bad rows is what it is for.
- * A commit carrying any bad row answers 400 and writes nothing, so the
- * catalogue only ever matches a file that validated whole.
+ * POST /admin/films/bulk. A preview answers 200 even with bad rows; a commit
+ * carrying any bad row answers 400 and writes nothing.
  */
 export async function bulkUpsertMflFilms(
   req: Request,
@@ -225,8 +221,7 @@ export async function bulkUpsertMflFilms(
   }
 
   const { valid, invalid, films } = validateFilmRows(rows as FilmImportRow[]);
-  // Names what validation found, never what the DB did, so the preview and the
-  // commit return the same verdict for the same file.
+  // What validation found, not what the DB did — preview and commit agree.
   const verdict = { dryRun: dryRun === true, valid, invalid };
 
   if (invalid.length > 0) {

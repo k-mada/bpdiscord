@@ -1,18 +1,14 @@
 /**
- * Row validation for the MFLFilms bulk upload.
- *
- * Pure and express-free so the same verdict backs both the dryRun preview and
- * the commit — the two cannot disagree about what is valid because they run
- * this exact function. The verdict names what validation found, not what the
- * database did, so it is identical for a given file either way.
+ * Row validation for the MFLFilms bulk upload. Pure, so the dryRun preview and
+ * the commit cannot disagree about what is valid.
  */
 
 export const MAX_IMPORT_ROWS = 1000;
 
-// Matches validateFilmSlug in middleware/validation, deliberately permissive.
+// Mirrors validateFilmSlug in middleware/validation.
 const FILM_SLUG = /^[a-z0-9._-]{1,200}$/;
 
-// Excel writes 1/5/2026 as readily as 01/05/2026, so both are accepted.
+// Excel emits 1/5/2026 as readily as 01/05/2026.
 const US_DATE = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/;
 
 export interface FilmImportRow {
@@ -50,9 +46,8 @@ export interface ImportVerdict {
 type Cell = { readable: true; text: string } | { readable: false };
 
 /**
- * Absent, null and blank all mean "empty cell". A boolean, object or array is
- * a caller sending something this endpoint cannot interpret — reported rather
- * than quietly coerced to NULL, which would lose data on a client bug.
+ * Absent, null and blank mean "empty cell". Anything unreadable is reported
+ * rather than coerced to NULL, which would lose data on a client bug.
  */
 function readCell(value: unknown): Cell {
   if (value === undefined || value === null) return { readable: true, text: "" };
@@ -64,9 +59,8 @@ function readCell(value: unknown): Cell {
 }
 
 /**
- * Converts mm/dd/yyyy to the YYYY-MM-DD a Postgres `date` column takes.
- * Returns null when the text is not a real calendar date — 02/30/2026 fails
- * the round-trip even though it matches the shape.
+ * mm/dd/yyyy to the YYYY-MM-DD a Postgres `date` takes. Null when it is not a
+ * real calendar date — 02/30/2026 matches the shape but fails the round-trip.
  */
 export function parseUsDate(text: string): string | null {
   const match = US_DATE.exec(text);
@@ -96,21 +90,16 @@ function parsePrice(text: string): { ok: true; value: number | null } | { ok: fa
 }
 
 /**
- * Letterboxd slugs are lowercase, and film_slug is a case-sensitive text key
- * that MFLUserPicks points at. Folding case on ingest means a mis-cased row
- * corrects itself instead of opening a second catalogue entry no pick can
- * reference.
+ * film_slug is a case-sensitive key MFLUserPicks references, so a mis-cased row
+ * would otherwise open a second catalogue entry no pick can reach.
  */
 function normaliseSlug(text: string): string {
   return text.toLowerCase();
 }
 
 /**
- * Validates every row and reports all of a row's problems at once, so an admin
- * fixing the file makes one pass rather than one pass per defect.
- *
- * `films` is populated only when `invalid` is empty — the caller commits all
- * rows or none.
+ * Reports all of a row's problems at once, so fixing the file is one pass.
+ * `films` is populated only when `invalid` is empty — all rows or none.
  */
 export function validateFilmRows(rows: FilmImportRow[]): ImportVerdict {
   const slugRows = new Map<string, number[]>();

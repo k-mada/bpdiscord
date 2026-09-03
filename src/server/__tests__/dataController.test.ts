@@ -906,8 +906,7 @@ describe('dbBulkUpsertMflFilms', () => {
   });
 
   it('is refused by the DB when a price is negative', async () => {
-    // The validator blocks this before it reaches here; the constraint is what
-    // holds for the row-level CRUD and any direct write.
+    // The validator blocks this; the constraint is what holds for other writers.
     const result = await dc.dbBulkUpsertMflFilms([
       { filmSlug: 'bulk-negative', title: 'Negative', releaseDate: null, price: -1 },
     ]);

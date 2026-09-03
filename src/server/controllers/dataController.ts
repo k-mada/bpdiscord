@@ -1409,11 +1409,7 @@ export async function dbUpsertMflMovieScore(
   }
 }
 
-/**
- * Replaces the catalogue rows the payload names, in one transaction. Films
- * absent from the payload are left alone — this is an upsert, not a season
- * reset.
- */
+/** Upserts the rows the payload names; films absent from it are untouched. */
 export async function dbBulkUpsertMflFilms(
   films: ValidFilm[],
 ): Promise<{ success: boolean; error?: string }> {
