@@ -24,6 +24,7 @@ import {
   CompatibilityExtremeRow,
   CompatibilityRow,
   toNumber,
+  UNCATEGORISED,
 } from "../db/queryTypes";
 import { FilmDetail, FilmRater, SwapFilm } from "../../shared/types";
 
@@ -1250,7 +1251,7 @@ export async function dbGetMFLScoringMetrics(): Promise<{
       metric_id: r.metric_id ?? 0,
       metric: r.metric ?? "",
       metric_name: r.metric_name ?? "",
-      category: r.category ?? "",
+      category: r.category ?? UNCATEGORISED,
       scoring_condition: r.scoring_condition ?? "",
       point_value: r.point_value ?? 0,
     }));
@@ -1293,7 +1294,7 @@ export async function dbGetMFLUserScores(username: string): Promise<{
       username,
       metric_id: r.metric_id ?? 0,
       points_awarded: r.points_awarded ?? 0,
-      category: r.category ?? "",
+      category: r.category ?? UNCATEGORISED,
     }));
   });
 }
@@ -1338,7 +1339,7 @@ export async function dbGetMflMovieScore(filmSlug: string): Promise<{
       points_awarded: r.points_awarded ?? 0,
       metric: r.metric ?? "",
       metric_name: r.metric_name ?? "",
-      category: r.category ?? "",
+      category: r.category ?? UNCATEGORISED,
       scoring_condition: r.scoring_condition ?? "",
     }));
   });
@@ -1349,19 +1350,83 @@ export async function dbGetMFLMovies(): Promise<{
   data?: Array<{
     title: string;
     film_slug: string;
+    release_date: string | null;
+    price: number | null;
+    total_points: number;
+    points_by_category: Record<string, number>;
   }>;
   error?: string;
 }> {
   return dbOperation(async () => {
-    // The season catalogue, not the roster: a film nobody picked still belongs
-    // in the dropdown. film_slug is the primary key, so no DISTINCT is needed.
-    return db
+    // Both joins are LEFT so an unscored film still appears: the catalogue is
+    // every eligible film, not every scored one. The second one has to be LEFT
+    // because the first one is — an unscored film carries a null metric_id, and
+    // an inner join would drop the row the first LEFT exists to keep.
+    const rows = await db
       .select({
-        title: mflFilms.title,
         film_slug: mflFilms.filmSlug,
+        title: mflFilms.title,
+        release_date: mflFilms.releaseDate,
+        price: mflFilms.price,
+        category: mflScoringMetrics.category,
+        // ::int per the house convention — SUM widens bigint to numeric and
+        // COUNT is bigint, both of which postgres.js returns as strings.
+        points: sql<number>`SUM(COALESCE(${mflScoringTally.pointsAwarded}, 0))::int`,
+        // 0 exactly when the tally join found nothing, which is the only thing
+        // separating an unscored film from a genuinely uncategorised award:
+        // both group under category NULL.
+        awards: sql<number>`COUNT(${mflScoringTally.scoringId})::int`,
       })
       .from(mflFilms)
-      .orderBy(asc(mflFilms.title));
+      .leftJoin(mflScoringTally, eq(mflScoringTally.filmSlug, mflFilms.filmSlug))
+      .leftJoin(
+        mflScoringMetrics,
+        eq(mflScoringMetrics.metricId, mflScoringTally.metricId),
+      )
+      .groupBy(
+        mflFilms.filmSlug,
+        mflFilms.title,
+        mflFilms.releaseDate,
+        mflFilms.price,
+        mflScoringMetrics.category,
+      )
+      .orderBy(asc(mflFilms.title), asc(mflFilms.filmSlug));
+
+    const byFilm = new Map<
+      string,
+      {
+        title: string;
+        film_slug: string;
+        release_date: string | null;
+        price: number | null;
+        total_points: number;
+        points_by_category: Record<string, number>;
+      }
+    >();
+
+    for (const row of rows) {
+      let film = byFilm.get(row.film_slug);
+      if (!film) {
+        film = {
+          title: row.title,
+          film_slug: row.film_slug,
+          release_date: row.release_date,
+          price: row.price,
+          total_points: 0,
+          points_by_category: {},
+        };
+        byFilm.set(row.film_slug, film);
+      }
+
+      film.total_points += row.points;
+      if (row.awards > 0) {
+        const bucket = row.category ?? UNCATEGORISED;
+        film.points_by_category[bucket] =
+          (film.points_by_category[bucket] ?? 0) + row.points;
+      }
+    }
+
+    return [...byFilm.values()];
   });
 }
 

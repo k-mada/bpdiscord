@@ -88,6 +88,16 @@ export interface MFLScoringMetric {
   pointValue: number;
 }
 
+export interface MFLCatalogueFilm {
+  title: string;
+  filmSlug: string;
+  releaseDate: string | null;
+  price: number | null;
+  totalPoints: number;
+  /** Keyed by MFLScoringMetrics.category; an unscored film has no keys. */
+  pointsByCategory: Record<string, number>;
+}
+
 export interface MFLMovieScore {
   scoringId: number;
   filmSlug: string;

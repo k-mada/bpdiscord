@@ -42,10 +42,17 @@ beforeEach(() => {
 });
 
 describe('getMFLMovies', () => {
-  it('renames film_slug to filmSlug for the client', async () => {
+  it('renames every snake_case column for the client', async () => {
     vi.mocked(dbGetMFLMovies).mockResolvedValue({
       success: true,
-      data: [{ title: 'Zulu Dawn', film_slug: 'zulu-dawn' }],
+      data: [{
+        title: 'Zulu Dawn',
+        film_slug: 'zulu-dawn',
+        release_date: '2026-10-18',
+        price: 40,
+        total_points: 35,
+        points_by_category: { awards: 25, box_office: 10 },
+      }],
     } as never);
 
     const { req, res, statusCalls, jsonCalls } = mockReqRes();
@@ -53,21 +60,67 @@ describe('getMFLMovies', () => {
 
     expect(statusCalls).toEqual([]);
     expect(jsonCalls[0]).toMatchObject({
-      data: [{ title: 'Zulu Dawn', filmSlug: 'zulu-dawn' }],
+      data: [
+        {
+          title: 'Zulu Dawn',
+          filmSlug: 'zulu-dawn',
+          releaseDate: '2026-10-18',
+          price: 40,
+          totalPoints: 35,
+          pointsByCategory: { awards: 25, box_office: 10 },
+        },
+      ],
     });
   });
 
   it('emits no snake_case key the client would miss', async () => {
     vi.mocked(dbGetMFLMovies).mockResolvedValue({
       success: true,
-      data: [{ title: 'Zulu Dawn', film_slug: 'zulu-dawn' }],
+      data: [{
+        title: 'Zulu Dawn',
+        film_slug: 'zulu-dawn',
+        release_date: '2026-10-18',
+        price: 40,
+        total_points: 35,
+        points_by_category: { awards: 25, box_office: 10 },
+      }],
     } as never);
 
     const { req, res, jsonCalls } = mockReqRes();
     await getMFLMovies(req, res);
 
     const [movie] = (jsonCalls[0] as { data: Record<string, unknown>[] }).data;
-    expect(Object.keys(movie).sort()).toEqual(['filmSlug', 'title']);
+    expect(Object.keys(movie).sort()).toEqual([
+      'filmSlug',
+      'pointsByCategory',
+      'price',
+      'releaseDate',
+      'title',
+      'totalPoints',
+    ]);
+  });
+
+  it('passes a null release date and price through rather than defaulting them', async () => {
+    vi.mocked(dbGetMFLMovies).mockResolvedValue({
+      success: true,
+      data: [
+        {
+          title: 'Unpriced',
+          film_slug: 'unpriced',
+          release_date: null,
+          price: null,
+          total_points: 0,
+          points_by_category: {},
+        },
+      ],
+    } as never);
+
+    const { req, res, jsonCalls } = mockReqRes();
+    await getMFLMovies(req, res);
+
+    expect(jsonCalls[0]).toMatchObject({
+      data: [{ releaseDate: null, price: null, pointsByCategory: {} }],
+    });
   });
 
   it('returns an empty list rather than failing when no season is loaded', async () => {

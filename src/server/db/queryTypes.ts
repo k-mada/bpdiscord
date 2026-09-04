@@ -43,6 +43,13 @@ export interface CompatibilityRow extends QueryRow {
 }
 
 /**
+ * Bucket for points from a metric with no category. MFLScoringMetrics.category
+ * is nullable, so without a named bucket those points reach a film's total but
+ * no column, and the row stops adding up to itself.
+ */
+export const UNCATEGORISED = 'uncategorised';
+
+/**
  * Helper to safely convert PostgreSQL numeric/bigint strings to numbers
  */
 export function toNumber(value: string | number | null | undefined): number {

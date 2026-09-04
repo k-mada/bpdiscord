@@ -11,6 +11,7 @@ import {
   LBFilm,
   MFLScoringMetric,
   MFLMovieScore,
+  MFLCatalogueFilm,
   AwardShow,
   EventSummary,
   EventData,
@@ -251,10 +252,8 @@ class ApiService {
     return this.request<MFLScoringMetric[]>("/mfl/scoring-metrics");
   }
 
-  async getMflMovies(): Promise<
-    ApiResponse<{ title: string; filmSlug: string }[]>
-  > {
-    return this.request<{ title: string; filmSlug: string }[]>("/mfl/movies");
+  async getMflMovies(): Promise<ApiResponse<MFLCatalogueFilm[]>> {
+    return this.request<MFLCatalogueFilm[]>("/mfl/movies");
   }
 
   async getMflMovieScore(

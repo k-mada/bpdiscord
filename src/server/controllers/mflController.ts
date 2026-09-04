@@ -70,6 +70,10 @@ export async function getMFLMovies(req: Request, res: Response): Promise<void> {
     const mflMovies = dbResult.data.map((movie) => ({
       title: movie.title,
       filmSlug: movie.film_slug,
+      releaseDate: movie.release_date,
+      price: movie.price,
+      totalPoints: movie.total_points,
+      pointsByCategory: movie.points_by_category,
     }));
 
     const response: ApiResponse = {
