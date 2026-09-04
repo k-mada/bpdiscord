@@ -9,7 +9,6 @@ import {
   getMflMovieScore,
   upsertMflMovieScore,
   deleteMflMovieScore,
-  bulkUpsertMflFilms,
 } from "../controllers/mflController";
 
 const router = Router();
@@ -35,12 +34,6 @@ router.delete(
   ...validateIntParam("scoringId"),
   handleValidationErrors,
   deleteMflMovieScore,
-);
-router.post(
-  "/admin/films/bulk",
-  authenticateToken,
-  authorizeAdmin,
-  bulkUpsertMflFilms,
 );
 
 export default router;

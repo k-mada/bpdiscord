@@ -13,14 +13,12 @@ describe("mflRoutes wiring", () => {
       "GET /movies",
       "GET /scoring-metrics",
       "GET /user-scores/:username",
-      "POST /admin/films/bulk",
       "POST /admin/movie-score",
     ]);
   });
 
   it.each([
     ["POST", "/admin/movie-score"],
-    ["POST", "/admin/films/bulk"],
     ["DELETE", "/admin/movie-score/:scoringId"],
   ])(
     "gates %s %s behind authenticateToken then authorizeAdmin",

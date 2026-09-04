@@ -7,13 +7,7 @@ import {
   dbGetMflMovieScore,
   dbUpsertMflMovieScore,
   dbDeleteMflMovieScore,
-  dbBulkUpsertMflFilms,
 } from "./dataController";
-import {
-  MAX_IMPORT_ROWS,
-  FilmImportRow,
-  validateFilmRows,
-} from "./mflFilmImport";
 
 export async function getMFLScoringMetrics(
   req: Request,
@@ -189,77 +183,4 @@ export async function deleteMflMovieScore(
       .status(500)
       .json({ error: dbResult.error || "Failed to delete MFL movie score" });
   }
-}
-
-/**
- * POST /admin/films/bulk. A preview answers 200 even with bad rows; a commit
- * carrying any bad row answers 400 and writes nothing.
- */
-export async function bulkUpsertMflFilms(
-  req: Request,
-  res: Response
-): Promise<void> {
-  const { rows, dryRun } = req.body;
-
-  if (!Array.isArray(rows)) {
-    res.status(400).json({ error: "rows must be an array" });
-    return;
-  }
-  if (rows.length === 0) {
-    res.status(400).json({ error: "rows must not be empty" });
-    return;
-  }
-  if (rows.length > MAX_IMPORT_ROWS) {
-    res.status(413).json({
-      error: `Too many rows — ${rows.length} submitted, ${MAX_IMPORT_ROWS} is the maximum`,
-    });
-    return;
-  }
-  if (dryRun !== undefined && typeof dryRun !== "boolean") {
-    res.status(400).json({ error: "dryRun must be a boolean" });
-    return;
-  }
-
-  const { valid, invalid, films } = validateFilmRows(rows as FilmImportRow[]);
-  // What validation found, not what the DB did — preview and commit agree.
-  const verdict = { dryRun: dryRun === true, valid, invalid };
-
-  if (invalid.length > 0) {
-    if (dryRun === true) {
-      const response: ApiResponse = {
-        message: `${invalid.length} of ${rows.length} rows would be rejected`,
-        data: verdict,
-      };
-      res.status(200).json(response);
-      return;
-    }
-    res.status(400).json({
-      error: `${invalid.length} of ${rows.length} rows are invalid — nothing was written`,
-      data: verdict,
-    });
-    return;
-  }
-
-  if (dryRun === true) {
-    const response: ApiResponse = {
-      message: `${valid.length} rows would be upserted`,
-      data: verdict,
-    };
-    res.status(200).json(response);
-    return;
-  }
-
-  const dbResult = await dbBulkUpsertMflFilms(films);
-  if (!dbResult.success) {
-    res
-      .status(500)
-      .json({ error: dbResult.error || "Failed to upsert MFL films" });
-    return;
-  }
-
-  const response: ApiResponse = {
-    message: `${valid.length} films upserted successfully`,
-    data: verdict,
-  };
-  res.status(200).json(response);
 }
