@@ -1,7 +1,9 @@
+import { Link } from "react-router-dom";
 import type { ColumnDef } from "./types";
-import type { MovieInCommon } from "../../types";
+import type { MovieInCommon, MFLCatalogueFilm } from "../../types";
 import type { SwapFilm } from "../../../shared/types";
 import StarRating from "../StarRating";
+import { compareNullable, formatReleaseDate } from "../../utilities";
 
 export interface SwapFilmHeaderCtx {
   rater: string;
@@ -77,3 +79,68 @@ export const moviesInCommonColumns: ColumnDef<
     ),
   },
 ];
+
+/** Prefix keeps a free-text category from colliding with a static column key. */
+export const CATEGORY_KEY_PREFIX = "cat:";
+
+const NOT_AWARDED = (
+  <span className="text-letterboxd-text-muted" aria-label="not awarded">
+    —
+  </span>
+);
+
+const points = (film: MFLCatalogueFilm, category: string) =>
+  film.pointsByCategory[category];
+
+export function mflFilmColumns(
+  categories: string[],
+): ColumnDef<MFLCatalogueFilm>[] {
+  return [
+    {
+      key: "title",
+      label: "Film",
+      sortKey: "title",
+      customSort: (a, b) => a.title.localeCompare(b.title),
+      renderColumn: (film) => (
+        <Link to={`/mfl/film/${film.filmSlug}`}>{film.title}</Link>
+      ),
+    },
+    {
+      key: "releaseDate",
+      label: "Released",
+      sortKey: "releaseDate",
+      customSort: (a, b) => compareNullable(a.releaseDate, b.releaseDate),
+      renderColumn: (film) =>
+        film.releaseDate === null ? NOT_AWARDED : formatReleaseDate(film.releaseDate),
+    },
+    {
+      key: "price",
+      label: "Price",
+      sortKey: "price",
+      customSort: (a, b) => compareNullable(a.price, b.price),
+      renderColumn: (film) =>
+        film.price === null ? NOT_AWARDED : `$${film.price}`,
+    },
+    {
+      key: "totalPoints",
+      label: "Total",
+      sortKey: "totalPoints",
+      customSort: (a, b) => a.totalPoints - b.totalPoints,
+    },
+    // DataTable's defaults read item[key]; category points live one level down
+    // in pointsByCategory, so both the cell and the comparator are explicit.
+    ...categories.map<ColumnDef<MFLCatalogueFilm>>((category) => ({
+      key: `${CATEGORY_KEY_PREFIX}${category}`,
+      label: category,
+      sortKey: `${CATEGORY_KEY_PREFIX}${category}`,
+      // An unawarded category sorts level with a zero-point award; only the
+      // rendered cell keeps them apart.
+      customSort: (a, b) =>
+        (points(a, category) ?? 0) - (points(b, category) ?? 0),
+      renderColumn: (film) => {
+        const awarded = points(film, category);
+        return awarded === undefined ? NOT_AWARDED : awarded;
+      },
+    })),
+  ];
+}

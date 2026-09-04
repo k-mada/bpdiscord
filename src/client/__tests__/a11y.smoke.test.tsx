@@ -8,6 +8,7 @@ import LoginPage from "../components/LoginPage";
 import SignupPage from "../components/SignupPage";
 import ForgotPassword from "../components/ForgotPassword";
 import { DataTable } from "../components/DataTable/DataTable";
+import { mflFilmColumns } from "../components/DataTable/columns";
 import StarRating from "../components/StarRating";
 import CollapsibleSection from "../components/CollapsibleSection";
 import MovieList from "../components/MovieList";
@@ -138,6 +139,37 @@ describe("accessibility smoke (axe, structural)", () => {
         moviesInCommon={[]}
         compatibility={{ pearson: 0.4, mad: 0.8, sampleSize: 20 }}
       />,
+    );
+    expect(await axeViolations(container)).toEqual([]);
+  });
+
+  it("the MFL films table has no axe violations", async () => {
+    const { container } = render(
+      withProviders(
+        <DataTable
+          data={[
+            {
+              title: "Anora",
+              filmSlug: "anora",
+              releaseDate: "2026-10-18",
+              price: 40,
+              totalPoints: 25,
+              pointsByCategory: { awards: 25 },
+            },
+            {
+              title: "Hamnet",
+              filmSlug: "hamnet",
+              releaseDate: null,
+              price: null,
+              totalPoints: 0,
+              pointsByCategory: {},
+            },
+          ]}
+          columns={mflFilmColumns(["awards", "box_office"])}
+          enableSort
+          initialSort={{ key: "totalPoints", direction: "desc" }}
+        />,
+      ),
     );
     expect(await axeViolations(container)).toEqual([]);
   });
