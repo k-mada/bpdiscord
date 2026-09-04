@@ -415,11 +415,16 @@ describe('dataController', () => {
         await db.insert(mflScoringMetrics).values([
           { metricId: 9001, metricName: 'Oscars', category: 'awards', pointValue: 25 },
           { metricId: 9002, metricName: 'Box Office', category: 'box_office', pointValue: 10 },
+          { metricId: 9003, metricName: 'Globes', category: 'awards', pointValue: 5 },
+          { metricId: 9004, metricName: 'Mystery', category: null, pointValue: 3 },
         ]);
         await db.insert(mflScoringTally).values([
           { filmSlug: 'anatomy-of-a-fall', metricId: 9001, pointsAwarded: 25 },
           { filmSlug: 'anatomy-of-a-fall', metricId: 9002, pointsAwarded: 10 },
-          { filmSlug: 'nobody-picked-me', metricId: 9001, pointsAwarded: 25 },
+          { filmSlug: 'anatomy-of-a-fall', metricId: 9003, pointsAwarded: 5 },
+          { filmSlug: 'anatomy-of-a-fall', metricId: 9004, pointsAwarded: 3 },
+          // A null award, which must count as 0 rather than poison the sum.
+          { filmSlug: 'nobody-picked-me', metricId: 9001, pointsAwarded: null },
         ]);
         await db.insert(mflUserPicks).values([
           { lbusername: PICKER, filmSlug: 'anatomy-of-a-fall' },
@@ -442,28 +447,91 @@ describe('dataController', () => {
       it('dbGetMFLMovies orders by title and returns one row per film', async () => {
         const result = await dc.dbGetMFLMovies();
 
-        expect(result.data).toEqual([
-          { title: 'Anatomy of a Fall', film_slug: 'anatomy-of-a-fall' },
-          { title: 'Nobody Picked Me', film_slug: 'nobody-picked-me' },
-          { title: 'Zulu Dawn', film_slug: 'zulu-dawn' },
+        expect(result.data!.map((m) => m.film_slug)).toEqual([
+          'anatomy-of-a-fall',
+          'nobody-picked-me',
+          'zulu-dawn',
         ]);
+      });
+
+      // SUM widens bigint to numeric and COUNT is bigint; postgres.js hands both
+      // back as strings, which sort lexically and concatenate under +.
+      it('dbGetMFLMovies returns points as numbers, not numeric strings', async () => {
+        const result = await dc.dbGetMFLMovies();
+        const scored = result.data!.find((m) => m.film_slug === 'anatomy-of-a-fall')!;
+
+        expect(typeof scored.total_points).toBe('number');
+        for (const points of Object.values(scored.points_by_category)) {
+          expect(typeof points).toBe('number');
+        }
+      });
+
+      it('dbGetMFLMovies sums two metrics sharing a category and splits the rest', async () => {
+        const result = await dc.dbGetMFLMovies();
+        const scored = result.data!.find((m) => m.film_slug === 'anatomy-of-a-fall')!;
+
+        expect(scored.points_by_category).toEqual({
+          awards: 30,
+          box_office: 10,
+          uncategorised: 3,
+        });
+        expect(scored.total_points).toBe(43);
+      });
+
+      it('dbGetMFLMovies gives an unscored film zero and an empty category map', async () => {
+        const result = await dc.dbGetMFLMovies();
+        const unscored = result.data!.find((m) => m.film_slug === 'zulu-dawn')!;
+
+        expect(unscored.total_points).toBe(0);
+        expect(unscored.points_by_category).toEqual({});
+      });
+
+      it('dbGetMFLMovies counts a null award as zero without dropping the bucket', async () => {
+        const result = await dc.dbGetMFLMovies();
+        const nulled = result.data!.find((m) => m.film_slug === 'nobody-picked-me')!;
+
+        expect(nulled.total_points).toBe(0);
+        expect(nulled.points_by_category).toEqual({ awards: 0 });
+      });
+
+      it('dbGetMFLMovies carries price and release date through', async () => {
+        const result = await dc.dbGetMFLMovies();
+        const scored = result.data!.find((m) => m.film_slug === 'anatomy-of-a-fall')!;
+
+        expect(scored.price).toBe(30);
+        expect(scored.release_date).toBeNull();
       });
 
       it('dbGetMFLUserScores resolves through the user picks', async () => {
         const result = await dc.dbGetMFLUserScores(PICKER);
 
         expect(result.success).toBe(true);
-        expect(result.data).toEqual([
-          { username: PICKER, metric_id: 9001, points_awarded: 25, category: 'awards' },
-          { username: PICKER, metric_id: 9002, points_awarded: 10, category: 'box_office' },
-        ]);
+        expect(result.data).toEqual(
+          expect.arrayContaining([
+            { username: PICKER, metric_id: 9001, points_awarded: 25, category: 'awards' },
+            { username: PICKER, metric_id: 9002, points_awarded: 10, category: 'box_office' },
+          ]),
+        );
+      });
+
+      it('dbGetMFLUserScores buckets a null category the same way the catalogue does', async () => {
+        const result = await dc.dbGetMFLUserScores(PICKER);
+        const catalogue = await dc.dbGetMFLMovies();
+        const scored = catalogue.data!.find((m) => m.film_slug === 'anatomy-of-a-fall')!;
+
+        const uncategorised = result.data!.filter((r) => r.metric_id === 9004);
+        expect(uncategorised).toHaveLength(1);
+        expect(uncategorised[0]!.category).toBe('uncategorised');
+        expect(Object.keys(scored.points_by_category)).toContain(
+          uncategorised[0]!.category,
+        );
       });
 
       it('dbGetMFLUserScores excludes awards for films the user did not pick', async () => {
         const result = await dc.dbGetMFLUserScores(PICKER);
 
         expect(result.data!.every((r) => r.points_awarded !== 25 || r.metric_id === 9001)).toBe(true);
-        expect(result.data).toHaveLength(2);
+        expect(result.data).toHaveLength(4);
       });
 
       it('dbGetMFLUserScores returns empty for a user with no picks', async () => {

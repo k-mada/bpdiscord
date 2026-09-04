@@ -1,10 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { apiService } from "../services/api";
-import { MFLScoringMetric, MFLMovieScore } from "../types";
+import { MFLScoringMetric, MFLMovieScore, MFLCatalogueFilm } from "../types";
 
 export const useMflData = () => {
   const [scoringMetrics, setScoringMetrics] = useState<MFLScoringMetric[]>([]);
-  const [movies, setMovies] = useState<{ title: string; filmSlug: string }[]>([]);
+  const [movies, setMovies] = useState<MFLCatalogueFilm[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

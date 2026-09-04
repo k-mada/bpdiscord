@@ -1,6 +1,7 @@
 import { renderHook, waitFor, act } from "@testing-library/react";
 import { useMflData } from "../hooks/useMflData";
 import apiService from "../services/api";
+import { MFLCatalogueFilm } from "../types";
 
 vi.mock("../services/api");
 
@@ -23,9 +24,25 @@ const mockScoringMetrics = [
   },
 ];
 
-const mockMovies = [
-  { title: "The Brutalist", filmSlug: "the-brutalist" },
-  { title: "Anora", filmSlug: "anora" },
+const mockMovies: MFLCatalogueFilm[] = [
+  {
+    title: "The Brutalist",
+    filmSlug: "the-brutalist",
+    releaseDate: "2026-01-10",
+    price: 30,
+    totalPoints: 15,
+    pointsByCategory: { awards: 15 },
+  },
+  // Unscored: no release date, no price, and an empty category map rather than
+  // a zeroed one.
+  {
+    title: "Anora",
+    filmSlug: "anora",
+    releaseDate: null,
+    price: null,
+    totalPoints: 0,
+    pointsByCategory: {},
+  },
 ];
 
 const mockMovieScores = [
