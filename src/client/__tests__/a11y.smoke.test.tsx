@@ -8,7 +8,7 @@ import LoginPage from "../components/LoginPage";
 import SignupPage from "../components/SignupPage";
 import ForgotPassword from "../components/ForgotPassword";
 import { DataTable } from "../components/DataTable/DataTable";
-import { mflFilmColumns } from "../components/DataTable/columns";
+import { mflFilmSummaryColumns } from "../components/DataTable/columns";
 import StarRating from "../components/StarRating";
 import CollapsibleSection from "../components/CollapsibleSection";
 import MovieList from "../components/MovieList";
@@ -165,7 +165,7 @@ describe("accessibility smoke (axe, structural)", () => {
               pointsByCategory: {},
             },
           ]}
-          columns={mflFilmColumns(["awards", "box_office"])}
+          columns={mflFilmSummaryColumns}
           enableSort
           initialSort={{ key: "totalPoints", direction: "desc" }}
         />,

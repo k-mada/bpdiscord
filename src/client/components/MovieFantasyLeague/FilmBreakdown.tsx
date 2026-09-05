@@ -3,6 +3,8 @@ import { Link, useParams } from "react-router-dom";
 import { MFLMovieScore } from "../../types";
 import Spinner from "../Spinner";
 import apiService from "../../services/api";
+import { useMflData } from "../../hooks/useMflData";
+import { formatReleaseDate } from "../../utilities";
 
 function metricLabel(score: MFLMovieScore): string {
   if (score.metricName === "gross" || score.metricName === "rank") {
@@ -13,6 +15,7 @@ function metricLabel(score: MFLMovieScore): string {
 
 const FilmBreakdown = () => {
   const { filmSlug } = useParams<{ filmSlug: string }>();
+  const { movies, loading: catalogueLoading } = useMflData();
   const [scores, setScores] = useState<MFLMovieScore[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -42,13 +45,15 @@ const FilmBreakdown = () => {
     return () => controller.abort();
   }, [filmSlug]);
 
-  const totalPoints = scores.reduce(
-    (total, score) => total + score.pointsAwarded,
-    0,
-  );
+  const film = movies.find((movie) => movie.filmSlug === filmSlug);
+  const busy = loading || catalogueLoading;
 
   const sorted = [...scores].sort((a, b) =>
     a.metricName.localeCompare(b.metricName),
+  );
+  const totalPoints = sorted.reduce(
+    (total, score) => total + score.pointsAwarded,
+    0,
   );
 
   return (
@@ -58,23 +63,34 @@ const FilmBreakdown = () => {
           Back to eligible films
         </Link>
       </p>
-      <h2 className="text-xl font-bold text-letterboxd-text-primary mb-4">
-        Score breakdown
+
+      <h2 className="text-xl font-bold text-letterboxd-text-primary mb-2">
+        {film ? film.title : "Score breakdown"}
       </h2>
 
-      {loading && <Spinner />}
+      {busy && <Spinner />}
 
-      {!loading && error && (
+      {!busy && error && (
         <p className="text-letterboxd-text-secondary">{error}</p>
       )}
 
-      {!loading && !error && sorted.length === 0 && (
+      {!busy && !error && film && (
+        <p className="text-letterboxd-text-secondary mb-6">
+          {film.releaseDate
+            ? formatReleaseDate(film.releaseDate)
+            : "Release date unknown"}
+          {" · "}
+          {film.price === null ? "No price" : `$${film.price}`}
+        </p>
+      )}
+
+      {!busy && !error && sorted.length === 0 && (
         <p className="text-letterboxd-text-secondary">
           This film has not scored yet.
         </p>
       )}
 
-      {!loading && !error && sorted.length > 0 && (
+      {!busy && !error && sorted.length > 0 && (
         <table className="data-table">
           <thead>
             <tr>

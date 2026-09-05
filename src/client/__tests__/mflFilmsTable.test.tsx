@@ -1,7 +1,7 @@
-import { render, screen, within, fireEvent } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { DataTable } from "../components/DataTable/DataTable";
-import { mflFilmColumns } from "../components/DataTable/columns";
+import { mflFilmSummaryColumns } from "../components/DataTable/columns";
 import MovieFantasyLeague from "../components/MovieFantasyLeague/Dashboard";
 import { useMflData } from "../hooks/useMflData";
 import type { MFLCatalogueFilm, MFLScoringMetric } from "../types";
@@ -31,14 +31,14 @@ function metric(category: string): MFLScoringMetric {
   };
 }
 
-function renderTable(films: MFLCatalogueFilm[], categories: string[]) {
+function renderTable(films: MFLCatalogueFilm[]) {
   return render(
     <MemoryRouter>
       <DataTable
         data={films}
-        columns={mflFilmColumns(categories)}
+        columns={mflFilmSummaryColumns}
         enableSort
-        initialSort={{ key: "totalPoints", direction: "desc" }}
+        initialSort={{ key: "price", direction: "desc" }}
       />
     </MemoryRouter>,
   );
@@ -73,56 +73,30 @@ function renderPage(
 }
 
 describe("MFL films table columns", () => {
-  it("keeps a category named like a static column from colliding with it", () => {
-    // category is free text out of the DB, and ColumnDef.key doubles as the
-    // React key and the value lookup.
-    renderTable(
-      [film({ price: 40, pointsByCategory: { price: 7 } })],
-      ["price"],
-    );
 
-    const headers = screen.getAllByRole("columnheader").map((h) => h.textContent);
-    expect(headers.filter((h) => h?.includes("Price"))).toHaveLength(1);
+
+
+  it("renders a null price and release date as TBA", () => {
+    renderTable([film({ price: null, releaseDate: null })]);
 
     const cells = screen.getAllByRole("cell").map((c) => c.textContent);
-    expect(cells).toContain("$40");
-    expect(cells).toContain("7");
+    expect(cells.filter((c) => c === "TBA")).toHaveLength(2);
   });
 
-  it("separates a category never awarded from one awarded zero", () => {
-    renderTable(
-      [film({ pointsByCategory: { awards: 0 } })],
-      ["awards", "box_office"],
-    );
+  it("announces TBA as words rather than letters", () => {
+    renderTable([film({ price: null, releaseDate: null })]);
 
-    const cells = screen.getAllByRole("cell").map((c) => c.textContent);
-    expect(cells).toContain("0");
-    expect(cells.filter((c) => c === "—")).toHaveLength(1);
-  });
-
-  it("shows a column for a category nothing has scored in", () => {
-    renderTable([film()], ["awards", "box_office"]);
-
-    expect(
-      screen.getByRole("columnheader", { name: /box_office/ }),
-    ).toBeInTheDocument();
-  });
-
-  it("renders a null price and release date as an em dash", () => {
-    renderTable([film({ price: null, releaseDate: null })], []);
-
-    const cells = screen.getAllByRole("cell").map((c) => c.textContent);
-    expect(cells.filter((c) => c === "—")).toHaveLength(2);
+    expect(screen.getAllByLabelText("to be announced")).toHaveLength(2);
   });
 
   it("formats a release date without letting a timezone shift the day", () => {
-    renderTable([film({ releaseDate: "2026-01-01" })], []);
+    renderTable([film({ releaseDate: "2026-01-01" })]);
 
     expect(screen.getByText("Jan 1, 2026")).toBeInTheDocument();
   });
 
   it("links the film cell to its breakdown", () => {
-    renderTable([film()], []);
+    renderTable([film()]);
 
     expect(screen.getByRole("link", { name: "Anora" })).toHaveAttribute(
       "href",
@@ -130,44 +104,27 @@ describe("MFL films table columns", () => {
     );
   });
 
-  it("opens sorted by total points, descending", () => {
-    renderTable(
-      [
-        film({ title: "Low", filmSlug: "low", totalPoints: 9 }),
-        film({ title: "High", filmSlug: "high", totalPoints: 35 }),
-      ],
-      [],
-    );
+  it("opens sorted by price, descending", () => {
+    renderTable([
+      film({ title: "Cheap", filmSlug: "cheap", price: 12 }),
+      film({ title: "Dear", filmSlug: "dear", price: 48 }),
+    ]);
 
-    expect(titleOrder()).toEqual(["High", "Low"]);
+    expect(titleOrder()).toEqual(["Dear", "Cheap"]);
   });
 
-  it("sorts a category column by that category rather than the total", () => {
-    renderTable(
-      [
-        film({
-          title: "BigTotal",
-          filmSlug: "big",
-          totalPoints: 100,
-          pointsByCategory: { awards: 1 },
-        }),
-        film({
-          title: "BigAwards",
-          filmSlug: "aw",
-          totalPoints: 2,
-          pointsByCategory: { awards: 50 },
-        }),
-      ],
-      ["awards"],
-    );
+  it("sinks an unpriced film to the bottom of the default view", () => {
+    // compareNullable puts nulls lowest ascending; descending negates that, so
+    // "no price" lands last rather than leading the table.
+    renderTable([
+      film({ title: "Unpriced", filmSlug: "unpriced", price: null }),
+      film({ title: "Cheap", filmSlug: "cheap", price: 12 }),
+      film({ title: "Dear", filmSlug: "dear", price: 48 }),
+    ]);
 
-    expect(titleOrder()).toEqual(["BigTotal", "BigAwards"]);
-
-    fireEvent.click(screen.getByRole("button", { name: /awards/ }));
-    fireEvent.click(screen.getByRole("button", { name: /awards/ }));
-
-    expect(titleOrder()).toEqual(["BigAwards", "BigTotal"]);
+    expect(titleOrder()).toEqual(["Dear", "Cheap", "Unpriced"]);
   });
+
 });
 
 describe("MFL films page", () => {
@@ -182,15 +139,18 @@ describe("MFL films page", () => {
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
   });
 
-  it("builds one column per distinct category the season defines", () => {
+  it("shows only the four summary columns, never one per category", () => {
+    // A season defines well over a hundred categories; a column each is why
+    // this table was unusable.
     renderPage(
-      [film()],
-      [metric("awards"), metric("awards"), metric("box_office")],
+      [film({ pointsByCategory: { awards: 25, box_office: 10 } })],
+      [metric("awards"), metric("box_office")],
     );
 
-    const headers = screen.getAllByRole("columnheader").map((h) => h.textContent);
-    expect(headers.filter((h) => h?.includes("awards"))).toHaveLength(1);
-    expect(headers.filter((h) => h?.includes("box_office"))).toHaveLength(1);
+    const headers = screen
+      .getAllByRole("columnheader")
+      .map((h) => h.textContent?.replace(/[⇅▲▼]/g, "").trim());
+    expect(headers).toEqual(["Film", "Released", "Price", "Total"]);
   });
 
   it("surfaces a fetch failure instead of an empty catalogue message", () => {

@@ -80,67 +80,62 @@ export const moviesInCommonColumns: ColumnDef<
   },
 ];
 
-/** Prefix keeps a free-text category from colliding with a static column key. */
-export const CATEGORY_KEY_PREFIX = "cat:";
-
-const NOT_AWARDED = (
-  <span className="text-letterboxd-text-muted" aria-label="not awarded">
-    —
+// aria-label expands the abbreviation; without it a screen reader spells or
+// mangles "TBA".
+const TBA = (
+  <span className="text-letterboxd-text-muted" aria-label="to be announced">
+    TBA
   </span>
 );
 
-const points = (film: MFLCatalogueFilm, category: string) =>
-  film.pointsByCategory[category];
+const renderReleaseDate = (date: string) => {
+  const deadline = new Date("2026-10-02");
+  const releaseDate = new Date(date);
+  return releaseDate < deadline ? (
+    <span className="flex items-center text-letterboxd-text-muted">
+      {date}
+      <span className="ml-2 inline-block w-2 h-2 rounded-full bg-letterboxd-error-surface"></span>
+    </span>
+  ) : (
+    <span className="flex items-center text-letterboxd-text-muted">
+      {date}
+      <span className="ml-2 inline-block w-2 h-2 rounded-full bg-letterboxd-accent"></span>
+    </span>
+  );
+};
 
-export function mflFilmColumns(
-  categories: string[],
-): ColumnDef<MFLCatalogueFilm>[] {
-  return [
-    {
-      key: "title",
-      label: "Film",
-      sortKey: "title",
-      customSort: (a, b) => a.title.localeCompare(b.title),
-      renderColumn: (film) => (
-        <Link to={`/mfl/film/${film.filmSlug}`}>{film.title}</Link>
-      ),
-    },
-    {
-      key: "releaseDate",
-      label: "Released",
-      sortKey: "releaseDate",
-      customSort: (a, b) => compareNullable(a.releaseDate, b.releaseDate),
-      renderColumn: (film) =>
-        film.releaseDate === null ? NOT_AWARDED : formatReleaseDate(film.releaseDate),
-    },
-    {
-      key: "price",
-      label: "Price",
-      sortKey: "price",
-      customSort: (a, b) => compareNullable(a.price, b.price),
-      renderColumn: (film) =>
-        film.price === null ? NOT_AWARDED : `$${film.price}`,
-    },
-    {
-      key: "totalPoints",
-      label: "Total",
-      sortKey: "totalPoints",
-      customSort: (a, b) => a.totalPoints - b.totalPoints,
-    },
-    // DataTable's defaults read item[key]; category points live one level down
-    // in pointsByCategory, so both the cell and the comparator are explicit.
-    ...categories.map<ColumnDef<MFLCatalogueFilm>>((category) => ({
-      key: `${CATEGORY_KEY_PREFIX}${category}`,
-      label: category,
-      sortKey: `${CATEGORY_KEY_PREFIX}${category}`,
-      // An unawarded category sorts level with a zero-point award; only the
-      // rendered cell keeps them apart.
-      customSort: (a, b) =>
-        (points(a, category) ?? 0) - (points(b, category) ?? 0),
-      renderColumn: (film) => {
-        const awarded = points(film, category);
-        return awarded === undefined ? NOT_AWARDED : awarded;
-      },
-    })),
-  ];
-}
+/** The /mfl summary: four columns, no per-category breakdown. */
+export const mflFilmSummaryColumns: ColumnDef<MFLCatalogueFilm>[] = [
+  {
+    key: "title",
+    label: "Film",
+    sortKey: "title",
+    customSort: (a, b) => a.title.localeCompare(b.title),
+    renderColumn: (film) => (
+      <Link to={`/mfl/film/${film.filmSlug}`}>{film.title}</Link>
+    ),
+  },
+  {
+    key: "releaseDate",
+    label: "Released",
+    sortKey: "releaseDate",
+    customSort: (a, b) => compareNullable(a.releaseDate, b.releaseDate),
+    renderColumn: (film) =>
+      film.releaseDate === null
+        ? TBA
+        : renderReleaseDate(formatReleaseDate(film.releaseDate)),
+  },
+  {
+    key: "price",
+    label: "Price",
+    sortKey: "price",
+    customSort: (a, b) => compareNullable(a.price, b.price),
+    renderColumn: (film) => (film.price === null ? TBA : `$${film.price}`),
+  },
+  {
+    key: "totalPoints",
+    label: "Total Points",
+    sortKey: "totalPoints",
+    customSort: (a, b) => a.totalPoints - b.totalPoints,
+  },
+];
