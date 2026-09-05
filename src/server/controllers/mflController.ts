@@ -9,8 +9,7 @@ import {
   dbDeleteMflMovieScore,
   dbResolveLbusername,
   dbGetMflUserPicks,
-  dbAddMflUserPick,
-  dbRemoveMflUserPick,
+  dbReplaceMflUserPicks,
 } from "./dataController";
 
 export async function getMFLScoringMetrics(
@@ -238,74 +237,51 @@ export async function getMflUserPicks(
     return;
   }
 
-  const picks = dbResult.data.map((pick) => ({
-    filmSlug: pick.film_slug,
-    title: pick.title,
-    releaseDate: pick.release_date,
-    price: pick.price,
-    totalPoints: pick.total_points,
-  }));
-
   const response: ApiResponse = {
     message: "MFL picks retrieved successfully",
-    data: {
-      picks,
-      rosterTotal: picks.reduce((total, pick) => total + pick.totalPoints, 0),
-    },
+    data: dbResult.data.map((pick) => ({
+      filmSlug: pick.film_slug,
+      title: pick.title,
+      releaseDate: pick.release_date,
+      price: pick.price,
+    })),
   };
   res.json(response);
 }
 
-export async function addMflUserPick(
+/** Guards data integrity only. Roster size and budget are Vulture's rules. */
+const MAX_PICKS = 20;
+
+export async function replaceMflUserPicks(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const { filmSlug } = req.body;
-  if (typeof filmSlug !== "string" || filmSlug.trim() === "") {
-    res.status(400).json({ error: "filmSlug is required" });
+  const { filmSlugs } = req.body;
+
+  if (!Array.isArray(filmSlugs) || filmSlugs.some((s) => typeof s !== "string")) {
+    res.status(400).json({ error: "filmSlugs must be an array of strings" });
+    return;
+  }
+  if (filmSlugs.length > MAX_PICKS) {
+    res.status(400).json({ error: `A roster cannot exceed ${MAX_PICKS} films.` });
+    return;
+  }
+  if (new Set(filmSlugs).size !== filmSlugs.length) {
+    res.status(400).json({ error: "A film cannot be picked twice." });
     return;
   }
 
   const lbusername = await requireLbusername(req, res);
   if (!lbusername) return;
 
-  const dbResult = await dbAddMflUserPick(lbusername, filmSlug);
+  const dbResult = await dbReplaceMflUserPicks(lbusername, filmSlugs);
   if (dbResult.success) {
-    res.status(201).json({ message: "Pick added successfully" });
-    return;
-  }
-  if (dbResult.conflict) {
-    res.status(409).json({ error: dbResult.error });
+    res.json({ message: "Picks saved successfully" });
     return;
   }
   if (dbResult.notFound) {
     res.status(404).json({ error: dbResult.error });
     return;
   }
-  res.status(500).json({ error: dbResult.error || "Failed to add pick" });
-}
-
-export async function removeMflUserPick(
-  req: Request,
-  res: Response,
-): Promise<void> {
-  const { filmSlug } = req.params;
-  if (!filmSlug) {
-    res.status(400).json({ error: "filmSlug is required" });
-    return;
-  }
-
-  const lbusername = await requireLbusername(req, res);
-  if (!lbusername) return;
-
-  const dbResult = await dbRemoveMflUserPick(lbusername, filmSlug);
-  if (!dbResult.success) {
-    res.status(500).json({ error: dbResult.error || "Failed to remove pick" });
-    return;
-  }
-  if (!dbResult.removed) {
-    res.status(404).json({ error: "You have not picked that film." });
-    return;
-  }
-  res.json({ message: "Pick removed successfully" });
+  res.status(500).json({ error: dbResult.error || "Failed to save picks" });
 }

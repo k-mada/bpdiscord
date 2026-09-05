@@ -12,7 +12,7 @@ import {
   MFLScoringMetric,
   MFLMovieScore,
   MFLCatalogueFilm,
-  MFLPicksResponse,
+  MFLPick,
   AwardShow,
   EventSummary,
   EventData,
@@ -260,25 +260,21 @@ class ApiService {
   async getMflPicks(
     token: string,
     signal?: AbortSignal,
-  ): Promise<ApiResponse<MFLPicksResponse>> {
-    return this.request<MFLPicksResponse>("/mfl/picks", {
+  ): Promise<ApiResponse<MFLPick[]>> {
+    return this.request<MFLPick[]>("/mfl/picks", {
       headers: { Authorization: `Bearer ${token}` },
       ...(signal ? { signal } : {}),
     });
   }
 
-  async addMflPick(filmSlug: string, token: string): Promise<ApiResponse> {
+  async replaceMflPicks(
+    filmSlugs: string[],
+    token: string,
+  ): Promise<ApiResponse> {
     return this.request("/mfl/picks", {
-      method: "POST",
+      method: "PUT",
       headers: { Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ filmSlug }),
-    });
-  }
-
-  async removeMflPick(filmSlug: string, token: string): Promise<ApiResponse> {
-    return this.request(`/mfl/picks/${encodeURIComponent(filmSlug)}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ filmSlugs }),
     });
   }
 

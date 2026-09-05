@@ -1486,7 +1486,6 @@ export async function dbDeleteMflMovieScore(scoringId: number): Promise<{
   });
 }
 
-const MFL_PICKS_PK = "mfl_user_picks_pkey";
 const MFL_PICKS_FILM_FK = "mfl_user_picks_film_slug_fkey";
 
 /** The account's Letterboxd name, what MFLUserPicks keys on. Null when unlinked. */
@@ -1513,91 +1512,50 @@ export async function dbGetMflUserPicks(lbusername: string): Promise<{
     title: string;
     release_date: string | null;
     price: number | null;
-    total_points: number;
   }>;
   error?: string;
 }> {
   return dbOperation(async () => {
-    // Per-film total, not the catalogue's category split. ::int because SUM
-    // widens bigint to numeric, which postgres.js hands back as a string.
     return db
       .select({
         film_slug: mflUserPicks.filmSlug,
         title: mflFilms.title,
         release_date: mflFilms.releaseDate,
         price: mflFilms.price,
-        total_points: sql<number>`SUM(COALESCE(${mflScoringTally.pointsAwarded}, 0))::int`,
       })
       .from(mflUserPicks)
       .innerJoin(mflFilms, eq(mflFilms.filmSlug, mflUserPicks.filmSlug))
-      .leftJoin(
-        mflScoringTally,
-        eq(mflScoringTally.filmSlug, mflUserPicks.filmSlug),
-      )
       .where(eq(mflUserPicks.lbusername, lbusername))
-      .groupBy(
-        mflUserPicks.filmSlug,
-        mflFilms.title,
-        mflFilms.releaseDate,
-        mflFilms.price,
-      )
       .orderBy(asc(mflFilms.title), asc(mflUserPicks.filmSlug));
   });
 }
 
-export async function dbAddMflUserPick(
+/**
+ * Replaces the whole roster in one transaction, so a rejected submit leaves the
+ * previous picks intact rather than half-applied.
+ */
+export async function dbReplaceMflUserPicks(
   lbusername: string,
-  filmSlug: string,
-): Promise<{
-  success: boolean;
-  error?: string;
-  conflict?: boolean;
-  notFound?: boolean;
-}> {
+  filmSlugs: string[],
+): Promise<{ success: boolean; error?: string; notFound?: boolean }> {
   try {
-    await db.insert(mflUserPicks).values({ lbusername, filmSlug });
+    await db.transaction(async (tx) => {
+      await tx.delete(mflUserPicks).where(eq(mflUserPicks.lbusername, lbusername));
+      if (filmSlugs.length > 0) {
+        await tx
+          .insert(mflUserPicks)
+          .values(filmSlugs.map((filmSlug) => ({ lbusername, filmSlug })));
+      }
+    });
     return { success: true };
   } catch (error) {
-    if (isUniqueViolation(error, MFL_PICKS_PK)) {
-      return {
-        success: false,
-        conflict: true,
-        error: `You have already picked ${filmSlug}.`,
-      };
-    }
     if (isForeignKeyViolation(error, MFL_PICKS_FILM_FK)) {
       return {
         success: false,
         notFound: true,
-        error: `${filmSlug} is not in the film catalogue.`,
+        error: "One or more of those films is not in the catalogue.",
       };
     }
-    console.error("Database operation error:", error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : "Unknown database error",
-    };
-  }
-}
-
-/** Scoped by lbusername, so guessing another member's slug removes nothing. */
-export async function dbRemoveMflUserPick(
-  lbusername: string,
-  filmSlug: string,
-): Promise<{ success: boolean; removed?: boolean; error?: string }> {
-  try {
-    const rows = await db
-      .delete(mflUserPicks)
-      .where(
-        and(
-          eq(mflUserPicks.lbusername, lbusername),
-          eq(mflUserPicks.filmSlug, filmSlug),
-        ),
-      )
-      .returning({ filmSlug: mflUserPicks.filmSlug });
-
-    return { success: true, removed: rows.length > 0 };
-  } catch (error) {
     console.error("Database operation error:", error);
     return {
       success: false,

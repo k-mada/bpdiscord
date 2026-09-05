@@ -1,97 +1,180 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Spinner from "../Spinner";
-import MovieSelector from "./MovieSelector";
 import { Notification, Status } from "../ui/Notification";
 import { useMflData } from "../../hooks/useMflData";
 import { useAuth } from "../../contexts/AuthContext";
 import apiService from "../../services/api";
 import { failureMessage } from "../../lib/failureMessage";
-import { formatReleaseDate } from "../../utilities";
-import { MFLPick } from "../../types";
+import { MFLCatalogueFilm } from "../../types";
+
+// Vulture's rules, mirrored here only. The server validates data integrity, not
+// roster size or spend, so a rule change there does not need a deploy here.
+const ROSTER_SIZE = 8;
+const BUDGET = 100;
+const EMPTY = "";
+
+const priceOf = (film: MFLCatalogueFilm | undefined) => film?.price ?? 0;
+
+interface SlotProps {
+  index: number;
+  slug: string;
+  film: MFLCatalogueFilm | undefined;
+  options: MFLCatalogueFilm[];
+  disabled: boolean;
+  onSelect: (index: number, slug: string) => void;
+  onClear: (index: number) => void;
+}
+
+const Slot = ({
+  index,
+  slug,
+  film,
+  options,
+  disabled,
+  onSelect,
+  onClear,
+}: SlotProps) => {
+  const selectId = useId();
+
+  return (
+    <li className="flex items-center gap-2 sm:gap-3 rounded-lg border border-letterboxd-border-light bg-letterboxd-bg-secondary px-3 sm:px-4">
+      <label htmlFor={selectId} className="sr-only">
+        Movie {index + 1}
+      </label>
+      <select
+        id={selectId}
+        value={slug}
+        disabled={disabled}
+        onChange={(event) => onSelect(index, event.target.value)}
+        className="min-w-0 flex-1 bg-transparent py-3 text-letterboxd-text-primary disabled:opacity-50"
+      >
+        <option value={EMPTY}>Select movie</option>
+        {options.map((option) => (
+          <option key={option.filmSlug} value={option.filmSlug}>
+            {option.title} (${option.price ?? 0})
+          </option>
+        ))}
+      </select>
+
+      <span className="shrink-0 tabular-nums font-medium text-letterboxd-text-primary">
+        ${priceOf(film)}
+      </span>
+
+      {/* Fixed size, not padding: an icon-only control still needs a
+          comfortable touch target on a phone. */}
+      <button
+        type="button"
+        aria-label={film ? `Remove ${film.title}` : `Clear movie ${index + 1}`}
+        disabled={disabled || !film}
+        onClick={() => onClear(index)}
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-letterboxd-text-secondary hover:text-letterboxd-text-primary disabled:invisible"
+      >
+        <span aria-hidden="true" className="text-lg leading-none">
+          ✕
+        </span>
+      </button>
+    </li>
+  );
+};
 
 const MyPicks = () => {
-  const { token, user } = useAuth();
+  const { token, user, loading: authLoading } = useAuth();
   const { movies, loading: catalogueLoading } = useMflData();
-  const [picks, setPicks] = useState<MFLPick[]>([]);
-  const [rosterTotal, setRosterTotal] = useState(0);
+  const [slots, setSlots] = useState<string[]>(() =>
+    Array<string>(ROSTER_SIZE).fill(EMPTY),
+  );
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<Status>({ type: "idle" });
-  const [busySlug, setBusySlug] = useState<string | null>(null);
 
   const isLinked = Boolean(user?.lbusername);
 
-  const loadPicks = useCallback(
-    async (signal?: AbortSignal) => {
-      if (!token) return;
-      try {
-        const response = await apiService.getMflPicks(token, signal);
-        setPicks(response.data?.picks ?? []);
-        setRosterTotal(response.data?.rosterTotal ?? 0);
-      } catch (error) {
-        if (error instanceof Error && error.name === "AbortError") return;
-        setStatus({ type: "error", message: failureMessage(error) });
-      } finally {
-        setLoading(false);
-      }
-    },
-    [token],
-  );
-
   useEffect(() => {
+    // Judging isLinked before /me resolves would flash eight empty slots at a
+    // member who already has a roster.
+    if (authLoading) return;
     if (!token || !isLinked) {
       setLoading(false);
       return;
     }
     const controller = new AbortController();
 
-    async function loadOnMount() {
-      await loadPicks(controller.signal);
+    async function loadPicks(authToken: string) {
+      try {
+        const response = await apiService.getMflPicks(
+          authToken,
+          controller.signal,
+        );
+        const saved = (response.data ?? []).map((pick) => pick.filmSlug);
+        setSlots(
+          Array.from({ length: ROSTER_SIZE }, (_, i) => saved[i] ?? EMPTY),
+        );
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") return;
+        setStatus({ type: "error", message: failureMessage(error) });
+      } finally {
+        setLoading(false);
+      }
     }
 
-    loadOnMount();
+    loadPicks(token);
     return () => controller.abort();
-  }, [token, isLinked, loadPicks]);
+  }, [authLoading, token, isLinked]);
 
-  // Offering a film already on the roster would only ever produce a 409.
-  const available = useMemo(() => {
-    const picked = new Set(picks.map((pick) => pick.filmSlug));
-    return movies.filter((movie) => !picked.has(movie.filmSlug));
-  }, [movies, picks]);
+  const bySlug = useMemo(
+    () => new Map(movies.map((movie) => [movie.filmSlug, movie])),
+    [movies],
+  );
 
-  const handleAdd = async (filmSlug: string) => {
-    if (filmSlug === "-1" || !token) return;
+  const filled = slots.filter((slug) => slug !== EMPTY);
+  const totalSpend = filled.reduce(
+    (total, slug) => total + priceOf(bySlug.get(slug)),
+    0,
+  );
+  const overBudget = totalSpend > BUDGET;
+  const complete = filled.length === ROSTER_SIZE;
+
+  // A film chosen in another slot is not offered here, so the server's
+  // duplicate rejection is unreachable from the UI.
+  const optionsFor = (index: number) => {
+    const taken = new Set(
+      slots.filter((slug, i) => i !== index && slug !== EMPTY),
+    );
+    return movies.filter((movie) => !taken.has(movie.filmSlug));
+  };
+
+  const handleSelect = (index: number, slug: string) => {
     setStatus({ type: "idle" });
-    setBusySlug(filmSlug);
+    setSlots((prev) => prev.map((cur, i) => (i === index ? slug : cur)));
+  };
+
+  const handleClear = (index: number) => {
+    setStatus({ type: "idle" });
+    setSlots((prev) => prev.map((cur, i) => (i === index ? EMPTY : cur)));
+  };
+
+  const handleSubmit = async () => {
+    if (!token || !complete || overBudget) return;
+    setStatus({ type: "idle" });
+    setSaving(true);
     try {
-      await apiService.addMflPick(filmSlug, token);
-      await loadPicks();
+      await apiService.replaceMflPicks(filled, token);
+      setStatus({ type: "success", message: "Picks saved." });
     } catch (error) {
       setStatus({ type: "error", message: failureMessage(error) });
     } finally {
-      setBusySlug(null);
+      setSaving(false);
     }
   };
 
-  const handleRemove = async (filmSlug: string) => {
-    if (!token) return;
-    setStatus({ type: "idle" });
-    setBusySlug(filmSlug);
-    try {
-      await apiService.removeMflPick(filmSlug, token);
-      await loadPicks();
-    } catch (error) {
-      setStatus({ type: "error", message: failureMessage(error) });
-    } finally {
-      setBusySlug(null);
-    }
-  };
+  const busy = authLoading || loading || catalogueLoading;
 
   return (
     <div>
       <p className="text-letterboxd-text-secondary mb-4">
         <Link to="/mfl" className="underline hover:no-underline">
-          Eligible films
+          Eligible movies
         </Link>
       </p>
       <h1 className="text-2xl font-bold text-letterboxd-text-primary mb-4">
@@ -103,80 +186,66 @@ const MyPicks = () => {
           Your account has no Letterboxd username linked. Ask an admin to link
           one before picking films.
         </p>
+      ) : busy ? (
+        <Spinner />
       ) : (
-        <>
+        <div className="max-w-2xl">
           {status.type !== "idle" && (
             <div className="mb-4">
               <Notification status={status} />
             </div>
           )}
 
-          <div className="mb-8">
-            <MovieSelector movies={available} onMovieSelect={handleAdd} />
+          <ul className="flex flex-col gap-2">
+            {slots.map((slug, index) => (
+              <Slot
+                key={index}
+                index={index}
+                slug={slug}
+                film={bySlug.get(slug)}
+                options={optionsFor(index)}
+                disabled={saving}
+                onSelect={handleSelect}
+                onClear={handleClear}
+              />
+            ))}
+          </ul>
+
+          <div className="mt-6 flex items-baseline justify-between gap-4 border-t-2 border-letterboxd-border pt-4">
+            <span className="text-lg font-bold text-letterboxd-text-primary">
+              Your total spend
+            </span>
+            {/* The parenthetical carries the state, not the colour: red alone
+                fails 1.4.1 and says nothing to a screen reader. */}
+            <span
+              className={`text-lg font-bold tabular-nums text-right ${
+                overBudget
+                  ? "text-letterboxd-error"
+                  : "text-letterboxd-text-primary"
+              }`}
+            >
+              ${totalSpend}
+              {overBudget && " (over budget)"}
+            </span>
           </div>
 
-          {(loading || catalogueLoading) && <Spinner />}
+          <p
+            aria-live="polite"
+            className="mt-2 text-sm text-letterboxd-text-secondary"
+          >
+            {filled.length} of {ROSTER_SIZE} movies selected
+            {overBudget && `, $${totalSpend - BUDGET} over the $${BUDGET} budget`}
+          </p>
 
-          {!loading && !catalogueLoading && picks.length === 0 && (
-            <p className="text-letterboxd-text-secondary">
-              You have not picked any films yet.
-            </p>
-          )}
-
-          {!loading && !catalogueLoading && picks.length > 0 && (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th scope="col">Film</th>
-                  <th scope="col">Released</th>
-                  <th scope="col">Price</th>
-                  <th scope="col">Points</th>
-                  <th scope="col">
-                    <span className="sr-only">Actions</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {picks.map((pick) => (
-                  <tr key={pick.filmSlug}>
-                    <td>
-                      <Link to={`/mfl/film/${pick.filmSlug}`}>{pick.title}</Link>
-                    </td>
-                    <td>
-                      {pick.releaseDate
-                        ? formatReleaseDate(pick.releaseDate)
-                        : "TBA"}
-                    </td>
-                    <td>{pick.price === null ? "TBA" : `$${pick.price}`}</td>
-                    <td>{pick.totalPoints}</td>
-                    <td>
-                      <button
-                        type="button"
-                        className="underline hover:no-underline"
-                        aria-label={`Remove ${pick.title}`}
-                        disabled={busySlug === pick.filmSlug}
-                        onClick={() => handleRemove(pick.filmSlug)}
-                      >
-                        Remove
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                {/* colSpan, not empty cells a screen reader stops on. */}
-                <tr className="border-t-2 border-letterboxd-border">
-                  <th scope="row" colSpan={3} className="font-bold text-xl text-left py-3 px-4">
-                    Roster total
-                  </th>
-                  <td colSpan={2} className="font-bold text-xl">
-                    {rosterTotal}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          )}
-        </>
+          <button
+            type="button"
+            className="btn-primary mt-6 w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!complete || overBudget || saving}
+            onClick={handleSubmit}
+          >
+            {saving ? "Saving…" : "Submit picks"}
+          </button>
+        </div>
       )}
     </div>
   );

@@ -6,7 +6,8 @@ import MyPicks from "../components/MovieFantasyLeague/MyPicks";
 import apiService from "../services/api";
 import { AuthProvider } from "../contexts/AuthContext";
 import { ApiError } from "../lib/apiError";
-import type { CurrentUser, MFLPick } from "../types";
+import type { CurrentUser, MFLCatalogueFilm, MFLPick } from "../types";
+import { axeViolations } from "./helpers/axe";
 import { installFakeLocalStorage } from "./helpers/localStorage";
 import { futureJwt } from "./helpers/jwt";
 
@@ -27,34 +28,24 @@ const LINKED: CurrentUser = {
 
 const UNLINKED: CurrentUser = { ...LINKED, lbusername: null };
 
-const ANORA: MFLPick = {
-  filmSlug: "anora",
-  title: "Anora",
+/** Ten films at $10 so eight fit the budget exactly and nine do not. */
+const CATALOGUE: MFLCatalogueFilm[] = Array.from({ length: 10 }, (_, i) => ({
+  filmSlug: `film-${i}`,
+  title: `Film ${i}`,
   releaseDate: "2026-10-18",
-  price: 40,
-  totalPoints: 25,
-};
+  price: 10,
+  totalPoints: 0,
+  pointsByCategory: {},
+}));
 
-const HAMNET: MFLPick = {
-  filmSlug: "hamnet",
-  title: "Hamnet",
+const DEAR: MFLCatalogueFilm = {
+  filmSlug: "dear",
+  title: "Dear One",
   releaseDate: null,
-  price: null,
-  totalPoints: 10,
+  price: 95,
+  totalPoints: 0,
+  pointsByCategory: {},
 };
-
-const CATALOGUE = [
-  { ...ANORA, pointsByCategory: {} },
-  { ...HAMNET, pointsByCategory: {} },
-  {
-    filmSlug: "sinners",
-    title: "Sinners",
-    releaseDate: "2026-03-07",
-    price: 22,
-    totalPoints: 0,
-    pointsByCategory: {},
-  },
-];
 
 function renderPage() {
   return render(
@@ -66,10 +57,16 @@ function renderPage() {
   );
 }
 
-function setPicks(picks: MFLPick[], rosterTotal: number) {
-  vi.mocked(apiService.getMflPicks).mockResolvedValue({
-    data: { picks, rosterTotal },
-  });
+const slots = () => screen.getAllByRole("combobox");
+
+async function fill(count: number) {
+  for (let i = 0; i < count; i++) {
+    await userEvent.selectOptions(slots()[i]!, `film-${i}`);
+  }
+}
+
+function setSaved(picks: MFLPick[]) {
+  vi.mocked(apiService.getMflPicks).mockResolvedValue({ data: picks });
 }
 
 beforeEach(() => {
@@ -78,113 +75,167 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.mocked(apiService.getCurrentUser).mockResolvedValue({ data: LINKED });
   vi.mocked(apiService.getMflScoringMetrics).mockResolvedValue({ data: [] });
-  vi.mocked(apiService.getMflMovies).mockResolvedValue({ data: CATALOGUE });
-  setPicks([ANORA, HAMNET], 35);
+  vi.mocked(apiService.getMflMovies).mockResolvedValue({
+    data: [...CATALOGUE, DEAR],
+  });
+  setSaved([]);
 });
 
 describe("MFL my picks", () => {
-  it("lists the roster with the server's total", async () => {
+  it("renders eight empty slots", async () => {
     renderPage();
 
-    expect(await screen.findByRole("link", { name: "Anora" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Hamnet" })).toBeInTheDocument();
-    // 35 is the server's number, not a client sum.
-    expect(
-      screen.getByRole("row", { name: /Roster total/ }),
-    ).toHaveTextContent("35");
+    await waitFor(() => expect(slots()).toHaveLength(8));
+    expect(screen.getAllByText("Select movie")).toHaveLength(8);
+    expect(screen.getByText("0 of 8 movies selected")).toBeInTheDocument();
   });
 
-  it("offers only films that are not already picked", async () => {
+  it("labels each slot distinctly for a screen reader", async () => {
     renderPage();
-    await screen.findByRole("link", { name: "Anora" });
+    await waitFor(() => expect(slots()).toHaveLength(8));
 
-    const select = screen.getByRole("combobox", { name: /select a movie/i });
-    const options = within(select)
-      .getAllByRole("option")
-      .map((o) => o.textContent);
-
-    expect(options).toContain("Sinners");
-    expect(options).not.toContain("Anora");
-    expect(options).not.toContain("Hamnet");
+    expect(screen.getByLabelText("Movie 1")).toBeInTheDocument();
+    expect(screen.getByLabelText("Movie 8")).toBeInTheDocument();
   });
 
-  it("adds a pick and refreshes the roster", async () => {
-    vi.mocked(apiService.addMflPick).mockResolvedValue({ message: "ok" });
+  it("shows the price alongside the title in the dropdown", async () => {
     renderPage();
-    await screen.findByRole("link", { name: "Anora" });
+    await waitFor(() => expect(slots()).toHaveLength(8));
 
-    setPicks([ANORA, HAMNET, { ...CATALOGUE[2]! }], 35);
-    await userEvent.selectOptions(
-      screen.getByRole("combobox", { name: /select a movie/i }),
-      "sinners",
-    );
-
-    expect(apiService.addMflPick).toHaveBeenCalledWith("sinners", TOKEN);
     expect(
-      await screen.findByRole("link", { name: "Sinners" }),
+      within(slots()[0]!).getByRole("option", { name: "Dear One ($95)" }),
     ).toBeInTheDocument();
   });
 
-  it("removes a pick and refreshes the roster", async () => {
-    vi.mocked(apiService.removeMflPick).mockResolvedValue({ message: "ok" });
+  it("adds each selection to the running total", async () => {
     renderPage();
-    await screen.findByRole("link", { name: "Anora" });
+    await waitFor(() => expect(slots()).toHaveLength(8));
 
-    setPicks([HAMNET], 10);
-    await userEvent.click(
-      screen.getByRole("button", { name: /Remove Anora/ }),
-    );
+    await fill(3);
 
-    expect(apiService.removeMflPick).toHaveBeenCalledWith("anora", TOKEN);
-    await waitFor(() =>
-      expect(screen.queryByRole("link", { name: "Anora" })).not.toBeInTheDocument(),
-    );
+    expect(screen.getByText("3 of 8 movies selected")).toBeInTheDocument();
+    expect(screen.getByText("$30")).toBeInTheDocument();
   });
 
-  it("shows the server's message when a pick is rejected", async () => {
-    vi.mocked(apiService.addMflPick).mockRejectedValue(
-      new ApiError("You have already picked sinners.", 409),
-    );
+  it("will not offer a film already chosen in another slot", async () => {
     renderPage();
-    await screen.findByRole("link", { name: "Anora" });
+    await waitFor(() => expect(slots()).toHaveLength(8));
 
-    await userEvent.selectOptions(
-      screen.getByRole("combobox", { name: /select a movie/i }),
-      "sinners",
-    );
+    await userEvent.selectOptions(slots()[0]!, "film-0");
 
     expect(
-      await screen.findByText("You have already picked sinners."),
+      within(slots()[1]!).queryByRole("option", { name: "Film 0 ($10)" }),
+    ).not.toBeInTheDocument();
+    // Still offered in the slot that holds it, or the value could not render.
+    expect(
+      within(slots()[0]!).getByRole("option", { name: "Film 0 ($10)" }),
     ).toBeInTheDocument();
   });
 
-  it("hides a 5xx body behind a generic message", async () => {
-    const leak = 'null value in column "lbusername" violates not-null constraint';
-    vi.mocked(apiService.addMflPick).mockRejectedValue(new ApiError(leak, 500));
+  it("says it is over budget in text, not colour alone", async () => {
     renderPage();
-    await screen.findByRole("link", { name: "Anora" });
+    await waitFor(() => expect(slots()).toHaveLength(8));
 
-    await userEvent.selectOptions(
-      screen.getByRole("combobox", { name: /select a movie/i }),
-      "sinners",
+    await fill(7);
+    await userEvent.selectOptions(slots()[7]!, "dear");
+
+    const total = screen.getByText(/\$165/);
+    expect(total).toHaveTextContent("(over budget)");
+    expect(total.className).toContain("text-letterboxd-error");
+    expect(
+      screen.getByText(/\$65 over the \$100 budget/),
+    ).toBeInTheDocument();
+  });
+
+  it("disables submit until eight are chosen", async () => {
+    renderPage();
+    await waitFor(() => expect(slots()).toHaveLength(8));
+
+    const submit = screen.getByRole("button", { name: "Submit picks" });
+    expect(submit).toBeDisabled();
+
+    await fill(7);
+    expect(submit).toBeDisabled();
+
+    await fill(8);
+    expect(submit).toBeEnabled();
+  });
+
+  it("disables submit while over budget even with eight chosen", async () => {
+    renderPage();
+    await waitFor(() => expect(slots()).toHaveLength(8));
+
+    await fill(7);
+    await userEvent.selectOptions(slots()[7]!, "dear");
+
+    expect(screen.getByRole("button", { name: "Submit picks" })).toBeDisabled();
+  });
+
+  it("clears a slot with its X and frees the film again", async () => {
+    renderPage();
+    await waitFor(() => expect(slots()).toHaveLength(8));
+
+    await fill(2);
+    await userEvent.click(screen.getByRole("button", { name: "Remove Film 0" }));
+
+    expect(screen.getByText("1 of 8 movies selected")).toBeInTheDocument();
+    expect(
+      within(slots()[1]!).getByRole("option", { name: "Film 0 ($10)" }),
+    ).toBeInTheDocument();
+  });
+
+  it("submits all eight slugs at once", async () => {
+    vi.mocked(apiService.replaceMflPicks).mockResolvedValue({ message: "ok" });
+    renderPage();
+    await waitFor(() => expect(slots()).toHaveLength(8));
+
+    await fill(8);
+    await userEvent.click(screen.getByRole("button", { name: "Submit picks" }));
+
+    expect(apiService.replaceMflPicks).toHaveBeenCalledWith(
+      ["film-0", "film-1", "film-2", "film-3", "film-4", "film-5", "film-6", "film-7"],
+      TOKEN,
     );
-
-    expect(
-      await screen.findByText("Something went wrong. Please try again."),
-    ).toBeInTheDocument();
-    expect(screen.queryByText(leak)).not.toBeInTheDocument();
+    expect(await screen.findByText("Picks saved.")).toBeInTheDocument();
   });
 
-  it("tells an empty roster apart from a failed load", async () => {
-    setPicks([], 0);
+  it("loads a saved roster into the slots", async () => {
+    setSaved([
+      { filmSlug: "film-3", title: "Film 3", releaseDate: null, price: 10 },
+      { filmSlug: "film-5", title: "Film 5", releaseDate: null, price: 10 },
+    ]);
     renderPage();
 
     expect(
-      await screen.findByText("You have not picked any films yet."),
+      await screen.findByText("2 of 8 movies selected"),
+    ).toBeInTheDocument();
+    expect(slots()[0]).toHaveValue("film-3");
+  });
+
+  it("shows the server's message when a save is rejected", async () => {
+    vi.mocked(apiService.replaceMflPicks).mockRejectedValue(
+      new ApiError("A film cannot be picked twice.", 400),
+    );
+    renderPage();
+    await waitFor(() => expect(slots()).toHaveLength(8));
+
+    await fill(8);
+    await userEvent.click(screen.getByRole("button", { name: "Submit picks" }));
+
+    expect(
+      await screen.findByText("A film cannot be picked twice."),
     ).toBeInTheDocument();
   });
 
-  it("asks an unlinked account to see an admin instead of offering the form", async () => {
+  it("has no axe violations with slots both filled and empty", async () => {
+    const { container } = renderPage();
+    await waitFor(() => expect(slots()).toHaveLength(8));
+    await fill(2);
+
+    expect(await axeViolations(container)).toEqual([]);
+  });
+
+  it("asks an unlinked account to see an admin instead of offering slots", async () => {
     vi.mocked(apiService.getCurrentUser).mockResolvedValue({ data: UNLINKED });
     renderPage();
 

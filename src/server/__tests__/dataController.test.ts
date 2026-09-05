@@ -542,18 +542,6 @@ describe('dataController', () => {
         expect(theirs.data).toEqual([]);
       });
 
-      it('dbGetMflUserPicks totals a pick the same way the catalogue does', async () => {
-        const picks = await dc.dbGetMflUserPicks(PICKER);
-        const catalogue = await dc.dbGetMFLMovies();
-
-        const pick = picks.data!.find((p) => p.film_slug === 'anatomy-of-a-fall')!;
-        const film = catalogue.data!.find((f) => f.film_slug === 'anatomy-of-a-fall')!;
-
-        // The two reads group differently but must agree on a film.
-        expect(pick.total_points).toBe(film.total_points);
-        expect(typeof pick.total_points).toBe('number');
-      });
-
       it('dbGetMflUserPicks carries the catalogue columns through', async () => {
         const picks = await dc.dbGetMflUserPicks(PICKER);
         const pick = picks.data![0]!;
@@ -563,46 +551,48 @@ describe('dataController', () => {
         expect(pick.release_date).toBeNull();
       });
 
-      it('dbAddMflUserPick adds a film and rejects the duplicate', async () => {
-        const added = await dc.dbAddMflUserPick(OTHER, 'zulu-dawn');
-        expect(added.success).toBe(true);
+      it('dbReplaceMflUserPicks swaps the whole roster', async () => {
+        await dc.dbReplaceMflUserPicks(OTHER, ['zulu-dawn', 'nobody-picked-me']);
+        let roster = await dc.dbGetMflUserPicks(OTHER);
+        expect(roster.data!.map((p) => p.film_slug).sort()).toEqual([
+          'nobody-picked-me',
+          'zulu-dawn',
+        ]);
 
-        const again = await dc.dbAddMflUserPick(OTHER, 'zulu-dawn');
-        expect(again.success).toBe(false);
-        expect(again.conflict).toBe(true);
+        await dc.dbReplaceMflUserPicks(OTHER, ['zulu-dawn']);
+        roster = await dc.dbGetMflUserPicks(OTHER);
+        expect(roster.data!.map((p) => p.film_slug)).toEqual(['zulu-dawn']);
 
-        const roster = await dc.dbGetMflUserPicks(OTHER);
-        expect(roster.data).toHaveLength(1);
-
-        await dc.dbRemoveMflUserPick(OTHER, 'zulu-dawn');
+        await dc.dbReplaceMflUserPicks(OTHER, []);
+        roster = await dc.dbGetMflUserPicks(OTHER);
+        expect(roster.data).toEqual([]);
       });
 
-      it('dbAddMflUserPick reports a film that is not in the catalogue', async () => {
-        const result = await dc.dbAddMflUserPick(OTHER, 'not-a-real-film');
+      it('dbReplaceMflUserPicks leaves the old roster intact when a slug is unknown', async () => {
+        await dc.dbReplaceMflUserPicks(OTHER, ['zulu-dawn']);
 
+        const result = await dc.dbReplaceMflUserPicks(OTHER, [
+          'zulu-dawn',
+          'not-a-real-film',
+        ]);
         expect(result.success).toBe(false);
         expect(result.notFound).toBe(true);
-        expect(result.conflict).toBeUndefined();
+
+        // The delete and the insert share a transaction, so a rejected submit
+        // must not have emptied the roster on its way through.
+        const roster = await dc.dbGetMflUserPicks(OTHER);
+        expect(roster.data!.map((p) => p.film_slug)).toEqual(['zulu-dawn']);
+
+        await dc.dbReplaceMflUserPicks(OTHER, []);
       });
 
-      it('dbRemoveMflUserPick will not remove another member\'s pick', async () => {
-        const result = await dc.dbRemoveMflUserPick(OTHER, 'anatomy-of-a-fall');
-
-        expect(result.success).toBe(true);
-        expect(result.removed).toBe(false);
+      it('dbReplaceMflUserPicks does not touch another member\'s roster', async () => {
+        await dc.dbReplaceMflUserPicks(OTHER, ['zulu-dawn']);
 
         const mine = await dc.dbGetMflUserPicks(PICKER);
-        expect(mine.data!.map((p) => p.film_slug)).toContain('anatomy-of-a-fall');
-      });
+        expect(mine.data!.map((p) => p.film_slug)).toEqual(['anatomy-of-a-fall']);
 
-      it('dbRemoveMflUserPick removes the caller\'s own pick', async () => {
-        await dc.dbAddMflUserPick(OTHER, 'nobody-picked-me');
-
-        const removed = await dc.dbRemoveMflUserPick(OTHER, 'nobody-picked-me');
-        expect(removed.removed).toBe(true);
-
-        const roster = await dc.dbGetMflUserPicks(OTHER);
-        expect(roster.data).toEqual([]);
+        await dc.dbReplaceMflUserPicks(OTHER, []);
       });
 
       it('dbResolveLbusername returns null for an account with nothing linked', async () => {

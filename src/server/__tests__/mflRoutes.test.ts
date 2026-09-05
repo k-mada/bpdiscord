@@ -9,14 +9,13 @@ describe("mflRoutes wiring", () => {
   it("exposes exactly the routes it means to", () => {
     expect(routes.map((r) => `${r.method} ${r.path}`).sort()).toEqual([
       "DELETE /admin/movie-score/:scoringId",
-      "DELETE /picks/:filmSlug",
       "GET /movie-score/:filmSlug",
       "GET /movies",
       "GET /picks",
       "GET /scoring-metrics",
       "GET /user-scores/:username",
       "POST /admin/movie-score",
-      "POST /picks",
+      "PUT /picks",
     ]);
   });
 
@@ -53,8 +52,7 @@ describe("mflRoutes wiring", () => {
 
   it.each([
     ["GET", "/picks"],
-    ["POST", "/picks"],
-    ["DELETE", "/picks/:filmSlug"],
+    ["PUT", "/picks"],
   ])("gates %s %s behind authenticateToken but not authorizeAdmin", (method, path) => {
     const route = routes.find((r) => r.method === method && r.path === path)!;
 
