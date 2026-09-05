@@ -40,3 +40,11 @@ export const extractRatingCount = (title: string | undefined): number => {
   const numberStr = match[1].replace(/,/g, "");
   return parseInt(numberStr, 10) || 0;
 };
+
+/**
+ * Shown when an account has no Letterboxd username linked. Lives here because
+ * the server sends it as a 409 body and the picks page renders it inline; two
+ * copies would drift.
+ */
+export const NO_LBUSERNAME_MESSAGE =
+  "Your account has no Letterboxd username linked. Ask an admin to link one before picking films.";

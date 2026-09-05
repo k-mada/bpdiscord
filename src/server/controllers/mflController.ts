@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { ApiResponse } from "../../shared/types";
+import { NO_LBUSERNAME_MESSAGE } from "../../shared/utilities";
 import {
   dbGetMFLScoringMetrics,
   dbGetMFLUserScores,
@@ -7,6 +8,9 @@ import {
   dbGetMflMovieScore,
   dbUpsertMflMovieScore,
   dbDeleteMflMovieScore,
+  dbResolveLbusername,
+  dbGetMflUserPicks,
+  dbReplaceMflUserPicks,
 } from "./dataController";
 
 export async function getMFLScoringMetrics(
@@ -187,4 +191,95 @@ export async function deleteMflMovieScore(
       .status(500)
       .json({ error: dbResult.error || "Failed to delete MFL movie score" });
   }
+}
+
+/**
+ * The caller's Letterboxd name, or null with the response already sent.
+ * MFLUserPicks keys on lbusername; the JWT only identifies the auth account.
+ */
+async function requireLbusername(
+  req: Request,
+  res: Response,
+): Promise<string | null> {
+  const authUserId = req.user?.id;
+  if (!authUserId) {
+    res.status(401).json({ error: "Authentication required" });
+    return null;
+  }
+
+  const result = await dbResolveLbusername(authUserId);
+  if (!result.success) {
+    res.status(500).json({ error: result.error || "Failed to resolve account" });
+    return null;
+  }
+  if (!result.data) {
+    res.status(409).json({ error: NO_LBUSERNAME_MESSAGE });
+    return null;
+  }
+
+  return result.data;
+}
+
+export async function getMflUserPicks(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const lbusername = await requireLbusername(req, res);
+  if (!lbusername) return;
+
+  const dbResult = await dbGetMflUserPicks(lbusername);
+  if (!dbResult.success || !dbResult.data) {
+    res
+      .status(500)
+      .json({ error: dbResult.error || "Failed to get MFL picks" });
+    return;
+  }
+
+  const response: ApiResponse = {
+    message: "MFL picks retrieved successfully",
+    data: dbResult.data.map((pick) => ({
+      filmSlug: pick.film_slug,
+      title: pick.title,
+      releaseDate: pick.release_date,
+      price: pick.price,
+    })),
+  };
+  res.json(response);
+}
+
+/** Guards data integrity only. Roster size and budget are Vulture's rules. */
+const MAX_PICKS = 20;
+
+export async function replaceMflUserPicks(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const { filmSlugs } = req.body;
+
+  if (!Array.isArray(filmSlugs) || filmSlugs.some((s) => typeof s !== "string")) {
+    res.status(400).json({ error: "filmSlugs must be an array of strings" });
+    return;
+  }
+  if (filmSlugs.length > MAX_PICKS) {
+    res.status(400).json({ error: `A roster cannot exceed ${MAX_PICKS} films.` });
+    return;
+  }
+  if (new Set(filmSlugs).size !== filmSlugs.length) {
+    res.status(400).json({ error: "A film cannot be picked twice." });
+    return;
+  }
+
+  const lbusername = await requireLbusername(req, res);
+  if (!lbusername) return;
+
+  const dbResult = await dbReplaceMflUserPicks(lbusername, filmSlugs);
+  if (dbResult.success) {
+    res.json({ message: "Picks saved successfully" });
+    return;
+  }
+  if (dbResult.notFound) {
+    res.status(404).json({ error: dbResult.error });
+    return;
+  }
+  res.status(500).json({ error: dbResult.error || "Failed to save picks" });
 }

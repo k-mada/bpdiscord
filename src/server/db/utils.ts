@@ -94,6 +94,16 @@ export async function dbTransaction(
  * constraint. Lets a caller turn a specific collision into a 409 while any
  * other failure stays a 500.
  */
+/** 23503, a foreign-key violation — the referenced row does not exist. */
+export function isForeignKeyViolation(e: unknown, constraint: string): boolean {
+  for (const candidate of [e, (e as { cause?: unknown })?.cause]) {
+    if (typeof candidate !== 'object' || candidate === null) continue;
+    const err = candidate as Record<string, unknown>;
+    if (err.code === '23503' && err.constraint_name === constraint) return true;
+  }
+  return false;
+}
+
 export function isUniqueViolation(e: unknown, constraint: string): boolean {
   // Drizzle wraps postgres-js errors in `cause`, so check both levels.
   for (const candidate of [e, (e as { cause?: unknown })?.cause]) {

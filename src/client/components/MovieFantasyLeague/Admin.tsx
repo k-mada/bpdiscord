@@ -6,15 +6,7 @@ import Spinner from "../Spinner";
 import { useMflData } from "../../hooks/useMflData";
 import { useAuth } from "../../contexts/AuthContext";
 import { Notification, Status } from "../ui/Notification";
-import { ApiError } from "../../lib/apiError";
-
-// A 4xx body is written for the admin to read — the 409 naming a duplicate
-// award is the whole point. A 5xx body is dbMutation's raw Postgres message,
-// constraint names and all, so it never reaches the screen.
-const failureMessage = (error: unknown): string => {
-  if (error instanceof ApiError && error.status < 500) return error.message;
-  return "Something went wrong. Please try again.";
-};
+import { failureMessage } from "../../lib/failureMessage";
 
 const getMetricById = (
   scoringMetrics: MFLScoringMetric[],
