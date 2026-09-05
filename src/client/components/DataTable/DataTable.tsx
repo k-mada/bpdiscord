@@ -76,6 +76,10 @@ export function DataTable<T, HeaderCtx = unknown>({
             const label = column.customLabel
               ? column.customLabel(headerContext)
               : column.label;
+            // Clamping hides the overflow, so the full text has to stay
+            // reachable on hover. customLabel may return an element.
+            const labelText =
+              typeof label === "string" ? label : column.label;
 
             return (
               <th
@@ -86,19 +90,24 @@ export function DataTable<T, HeaderCtx = unknown>({
                   isActiveSort,
                   sortKey.sortDirection,
                 )}
-                className="sticky top-0 text-left py-3 px-4 text-letterboxd-text-secondary font-medium z-1 bg-letterboxd-bg-secondary"
+                // align-bottom keeps one- and two-line headers sitting on the
+                // same baseline as the row beneath them.
+                className="sticky top-0 align-bottom text-left py-3 px-4 text-letterboxd-text-secondary font-medium z-1 bg-letterboxd-bg-secondary"
               >
                 {canSort ? (
                   <button
                     type="button"
                     onClick={() => handleSort(column.key as string)}
-                    className="sort-control inline-flex items-center gap-1 border-0 bg-transparent p-0 font-medium text-letterboxd-text-secondary hover:text-letterboxd-text-primary cursor-pointer"
+                    title={labelText}
+                    className="sort-control inline-flex max-w-40 items-end gap-1 border-0 bg-transparent p-0 text-left font-medium text-letterboxd-text-secondary hover:text-letterboxd-text-primary cursor-pointer"
                   >
-                    {label}
+                    <span className="line-clamp-2">{label}</span>
                     {sortGlyph(isActiveSort, sortKey.sortDirection)}
                   </button>
                 ) : (
-                  label
+                  <span className="line-clamp-2 max-w-40" title={labelText}>
+                    {label}
+                  </span>
                 )}
               </th>
             );

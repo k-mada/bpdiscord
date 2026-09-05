@@ -258,8 +258,12 @@ class ApiService {
 
   async getMflMovieScore(
     filmSlug: string,
+    signal?: AbortSignal,
   ): Promise<ApiResponse<MFLMovieScore[]>> {
-    return this.request<MFLMovieScore[]>(`/mfl/movie-score/${filmSlug}`);
+    return this.request<MFLMovieScore[]>(
+      `/mfl/movie-score/${filmSlug}`,
+      signal ? { signal } : {},
+    );
   }
 
   // Payload object rather than positional args: token goes last by convention,

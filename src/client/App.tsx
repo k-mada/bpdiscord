@@ -12,6 +12,7 @@ import MovieSwapPage from "./components/MovieSwapPage";
 import MFLAdmin from "./components/MovieFantasyLeague/Admin";
 import MovieFantasyLeague from "./components/MovieFantasyLeague/Dashboard";
 import ScoringReference from "./components/MovieFantasyLeague/ScoringReference";
+import FilmBreakdown from "./components/MovieFantasyLeague/FilmBreakdown";
 import HaterRankings2 from "./components/HaterRankings2";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Stats from "./components/Stats";
@@ -34,6 +35,7 @@ function App() {
           <Route index element={<Stats />} />
           <Route path="/mfl" element={<MovieFantasyLeague />} />
           <Route path="/mfl/scoring-reference" element={<ScoringReference />} />
+          <Route path="/mfl/film/:filmSlug" element={<FilmBreakdown />} />
           <Route
             path="/mfl/admin"
             element={

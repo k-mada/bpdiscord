@@ -1,7 +1,9 @@
+import { Link } from "react-router-dom";
 import type { ColumnDef } from "./types";
-import type { MovieInCommon } from "../../types";
+import type { MovieInCommon, MFLCatalogueFilm } from "../../types";
 import type { SwapFilm } from "../../../shared/types";
 import StarRating from "../StarRating";
+import { compareNullable, formatReleaseDate } from "../../utilities";
 
 export interface SwapFilmHeaderCtx {
   rater: string;
@@ -75,5 +77,65 @@ export const moviesInCommonColumns: ColumnDef<
     renderColumn: (data: MovieInCommon) => (
       <StarRating rating={data.user2_rating} />
     ),
+  },
+];
+
+// aria-label expands the abbreviation; without it a screen reader spells or
+// mangles "TBA".
+const TBA = (
+  <span className="text-letterboxd-text-muted" aria-label="to be announced">
+    TBA
+  </span>
+);
+
+const renderReleaseDate = (date: string) => {
+  const deadline = new Date("2026-10-02");
+  const releaseDate = new Date(date);
+  return releaseDate < deadline ? (
+    <span className="flex items-center text-letterboxd-text-muted">
+      {date}
+      <span className="ml-2 inline-block w-2 h-2 rounded-full bg-letterboxd-error-surface"></span>
+    </span>
+  ) : (
+    <span className="flex items-center text-letterboxd-text-muted">
+      {date}
+      <span className="ml-2 inline-block w-2 h-2 rounded-full bg-letterboxd-accent"></span>
+    </span>
+  );
+};
+
+/** The /mfl summary: four columns, no per-category breakdown. */
+export const mflFilmSummaryColumns: ColumnDef<MFLCatalogueFilm>[] = [
+  {
+    key: "title",
+    label: "Film",
+    sortKey: "title",
+    customSort: (a, b) => a.title.localeCompare(b.title),
+    renderColumn: (film) => (
+      <Link to={`/mfl/film/${film.filmSlug}`}>{film.title}</Link>
+    ),
+  },
+  {
+    key: "releaseDate",
+    label: "Released",
+    sortKey: "releaseDate",
+    customSort: (a, b) => compareNullable(a.releaseDate, b.releaseDate),
+    renderColumn: (film) =>
+      film.releaseDate === null
+        ? TBA
+        : renderReleaseDate(formatReleaseDate(film.releaseDate)),
+  },
+  {
+    key: "price",
+    label: "Price",
+    sortKey: "price",
+    customSort: (a, b) => compareNullable(a.price, b.price),
+    renderColumn: (film) => (film.price === null ? TBA : `$${film.price}`),
+  },
+  {
+    key: "totalPoints",
+    label: "Total Points",
+    sortKey: "totalPoints",
+    customSort: (a, b) => a.totalPoints - b.totalPoints,
   },
 ];
