@@ -534,6 +534,88 @@ describe('dataController', () => {
         expect(result.data).toHaveLength(4);
       });
 
+      it('dbGetMflUserPicks returns only the caller\'s own roster', async () => {
+        const mine = await dc.dbGetMflUserPicks(PICKER);
+        const theirs = await dc.dbGetMflUserPicks(OTHER);
+
+        expect(mine.data!.map((p) => p.film_slug)).toEqual(['anatomy-of-a-fall']);
+        expect(theirs.data).toEqual([]);
+      });
+
+      it('dbGetMflUserPicks totals a pick the same way the catalogue does', async () => {
+        const picks = await dc.dbGetMflUserPicks(PICKER);
+        const catalogue = await dc.dbGetMFLMovies();
+
+        const pick = picks.data!.find((p) => p.film_slug === 'anatomy-of-a-fall')!;
+        const film = catalogue.data!.find((f) => f.film_slug === 'anatomy-of-a-fall')!;
+
+        // The two reads group differently; a member's roster total has to agree
+        // with the number the films table shows for the same film.
+        expect(pick.total_points).toBe(film.total_points);
+        expect(typeof pick.total_points).toBe('number');
+      });
+
+      it('dbGetMflUserPicks carries the catalogue columns through', async () => {
+        const picks = await dc.dbGetMflUserPicks(PICKER);
+        const pick = picks.data![0]!;
+
+        expect(pick.title).toBe('Anatomy of a Fall');
+        expect(pick.price).toBe(30);
+        expect(pick.release_date).toBeNull();
+      });
+
+      it('dbAddMflUserPick adds a film and rejects the duplicate', async () => {
+        const added = await dc.dbAddMflUserPick(OTHER, 'zulu-dawn');
+        expect(added.success).toBe(true);
+
+        const again = await dc.dbAddMflUserPick(OTHER, 'zulu-dawn');
+        expect(again.success).toBe(false);
+        expect(again.conflict).toBe(true);
+
+        const roster = await dc.dbGetMflUserPicks(OTHER);
+        expect(roster.data).toHaveLength(1);
+
+        await dc.dbRemoveMflUserPick(OTHER, 'zulu-dawn');
+      });
+
+      it('dbAddMflUserPick reports a film that is not in the catalogue', async () => {
+        const result = await dc.dbAddMflUserPick(OTHER, 'not-a-real-film');
+
+        expect(result.success).toBe(false);
+        expect(result.notFound).toBe(true);
+        expect(result.conflict).toBeUndefined();
+      });
+
+      it('dbRemoveMflUserPick will not remove another member\'s pick', async () => {
+        const result = await dc.dbRemoveMflUserPick(OTHER, 'anatomy-of-a-fall');
+
+        expect(result.success).toBe(true);
+        expect(result.removed).toBe(false);
+
+        // Still on its actual owner's roster.
+        const mine = await dc.dbGetMflUserPicks(PICKER);
+        expect(mine.data!.map((p) => p.film_slug)).toContain('anatomy-of-a-fall');
+      });
+
+      it('dbRemoveMflUserPick removes the caller\'s own pick', async () => {
+        await dc.dbAddMflUserPick(OTHER, 'nobody-picked-me');
+
+        const removed = await dc.dbRemoveMflUserPick(OTHER, 'nobody-picked-me');
+        expect(removed.removed).toBe(true);
+
+        const roster = await dc.dbGetMflUserPicks(OTHER);
+        expect(roster.data).toEqual([]);
+      });
+
+      it('dbResolveLbusername returns null for an account with nothing linked', async () => {
+        const result = await dc.dbResolveLbusername(
+          '00000000-0000-0000-0000-000000000000',
+        );
+
+        expect(result.success).toBe(true);
+        expect(result.data).toBeNull();
+      });
+
       it('dbGetMFLUserScores returns empty for a user with no picks', async () => {
         const result = await dc.dbGetMFLUserScores(OTHER);
 

@@ -98,6 +98,20 @@ export interface MFLCatalogueFilm {
   pointsByCategory: Record<string, number>;
 }
 
+export interface MFLPick {
+  filmSlug: string;
+  title: string;
+  releaseDate: string | null;
+  price: number | null;
+  totalPoints: number;
+}
+
+export interface MFLPicksResponse {
+  picks: MFLPick[];
+  /** Summed server-side so this and the leaderboard cannot disagree. */
+  rosterTotal: number;
+}
+
 export interface MFLMovieScore {
   scoringId: number;
   filmSlug: string;

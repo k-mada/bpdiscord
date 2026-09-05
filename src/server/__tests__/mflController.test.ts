@@ -22,17 +22,28 @@ vi.mock('../controllers/dataController', () => ({
   dbGetMflMovieScore: vi.fn(),
   dbUpsertMflMovieScore: vi.fn(),
   dbDeleteMflMovieScore: vi.fn(),
+  dbResolveLbusername: vi.fn(),
+  dbGetMflUserPicks: vi.fn(),
+  dbAddMflUserPick: vi.fn(),
+  dbRemoveMflUserPick: vi.fn(),
 }));
 
 import {
   getMFLMovies,
   getMFLUserScores,
   upsertMflMovieScore,
+  getMflUserPicks,
+  addMflUserPick,
+  removeMflUserPick,
 } from '../controllers/mflController';
 import {
   dbGetMFLMovies,
   dbGetMFLUserScores,
   dbUpsertMflMovieScore,
+  dbResolveLbusername,
+  dbGetMflUserPicks,
+  dbAddMflUserPick,
+  dbRemoveMflUserPick,
 } from '../controllers/dataController';
 
 
@@ -299,5 +310,122 @@ describe('upsertMflMovieScore', () => {
     await upsertMflMovieScore(req, res);
 
     expect(statusCalls).toEqual([500]);
+  });
+});
+
+describe('MFL member picks', () => {
+  const AUTH = { user: { id: 'auth-uuid' } };
+
+  const linked = () =>
+    vi.mocked(dbResolveLbusername).mockResolvedValue({
+      success: true,
+      data: 'rooney',
+    });
+
+  it('401s when the request carries no authenticated user', async () => {
+    const { req, res, statusCalls } = mockReqRes({ body: { filmSlug: 'anora' } });
+    await addMflUserPick(req, res);
+
+    expect(statusCalls).toEqual([401]);
+    expect(dbAddMflUserPick).not.toHaveBeenCalled();
+  });
+
+  // Signup makes lbusername optional, so this account can exist. Without the
+  // guard the insert fails NOT NULL and surfaces as an opaque 500.
+  it('409s when the account has no Letterboxd username linked', async () => {
+    vi.mocked(dbResolveLbusername).mockResolvedValue({ success: true, data: null });
+
+    const { req, res, statusCalls, jsonCalls } = mockReqRes({
+      ...AUTH,
+      body: { filmSlug: 'anora' },
+    });
+    await addMflUserPick(req, res);
+
+    expect(statusCalls).toEqual([409]);
+    expect(jsonCalls[0]).toMatchObject({ error: expect.stringContaining('admin') });
+    expect(dbAddMflUserPick).not.toHaveBeenCalled();
+  });
+
+  it('passes the resolved lbusername, never anything from the request', async () => {
+    linked();
+    vi.mocked(dbAddMflUserPick).mockResolvedValue({ success: true });
+
+    const { req, res } = mockReqRes({
+      ...AUTH,
+      body: { filmSlug: 'anora', lbusername: 'someone-else' },
+    });
+    await addMflUserPick(req, res);
+
+    expect(dbAddMflUserPick).toHaveBeenCalledWith('rooney', 'anora');
+  });
+
+  it('400s on a missing filmSlug before touching the database', async () => {
+    const { req, res, statusCalls } = mockReqRes({ ...AUTH, body: {} });
+    await addMflUserPick(req, res);
+
+    expect(statusCalls).toEqual([400]);
+    expect(dbResolveLbusername).not.toHaveBeenCalled();
+  });
+
+  it('409s a duplicate pick and 404s an unknown film', async () => {
+    linked();
+    vi.mocked(dbAddMflUserPick).mockResolvedValue({
+      success: false,
+      conflict: true,
+      error: 'You have already picked anora.',
+    });
+    const dup = mockReqRes({ ...AUTH, body: { filmSlug: 'anora' } });
+    await addMflUserPick(dup.req, dup.res);
+    expect(dup.statusCalls).toEqual([409]);
+
+    vi.mocked(dbAddMflUserPick).mockResolvedValue({
+      success: false,
+      notFound: true,
+      error: 'nope is not in the film catalogue.',
+    });
+    const missing = mockReqRes({ ...AUTH, body: { filmSlug: 'nope' } });
+    await addMflUserPick(missing.req, missing.res);
+    expect(missing.statusCalls).toEqual([404]);
+  });
+
+  it('404s a removal that matched no row', async () => {
+    linked();
+    vi.mocked(dbRemoveMflUserPick).mockResolvedValue({
+      success: true,
+      removed: false,
+    });
+
+    const { req, res, statusCalls } = mockReqRes({
+      ...AUTH,
+      params: { filmSlug: 'anora' },
+    });
+    await removeMflUserPick(req, res);
+
+    expect(statusCalls).toEqual([404]);
+    expect(dbRemoveMflUserPick).toHaveBeenCalledWith('rooney', 'anora');
+  });
+
+  it('returns camelCase picks and a server-computed roster total', async () => {
+    linked();
+    vi.mocked(dbGetMflUserPicks).mockResolvedValue({
+      success: true,
+      data: [
+        { film_slug: 'anora', title: 'Anora', release_date: '2026-10-18', price: 40, total_points: 25 },
+        { film_slug: 'hamnet', title: 'Hamnet', release_date: null, price: null, total_points: 10 },
+      ],
+    });
+
+    const { req, res, jsonCalls } = mockReqRes(AUTH);
+    await getMflUserPicks(req, res);
+
+    const body = jsonCalls[0] as { data: { picks: Record<string, unknown>[]; rosterTotal: number } };
+    expect(Object.keys(body.data.picks[0]!).sort()).toEqual([
+      'filmSlug',
+      'price',
+      'releaseDate',
+      'title',
+      'totalPoints',
+    ]);
+    expect(body.data.rosterTotal).toBe(35);
   });
 });

@@ -16,6 +16,10 @@ const MovieFantasyLeague = () => {
         Eligible movies
       </h2>
       <p className="text-letterboxd-text-secondary mb-4">
+        <Link to="/mfl/my-picks" className="underline hover:no-underline">
+          My picks
+        </Link>
+        {" · "}
         <Link
           to="/mfl/scoring-reference"
           className="underline hover:no-underline"

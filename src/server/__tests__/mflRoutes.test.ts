@@ -9,11 +9,14 @@ describe("mflRoutes wiring", () => {
   it("exposes exactly the routes it means to", () => {
     expect(routes.map((r) => `${r.method} ${r.path}`).sort()).toEqual([
       "DELETE /admin/movie-score/:scoringId",
+      "DELETE /picks/:filmSlug",
       "GET /movie-score/:filmSlug",
       "GET /movies",
+      "GET /picks",
       "GET /scoring-metrics",
       "GET /user-scores/:username",
       "POST /admin/movie-score",
+      "POST /picks",
     ]);
   });
 
@@ -35,10 +38,29 @@ describe("mflRoutes wiring", () => {
   );
 
   // Locking these down would break the public MFL dashboard and scoring page.
-  it("leaves every read public", () => {
-    for (const route of routes.filter((r) => r.method === "GET")) {
+  // GET /picks is the one authenticated read: it returns the caller's own
+  // roster, resolved from the JWT rather than a username in the URL.
+  it("leaves every catalogue read public", () => {
+    const publicReads = routes.filter(
+      (r) => r.method === "GET" && r.path !== "/picks",
+    );
+
+    expect(publicReads).toHaveLength(4);
+    for (const route of publicReads) {
       expect(route.middleware).not.toContain("authenticateToken");
       expect(route.middleware).not.toContain("authorizeAdmin");
     }
+  });
+
+  it.each([
+    ["GET", "/picks"],
+    ["POST", "/picks"],
+    ["DELETE", "/picks/:filmSlug"],
+  ])("gates %s %s behind authenticateToken but not authorizeAdmin", (method, path) => {
+    const route = routes.find((r) => r.method === method && r.path === path)!;
+
+    expect(route.middleware).toContain("authenticateToken");
+    // A member manages their own roster; requiring admin would lock everyone out.
+    expect(route.middleware).not.toContain("authorizeAdmin");
   });
 });

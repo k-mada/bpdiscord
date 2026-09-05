@@ -10,6 +10,7 @@ import {
   mflScoringTally,
   mflFilms,
   mflUserPicks,
+  appUsers,
 } from "../db/schema";
 import {
   dbOperation,
@@ -17,6 +18,7 @@ import {
   dbMutation,
   dbTransaction,
   isUniqueViolation,
+  isForeignKeyViolation,
 } from "../db/utils";
 import {
   HaterRankingRow,
@@ -1482,4 +1484,127 @@ export async function dbDeleteMflMovieScore(scoringId: number): Promise<{
       .delete(mflScoringTally)
       .where(eq(mflScoringTally.scoringId, scoringId));
   });
+}
+
+const MFL_PICKS_PK = "mfl_user_picks_pkey";
+const MFL_PICKS_FILM_FK = "mfl_user_picks_film_slug_fkey";
+
+/**
+ * The account's Letterboxd name, which is what MFLUserPicks is keyed on — the
+ * JWT only identifies the auth account. Null when nothing is linked.
+ */
+export async function dbResolveLbusername(authUserId: string): Promise<{
+  success: boolean;
+  data?: string | null;
+  error?: string;
+}> {
+  return dbOperation(async () => {
+    const rows = await db
+      .select({ lbusername: appUsers.lbusername })
+      .from(appUsers)
+      .where(eq(appUsers.id, authUserId))
+      .limit(1);
+
+    return rows[0]?.lbusername ?? null;
+  });
+}
+
+export async function dbGetMflUserPicks(lbusername: string): Promise<{
+  success: boolean;
+  data?: Array<{
+    film_slug: string;
+    title: string;
+    release_date: string | null;
+    price: number | null;
+    total_points: number;
+  }>;
+  error?: string;
+}> {
+  return dbOperation(async () => {
+    // No metrics join: the roster needs a per-film total, not the per-category
+    // split the catalogue read carries. Same ::int cast for the same reason.
+    return db
+      .select({
+        film_slug: mflUserPicks.filmSlug,
+        title: mflFilms.title,
+        release_date: mflFilms.releaseDate,
+        price: mflFilms.price,
+        total_points: sql<number>`SUM(COALESCE(${mflScoringTally.pointsAwarded}, 0))::int`,
+      })
+      .from(mflUserPicks)
+      .innerJoin(mflFilms, eq(mflFilms.filmSlug, mflUserPicks.filmSlug))
+      .leftJoin(
+        mflScoringTally,
+        eq(mflScoringTally.filmSlug, mflUserPicks.filmSlug),
+      )
+      .where(eq(mflUserPicks.lbusername, lbusername))
+      .groupBy(
+        mflUserPicks.filmSlug,
+        mflFilms.title,
+        mflFilms.releaseDate,
+        mflFilms.price,
+      )
+      .orderBy(asc(mflFilms.title), asc(mflUserPicks.filmSlug));
+  });
+}
+
+export async function dbAddMflUserPick(
+  lbusername: string,
+  filmSlug: string,
+): Promise<{
+  success: boolean;
+  error?: string;
+  conflict?: boolean;
+  notFound?: boolean;
+}> {
+  try {
+    await db.insert(mflUserPicks).values({ lbusername, filmSlug });
+    return { success: true };
+  } catch (error) {
+    if (isUniqueViolation(error, MFL_PICKS_PK)) {
+      return {
+        success: false,
+        conflict: true,
+        error: `You have already picked ${filmSlug}.`,
+      };
+    }
+    if (isForeignKeyViolation(error, MFL_PICKS_FILM_FK)) {
+      return {
+        success: false,
+        notFound: true,
+        error: `${filmSlug} is not in the film catalogue.`,
+      };
+    }
+    console.error("Database operation error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown database error",
+    };
+  }
+}
+
+/** Scoped by lbusername, so guessing another member's slug removes nothing. */
+export async function dbRemoveMflUserPick(
+  lbusername: string,
+  filmSlug: string,
+): Promise<{ success: boolean; removed?: boolean; error?: string }> {
+  try {
+    const rows = await db
+      .delete(mflUserPicks)
+      .where(
+        and(
+          eq(mflUserPicks.lbusername, lbusername),
+          eq(mflUserPicks.filmSlug, filmSlug),
+        ),
+      )
+      .returning({ filmSlug: mflUserPicks.filmSlug });
+
+    return { success: true, removed: rows.length > 0 };
+  } catch (error) {
+    console.error("Database operation error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown database error",
+    };
+  }
 }

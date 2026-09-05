@@ -7,6 +7,10 @@ import {
   dbGetMflMovieScore,
   dbUpsertMflMovieScore,
   dbDeleteMflMovieScore,
+  dbResolveLbusername,
+  dbGetMflUserPicks,
+  dbAddMflUserPick,
+  dbRemoveMflUserPick,
 } from "./dataController";
 
 export async function getMFLScoringMetrics(
@@ -187,4 +191,127 @@ export async function deleteMflMovieScore(
       .status(500)
       .json({ error: dbResult.error || "Failed to delete MFL movie score" });
   }
+}
+
+/**
+ * The caller's Letterboxd name, or null with the response already sent.
+ *
+ * MFLUserPicks keys on lbusername while the JWT identifies the auth account, so
+ * every picks handler starts here. The 409 is not a designed-for path — signup
+ * makes lbusername optional, so an account can exist without one, and without
+ * this guard the insert would fail NOT NULL and surface as an opaque 500.
+ */
+async function requireLbusername(
+  req: Request,
+  res: Response,
+): Promise<string | null> {
+  const authUserId = req.user?.id;
+  if (!authUserId) {
+    res.status(401).json({ error: "Authentication required" });
+    return null;
+  }
+
+  const result = await dbResolveLbusername(authUserId);
+  if (!result.success) {
+    res.status(500).json({ error: result.error || "Failed to resolve account" });
+    return null;
+  }
+  if (!result.data) {
+    res.status(409).json({
+      error:
+        "Your account has no Letterboxd username linked. Ask an admin to link one before picking films.",
+    });
+    return null;
+  }
+
+  return result.data;
+}
+
+export async function getMflUserPicks(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const lbusername = await requireLbusername(req, res);
+  if (!lbusername) return;
+
+  const dbResult = await dbGetMflUserPicks(lbusername);
+  if (!dbResult.success || !dbResult.data) {
+    res
+      .status(500)
+      .json({ error: dbResult.error || "Failed to get MFL picks" });
+    return;
+  }
+
+  const picks = dbResult.data.map((pick) => ({
+    filmSlug: pick.film_slug,
+    title: pick.title,
+    releaseDate: pick.release_date,
+    price: pick.price,
+    totalPoints: pick.total_points,
+  }));
+
+  const response: ApiResponse = {
+    message: "MFL picks retrieved successfully",
+    data: {
+      picks,
+      // Summed here rather than on the client so the roster total and the
+      // leaderboard cannot disagree about the same member.
+      rosterTotal: picks.reduce((total, pick) => total + pick.totalPoints, 0),
+    },
+  };
+  res.json(response);
+}
+
+export async function addMflUserPick(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const { filmSlug } = req.body;
+  if (typeof filmSlug !== "string" || filmSlug.trim() === "") {
+    res.status(400).json({ error: "filmSlug is required" });
+    return;
+  }
+
+  const lbusername = await requireLbusername(req, res);
+  if (!lbusername) return;
+
+  const dbResult = await dbAddMflUserPick(lbusername, filmSlug);
+  if (dbResult.success) {
+    res.status(201).json({ message: "Pick added successfully" });
+    return;
+  }
+  if (dbResult.conflict) {
+    res.status(409).json({ error: dbResult.error });
+    return;
+  }
+  if (dbResult.notFound) {
+    res.status(404).json({ error: dbResult.error });
+    return;
+  }
+  res.status(500).json({ error: dbResult.error || "Failed to add pick" });
+}
+
+export async function removeMflUserPick(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const { filmSlug } = req.params;
+  if (!filmSlug) {
+    res.status(400).json({ error: "filmSlug is required" });
+    return;
+  }
+
+  const lbusername = await requireLbusername(req, res);
+  if (!lbusername) return;
+
+  const dbResult = await dbRemoveMflUserPick(lbusername, filmSlug);
+  if (!dbResult.success) {
+    res.status(500).json({ error: dbResult.error || "Failed to remove pick" });
+    return;
+  }
+  if (!dbResult.removed) {
+    res.status(404).json({ error: "You have not picked that film." });
+    return;
+  }
+  res.json({ message: "Pick removed successfully" });
 }
