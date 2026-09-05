@@ -1,4 +1,7 @@
 import { apiService } from "../services/api";
+import { ApiError } from "../lib/apiError";
+
+type ApiMethod = (...args: readonly unknown[]) => Promise<unknown>;
 
 const mockResponse = (data: unknown, ok = true, status = 200) =>
   Promise.resolve({
@@ -81,6 +84,36 @@ describe("ApiService", () => {
       );
     });
 
+    // Callers branch on .status, not just the message: MFL admin renders a 4xx
+    // body verbatim and hides a 5xx one, and AuthContext only clears the token
+    // on 401/403. A dropped status would silently reclassify both.
+    it.each([
+      [400, "scoringId must be a positive integer"],
+      [409, "Film zulu-dawn already has an award for metric 9001."],
+      [500, "duplicate key value violates unique constraint"],
+    ])("carries HTTP %i onto the thrown ApiError", async (status, message) => {
+      vi.mocked(fetch).mockImplementation(() =>
+        mockResponse({ error: message }, false, status),
+      );
+      vi.spyOn(console, "error").mockImplementation(() => {});
+
+      const thrown = await apiService.healthCheck().catch((e) => e);
+
+      expect(thrown).toBeInstanceOf(ApiError);
+      expect(thrown.status).toBe(status);
+      expect(thrown.message).toBe(message);
+    });
+
+    it("still carries the status when the body has no error field", async () => {
+      vi.mocked(fetch).mockImplementation(() => mockResponse({}, false, 503));
+      vi.spyOn(console, "error").mockImplementation(() => {});
+
+      const thrown = await apiService.healthCheck().catch((e) => e);
+
+      expect(thrown).toBeInstanceOf(ApiError);
+      expect(thrown.status).toBe(503);
+    });
+
     it("throws on network-level failures", async () => {
       vi.mocked(fetch).mockRejectedValue(new TypeError("Failed to fetch"));
       vi.spyOn(console, "error").mockImplementation(() => {});
@@ -103,7 +136,7 @@ describe("ApiService", () => {
     ["getAwardShows", "/events/award-shows"],
   ] as const)("%s", (method, expectedUrl) => {
     it(`calls GET ${expectedUrl}`, async () => {
-      await (apiService as any)[method]();
+      await apiService[method]();
       expectFetch(expectedUrl);
     });
 
@@ -111,7 +144,7 @@ describe("ApiService", () => {
       vi.mocked(fetch).mockImplementation(() =>
         mockResponse({ data: [1, 2, 3] }),
       );
-      const result = await (apiService as any)[method]();
+      const result = await apiService[method]();
       expect(result).toEqual({ data: [1, 2, 3] });
     });
   });
@@ -137,7 +170,11 @@ describe("ApiService", () => {
     ],
   ] as const)("%s", (method, expectedUrl, args, expectedBody) => {
     it(`calls POST ${expectedUrl}`, async () => {
-      await (apiService as any)[method](...args);
+      // The only call site keeping a cast: args is a union of tuple types, so
+      // TS can't prove the spread fits the matching overload. Still not `any`.
+      await (apiService as unknown as Record<string, ApiMethod>)[method]!(
+        ...args,
+      );
       expectFetch(expectedUrl, "POST");
       expectBody(expectedBody);
     });
@@ -176,7 +213,7 @@ describe("ApiService", () => {
     ["getFilmUserComplete", "complete"],
   ] as const)("%s", (method, segment) => {
     it(`calls GET /film-users/${USERNAME}/${segment}`, async () => {
-      await (apiService as any)[method](USERNAME);
+      await apiService[method](USERNAME);
       expectFetch(`/film-users/${USERNAME}/${segment}`);
     });
   });

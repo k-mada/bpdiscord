@@ -5,6 +5,16 @@ import { Modal, ModalHeader, ModalBody } from "../Modal";
 import Spinner from "../Spinner";
 import { useMflData } from "../../hooks/useMflData";
 import { useAuth } from "../../contexts/AuthContext";
+import { Notification, Status } from "../ui/Notification";
+import { ApiError } from "../../lib/apiError";
+
+// A 4xx body is written for the admin to read — the 409 naming a duplicate
+// award is the whole point. A 5xx body is dbMutation's raw Postgres message,
+// constraint names and all, so it never reaches the screen.
+const failureMessage = (error: unknown): string => {
+  if (error instanceof ApiError && error.status < 500) return error.message;
+  return "Something went wrong. Please try again.";
+};
 
 const getMetricById = (
   scoringMetrics: MFLScoringMetric[],
@@ -51,6 +61,8 @@ const MFLAdmin = () => {
   const [inputPointsAwarded, setInputPointsAwarded] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedScoringId, setSelectedScoringId] = useState<number>(0);
+  const [formStatus, setFormStatus] = useState<Status>({ type: "idle" });
+  const [deleteStatus, setDeleteStatus] = useState<Status>({ type: "idle" });
   const customizableMetricIds = [1, 10, 338];
 
   const handleMetricSelect = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -59,7 +71,6 @@ const MFLAdmin = () => {
     const selectedMetric = getMetricById(scoringMetrics, metricId);
     if (selectedMetric) {
       setSelectedMetric(selectedMetric);
-      console.log("selecing metric", selectedMetric);
       setInputPointsAwarded(selectedMetric.pointValue);
       if (customizableMetricIds.includes(selectedMetric.metricId)) {
         setDisableScoreInput(false);
@@ -77,8 +88,11 @@ const MFLAdmin = () => {
   };
 
   const handleMovieSelect = async (filmSlug: string) => {
+    if (filmSlug === "-1") return;
+
     setLoading(true);
-    if (filmSlug !== "-1") {
+    setFormStatus({ type: "idle" });
+    try {
       const selectedMovieScore = await getMovieScore(filmSlug);
       const sortedSelectedMovieScore = selectedMovieScore.sort((a, b) => {
         if (a.metricName < b.metricName) {
@@ -99,8 +113,11 @@ const MFLAdmin = () => {
         setCurrentSelectedMovie(filmSlug);
         setInputPointsAwarded(0);
         setSelectedMetric(null);
-        setLoading(false);
       }
+    } catch (error) {
+      setFormStatus({ type: "error", message: failureMessage(error) });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -112,44 +129,33 @@ const MFLAdmin = () => {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (selectedMetric?.metricId) {
-      const existingScore = getMovieScoreByMetricId(
-        movieScore,
-        selectedMetric?.metricId,
+    if (!selectedMetric?.metricId) return;
+
+    const existingScore = getMovieScoreByMetricId(
+      movieScore,
+      selectedMetric.metricId,
+    );
+
+    setFormStatus({ type: "idle" });
+    try {
+      const isEdit = Boolean(existingScore && selectedScoringId > 0);
+      await upsertMovieScore(
+        {
+          filmSlug: isEdit ? existingScore!.filmSlug : currentSelectedMovie,
+          pointsAwarded: inputPointsAwarded,
+          metricId: selectedMetric.metricId,
+          ...(isEdit ? { scoringId: existingScore!.scoringId } : {}),
+        },
+        token ?? "",
       );
 
-      console.log("existingScore", existingScore);
-      // const metric = getMetricById(scoringMetrics, selectedMetric.metricId);
+      // Only on success: a rejected submit keeps the admin's input so the fix
+      // is one edit away rather than a full re-entry.
+      resetForm();
+      setFormStatus({ type: "success", message: "Score saved." });
 
-      let response;
-      if (existingScore && selectedScoringId > 0) {
-        console.log("updating existing score", existingScore);
-        response = await upsertMovieScore(
-          {
-            filmSlug: existingScore.filmSlug,
-            pointsAwarded: inputPointsAwarded,
-            metricId: selectedMetric.metricId,
-            scoringId: existingScore.scoringId,
-          },
-          token ?? "",
-        );
-      } else {
-        console.log("creating new score");
-        response = await upsertMovieScore(
-          {
-            filmSlug: currentSelectedMovie,
-            pointsAwarded: inputPointsAwarded,
-            metricId: selectedMetric.metricId,
-          },
-          token ?? "",
-        );
-      }
-
-      // Only refresh if the API call was successful
-      if (!response.error && currentSelectedMovie) {
-        resetForm();
-        const refreshedMovieScore =
-          await getMovieScore(currentSelectedMovie);
+      if (currentSelectedMovie) {
+        const refreshedMovieScore = await getMovieScore(currentSelectedMovie);
         if (refreshedMovieScore) {
           const totalPoints = refreshedMovieScore.reduce(
             (acc, curr) => acc + curr.pointsAwarded,
@@ -159,6 +165,8 @@ const MFLAdmin = () => {
           setMovieScore(refreshedMovieScore);
         }
       }
+    } catch (error) {
+      setFormStatus({ type: "error", message: failureMessage(error) });
     }
   };
 
@@ -179,7 +187,6 @@ const MFLAdmin = () => {
         (score: MFLMovieScore) => score.scoringId === existingScoringId,
       );
       if (score) {
-        console.log("score!", score);
         setInputPointsAwarded(score.pointsAwarded);
 
         const selectedMetric = getMetricById(scoringMetrics, score.metricId);
@@ -197,6 +204,7 @@ const MFLAdmin = () => {
 
   const handleClose = () => {
     setSelectedScoringId(0);
+    setDeleteStatus({ type: "idle" });
     setIsModalOpen(false);
   };
 
@@ -206,28 +214,33 @@ const MFLAdmin = () => {
   };
 
   const handleConfirmDeleteMetric = async () => {
-    if (selectedScoringId > 0) {
-      const response = await deleteScore(selectedScoringId, token ?? "");
-      if (response.error) {
-        console.error("Error deleting metric", response.error);
-      } else {
-        console.log("Metric deleted successfully");
-        // Refresh the movie score data after successful deletion
-        if (currentSelectedMovie) {
-          const refreshedMovieScore =
-            await getMovieScore(currentSelectedMovie);
-          if (refreshedMovieScore) {
-            const totalPoints = refreshedMovieScore.reduce(
-              (acc, curr) => acc + curr.pointsAwarded,
-              0,
-            );
-            setTotalPoints(totalPoints);
-            setMovieScore(refreshedMovieScore);
-          }
+    if (selectedScoringId <= 0) {
+      setIsModalOpen(false);
+      return;
+    }
+
+    setDeleteStatus({ type: "idle" });
+    try {
+      await deleteScore(selectedScoringId, token ?? "");
+
+      if (currentSelectedMovie) {
+        const refreshedMovieScore = await getMovieScore(currentSelectedMovie);
+        if (refreshedMovieScore) {
+          const totalPoints = refreshedMovieScore.reduce(
+            (acc, curr) => acc + curr.pointsAwarded,
+            0,
+          );
+          setTotalPoints(totalPoints);
+          setMovieScore(refreshedMovieScore);
         }
       }
+      // Closing only here: a dialog that dismisses itself on failure reads as
+      // success, and the admin loses the row they were trying to delete.
+      setIsModalOpen(false);
+      setSelectedScoringId(0);
+    } catch (error) {
+      setDeleteStatus({ type: "error", message: failureMessage(error) });
     }
-    setIsModalOpen(false);
   };
 
   const DeleteMetric = ({ scoringId }: { scoringId: number }) => {
@@ -280,12 +293,17 @@ const MFLAdmin = () => {
 
   return (
     <div>
-      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
+      <Modal isOpen={isModalOpen} onClose={handleClose}>
         <ModalHeader onClose={handleClose}>
           Are you sure you want to delete this metric?
         </ModalHeader>
         <ModalBody>
           <p>This action cannot be undone.</p>
+          {deleteStatus.type !== "idle" && (
+            <div className="my-4">
+              <Notification status={deleteStatus} />
+            </div>
+          )}
           <div>
             <button
               type="button"
@@ -307,6 +325,11 @@ const MFLAdmin = () => {
       <h1 className="text-2xl font-bold text-letterboxd-text-primary mb-4">
         MFL Admin
       </h1>
+      {formStatus.type !== "idle" && (
+        <div className="mb-4">
+          <Notification status={formStatus} />
+        </div>
+      )}
       <MovieSelector movies={movies} onMovieSelect={handleMovieSelect} />
 
       <form
