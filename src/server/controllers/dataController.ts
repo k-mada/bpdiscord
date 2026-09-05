@@ -1489,10 +1489,7 @@ export async function dbDeleteMflMovieScore(scoringId: number): Promise<{
 const MFL_PICKS_PK = "mfl_user_picks_pkey";
 const MFL_PICKS_FILM_FK = "mfl_user_picks_film_slug_fkey";
 
-/**
- * The account's Letterboxd name, which is what MFLUserPicks is keyed on — the
- * JWT only identifies the auth account. Null when nothing is linked.
- */
+/** The account's Letterboxd name, what MFLUserPicks keys on. Null when unlinked. */
 export async function dbResolveLbusername(authUserId: string): Promise<{
   success: boolean;
   data?: string | null;
@@ -1521,8 +1518,8 @@ export async function dbGetMflUserPicks(lbusername: string): Promise<{
   error?: string;
 }> {
   return dbOperation(async () => {
-    // No metrics join: the roster needs a per-film total, not the per-category
-    // split the catalogue read carries. Same ::int cast for the same reason.
+    // Per-film total, not the catalogue's category split. ::int because SUM
+    // widens bigint to numeric, which postgres.js hands back as a string.
     return db
       .select({
         film_slug: mflUserPicks.filmSlug,

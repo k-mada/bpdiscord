@@ -22,8 +22,7 @@ router.get("/user-scores/:username", getMFLUserScores);
 router.get("/movie-score/:filmSlug", getMflMovieScore);
 router.get("/movies", getMFLMovies);
 
-// A member's own roster. authenticateToken only: the handler resolves the
-// lbusername from the JWT, so there is no username in the URL to authorise.
+// The handler resolves identity from the JWT; no username in the URL to gate.
 router.get("/picks", authenticateToken, getMflUserPicks);
 router.post("/picks", authenticateToken, addMflUserPick);
 router.delete("/picks/:filmSlug", authenticateToken, removeMflUserPick);

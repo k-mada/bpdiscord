@@ -164,8 +164,7 @@ const MyPicks = () => {
                 ))}
               </tbody>
               <tfoot>
-                {/* colSpan rather than empty cells: a bare <td/> is both a
-                    lint error and a cell a screen reader stops on for nothing. */}
+                {/* colSpan, not empty cells a screen reader stops on. */}
                 <tr className="border-t-2 border-letterboxd-border">
                   <th scope="row" colSpan={3} className="font-bold text-xl text-left py-3 px-4">
                     Roster total

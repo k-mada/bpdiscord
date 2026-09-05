@@ -88,7 +88,7 @@ describe("MFL my picks", () => {
 
     expect(await screen.findByRole("link", { name: "Anora" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Hamnet" })).toBeInTheDocument();
-    // Not recomputed on the client — 35 comes from the response.
+    // 35 is the server's number, not a client sum.
     expect(
       screen.getByRole("row", { name: /Roster total/ }),
     ).toHaveTextContent("35");

@@ -38,8 +38,7 @@ describe("mflRoutes wiring", () => {
   );
 
   // Locking these down would break the public MFL dashboard and scoring page.
-  // GET /picks is the one authenticated read: it returns the caller's own
-  // roster, resolved from the JWT rather than a username in the URL.
+  // GET /picks is the one authed read: it returns the caller's own roster.
   it("leaves every catalogue read public", () => {
     const publicReads = routes.filter(
       (r) => r.method === "GET" && r.path !== "/picks",

@@ -330,8 +330,7 @@ describe('MFL member picks', () => {
     expect(dbAddMflUserPick).not.toHaveBeenCalled();
   });
 
-  // Signup makes lbusername optional, so this account can exist. Without the
-  // guard the insert fails NOT NULL and surfaces as an opaque 500.
+  // Reachable: signup makes lbusername optional.
   it('409s when the account has no Letterboxd username linked', async () => {
     vi.mocked(dbResolveLbusername).mockResolvedValue({ success: true, data: null });
 

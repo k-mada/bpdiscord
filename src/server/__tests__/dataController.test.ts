@@ -549,8 +549,7 @@ describe('dataController', () => {
         const pick = picks.data!.find((p) => p.film_slug === 'anatomy-of-a-fall')!;
         const film = catalogue.data!.find((f) => f.film_slug === 'anatomy-of-a-fall')!;
 
-        // The two reads group differently; a member's roster total has to agree
-        // with the number the films table shows for the same film.
+        // The two reads group differently but must agree on a film.
         expect(pick.total_points).toBe(film.total_points);
         expect(typeof pick.total_points).toBe('number');
       });
@@ -592,7 +591,6 @@ describe('dataController', () => {
         expect(result.success).toBe(true);
         expect(result.removed).toBe(false);
 
-        // Still on its actual owner's roster.
         const mine = await dc.dbGetMflUserPicks(PICKER);
         expect(mine.data!.map((p) => p.film_slug)).toContain('anatomy-of-a-fall');
       });

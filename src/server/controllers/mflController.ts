@@ -195,11 +195,7 @@ export async function deleteMflMovieScore(
 
 /**
  * The caller's Letterboxd name, or null with the response already sent.
- *
- * MFLUserPicks keys on lbusername while the JWT identifies the auth account, so
- * every picks handler starts here. The 409 is not a designed-for path — signup
- * makes lbusername optional, so an account can exist without one, and without
- * this guard the insert would fail NOT NULL and surface as an opaque 500.
+ * MFLUserPicks keys on lbusername; the JWT only identifies the auth account.
  */
 async function requireLbusername(
   req: Request,
@@ -254,8 +250,6 @@ export async function getMflUserPicks(
     message: "MFL picks retrieved successfully",
     data: {
       picks,
-      // Summed here rather than on the client so the roster total and the
-      // leaderboard cannot disagree about the same member.
       rosterTotal: picks.reduce((total, pick) => total + pick.totalPoints, 0),
     },
   };
