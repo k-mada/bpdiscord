@@ -117,19 +117,30 @@ describe("MFL my picks", () => {
     expect(screen.getByText("$30")).toBeInTheDocument();
   });
 
-  it("will not offer a film already chosen in another slot", async () => {
+  it("lists the whole catalogue in every slot", async () => {
+    renderPage();
+    await waitFor(() => expect(slots()).toHaveLength(8));
+    await fill(3);
+
+    // 11 films plus the placeholder, in a slot that already holds one.
+    expect(within(slots()[0]!).getAllByRole("option")).toHaveLength(12);
+  });
+
+  it("marks a film taken elsewhere as unavailable rather than hiding it", async () => {
     renderPage();
     await waitFor(() => expect(slots()).toHaveLength(8));
 
     await userEvent.selectOptions(slots()[0]!, "film-0");
 
-    expect(
-      within(slots()[1]!).queryByRole("option", { name: "Film 0 ($10)" }),
-    ).not.toBeInTheDocument();
-    // Still offered in the slot that holds it, or the value could not render.
+    const elsewhere = within(slots()[1]!).getByRole("option", {
+      name: "Film 0 ($10) — already picked",
+    });
+    expect(elsewhere).toBeDisabled();
+
+    // Selectable in the slot that holds it, or its own value could not render.
     expect(
       within(slots()[0]!).getByRole("option", { name: "Film 0 ($10)" }),
-    ).toBeInTheDocument();
+    ).toBeEnabled();
   });
 
   it("says it is over budget in text, not colour alone", async () => {
@@ -181,7 +192,7 @@ describe("MFL my picks", () => {
     expect(screen.getByText("1 of 8 movies selected")).toBeInTheDocument();
     expect(
       within(slots()[1]!).getByRole("option", { name: "Film 0 ($10)" }),
-    ).toBeInTheDocument();
+    ).toBeEnabled();
   });
 
   it("submits all eight slugs at once", async () => {
@@ -253,7 +264,7 @@ describe("MFL my picks", () => {
     expect(screen.getByText("1 of 8 movies selected")).toBeInTheDocument();
     expect(
       within(slots()[3]!).getByRole("option", { name: "Film 0 ($10)" }),
-    ).toBeInTheDocument();
+    ).toBeEnabled();
   });
 
   it("shows the server's message when a save is rejected", async () => {

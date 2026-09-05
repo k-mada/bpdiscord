@@ -21,6 +21,7 @@ interface SlotProps {
   slug: string;
   film: MFLCatalogueFilm | undefined;
   options: MFLCatalogueFilm[];
+  takenElsewhere: Set<string>;
   disabled: boolean;
   onSelect: (index: number, slug: string) => void;
   onClear: (index: number) => void;
@@ -31,6 +32,7 @@ const Slot = ({
   slug,
   film,
   options,
+  takenElsewhere,
   disabled,
   onSelect,
   onClear,
@@ -50,11 +52,21 @@ const Slot = ({
         className="min-w-0 flex-1 bg-transparent py-3 text-letterboxd-text-primary disabled:opacity-50"
       >
         <option value={EMPTY}>Select movie</option>
-        {options.map((option) => (
-          <option key={option.filmSlug} value={option.filmSlug}>
-            {option.title} (${option.price ?? 0})
-          </option>
-        ))}
+        {/* Every film stays listed. Hiding the taken ones made the catalogue
+            look short with no way to tell what was missing. */}
+        {options.map((option) => {
+          const taken = takenElsewhere.has(option.filmSlug);
+          return (
+            <option
+              key={option.filmSlug}
+              value={option.filmSlug}
+              disabled={taken}
+            >
+              {option.title} (${option.price ?? 0})
+              {taken ? " — already picked" : ""}
+            </option>
+          );
+        })}
       </select>
 
       <span className="shrink-0 tabular-nums font-medium text-letterboxd-text-primary">
@@ -135,14 +147,10 @@ const MyPicks = () => {
   const overBudget = totalSpend > BUDGET;
   const complete = filled.length === ROSTER_SIZE;
 
-  // A film chosen in another slot is not offered here, so the server's
-  // duplicate rejection is unreachable from the UI.
-  const optionsFor = (index: number) => {
-    const taken = new Set(
-      slots.filter((slug, i) => i !== index && slug !== EMPTY),
-    );
-    return movies.filter((movie) => !taken.has(movie.filmSlug));
-  };
+  // Listed but not selectable, so a duplicate stays impossible without the
+  // catalogue appearing to be missing films.
+  const takenElsewhere = (index: number) =>
+    new Set(slots.filter((slug, i) => i !== index && slug !== EMPTY));
 
   const handleSelect = (index: number, slug: string) => {
     setStatus({ type: "idle" });
@@ -203,7 +211,8 @@ const MyPicks = () => {
                 index={index}
                 slug={slug}
                 film={bySlug.get(slug)}
-                options={optionsFor(index)}
+                options={movies}
+                takenElsewhere={takenElsewhere(index)}
                 disabled={saving}
                 onSelect={handleSelect}
                 onClear={handleClear}
