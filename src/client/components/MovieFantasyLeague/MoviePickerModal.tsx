@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Modal, ModalHeader, ModalBody } from "../Modal";
 import { DataTable } from "../DataTable/DataTable";
 import type { ColumnDef } from "../DataTable/types";
+import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { formatReleaseDate } from "../../utilities";
 import { MFLCatalogueFilm } from "../../types";
 
@@ -24,6 +25,11 @@ export function MoviePickerModal({
   onPick,
   onClose,
 }: MoviePickerModalProps) {
+  // Same 768px breakpoint the other responsive tables use. Four columns will
+  // not fit a phone, and the release date is the one a member drafting on
+  // price can do without.
+  const isDesktop = useMediaQuery("(min-width: 768px)");
+
   const columns = useMemo<ColumnDef<MFLCatalogueFilm>[]>(
     () => [
       {
@@ -31,48 +37,60 @@ export function MoviePickerModal({
         label: "Film",
         sortKey: "title",
         customSort: (a, b) => a.title.localeCompare(b.title),
-      },
-      {
-        key: "releaseDate",
-        label: "Released",
-        sortKey: "releaseDate",
-        customSort: (a, b) =>
-          (a.releaseDate ?? "").localeCompare(b.releaseDate ?? ""),
-        renderColumn: (film) =>
-          film.releaseDate ? formatReleaseDate(film.releaseDate) : "TBA",
-      },
-      {
-        key: "price",
-        label: "Price",
-        sortKey: "price",
-        customSort: (a, b) => (a.price ?? 0) - (b.price ?? 0),
-        renderColumn: (film) => `$${film.price ?? 0}`,
-      },
-      {
-        key: "pick",
-        label: "",
+        // The title is the control. A separate Select column cost about a
+        // third of a phone's width and pushed itself off the edge.
         renderColumn: (film) =>
           taken.has(film.filmSlug) ? (
-            <span className="text-letterboxd-text-muted text-sm">
-              Already picked
+            <span className="text-letterboxd-text-muted">
+              {film.title}{" "}
+              <span className="text-sm">(already picked)</span>
             </span>
           ) : (
             <button
               type="button"
               aria-label={`Select ${film.title}`}
-              className="btn-primary text-sm"
               onClick={() => onPick(film.filmSlug)}
+              className="text-left underline hover:no-underline hover:text-letterboxd-accent"
             >
-              Select
+              {film.title}
             </button>
           ),
       },
+      ...(isDesktop
+        ? [
+            {
+              key: "releaseDate",
+              label: "Released",
+              sortKey: "releaseDate",
+              customSort: (a: MFLCatalogueFilm, b: MFLCatalogueFilm) =>
+                (a.releaseDate ?? "").localeCompare(b.releaseDate ?? ""),
+              renderColumn: (film: MFLCatalogueFilm) => (
+                <span className="whitespace-nowrap">
+                  {film.releaseDate ? formatReleaseDate(film.releaseDate) : "TBA"}
+                </span>
+              ),
+            },
+          ]
+        : []),
+      {
+        key: "price",
+        label: "Price",
+        sortKey: "price",
+        customSort: (a, b) => (a.price ?? 0) - (b.price ?? 0),
+        renderColumn: (film) => (
+          <span className="whitespace-nowrap tabular-nums">
+            ${film.price ?? 0}
+          </span>
+        ),
+      },
     ],
-    [taken, onPick],
+    [taken, onPick, isDesktop],
   );
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
+    // Wider than the default max-w-lg: four columns of film titles do not fit,
+    // and the overflow read as a broken table rather than a scrollable one.
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-2xl">
       <ModalHeader onClose={onClose}>Select a movie for slot {slotNumber}</ModalHeader>
       <ModalBody>
         {movies.length === 0 ? (
@@ -80,7 +98,11 @@ export function MoviePickerModal({
             No films in the catalogue yet.
           </p>
         ) : (
-          <div className="overflow-x-auto max-h-[60vh]">
+          // color-scheme keeps the native scrollbar dark; the app declares none,
+          // so it otherwise renders light against this panel.
+          // overflow-x must be explicit: a non-visible overflow-y computes the
+          // other axis to auto, which brought the horizontal scrollbar back.
+          <div className="overflow-y-auto overflow-x-hidden max-h-[60vh] [color-scheme:dark]">
             <DataTable
               data={movies}
               columns={columns}
