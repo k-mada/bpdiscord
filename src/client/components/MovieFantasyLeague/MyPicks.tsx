@@ -139,6 +139,17 @@ const MyPicks = () => {
     [movies],
   );
 
+  // Vulture lists films most expensive first; matching that keeps the two
+  // readable side by side while drafting. Title breaks ties.
+  const byPrice = useMemo(
+    () =>
+      [...movies].sort(
+        (a, b) =>
+          (b.price ?? 0) - (a.price ?? 0) || a.title.localeCompare(b.title),
+      ),
+    [movies],
+  );
+
   const filled = slots.filter((slug) => slug !== EMPTY);
   const totalSpend = filled.reduce(
     (total, slug) => total + priceOf(bySlug.get(slug)),
@@ -211,7 +222,7 @@ const MyPicks = () => {
                 index={index}
                 slug={slug}
                 film={bySlug.get(slug)}
-                options={movies}
+                options={byPrice}
                 takenElsewhere={takenElsewhere(index)}
                 disabled={saving}
                 onSelect={handleSelect}

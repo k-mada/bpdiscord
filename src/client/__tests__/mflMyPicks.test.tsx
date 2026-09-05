@@ -126,6 +126,21 @@ describe("MFL my picks", () => {
     expect(within(slots()[0]!).getAllByRole("option")).toHaveLength(12);
   });
 
+  it("orders the dropdown by price, dearest first", async () => {
+    renderPage();
+    await waitFor(() => expect(slots()).toHaveLength(8));
+
+    const options = within(slots()[0]!)
+      .getAllByRole("option")
+      .map((o) => o.textContent);
+
+    // Placeholder, then the $95 film, then the $10 ones by title.
+    expect(options[0]).toBe("Select movie");
+    expect(options[1]).toBe("Dear One ($95)");
+    expect(options[2]).toBe("Film 0 ($10)");
+    expect(options[3]).toBe("Film 1 ($10)");
+  });
+
   it("marks a film taken elsewhere as unavailable rather than hiding it", async () => {
     renderPage();
     await waitFor(() => expect(slots()).toHaveLength(8));
