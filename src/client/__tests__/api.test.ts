@@ -1,4 +1,5 @@
 import { apiService } from "../services/api";
+import { ApiError } from "../lib/apiError";
 
 const mockResponse = (data: unknown, ok = true, status = 200) =>
   Promise.resolve({
@@ -79,6 +80,36 @@ describe("ApiService", () => {
       await expect(apiService.healthCheck()).rejects.toThrow(
         "Request failed with status 500",
       );
+    });
+
+    // Callers branch on .status, not just the message: MFL admin renders a 4xx
+    // body verbatim and hides a 5xx one, and AuthContext only clears the token
+    // on 401/403. A dropped status would silently reclassify both.
+    it.each([
+      [400, "scoringId must be a positive integer"],
+      [409, "Film zulu-dawn already has an award for metric 9001."],
+      [500, "duplicate key value violates unique constraint"],
+    ])("carries HTTP %i onto the thrown ApiError", async (status, message) => {
+      vi.mocked(fetch).mockImplementation(() =>
+        mockResponse({ error: message }, false, status),
+      );
+      vi.spyOn(console, "error").mockImplementation(() => {});
+
+      const thrown = await apiService.healthCheck().catch((e) => e);
+
+      expect(thrown).toBeInstanceOf(ApiError);
+      expect(thrown.status).toBe(status);
+      expect(thrown.message).toBe(message);
+    });
+
+    it("still carries the status when the body has no error field", async () => {
+      vi.mocked(fetch).mockImplementation(() => mockResponse({}, false, 503));
+      vi.spyOn(console, "error").mockImplementation(() => {});
+
+      const thrown = await apiService.healthCheck().catch((e) => e);
+
+      expect(thrown).toBeInstanceOf(ApiError);
+      expect(thrown.status).toBe(503);
     });
 
     it("throws on network-level failures", async () => {
