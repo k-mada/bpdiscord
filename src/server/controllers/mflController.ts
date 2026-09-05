@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { ApiResponse } from "../../shared/types";
+import { NO_LBUSERNAME_MESSAGE } from "../../shared/utilities";
 import {
   dbGetMFLScoringMetrics,
   dbGetMFLUserScores,
@@ -212,10 +213,7 @@ async function requireLbusername(
     return null;
   }
   if (!result.data) {
-    res.status(409).json({
-      error:
-        "Your account has no Letterboxd username linked. Ask an admin to link one before picking films.",
-    });
+    res.status(409).json({ error: NO_LBUSERNAME_MESSAGE });
     return null;
   }
 
