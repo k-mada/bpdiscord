@@ -73,9 +73,6 @@ function renderPage(
 }
 
 describe("MFL films table columns", () => {
-
-
-
   it("renders a null price and release date as TBA", () => {
     renderTable([film({ price: null, releaseDate: null })]);
 
@@ -124,7 +121,6 @@ describe("MFL films table columns", () => {
 
     expect(titleOrder()).toEqual(["Dear", "Cheap", "Unpriced"]);
   });
-
 });
 
 describe("MFL films page", () => {
@@ -135,7 +131,9 @@ describe("MFL films page", () => {
   it("tells the member the catalogue is empty rather than showing a bare header row", () => {
     renderPage([], [metric("awards")]);
 
-    expect(screen.getByText("No films in the catalogue yet.")).toBeInTheDocument();
+    expect(
+      screen.getByText("No films in the catalogue yet."),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
   });
 
@@ -150,7 +148,7 @@ describe("MFL films page", () => {
     const headers = screen
       .getAllByRole("columnheader")
       .map((h) => h.textContent?.replace(/[⇅▲▼]/g, "").trim());
-    expect(headers).toEqual(["Film", "Released", "Price", "Total"]);
+    expect(headers).toEqual(["Film", "Released", "Price", "Total Points"]);
   });
 
   it("surfaces a fetch failure instead of an empty catalogue message", () => {
