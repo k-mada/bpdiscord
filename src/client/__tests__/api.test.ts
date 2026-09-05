@@ -1,6 +1,8 @@
 import { apiService } from "../services/api";
 import { ApiError } from "../lib/apiError";
 
+type ApiMethod = (...args: readonly unknown[]) => Promise<unknown>;
+
 const mockResponse = (data: unknown, ok = true, status = 200) =>
   Promise.resolve({
     ok,
@@ -134,7 +136,7 @@ describe("ApiService", () => {
     ["getAwardShows", "/events/award-shows"],
   ] as const)("%s", (method, expectedUrl) => {
     it(`calls GET ${expectedUrl}`, async () => {
-      await (apiService as any)[method]();
+      await apiService[method]();
       expectFetch(expectedUrl);
     });
 
@@ -142,7 +144,7 @@ describe("ApiService", () => {
       vi.mocked(fetch).mockImplementation(() =>
         mockResponse({ data: [1, 2, 3] }),
       );
-      const result = await (apiService as any)[method]();
+      const result = await apiService[method]();
       expect(result).toEqual({ data: [1, 2, 3] });
     });
   });
@@ -168,7 +170,11 @@ describe("ApiService", () => {
     ],
   ] as const)("%s", (method, expectedUrl, args, expectedBody) => {
     it(`calls POST ${expectedUrl}`, async () => {
-      await (apiService as any)[method](...args);
+      // The only call site keeping a cast: args is a union of tuple types, so
+      // TS can't prove the spread fits the matching overload. Still not `any`.
+      await (apiService as unknown as Record<string, ApiMethod>)[method]!(
+        ...args,
+      );
       expectFetch(expectedUrl, "POST");
       expectBody(expectedBody);
     });
@@ -207,7 +213,7 @@ describe("ApiService", () => {
     ["getFilmUserComplete", "complete"],
   ] as const)("%s", (method, segment) => {
     it(`calls GET /film-users/${USERNAME}/${segment}`, async () => {
-      await (apiService as any)[method](USERNAME);
+      await apiService[method](USERNAME);
       expectFetch(`/film-users/${USERNAME}/${segment}`);
     });
   });
