@@ -212,6 +212,50 @@ describe("MFL my picks", () => {
     expect(slots()[0]).toHaveValue("film-3");
   });
 
+  it("reloads a saved roster, edits it, and resubmits the change", async () => {
+    setSaved(
+      Array.from({ length: 8 }, (_, i) => ({
+        filmSlug: `film-${i}`,
+        title: `Film ${i}`,
+        releaseDate: null,
+        price: 10,
+      })),
+    );
+    vi.mocked(apiService.replaceMflPicks).mockResolvedValue({ message: "ok" });
+    renderPage();
+
+    // Every slot comes back filled, so submit is live without touching anything.
+    expect(
+      await screen.findByText("8 of 8 movies selected"),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Submit picks" })).toBeEnabled();
+
+    // Swap one pick for a film that was not on the roster.
+    await userEvent.selectOptions(slots()[2]!, "film-8");
+    await userEvent.click(screen.getByRole("button", { name: "Submit picks" }));
+
+    expect(apiService.replaceMflPicks).toHaveBeenCalledWith(
+      ["film-0", "film-1", "film-8", "film-3", "film-4", "film-5", "film-6", "film-7"],
+      TOKEN,
+    );
+  });
+
+  it("frees a cleared pick for another slot after a reload", async () => {
+    setSaved([
+      { filmSlug: "film-0", title: "Film 0", releaseDate: null, price: 10 },
+      { filmSlug: "film-1", title: "Film 1", releaseDate: null, price: 10 },
+    ]);
+    renderPage();
+    await screen.findByText("2 of 8 movies selected");
+
+    await userEvent.click(screen.getByRole("button", { name: "Remove Film 0" }));
+
+    expect(screen.getByText("1 of 8 movies selected")).toBeInTheDocument();
+    expect(
+      within(slots()[3]!).getByRole("option", { name: "Film 0 ($10)" }),
+    ).toBeInTheDocument();
+  });
+
   it("shows the server's message when a save is rejected", async () => {
     vi.mocked(apiService.replaceMflPicks).mockRejectedValue(
       new ApiError("A film cannot be picked twice.", 400),
