@@ -10,6 +10,7 @@ import {
   mflScoringTally,
   mflFilms,
   mflUserPicks,
+  appUsers,
 } from "../db/schema";
 import {
   dbOperation,
@@ -17,6 +18,7 @@ import {
   dbMutation,
   dbTransaction,
   isUniqueViolation,
+  isForeignKeyViolation,
 } from "../db/utils";
 import {
   HaterRankingRow,
@@ -1482,4 +1484,82 @@ export async function dbDeleteMflMovieScore(scoringId: number): Promise<{
       .delete(mflScoringTally)
       .where(eq(mflScoringTally.scoringId, scoringId));
   });
+}
+
+const MFL_PICKS_FILM_FK = "mfl_user_picks_film_slug_fkey";
+
+/** The account's Letterboxd name, what MFLUserPicks keys on. Null when unlinked. */
+export async function dbResolveLbusername(authUserId: string): Promise<{
+  success: boolean;
+  data?: string | null;
+  error?: string;
+}> {
+  return dbOperation(async () => {
+    const rows = await db
+      .select({ lbusername: appUsers.lbusername })
+      .from(appUsers)
+      .where(eq(appUsers.id, authUserId))
+      .limit(1);
+
+    return rows[0]?.lbusername ?? null;
+  });
+}
+
+export async function dbGetMflUserPicks(lbusername: string): Promise<{
+  success: boolean;
+  data?: Array<{
+    film_slug: string;
+    title: string;
+    release_date: string | null;
+    price: number | null;
+  }>;
+  error?: string;
+}> {
+  return dbOperation(async () => {
+    return db
+      .select({
+        film_slug: mflUserPicks.filmSlug,
+        title: mflFilms.title,
+        release_date: mflFilms.releaseDate,
+        price: mflFilms.price,
+      })
+      .from(mflUserPicks)
+      .innerJoin(mflFilms, eq(mflFilms.filmSlug, mflUserPicks.filmSlug))
+      .where(eq(mflUserPicks.lbusername, lbusername))
+      .orderBy(asc(mflFilms.title), asc(mflUserPicks.filmSlug));
+  });
+}
+
+/**
+ * Replaces the whole roster in one transaction, so a rejected submit leaves the
+ * previous picks intact rather than half-applied.
+ */
+export async function dbReplaceMflUserPicks(
+  lbusername: string,
+  filmSlugs: string[],
+): Promise<{ success: boolean; error?: string; notFound?: boolean }> {
+  try {
+    await db.transaction(async (tx) => {
+      await tx.delete(mflUserPicks).where(eq(mflUserPicks.lbusername, lbusername));
+      if (filmSlugs.length > 0) {
+        await tx
+          .insert(mflUserPicks)
+          .values(filmSlugs.map((filmSlug) => ({ lbusername, filmSlug })));
+      }
+    });
+    return { success: true };
+  } catch (error) {
+    if (isForeignKeyViolation(error, MFL_PICKS_FILM_FK)) {
+      return {
+        success: false,
+        notFound: true,
+        error: "One or more of those films is not in the catalogue.",
+      };
+    }
+    console.error("Database operation error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown database error",
+    };
+  }
 }
