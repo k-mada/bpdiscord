@@ -11,7 +11,7 @@
  *
  * NOT enough to populate the "Highest rated movies (20+ ratings)" section
  * — that needs ≥20 ratings per film, which would require ≥20 users. Left
- * empty by design; documented in CLAUDE.md.
+ * empty by design; documented in AGENTS.md.
  *
  * All Films use a placeholder poster URL pattern that points back at this
  * domain so missing-image fallbacks are exercised too.

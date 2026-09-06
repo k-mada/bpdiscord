@@ -75,7 +75,7 @@ Server on `http://localhost:3001`, client on `http://localhost:5173` (Vite proxi
 
 Environment templates live in `src/server/` and `src/client/` — copy each `.env.example` to `.env` and fill it in. Never commit a filled-in `.env`.
 
-For local smoke testing against a local Supabase stack, run `supabase start` then `yarn setup:local`, which writes `.env.smoke` files and seeds an admin plus fixture users, films, and ratings. See CLAUDE.md for the details and known limitations.
+For local smoke testing against a local Supabase stack, run `supabase start` then `yarn setup:local`, which writes `.env.smoke` files and seeds an admin plus fixture users, films, and ratings. See AGENTS.md for the details and known limitations.
 
 ## Development
 
@@ -104,7 +104,7 @@ React 19, Vite, Tailwind CSS 4, React Router on the client. Express 4, TypeScrip
 
 ## Documentation
 
-- **[CLAUDE.md](./CLAUDE.md)** — architecture details, schema gotchas, workflow conventions
+- **[AGENTS.md](./AGENTS.md)** — architecture details, schema gotchas, workflow conventions. `CLAUDE.md` imports it, so Claude Code and every other agent read the same file.
 - **[AGENTS.md](./AGENTS.md)** — agent-facing conventions for this repo
 
 ## License and attribution

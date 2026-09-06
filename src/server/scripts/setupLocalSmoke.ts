@@ -321,7 +321,7 @@ async function seedAdmin(
  *
  * "Highest rated movies (20+ ratings)" stays empty by design — that threshold
  * would require ≥20 users, which is more fixture noise than it's worth.
- * Documented in CLAUDE.md.
+ * Documented in AGENTS.md.
  */
 async function seedFixtures(admin: SupabaseClient): Promise<void> {
   const usersPayload = FIXTURE_USERS.map((u) => ({
