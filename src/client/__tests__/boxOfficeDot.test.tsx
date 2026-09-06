@@ -1,0 +1,53 @@
+import { render, screen } from "@testing-library/react";
+import { BoxOfficeDot } from "../components/MovieFantasyLeague/BoxOfficeDot";
+import { isBoxOfficeEligible, BOX_OFFICE_CUTOFF } from "../utilities";
+
+describe("isBoxOfficeEligible", () => {
+  it.each([
+    ["2026-10-01", false],
+    [BOX_OFFICE_CUTOFF, true],
+    ["2026-12-25", true],
+  ])("%s is eligible: %s", (date, expected) => {
+    expect(isBoxOfficeEligible(date)).toBe(expected);
+  });
+
+  it("treats an unknown release date as not eligible", () => {
+    expect(isBoxOfficeEligible(null)).toBe(false);
+  });
+
+  // The predecessor compared Date objects, mixing a UTC-parsed cutoff with a
+  // locally-parsed release, so the boundary day flipped east of UTC. Asserting
+  // that no Date is constructed is what keeps that from coming back — reassigning
+  // process.env.TZ mid-run does not reliably re-lock V8's timezone, so a test
+  // that appeared to exercise other zones would have proved nothing.
+  it("decides the boundary from the string, never a Date", () => {
+    const DateSpy = vi.spyOn(globalThis, "Date");
+
+    expect(isBoxOfficeEligible(BOX_OFFICE_CUTOFF)).toBe(true);
+    expect(isBoxOfficeEligible("2026-10-01")).toBe(false);
+
+    expect(DateSpy).not.toHaveBeenCalled();
+    DateSpy.mockRestore();
+  });
+});
+
+describe("BoxOfficeDot", () => {
+  it("names the state, so it is not carried by colour alone", () => {
+    render(<BoxOfficeDot releaseDate="2026-12-25" />);
+    expect(
+      screen.getByRole("img", { name: "eligible for box office points" }),
+    ).toBeInTheDocument();
+  });
+
+  it("names the ineligible state too", () => {
+    render(<BoxOfficeDot releaseDate="2026-01-01" />);
+    expect(
+      screen.getByRole("img", { name: "not eligible for box office points" }),
+    ).toBeInTheDocument();
+  });
+
+  it("renders nothing when the release date is unknown", () => {
+    const { container } = render(<BoxOfficeDot releaseDate={null} />);
+    expect(container).toBeEmptyDOMElement();
+  });
+});

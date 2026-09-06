@@ -22,17 +22,25 @@ vi.mock('../controllers/dataController', () => ({
   dbGetMflMovieScore: vi.fn(),
   dbUpsertMflMovieScore: vi.fn(),
   dbDeleteMflMovieScore: vi.fn(),
+  dbResolveLbusername: vi.fn(),
+  dbGetMflUserPicks: vi.fn(),
+  dbReplaceMflUserPicks: vi.fn(),
 }));
 
 import {
   getMFLMovies,
   getMFLUserScores,
   upsertMflMovieScore,
+  getMflUserPicks,
+  replaceMflUserPicks,
 } from '../controllers/mflController';
 import {
   dbGetMFLMovies,
   dbGetMFLUserScores,
   dbUpsertMflMovieScore,
+  dbResolveLbusername,
+  dbGetMflUserPicks,
+  dbReplaceMflUserPicks,
 } from '../controllers/dataController';
 
 
@@ -299,5 +307,119 @@ describe('upsertMflMovieScore', () => {
     await upsertMflMovieScore(req, res);
 
     expect(statusCalls).toEqual([500]);
+  });
+});
+
+describe('MFL member picks', () => {
+  const AUTH = { user: { id: 'auth-uuid' } };
+  const body = { filmSlugs: ['anora', 'hamnet'] };
+
+  const linked = () =>
+    vi.mocked(dbResolveLbusername).mockResolvedValue({
+      success: true,
+      data: 'rooney',
+    });
+
+  it('401s when the request carries no authenticated user', async () => {
+    const { req, res, statusCalls } = mockReqRes({ body });
+    await replaceMflUserPicks(req, res);
+
+    expect(statusCalls).toEqual([401]);
+    expect(dbReplaceMflUserPicks).not.toHaveBeenCalled();
+  });
+
+  // Reachable: signup makes lbusername optional.
+  it('409s when the account has no Letterboxd username linked', async () => {
+    vi.mocked(dbResolveLbusername).mockResolvedValue({ success: true, data: null });
+
+    const { req, res, statusCalls, jsonCalls } = mockReqRes({ ...AUTH, body });
+    await replaceMflUserPicks(req, res);
+
+    expect(statusCalls).toEqual([409]);
+    expect(jsonCalls[0]).toMatchObject({ error: expect.stringContaining('admin') });
+    expect(dbReplaceMflUserPicks).not.toHaveBeenCalled();
+  });
+
+  it('passes the resolved lbusername, never anything from the request', async () => {
+    linked();
+    vi.mocked(dbReplaceMflUserPicks).mockResolvedValue({ success: true });
+
+    const { req, res } = mockReqRes({
+      ...AUTH,
+      body: { ...body, lbusername: 'someone-else' },
+    });
+    await replaceMflUserPicks(req, res);
+
+    expect(dbReplaceMflUserPicks).toHaveBeenCalledWith('rooney', ['anora', 'hamnet']);
+  });
+
+  it.each([
+    ['not an array', { filmSlugs: 'anora' }],
+    ['a non-string entry', { filmSlugs: ['anora', 7] }],
+    ['a duplicate film', { filmSlugs: ['anora', 'anora'] }],
+  ])('400s on %s before touching the database', async (_label, bad) => {
+    const { req, res, statusCalls } = mockReqRes({ ...AUTH, body: bad });
+    await replaceMflUserPicks(req, res);
+
+    expect(statusCalls).toEqual([400]);
+    expect(dbResolveLbusername).not.toHaveBeenCalled();
+  });
+
+  it('accepts an empty roster, which clears the picks', async () => {
+    linked();
+    vi.mocked(dbReplaceMflUserPicks).mockResolvedValue({ success: true });
+
+    const { req, res, statusCalls } = mockReqRes({ ...AUTH, body: { filmSlugs: [] } });
+    await replaceMflUserPicks(req, res);
+
+    expect(statusCalls).toEqual([]);
+    expect(dbReplaceMflUserPicks).toHaveBeenCalledWith('rooney', []);
+  });
+
+  // Roster size and spend are Vulture's rules; this cap only stops an absurd
+  // payload.
+  it('400s a payload beyond the integrity cap', async () => {
+    const { req, res, statusCalls } = mockReqRes({
+      ...AUTH,
+      body: { filmSlugs: Array.from({ length: 21 }, (_, i) => `film-${i}`) },
+    });
+    await replaceMflUserPicks(req, res);
+
+    expect(statusCalls).toEqual([400]);
+  });
+
+  it('404s when a slug is not in the catalogue', async () => {
+    linked();
+    vi.mocked(dbReplaceMflUserPicks).mockResolvedValue({
+      success: false,
+      notFound: true,
+      error: 'One or more of those films is not in the catalogue.',
+    });
+
+    const { req, res, statusCalls } = mockReqRes({ ...AUTH, body });
+    await replaceMflUserPicks(req, res);
+
+    expect(statusCalls).toEqual([404]);
+  });
+
+  it('returns camelCase picks', async () => {
+    linked();
+    vi.mocked(dbGetMflUserPicks).mockResolvedValue({
+      success: true,
+      data: [
+        { film_slug: 'anora', title: 'Anora', release_date: '2026-10-18', price: 40 },
+      ],
+    });
+
+    const { req, res, jsonCalls } = mockReqRes(AUTH);
+    await getMflUserPicks(req, res);
+
+    const picks = (jsonCalls[0] as { data: Record<string, unknown>[] }).data;
+    expect(Object.keys(picks[0]!).sort()).toEqual([
+      'filmSlug',
+      'price',
+      'releaseDate',
+      'title',
+    ]);
   });
 });

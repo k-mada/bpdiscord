@@ -11,6 +11,7 @@ describe("titleForPath", () => {
     ["/stats", "Stats"],
     ["/mfl", "Movie Fantasy League"],
     ["/mfl/scoring-reference", "Scoring reference"],
+    ["/mfl/my-picks", "My MFL picks"],
     ["/compare", "Compare users"],
     ["/hater-rankings", "Hater Rankings"],
     ["/actor-graph", "Six Degrees"],
@@ -25,6 +26,7 @@ describe("titleForPath", () => {
     ["/film/anatomy-of-a-fall", "anatomy-of-a-fall"],
     ["/events/oscars-2027", "Event: oscars-2027"],
     ["/events/oscars-2027/my-picks", "My picks: oscars-2027"],
+    ["/mfl/film/anora", "MFL score: anora"],
   ])("resolves the parameter in %s", (pathname, expected) => {
     expect(titleForPath(pathname)).toBe(expected);
   });

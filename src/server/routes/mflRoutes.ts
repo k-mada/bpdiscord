@@ -9,6 +9,8 @@ import {
   getMflMovieScore,
   upsertMflMovieScore,
   deleteMflMovieScore,
+  getMflUserPicks,
+  replaceMflUserPicks,
 } from "../controllers/mflController";
 
 const router = Router();
@@ -18,6 +20,10 @@ router.get("/scoring-metrics", getMFLScoringMetrics);
 router.get("/user-scores/:username", getMFLUserScores);
 router.get("/movie-score/:filmSlug", getMflMovieScore);
 router.get("/movies", getMFLMovies);
+
+// The handler resolves identity from the JWT; no username in the URL to gate.
+router.get("/picks", authenticateToken, getMflUserPicks);
+router.put("/picks", authenticateToken, replaceMflUserPicks);
 
 // Admin — per-route middleware, not router.use, because the reads above stay
 // public.
