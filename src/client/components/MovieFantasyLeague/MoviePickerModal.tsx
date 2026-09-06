@@ -1,8 +1,5 @@
 import { useMemo } from "react";
 import { Modal, ModalHeader, ModalBody } from "../Modal";
-import { DataTable } from "../DataTable/DataTable";
-import type { ColumnDef } from "../DataTable/types";
-import { useMediaQuery } from "../../hooks/useMediaQuery";
 import { formatReleaseDate } from "../../utilities";
 import { MFLCatalogueFilm } from "../../types";
 
@@ -17,6 +14,15 @@ interface MoviePickerModalProps {
   onClose: () => void;
 }
 
+// The {" "} separators are load-bearing: adjacent block spans concatenate with
+// nothing between them, and the row's text is its accessible name.
+// Matches a My Picks slot, so the row you choose looks like the row it fills.
+const ROW =
+  "flex w-full items-center gap-3 rounded-lg border border-letterboxd-border-light px-3 sm:px-4 py-3 text-left";
+
+const released = (film: MFLCatalogueFilm) =>
+  film.releaseDate ? formatReleaseDate(film.releaseDate) : "Release date TBA";
+
 export function MoviePickerModal({
   isOpen,
   slotNumber,
@@ -25,91 +31,70 @@ export function MoviePickerModal({
   onPick,
   onClose,
 }: MoviePickerModalProps) {
-  // Same 768px breakpoint the other responsive tables use. Four columns will
-  // not fit a phone, and the release date is the one a member drafting on
-  // price can do without.
-  const isDesktop = useMediaQuery("(min-width: 768px)");
-
-  const columns = useMemo<ColumnDef<MFLCatalogueFilm>[]>(
-    () => [
-      {
-        key: "title",
-        label: "Film",
-        sortKey: "title",
-        customSort: (a, b) => a.title.localeCompare(b.title),
-        // The title is the control. A separate Select column cost about a
-        // third of a phone's width and pushed itself off the edge.
-        renderColumn: (film) =>
-          taken.has(film.filmSlug) ? (
-            <span className="text-letterboxd-text-muted">
-              {film.title}{" "}
-              <span className="text-sm">(already picked)</span>
-            </span>
-          ) : (
-            <button
-              type="button"
-              aria-label={`Select ${film.title}`}
-              onClick={() => onPick(film.filmSlug)}
-              className="cursor-pointer text-left underline hover:no-underline hover:text-letterboxd-accent"
-            >
-              {film.title}
-            </button>
-          ),
-      },
-      ...(isDesktop
-        ? [
-            {
-              key: "releaseDate",
-              label: "Released",
-              sortKey: "releaseDate",
-              customSort: (a: MFLCatalogueFilm, b: MFLCatalogueFilm) =>
-                (a.releaseDate ?? "").localeCompare(b.releaseDate ?? ""),
-              renderColumn: (film: MFLCatalogueFilm) => (
-                <span className="whitespace-nowrap">
-                  {film.releaseDate ? formatReleaseDate(film.releaseDate) : "TBA"}
-                </span>
-              ),
-            },
-          ]
-        : []),
-      {
-        key: "price",
-        label: "Price",
-        sortKey: "price",
-        customSort: (a, b) => (a.price ?? 0) - (b.price ?? 0),
-        renderColumn: (film) => (
-          <span className="whitespace-nowrap tabular-nums">
-            ${film.price ?? 0}
-          </span>
-        ),
-      },
-    ],
-    [taken, onPick, isDesktop],
+  // Vulture lists films dearest first; title breaks ties.
+  const byPrice = useMemo(
+    () =>
+      [...movies].sort(
+        (a, b) =>
+          (b.price ?? 0) - (a.price ?? 0) || a.title.localeCompare(b.title),
+      ),
+    [movies],
   );
 
   return (
-    // Wider than the default max-w-lg: four columns of film titles do not fit,
-    // and the overflow read as a broken table rather than a scrollable one.
-    <Modal isOpen={isOpen} onClose={onClose} className="max-w-2xl">
-      <ModalHeader onClose={onClose}>Select a movie for slot {slotNumber}</ModalHeader>
+    <Modal isOpen={isOpen} onClose={onClose} className="max-w-xl">
+      <ModalHeader onClose={onClose}>
+        Select a movie for slot {slotNumber}
+      </ModalHeader>
       <ModalBody>
-        {movies.length === 0 ? (
+        {byPrice.length === 0 ? (
           <p className="text-letterboxd-text-secondary">
             No films in the catalogue yet.
           </p>
         ) : (
           // color-scheme keeps the native scrollbar dark; the app declares none,
           // so it otherwise renders light against this panel.
-          // overflow-x must be explicit: a non-visible overflow-y computes the
-          // other axis to auto, which brought the horizontal scrollbar back.
-          <div className="overflow-y-auto overflow-x-hidden max-h-[60vh] [color-scheme:dark]">
-            <DataTable
-              data={movies}
-              columns={columns}
-              enableSort
-              initialSort={{ key: "price", direction: "desc" }}
-            />
-          </div>
+          <ul className="flex max-h-[60vh] flex-col gap-2 overflow-y-auto overflow-x-hidden [color-scheme:dark]">
+            {byPrice.map((film) => {
+              const price = (
+                <span className="shrink-0 tabular-nums font-medium">
+                  ${film.price ?? 0}
+                </span>
+              );
+
+              return (
+                <li key={film.filmSlug}>
+                  {taken.has(film.filmSlug) ? (
+                    <div
+                      className={`${ROW} bg-letterboxd-bg-primary text-letterboxd-text-muted`}
+                    >
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate">{film.title}</span>{" "}
+                        <span className="block text-sm">already picked</span>
+                      </span>{" "}
+                      {price}
+                    </div>
+                  ) : (
+                    // The whole row is the control; its content is its
+                    // accessible name, so nothing is announced twice.
+                    <button
+                      type="button"
+                      onClick={() => onPick(film.filmSlug)}
+                      className={`${ROW} cursor-pointer bg-letterboxd-bg-secondary text-letterboxd-text-primary hover:border-letterboxd-accent`}
+                    >
+                      <span className="min-w-0 flex-1">
+                        <span className="block truncate">{film.title}</span>{" "}
+                        <span className="block text-sm text-letterboxd-text-secondary">
+                          {released(film)}
+                        </span>
+                      </span>{" "}
+                      {price}
+                    </button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
         )}
       </ModalBody>
     </Modal>

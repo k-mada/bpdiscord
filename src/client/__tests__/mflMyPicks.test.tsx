@@ -71,11 +71,13 @@ async function openSlot(n: number) {
   return screen.findByRole("dialog");
 }
 
+/** Rows carry title, date and price, so match on the title alone. */
+const filmRow = (dialog: HTMLElement, title: string) =>
+  within(dialog).getByRole("button", { name: new RegExp(`^${title}\\b`) });
+
 async function pick(n: number, title: string) {
   const dialog = await openSlot(n);
-  await userEvent.click(
-    within(dialog).getByRole("button", { name: `Select ${title}` }),
-  );
+  await userEvent.click(filmRow(dialog, title));
 }
 
 /** Fills slots 1..count with Film 0..count-1. */
@@ -83,30 +85,9 @@ async function fill(count: number) {
   for (let i = 0; i < count; i++) await pick(i + 1, `Film ${i}`);
 }
 
-const PHONE_MATCH_MEDIA = window.matchMedia;
-
-/** setupTests stubs matchMedia to false, so tests are the phone layout. */
-function useDesktopViewport() {
-  window.matchMedia = ((query: string) => ({
-    matches: true,
-    media: query,
-    onchange: null,
-    addEventListener: () => {},
-    removeEventListener: () => {},
-    addListener: () => {},
-    removeListener: () => {},
-    dispatchEvent: () => false,
-  })) as unknown as typeof window.matchMedia;
-}
-
 function setSaved(picks: MFLPick[]) {
   vi.mocked(apiService.getMflPicks).mockResolvedValue({ data: picks });
 }
-
-afterEach(() => {
-  // Restored, or the first desktop test leaves every later one on desktop.
-  window.matchMedia = PHONE_MATCH_MEDIA;
-});
 
 beforeEach(() => {
   installFakeLocalStorage();
@@ -139,37 +120,26 @@ describe("MFL my picks", () => {
     ).toBeInTheDocument();
   });
 
-  it("lists title, release date and price on a desktop viewport", async () => {
-    useDesktopViewport();
+  // One row carries all three, at every width — no column drops out.
+  it("puts the title, release date and price in each row", async () => {
     renderPage();
     await waitFor(() => expect(slotButtons()).toHaveLength(8));
     const dialog = await openSlot(1);
 
-    const row = within(dialog)
-      .getByRole("button", { name: "Select Dear One" })
-      .closest("tr")!;
-    expect(row).toHaveTextContent("$95");
-    // A null release date is not a blank cell.
-    expect(row).toHaveTextContent("TBA");
-    expect(
-      within(dialog).getByRole("columnheader", { name: /Released/ }),
-    ).toBeInTheDocument();
+    expect(filmRow(dialog, "Film 0")).toHaveTextContent("Oct 18, 2026");
+    expect(filmRow(dialog, "Film 0")).toHaveTextContent("$10");
+    // A null release date says so rather than rendering blank.
+    expect(filmRow(dialog, "Dear One")).toHaveTextContent("Release date TBA");
   });
 
-  // Four columns do not fit a phone, and the Select column used to render off
-  // the right edge where it could not be reached.
-  it("drops the release date on a phone and keeps every row reachable", async () => {
+  it("makes the whole row the control", async () => {
     renderPage();
     await waitFor(() => expect(slotButtons()).toHaveLength(8));
     const dialog = await openSlot(1);
 
-    expect(
-      within(dialog).queryByRole("columnheader", { name: /Released/ }),
-    ).not.toBeInTheDocument();
-    expect(within(dialog).getAllByRole("columnheader")).toHaveLength(2);
-    expect(
-      within(dialog).getByRole("button", { name: "Select Dear One" }),
-    ).toBeInTheDocument();
+    const row = filmRow(dialog, "Dear One");
+    expect(row.tagName).toBe("BUTTON");
+    expect(row).toHaveTextContent("$95");
   });
 
   it("orders the picker by price, dearest first", async () => {
@@ -177,8 +147,8 @@ describe("MFL my picks", () => {
     await waitFor(() => expect(slotButtons()).toHaveLength(8));
     const dialog = await openSlot(1);
 
-    const firstRow = within(dialog).getAllByRole("row")[1]!;
-    expect(firstRow).toHaveTextContent("Dear One");
+    const rows = within(dialog).getAllByRole("listitem");
+    expect(rows[0]).toHaveTextContent("Dear One");
   });
 
   it("populates the slot and the running total", async () => {
@@ -201,8 +171,9 @@ describe("MFL my picks", () => {
     await pick(1, "Film 0");
 
     const dialog = await openSlot(2);
-    const row = within(dialog).getByText(/Film 0/).closest("tr")!;
-    expect(row).toHaveTextContent("(already picked)");
+    const row = within(dialog).getByText("Film 0").closest("li")!;
+    expect(row).toHaveTextContent("already picked");
+    expect(within(row).queryByRole("button")).not.toBeInTheDocument();
     expect(
       within(dialog).queryByRole("button", { name: "Select Film 0" }),
     ).not.toBeInTheDocument();
@@ -214,9 +185,7 @@ describe("MFL my picks", () => {
     await pick(1, "Film 0");
 
     const dialog = await openSlot(1);
-    expect(
-      within(dialog).getByRole("button", { name: "Select Film 0" }),
-    ).toBeInTheDocument();
+    expect(filmRow(dialog, "Film 0")).toBeInTheDocument();
   });
 
   it("says it is over budget in text, not colour alone", async () => {
@@ -265,9 +234,7 @@ describe("MFL my picks", () => {
     expect(screen.getByText("1 of 8 movies selected")).toBeInTheDocument();
 
     const dialog = await openSlot(3);
-    expect(
-      within(dialog).getByRole("button", { name: "Select Film 0" }),
-    ).toBeInTheDocument();
+    expect(filmRow(dialog, "Film 0")).toBeInTheDocument();
   });
 
   it("submits all eight slugs at once", async () => {
