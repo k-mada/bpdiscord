@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import apiService from "../services/api";
+import { Button } from "./ui/Button";
 import { Notification, Status } from "./ui/Notification";
 
 const ForgotPassword = () => {
@@ -65,13 +66,9 @@ const ForgotPassword = () => {
 
             <Notification status={status} />
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary w-full mt-6"
-            >
-              {loading ? "Sending..." : "Send Reset Email"}
-            </button>
+            <Button type="submit" loading={loading} className="w-full mt-6">
+              Send Reset Email
+            </Button>
           </form>
 
           <div className="mt-6 text-center">

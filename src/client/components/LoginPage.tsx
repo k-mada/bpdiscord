@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import apiService from "../services/api";
 import { AuthRequest } from "../../shared/types";
 import { Input } from "./ui/Input";
+import { Button } from "./ui/Button";
 import { useAuth } from "../contexts/AuthContext";
 import { Notification, Status } from "./ui/Notification";
 
@@ -129,13 +130,9 @@ const LoginPage = () => {
 
             <Notification status={status} />
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-primary w-full mt-6"
-            >
-              {loading ? "Loading..." : "Login"}
-            </button>
+            <Button type="submit" loading={loading} className="w-full mt-6">
+              Login
+            </Button>
           </form>
 
           <div className="mt-6 text-center space-y-2">
