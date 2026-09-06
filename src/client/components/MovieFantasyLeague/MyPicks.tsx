@@ -164,17 +164,22 @@ const MyPicks = () => {
 
   return (
     <div>
+      <h1 className="text-2xl font-bold text-letterboxd-text-primary mb-4">
+        Vulture Movies Fantasy League 2026-2027
+      </h1>
       <p className="text-letterboxd-text-secondary mb-4">
         <Link to="/mfl" className="underline hover:no-underline">
           Eligible movies
         </Link>
       </p>
-      <h1 className="text-2xl font-bold text-letterboxd-text-primary mb-4">
+      <h1 className="text-xl font-bold text-letterboxd-text-primary mb-4">
         My picks
       </h1>
 
       {!isLinked && !busy ? (
-        <p className="text-letterboxd-text-secondary">{NO_LBUSERNAME_MESSAGE}</p>
+        <p className="text-letterboxd-text-secondary">
+          {NO_LBUSERNAME_MESSAGE}
+        </p>
       ) : busy ? (
         <Spinner />
       ) : blocked ? (
@@ -229,7 +234,8 @@ const MyPicks = () => {
             className="mt-2 text-sm text-letterboxd-text-secondary"
           >
             {filled.length} of {ROSTER_SIZE} movies selected
-            {overBudget && `, $${totalSpend - BUDGET} over the $${BUDGET} budget`}
+            {overBudget &&
+              `, $${totalSpend - BUDGET} over the $${BUDGET} budget`}
           </p>
 
           <button
