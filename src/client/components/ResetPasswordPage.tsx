@@ -4,6 +4,7 @@ import { supabase } from "../lib/supabase";
 import { useAuth } from "../contexts/AuthContext";
 import { Subheading } from "./Subheading";
 import { Input } from "./ui/Input";
+import { Button } from "./ui/Button";
 import { Notification, Status } from "./ui/Notification";
 
 type LinkStatus = "verifying" | "ready" | "invalid";
@@ -158,13 +159,9 @@ const ResetPasswordPage = () => {
 
               <Notification status={status} />
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="btn-primary w-full mt-6"
-              >
-                {loading ? "Updating…" : "Update Password"}
-              </button>
+              <Button type="submit" loading={loading} className="w-full mt-6">
+                Update Password
+              </Button>
             </form>
           )}
         </div>
