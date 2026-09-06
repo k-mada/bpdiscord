@@ -10,7 +10,7 @@ import {
 } from "../controllers/graphController";
 
 // These endpoints are cache-through writers but deliberately public — see
-// CLAUDE.md "/api/actor-graph". Rate limiters below are the blast-radius cap.
+// AGENTS.md "/api/actor-graph". Rate limiters below are the blast-radius cap.
 
 const router = Router();
 
