@@ -6,6 +6,7 @@ import { useScrapeJob } from "../hooks/useScrapeJob";
 import JobProgress from "./JobProgress";
 import RatingDistributionHistogram from "./RatingDistributionHistogram";
 import CompatibilityExtremes from "./CompatibilityExtremes";
+import { Button } from "./ui/Button";
 import { Notification, Status } from "./ui/Notification";
 interface Rating {
   rating: number;
@@ -135,31 +136,34 @@ const ScraperInterface = () => {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4">
-            <button
+            <Button
               type="button"
+              variant="secondary"
               onClick={handleCheckExistingData}
               disabled={buttonsDisabled || !username.trim()}
-              className="btn-secondary flex-1"
+              loading={checkLoading}
+              className="flex-1"
             >
-              {checkLoading ? "Checking..." : "Check current ratings data"}
-            </button>
-            <button
+              Check current ratings data
+            </Button>
+            <Button
               type="button"
               onClick={handleUpdateFilms}
               disabled={buttonsDisabled || !username.trim()}
-              className="btn-primary flex-1"
+              loading={isTriggering}
+              className="flex-1"
             >
-              {isTriggering ? "Starting..." : "Update films"}
-            </button>
+              Update films
+            </Button>
             {isRunning && (
-              <button
+              <Button
                 type="button"
+                variant="secondary"
                 onClick={() => void cancel()}
-                disabled={isCancelling}
-                className="btn-secondary"
+                loading={isCancelling}
               >
-                {isCancelling ? "Cancelling..." : "Cancel"}
-              </button>
+                Cancel
+              </Button>
             )}
           </div>
         </div>
