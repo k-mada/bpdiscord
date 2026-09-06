@@ -54,6 +54,15 @@ describe("Header", () => {
     expect(screen.queryByRole("link", { current: "page" })).toBeNull();
   });
 
+  it("links MFL to /mfl and marks it active on that route", () => {
+    renderHeader("/mfl");
+
+    const nav = screen.getByRole("navigation");
+    const mfl = within(nav).getByRole("link", { name: "MFL" });
+    expect(mfl).toHaveAttribute("href", "/mfl");
+    expect(mfl).toHaveAttribute("aria-current", "page");
+  });
+
   it("reports the hamburger state and points at the menu it controls", async () => {
     renderHeader();
 

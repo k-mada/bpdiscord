@@ -63,6 +63,9 @@ const Header = () => {
             <Link to="/hater-rankings" {...navLinkProps("/hater-rankings")}>
               Hater Rankings
             </Link>
+            <Link to="/mfl" {...navLinkProps("/mfl")}>
+              MFL
+            </Link>
 
             {profilePath && (
               <Link to={profilePath} {...navLinkProps(profilePath)}>
@@ -141,6 +144,9 @@ const Header = () => {
                 {...navLinkProps("/hater-rankings", MOBILE_LINK)}
               >
                 Hater Rankings
+              </Link>
+              <Link to="/mfl" {...navLinkProps("/mfl", MOBILE_LINK)}>
+                MFL
               </Link>
               <Link to="/dashboard" {...navLinkProps("/dashboard", MOBILE_LINK)}>
                 Dashboard
