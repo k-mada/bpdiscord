@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Modal, ModalHeader, ModalBody } from "../Modal";
 import { formatReleaseDate } from "../../utilities";
+import { BoxOfficeDot } from "./BoxOfficeDot";
 import { MFLCatalogueFilm } from "../../types";
 
 interface MoviePickerModalProps {
@@ -83,7 +84,10 @@ export function MoviePickerModal({
                       className={`${ROW} cursor-pointer bg-letterboxd-bg-secondary text-letterboxd-text-primary hover:border-letterboxd-accent`}
                     >
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate">{film.title}</span>{" "}
+                        <span className="flex items-center gap-2">
+                          <span className="truncate">{film.title}</span>{" "}
+                          <BoxOfficeDot releaseDate={film.releaseDate} />
+                        </span>{" "}
                         <span className="block text-sm text-letterboxd-text-secondary">
                           {released(film)}
                         </span>

@@ -4,6 +4,7 @@ import type { MovieInCommon, MFLCatalogueFilm } from "../../types";
 import type { SwapFilm } from "../../../shared/types";
 import StarRating from "../StarRating";
 import { compareNullable, formatReleaseDate } from "../../utilities";
+import { BoxOfficeDot } from "../MovieFantasyLeague/BoxOfficeDot";
 
 export interface SwapFilmHeaderCtx {
   rater: string;
@@ -88,21 +89,12 @@ const TBA = (
   </span>
 );
 
-const renderReleaseDate = (date: string) => {
-  const deadline = new Date("2026-10-02");
-  const releaseDate = new Date(date);
-  return releaseDate < deadline ? (
-    <span className="flex items-center text-letterboxd-text-muted">
-      {date}
-      <span className="ml-2 inline-block w-2 h-2 rounded-full bg-letterboxd-error-surface"></span>
-    </span>
-  ) : (
-    <span className="flex items-center text-letterboxd-text-muted">
-      {date}
-      <span className="ml-2 inline-block w-2 h-2 rounded-full bg-letterboxd-accent"></span>
-    </span>
-  );
-};
+const renderReleaseDate = (releaseDate: string) => (
+  <span className="flex items-center gap-2 text-letterboxd-text-muted">
+    {formatReleaseDate(releaseDate)}
+    <BoxOfficeDot releaseDate={releaseDate} />
+  </span>
+);
 
 /** The /mfl summary: four columns, no per-category breakdown. */
 export const mflFilmSummaryColumns: ColumnDef<MFLCatalogueFilm>[] = [
@@ -123,7 +115,7 @@ export const mflFilmSummaryColumns: ColumnDef<MFLCatalogueFilm>[] = [
     renderColumn: (film) =>
       film.releaseDate === null
         ? TBA
-        : renderReleaseDate(formatReleaseDate(film.releaseDate)),
+        : renderReleaseDate(film.releaseDate),
   },
   {
     key: "price",

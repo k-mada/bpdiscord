@@ -54,3 +54,15 @@ export function formatReleaseDate(isoDate: string): string {
     timeZone: "UTC",
   });
 }
+
+/** Films released before this date earn no box-office points. */
+export const BOX_OFFICE_CUTOFF = "2026-10-02";
+
+/**
+ * Compares the raw YYYY-MM-DD strings rather than Date objects: an ISO date
+ * parses as UTC midnight while a formatted one parses as local, so the boundary
+ * day flipped depending on the viewer's timezone.
+ */
+export function isBoxOfficeEligible(releaseDate: string | null): boolean {
+  return releaseDate !== null && releaseDate >= BOX_OFFICE_CUTOFF;
+}

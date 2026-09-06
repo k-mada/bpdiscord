@@ -132,6 +132,22 @@ describe("MFL my picks", () => {
     expect(filmRow(dialog, "Dear One")).toHaveTextContent("Release date TBA");
   });
 
+  it("marks box office eligibility on each row without a legend", async () => {
+    renderPage();
+    await waitFor(() => expect(slotButtons()).toHaveLength(8));
+    const dialog = await openSlot(1);
+
+    // CATALOGUE releases 2026-10-18, DEAR has no date at all.
+    expect(
+      within(filmRow(dialog, "Film 0")).getByRole("img", {
+        name: "eligible for box office points",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(filmRow(dialog, "Dear One")).queryByRole("img"),
+    ).not.toBeInTheDocument();
+  });
+
   it("makes the whole row the control", async () => {
     renderPage();
     await waitFor(() => expect(slotButtons()).toHaveLength(8));
