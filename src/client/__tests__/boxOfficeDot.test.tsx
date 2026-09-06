@@ -15,21 +15,20 @@ describe("isBoxOfficeEligible", () => {
     expect(isBoxOfficeEligible(null)).toBe(false);
   });
 
-  // Comparing Date objects mixed a UTC-parsed cutoff with a locally-parsed
-  // release, so the boundary day flipped east of UTC.
-  it.each(["America/Los_Angeles", "Europe/Berlin", "Asia/Tokyo"])(
-    "decides the cutoff day the same way in %s",
-    (timeZone) => {
-      const original = process.env.TZ;
-      process.env.TZ = timeZone;
-      try {
-        expect(isBoxOfficeEligible(BOX_OFFICE_CUTOFF)).toBe(true);
-        expect(isBoxOfficeEligible("2026-10-01")).toBe(false);
-      } finally {
-        process.env.TZ = original;
-      }
-    },
-  );
+  // The predecessor compared Date objects, mixing a UTC-parsed cutoff with a
+  // locally-parsed release, so the boundary day flipped east of UTC. Asserting
+  // that no Date is constructed is what keeps that from coming back — reassigning
+  // process.env.TZ mid-run does not reliably re-lock V8's timezone, so a test
+  // that appeared to exercise other zones would have proved nothing.
+  it("decides the boundary from the string, never a Date", () => {
+    const DateSpy = vi.spyOn(globalThis, "Date");
+
+    expect(isBoxOfficeEligible(BOX_OFFICE_CUTOFF)).toBe(true);
+    expect(isBoxOfficeEligible("2026-10-01")).toBe(false);
+
+    expect(DateSpy).not.toHaveBeenCalled();
+    DateSpy.mockRestore();
+  });
 });
 
 describe("BoxOfficeDot", () => {
