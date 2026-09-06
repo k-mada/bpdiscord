@@ -50,7 +50,7 @@ export function MoviePickerModal({
               type="button"
               aria-label={`Select ${film.title}`}
               onClick={() => onPick(film.filmSlug)}
-              className="text-left underline hover:no-underline hover:text-letterboxd-accent"
+              className="cursor-pointer text-left underline hover:no-underline hover:text-letterboxd-accent"
             >
               {film.title}
             </button>

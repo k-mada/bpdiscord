@@ -32,7 +32,7 @@ const Slot = ({ index, film, disabled, onOpen, onClear }: SlotProps) => (
       type="button"
       disabled={disabled}
       onClick={() => onOpen(index)}
-      className="min-w-0 flex-1 truncate py-3 text-left text-letterboxd-text-primary disabled:opacity-50"
+      className="min-w-0 flex-1 truncate py-3 text-left text-letterboxd-text-primary cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
     >
       <span aria-hidden="true">{film ? film.title : "Select movie"}</span>
       <span className="sr-only">
@@ -51,7 +51,7 @@ const Slot = ({ index, film, disabled, onOpen, onClear }: SlotProps) => (
       aria-label={film ? `Remove ${film.title}` : `Clear slot ${index + 1}`}
       disabled={disabled || !film}
       onClick={() => onClear(index)}
-      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-letterboxd-text-secondary hover:text-letterboxd-text-primary disabled:invisible"
+      className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-letterboxd-text-secondary hover:text-letterboxd-text-primary disabled:invisible"
     >
       <span aria-hidden="true" className="text-lg leading-none">
         ✕
@@ -234,7 +234,7 @@ const MyPicks = () => {
 
           <button
             type="button"
-            className="btn-primary mt-6 w-full sm:w-auto disabled:opacity-50 disabled:cursor-not-allowed"
+            className="btn-primary mt-6 w-full cursor-pointer sm:w-auto disabled:cursor-not-allowed disabled:opacity-50"
             aria-describedby="roster-progress"
             disabled={!complete || overBudget || saving}
             onClick={handleSubmit}
