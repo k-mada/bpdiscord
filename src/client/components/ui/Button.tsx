@@ -16,7 +16,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 // conflicts when callers pass their own className.
 const baseClasses =
   "inline-flex items-center justify-center gap-2 rounded-lg font-medium " +
-  "transition-colors duration-200 " +
+  "cursor-pointer transition-colors duration-200 " +
   "disabled:opacity-50 disabled:cursor-not-allowed";
 
 const variantClasses: Record<ButtonVariant, string> = {

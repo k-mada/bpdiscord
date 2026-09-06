@@ -73,6 +73,13 @@ describe("Button", () => {
     expect(onClick).not.toHaveBeenCalled();
   });
 
+  it("carries cursor-pointer (Tailwind v4 resets buttons to the arrow cursor)", () => {
+    render(<Button data-testid="btn">Go</Button>);
+    const className = screen.getByTestId("btn").className;
+    expect(className).toContain("cursor-pointer");
+    expect(className).toContain("disabled:cursor-not-allowed");
+  });
+
   it("does not set aria-busy when not loading", () => {
     render(<Button data-testid="btn">Go</Button>);
     expect(screen.getByTestId("btn")).not.toHaveAttribute("aria-busy");
