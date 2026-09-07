@@ -286,11 +286,15 @@ describe("letterboxd palette contrast (WCAG 2.2 AA)", () => {
   });
 
   describe("fills used as backgrounds", () => {
-    it("btn-primary's black label passes on accent and its hover", () => {
+    it("the primary button's black label passes on accent and its hover", () => {
       expect(contrast("#000000", token("accent"))).toBeGreaterThanOrEqual(AA_TEXT);
       expect(contrast("#000000", token("accent-hover"))).toBeGreaterThanOrEqual(
         AA_TEXT,
       );
+    });
+
+    it("the destructive button's black label passes on the error fill", () => {
+      expect(contrast("#000000", token("error"))).toBeGreaterThanOrEqual(AA_TEXT);
     });
 
     it("the active Oscars toggle passes on the pro fill", () => {
