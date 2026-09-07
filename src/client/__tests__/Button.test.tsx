@@ -106,4 +106,33 @@ describe("Button", () => {
       buttonVariants({ variant: "secondary", size: "sm" }),
     );
   });
+
+  it("renders link as underlined transparent text with no padding", () => {
+    render(
+      <Button data-testid="btn" variant="link">
+        More
+      </Button>,
+    );
+    const className = screen.getByTestId("btn").className;
+    expect(className).toContain("hover:underline");
+    expect(className).toContain("bg-transparent");
+    // p-0 wins the only size/variant conflict even at the default md size.
+    expect(className).toContain("p-0");
+    expect(className).not.toContain("px-4");
+  });
+
+  it("lets a caller recolour the link variant (text-destructive link)", () => {
+    render(
+      <Button
+        data-testid="btn"
+        variant="link"
+        className="text-letterboxd-error"
+      >
+        Delete
+      </Button>,
+    );
+    const className = screen.getByTestId("btn").className;
+    expect(className).toContain("text-letterboxd-error");
+    expect(className).not.toContain("text-letterboxd-text-primary");
+  });
 });

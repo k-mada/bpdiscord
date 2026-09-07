@@ -371,10 +371,10 @@ const EditAccountModal = ({
             {!confirmingDelete ? (
               <Button
                 type="button"
-                variant="secondary"
+                variant="link"
                 onClick={() => setConfirmingDelete(true)}
                 disabled={submitting || isSelf}
-                className="text-sm text-letterboxd-error hover:underline"
+                className="text-sm text-letterboxd-error"
                 title={
                   isSelf
                     ? "You cannot delete your own account here. Use the Supabase dashboard."

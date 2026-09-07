@@ -1,7 +1,12 @@
 import type { ButtonHTMLAttributes, Ref } from "react";
 import { cn } from "../../lib/utils";
 
-export type ButtonVariant = "primary" | "secondary" | "ghost" | "destructive";
+export type ButtonVariant =
+  | "primary"
+  | "secondary"
+  | "ghost"
+  | "destructive"
+  | "link";
 export type ButtonSize = "sm" | "md" | "icon";
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -28,6 +33,7 @@ const variantClasses: Record<ButtonVariant, string> = {
     "bg-transparent text-letterboxd-text-muted hover:text-letterboxd-text-primary",
   destructive:
     "bg-letterboxd-error hover:bg-letterboxd-error/85 text-black",
+  link: "bg-transparent p-0 text-letterboxd-text-primary hover:underline",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
@@ -41,7 +47,9 @@ export function buttonVariants({
   variant = "primary",
   size = "md",
 }: { variant?: ButtonVariant; size?: ButtonSize } = {}) {
-  return cn(baseClasses, variantClasses[variant], sizeClasses[size]);
+  // Variant last so the `link` variant's p-0 wins the only size/variant
+  // conflict (padding); colours never collide, so nothing else is affected.
+  return cn(baseClasses, sizeClasses[size], variantClasses[variant]);
 }
 
 export function Button({

@@ -195,12 +195,13 @@ const EditEventView = ({
                   {expandedCategory === cat.id ? "▲" : "▼"}
                 </span>
               </button>
-              <button
+              <Button
+                variant="link"
                 onClick={() => handleDeleteCategory(cat.id)}
-                className="text-letterboxd-error hover:underline text-xs"
+                className="text-letterboxd-error text-xs"
               >
                 Delete
-              </button>
+              </Button>
             </div>
 
             {expandedCategory === cat.id && (
@@ -243,12 +244,13 @@ const EditEventView = ({
                         >
                           {nominee.isWinner ? "Unset Winner" : "Set Winner"}
                         </button>
-                        <button
+                        <Button
+                          variant="link"
                           onClick={() => handleDeleteNominee(nominee.id)}
-                          className="text-letterboxd-error hover:underline text-xs"
+                          className="text-letterboxd-error text-xs"
                         >
                           Delete
-                        </button>
+                        </Button>
                       </div>
                     </div>
                   ))}
