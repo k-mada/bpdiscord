@@ -5,6 +5,7 @@ import { Modal, ModalHeader, ModalBody } from "../Modal";
 import Spinner from "../Spinner";
 import { useMflData } from "../../hooks/useMflData";
 import { useAuth } from "../../contexts/AuthContext";
+import { Button } from "../ui/Button";
 import { Notification, Status } from "../ui/Notification";
 import { failureMessage } from "../../lib/failureMessage";
 
@@ -297,20 +298,21 @@ const MFLAdmin = () => {
             </div>
           )}
           <div>
-            <button
+            <Button
               type="button"
-              className="btn-primary mx-2"
+              className="mx-2"
               onClick={handleConfirmDeleteMetric}
             >
               Delete
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className="btn-secondary mx-2"
+              variant="secondary"
+              className="mx-2"
               onClick={handleClose}
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </ModalBody>
       </Modal>
@@ -368,9 +370,7 @@ const MFLAdmin = () => {
           />
         </div>
 
-        <button type="submit" className="btn-primary">
-          Add score
-        </button>
+        <Button type="submit">Add score</Button>
       </form>
 
       {loading && <Spinner />}

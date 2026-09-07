@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Spinner from "../Spinner";
+import { Button } from "../ui/Button";
 import { Notification, Status } from "../ui/Notification";
 import { MoviePickerModal } from "./MoviePickerModal";
 import { useMflData } from "../../hooks/useMflData";
@@ -44,19 +45,19 @@ const Slot = ({ index, film, disabled, onOpen, onClear }: SlotProps) => (
       ${priceOf(film)}
     </span>
 
-    {/* Fixed size, not padding: an icon-only control still needs a
-        comfortable touch target on a phone. */}
-    <button
+    <Button
       type="button"
+      variant="ghost"
+      size="icon"
       aria-label={film ? `Remove ${film.title}` : `Clear slot ${index + 1}`}
       disabled={disabled || !film}
       onClick={() => onClear(index)}
-      className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-lg text-letterboxd-text-secondary hover:text-letterboxd-text-primary disabled:invisible"
+      className="shrink-0 text-letterboxd-text-secondary disabled:invisible"
     >
       <span aria-hidden="true" className="text-lg leading-none">
         ✕
       </span>
-    </button>
+    </Button>
   </li>
 );
 
@@ -238,15 +239,16 @@ const MyPicks = () => {
               `, $${totalSpend - BUDGET} over the $${BUDGET} budget`}
           </p>
 
-          <button
+          <Button
             type="button"
-            className="btn-primary mt-6 w-full cursor-pointer sm:w-auto disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-6 w-full sm:w-auto"
             aria-describedby="roster-progress"
-            disabled={!complete || overBudget || saving}
+            disabled={!complete || overBudget}
+            loading={saving}
             onClick={handleSubmit}
           >
-            {saving ? "Saving…" : "Submit picks"}
-          </button>
+            Submit picks
+          </Button>
 
           {editing !== null && (
             <MoviePickerModal
