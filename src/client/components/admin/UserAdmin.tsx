@@ -5,6 +5,7 @@ import { useAccounts } from "../../hooks/useAccounts";
 import { useUnclaimedLbUsernames } from "../../hooks/useUnclaimedLbUsernames";
 import { useAuth } from "../../contexts/AuthContext";
 import { Input } from "../ui/Input";
+import { Button } from "../ui/Button";
 import { Modal, ModalBody, ModalHeader } from "../Modal";
 import Spinner from "../Spinner";
 import type { AccountUpdateRequest, AccountView } from "../../types";
@@ -51,13 +52,14 @@ const UserAdmin = () => {
         <p className="text-letterboxd-text-primary text-sm mt-1">
           This page is only available to admin accounts.
         </p>
-        <button
+        <Button
           type="button"
+          variant="secondary"
           onClick={() => navigate("/dashboard")}
-          className="btn-secondary mt-4"
+          className="mt-4"
         >
           Back to dashboard
-        </button>
+        </Button>
       </div>
     );
   }
@@ -158,13 +160,14 @@ const UserAdmin = () => {
                     {formatDate(a.createdAt)}
                   </td>
                   <td className="py-3 px-4">
-                    <button
+                    <Button
                       type="button"
+                      variant="secondary"
                       onClick={() => setEditing(a)}
-                      className="btn-secondary text-sm"
+                      className="text-sm"
                     >
                       Edit
-                    </button>
+                    </Button>
                   </td>
                 </tr>
               ))}
@@ -366,11 +369,12 @@ const EditAccountModal = ({
 
           <div className="flex justify-between items-center gap-2 pt-2 border-t border-letterboxd-border">
             {!confirmingDelete ? (
-              <button
+              <Button
                 type="button"
+                variant="secondary"
                 onClick={() => setConfirmingDelete(true)}
                 disabled={submitting || isSelf}
-                className="btn-secondary text-sm text-letterboxd-error hover:underline"
+                className="text-sm text-letterboxd-error hover:underline"
                 title={
                   isSelf
                     ? "You cannot delete your own account here. Use the Supabase dashboard."
@@ -378,45 +382,41 @@ const EditAccountModal = ({
                 }
               >
                 Delete account
-              </button>
+              </Button>
             ) : (
               <div className="flex items-center gap-2 text-sm">
                 <span className="text-letterboxd-text-primary">Sure?</span>
-                <button
+                <Button
                   type="button"
+                  variant="destructive"
                   onClick={handleDelete}
-                  disabled={submitting}
-                  className="btn-primary bg-letterboxd-error hover:bg-letterboxd-error/85"
+                  loading={submitting}
                 >
-                  {submitting ? "Deleting…" : "Yes, delete"}
-                </button>
-                <button
+                  Yes, delete
+                </Button>
+                <Button
                   type="button"
+                  variant="secondary"
                   onClick={() => setConfirmingDelete(false)}
                   disabled={submitting}
-                  className="btn-secondary"
                 >
                   No
-                </button>
+                </Button>
               </div>
             )}
 
             <div className="flex gap-2">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
                 onClick={onClose}
                 disabled={submitting}
-                className="btn-secondary"
               >
                 Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="btn-primary"
-              >
-                {submitting ? "Saving…" : "Save"}
-              </button>
+              </Button>
+              <Button type="submit" loading={submitting}>
+                Save
+              </Button>
             </div>
           </div>
         </form>

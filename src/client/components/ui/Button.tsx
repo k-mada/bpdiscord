@@ -27,7 +27,7 @@ const variantClasses: Record<ButtonVariant, string> = {
   ghost:
     "bg-transparent text-letterboxd-text-muted hover:text-letterboxd-text-primary",
   destructive:
-    "bg-transparent text-letterboxd-error hover:underline",
+    "bg-letterboxd-error hover:bg-letterboxd-error/85 text-black",
 };
 
 const sizeClasses: Record<ButtonSize, string> = {

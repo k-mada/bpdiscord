@@ -80,6 +80,17 @@ describe("Button", () => {
     expect(className).toContain("disabled:cursor-not-allowed");
   });
 
+  it("renders destructive as a filled button, not a text link", () => {
+    render(
+      <Button data-testid="btn" variant="destructive">
+        Delete
+      </Button>,
+    );
+    const className = screen.getByTestId("btn").className;
+    expect(className).toContain("bg-letterboxd-error");
+    expect(className).not.toContain("bg-transparent");
+  });
+
   it("does not set aria-busy when not loading", () => {
     render(<Button data-testid="btn">Go</Button>);
     expect(screen.getByTestId("btn")).not.toHaveAttribute("aria-busy");
