@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 
 import { useRefreshJob } from "../hooks/useRefreshJob";
 import JobProgress from "./JobProgress";
+import { Button } from "./ui/Button";
 import { Notification } from "./ui/Notification";
 
 const AdminRefresh = () => {
@@ -31,23 +32,23 @@ const AdminRefresh = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <button
+          <Button
             type="button"
             onClick={() => void trigger()}
-            disabled={isRunning || isTriggering}
-            className="btn-primary"
+            disabled={isRunning}
+            loading={isTriggering}
           >
-            {isTriggering ? "Starting…" : "Run refresh"}
-          </button>
+            Run refresh
+          </Button>
           {isRunning && (
-            <button
+            <Button
               type="button"
+              variant="secondary"
               onClick={() => void cancel()}
-              disabled={isCancelling}
-              className="btn-secondary"
+              loading={isCancelling}
             >
-              {isCancelling ? "Cancelling…" : "Cancel"}
-            </button>
+              Cancel
+            </Button>
           )}
         </div>
       </div>

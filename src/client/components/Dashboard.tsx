@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
+import { Button } from "./ui/Button";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -47,13 +48,13 @@ const Dashboard = () => {
           <p className="text-letterboxd-text-secondary mb-4">
             View your ratings, compatibility, and top films
           </p>
-          <button
+          <Button
             onClick={() => profilePath && navigate(profilePath)}
             disabled={!profilePath}
-            className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full"
           >
             {profilePath ? "Go to Profile" : "No Letterboxd username linked"}
-          </button>
+          </Button>
         </div>
 
         {isDevMode && (
@@ -64,12 +65,9 @@ const Dashboard = () => {
             <p className="text-letterboxd-text-secondary mb-4">
               Scrape and analyze Letterboxd rating data
             </p>
-            <button
-              onClick={() => navigate("/fetcher")}
-              className="btn-primary w-full"
-            >
+            <Button onClick={() => navigate("/fetcher")} className="w-full">
               Fetch Data
-            </button>
+            </Button>
           </div>
         )}
 
@@ -80,12 +78,9 @@ const Dashboard = () => {
           <p className="text-letterboxd-text-secondary mb-4">
             Compare rating patterns between users
           </p>
-          <button
-            onClick={() => navigate("/compare")}
-            className="btn-primary w-full"
-          >
+          <Button onClick={() => navigate("/compare")} className="w-full">
             Compare
-          </button>
+          </Button>
         </div>
 
         {isAdmin && isDevMode && (
@@ -96,12 +91,12 @@ const Dashboard = () => {
             <p className="text-letterboxd-text-secondary mb-4">
               Re-scrape every user's films and refresh Letterboxd ratings
             </p>
-            <button
+            <Button
               onClick={() => navigate("/dashboard/refresh-films")}
-              className="btn-primary w-full"
+              className="w-full"
             >
               Open
-            </button>
+            </Button>
           </div>
         )}
 
@@ -113,12 +108,9 @@ const Dashboard = () => {
             <p className="text-letterboxd-text-secondary mb-4">
               List, edit, and unlink user accounts
             </p>
-            <button
-              onClick={() => navigate("/admin/users")}
-              className="btn-primary w-full"
-            >
+            <Button onClick={() => navigate("/admin/users")} className="w-full">
               Open
-            </button>
+            </Button>
           </div>
         )}
       </div>
