@@ -4,6 +4,7 @@ import { TrophyIcon } from "@heroicons/react/24/solid";
 import Spinner from "./Spinner";
 import { Modal, ModalHeader, ModalBody } from "./Modal";
 import RatingDifferential from "./RatingDifferential";
+import { Button } from "./ui/Button";
 import { useHaterRankings2 } from "../hooks/useHaterRankings";
 
 interface HaterRankingsProps {
@@ -32,9 +33,7 @@ const HaterRankings2 = ({
         <div className="text-letterboxd-error mb-4" role="alert">
           {error}
         </div>
-        <button onClick={refetch} className="btn-primary">
-          Try Again
-        </button>
+        <Button onClick={refetch}>Try Again</Button>
       </div>
     );
   }

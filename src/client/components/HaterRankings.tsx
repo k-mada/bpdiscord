@@ -3,6 +3,7 @@ import { useHaterRankings } from "../hooks/useHaterRankings";
 import RatingDistributionHistogram from "./RatingDistributionHistogram";
 import Header from "./Header";
 import Spinner from "./Spinner";
+import { Button } from "./ui/Button";
 
 interface HaterRankingsProps {
   onBackToProfile?: () => void;
@@ -27,9 +28,7 @@ const HaterRankings = ({
     return (
       <div className="text-center">
         <div className="text-red-500 mb-4">{error}</div>
-        <button onClick={refetch} className="btn-primary">
-          Try Again
-        </button>
+        <Button onClick={refetch}>Try Again</Button>
       </div>
     );
   }
