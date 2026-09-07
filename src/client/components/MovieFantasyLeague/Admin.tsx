@@ -238,26 +238,28 @@ const MFLAdmin = () => {
 
   const DeleteMetric = ({ scoringId }: { scoringId: number }) => {
     return (
-      <button
+      <Button
         type="button"
-        className="px-8 underline hover:no-underline"
+        variant="link"
+        className="px-8"
         onClick={() => handleDeleteMetric(scoringId)}
       >
         Delete
-      </button>
+      </Button>
     );
   };
 
   const EditMetric = ({ scoringId }: { scoringId: number }) => {
     return (
-      <button
+      <Button
         type="button"
-        className="px-8 underline hover:no-underline"
+        variant="link"
+        className="px-8"
         onClick={handleEditMetric}
         data-scoring-id={scoringId}
       >
         Edit
-      </button>
+      </Button>
     );
   };
 
