@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { EventData } from "../../types";
 import { apiService } from "../../services/api";
+import { Button } from "../ui/Button";
 
 interface EditEventViewProps {
   event: EventData;
@@ -131,12 +132,12 @@ const EditEventView = ({
         <h3 className="text-sm font-semibold uppercase tracking-wider text-letterboxd-pro">
           Categories ({categories.length})
         </h3>
-        <button
+        <Button
           onClick={() => setShowAddCategory(!showAddCategory)}
-          className="btn-primary text-sm"
+          className="text-sm"
         >
           {showAddCategory ? "Cancel" : "Add Category"}
-        </button>
+        </Button>
       </div>
 
       {showAddCategory && (
@@ -156,9 +157,9 @@ const EditEventView = ({
             <option value="movie_first">Movie/Show First</option>
             <option value="person_first">Person First</option>
           </select>
-          <button onClick={handleAddCategory} className="btn-primary text-sm">
+          <Button onClick={handleAddCategory} className="text-sm">
             Save Category
-          </button>
+          </Button>
         </div>
       )}
 
@@ -270,22 +271,23 @@ const EditEventView = ({
                       className="input-field w-full"
                     />
                     <div className="flex gap-2">
-                      <button
+                      <Button
                         onClick={() => handleAddNominee(cat.id)}
-                        className="btn-primary text-sm"
+                        className="text-sm"
                       >
                         Add Nominee
-                      </button>
-                      <button
+                      </Button>
+                      <Button
+                        variant="secondary"
                         onClick={() => {
                           setShowAddNominee(null);
                           setNewNomineePerson("");
                           setNewNomineeMovie("");
                         }}
-                        className="btn-secondary text-sm"
+                        className="text-sm"
                       >
                         Cancel
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 ) : (

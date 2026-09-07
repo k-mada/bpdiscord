@@ -5,6 +5,7 @@ import { apiService } from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 import CreateEventForm from "./CreateEventForm";
 import EditEventView from "./EditEventView";
+import { Button } from "../ui/Button";
 
 type AdminView = "list" | "create" | "edit" | "create-award-show";
 
@@ -168,13 +169,9 @@ const EventAdminPage = () => {
               className="input-field w-full"
             />
           </div>
-          <button
-            type="submit"
-            disabled={creatingShow}
-            className="btn-primary w-full"
-          >
-            {creatingShow ? "Creating..." : "Create Award Show"}
-          </button>
+          <Button type="submit" loading={creatingShow} className="w-full">
+            Create Award Show
+          </Button>
         </form>
       </div>
     );
@@ -219,12 +216,13 @@ const EventAdminPage = () => {
           <h2 className="text-sm font-semibold uppercase tracking-wider text-letterboxd-text-secondary">
             Award Shows
           </h2>
-          <button
+          <Button
+            variant="secondary"
             onClick={() => setView("create-award-show")}
-            className="btn-secondary text-sm"
+            className="text-sm"
           >
             New Award Show
-          </button>
+          </Button>
         </div>
         {loading ? (
           <p className="text-letterboxd-text-muted text-sm">Loading...</p>
@@ -249,12 +247,9 @@ const EventAdminPage = () => {
         <h2 className="text-sm font-semibold uppercase tracking-wider text-letterboxd-text-secondary">
           Events
         </h2>
-        <button
-          onClick={() => setView("create")}
-          className="btn-primary text-sm"
-        >
+        <Button onClick={() => setView("create")} className="text-sm">
           New Event
-        </button>
+        </Button>
       </div>
 
       {loading ? (
@@ -276,12 +271,13 @@ const EventAdminPage = () => {
                   {event.year} &middot; {event.status}
                 </p>
               </div>
-              <button
+              <Button
+                variant="secondary"
                 onClick={() => loadEvent(event.slug)}
-                className="btn-secondary text-sm"
+                className="text-sm"
               >
                 Manage
-              </button>
+              </Button>
             </div>
           ))}
         </div>
