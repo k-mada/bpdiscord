@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Subheading } from "./Subheading";
 import { useAuth } from "../contexts/AuthContext";
+import { Button, buttonVariants } from "./ui/Button";
+import { cn } from "../lib/utils";
 
 const MOBILE_MENU_ID = "mobile-menu";
 
@@ -79,15 +81,18 @@ const Header = () => {
             )}
 
             {isAuthenticated ? (
-              <button onClick={handleLogout} className="btn-secondary">
+              <Button variant="secondary" onClick={handleLogout}>
                 Logout
-              </button>
+              </Button>
             ) : (
               <div className="flex gap-2">
-                <Link to="/login" className="btn-secondary">
+                <Link
+                  to="/login"
+                  className={buttonVariants({ variant: "secondary" })}
+                >
                   Login
                 </Link>
-                <Link to="/signup" className="btn-primary">
+                <Link to="/signup" className={buttonVariants()}>
                   Sign Up
                 </Link>
               </div>
@@ -97,7 +102,7 @@ const Header = () => {
           {/* Mobile Hamburger Button */}
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="md:hidden flex flex-col items-center justify-center w-8 h-8 space-y-1"
+            className="md:hidden flex flex-col items-center justify-center w-11 h-11 space-y-1 cursor-pointer"
             aria-label="Toggle menu"
             aria-expanded={isMobileMenuOpen}
             aria-controls={MOBILE_MENU_ID}
@@ -162,23 +167,27 @@ const Header = () => {
 
               <div className="pt-2 border-t border-letterboxd-border space-y-2">
                 {isAuthenticated ? (
-                  <button
+                  <Button
+                    variant="secondary"
                     onClick={handleLogout}
-                    className="btn-secondary w-full"
+                    className="w-full"
                   >
                     Logout
-                  </button>
+                  </Button>
                 ) : (
                   <>
                     <Link
                       to="/login"
-                      className="btn-secondary w-full block text-center"
+                      className={cn(
+                        buttonVariants({ variant: "secondary" }),
+                        "w-full",
+                      )}
                     >
                       Login
                     </Link>
                     <Link
                       to="/signup"
-                      className="btn-primary w-full block text-center"
+                      className={cn(buttonVariants(), "w-full")}
                     >
                       Sign Up
                     </Link>

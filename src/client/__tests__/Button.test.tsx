@@ -1,7 +1,7 @@
 import { createRef } from "react";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { Button } from "../components/ui/Button";
+import { Button, buttonVariants } from "../components/ui/Button";
 
 describe("Button", () => {
   it("forwards ref to the underlying <button>", () => {
@@ -83,5 +83,16 @@ describe("Button", () => {
   it("does not set aria-busy when not loading", () => {
     render(<Button data-testid="btn">Go</Button>);
     expect(screen.getByTestId("btn")).not.toHaveAttribute("aria-busy");
+  });
+
+  it("Button and buttonVariants produce the same classes for the same variant/size", () => {
+    render(
+      <Button data-testid="btn" variant="secondary" size="sm">
+        Go
+      </Button>,
+    );
+    expect(screen.getByTestId("btn").className).toBe(
+      buttonVariants({ variant: "secondary", size: "sm" }),
+    );
   });
 });

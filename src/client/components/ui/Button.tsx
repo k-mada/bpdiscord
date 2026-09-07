@@ -36,6 +36,14 @@ const sizeClasses: Record<ButtonSize, string> = {
   icon: "h-11 w-11 p-0",
 };
 
+/** Button styling without the element — for a link that should look like a button. */
+export function buttonVariants({
+  variant = "primary",
+  size = "md",
+}: { variant?: ButtonVariant; size?: ButtonSize } = {}) {
+  return cn(baseClasses, variantClasses[variant], sizeClasses[size]);
+}
+
 export function Button({
   variant = "primary",
   size = "md",
@@ -51,12 +59,7 @@ export function Button({
       ref={ref}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
-      className={cn(
-        baseClasses,
-        variantClasses[variant],
-        sizeClasses[size],
-        className,
-      )}
+      className={cn(buttonVariants({ variant, size }), className)}
       {...props}
     >
       {loading && (

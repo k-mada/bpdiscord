@@ -3,6 +3,7 @@ import { useHaterRankings } from "../hooks/useHaterRankings";
 import RatingDistributionHistogram from "./RatingDistributionHistogram";
 import Header from "./Header";
 import Spinner from "./Spinner";
+import { Button } from "./ui/Button";
 
 interface HaterRankingsProps {
   onBackToProfile?: () => void;
@@ -26,10 +27,10 @@ const HaterRankings = ({
   if (error) {
     return (
       <div className="text-center">
-        <div className="text-red-500 mb-4">{error}</div>
-        <button onClick={refetch} className="btn-primary">
-          Try Again
-        </button>
+        <div className="text-letterboxd-error mb-4" role="alert">
+          {error}
+        </div>
+        <Button onClick={refetch}>Try Again</Button>
       </div>
     );
   }
@@ -78,12 +79,12 @@ const HaterRankings = ({
                     <td className="px-6 py-1 whitespace-nowrap">
                       <div className="flex items-center space-x-2">
                         {index === 0 && (
-                          <TrophyIcon className="h-5 w-5 text-yellow-500" />
+                          <TrophyIcon className="h-5 w-5 text-letterboxd-pro" />
                         )}
                         <span
                           className={`font-medium ${
                             index === 0
-                              ? "text-2xl text-yellow-600 dark:text-yellow-400"
+                              ? "text-2xl text-letterboxd-pro"
                               : "text-letterboxd-text-primary"
                           }`}
                         >
