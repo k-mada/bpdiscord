@@ -26,8 +26,8 @@ layer(base);
     border-color: var(--color-gray-200, currentcolor);
   }
 
-  /* Neutral, not accent: an accent outline on .btn-primary would sit at 1:1
-     against its own background. Outline also survives overflow-hidden. */
+  /* Neutral, not accent: an accent outline on an accent-filled button would
+     sit at 1:1 against its own background. Outline also survives overflow-hidden. */
   :focus-visible {
     outline: 2px solid theme(colors.letterboxd.text-primary);
     outline-offset: 2px;
@@ -66,14 +66,6 @@ layer(base);
 @utility subheading {
   @apply text-xl font-semibold text-letterboxd-text-primary mb-4 pb-2 border-b border-letterboxd-border;
   font-family: "Be Vietnam Pro", sans-serif;
-}
-
-@utility btn-primary {
-  @apply bg-letterboxd-accent hover:bg-letterboxd-accent-hover text-black font-medium py-2 px-4 rounded-lg transition-colors duration-200;
-}
-
-@utility btn-secondary {
-  @apply bg-letterboxd-bg-secondary hover:bg-letterboxd-bg-tertiary text-letterboxd-text-primary font-medium py-2 px-4 rounded-lg border border-letterboxd-border transition-colors duration-200;
 }
 
 @utility data-table {
