@@ -1,5 +1,6 @@
 import { useId, useState } from "react";
 import { useAwardShows } from "../../hooks/useAwardShows";
+import { Button } from "../ui/Button";
 import { Notification, Status } from "../ui/Notification";
 import { apiService } from "../../services/api";
 
@@ -192,13 +193,9 @@ const CreateEventForm = ({ token, onSuccess, onCancel }: CreateEventFormProps) =
             className="input-field w-full"
           />
         </div>
-        <button
-          type="submit"
-          disabled={submitting}
-          className="btn-primary w-full"
-        >
-          {submitting ? "Creating..." : "Create Event"}
-        </button>
+        <Button type="submit" loading={submitting} className="w-full">
+          Create Event
+        </Button>
       </form>
     </div>
   );
