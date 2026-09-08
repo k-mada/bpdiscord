@@ -45,7 +45,7 @@ If the worker handoff fails (502, timeout, etc.), the controller rolls back the 
 
 ## Database schema — non-obvious bits
 
-Tables `Users`, `UserRatings`, `Films`, `UserFilms` are straightforward — see `src/server/db/schema.ts` and `supabase/migrations/` for columns.
+Tables `Users`, `UserRatings`, `Films`, `UserFilms` are straightforward — see `src/server/db/schema.ts` and `supabase/migrations/` for columns. One non-obvious edge: `UserFilms.lbusername` and `UserRatings.username` are FKs to `Users.lbusername` with `ON DELETE CASCADE` (added late — the columns predate the constraint), so deleting a `Users` row takes its movie data with it. `MFLUserPicks.lbusername` cascades too; `app_users.lbusername` is `SET NULL`. Deleting the login account is separate — `deleteUserCompletely` (`src/server/lib/deleteUser.ts`) removes both sides at once.
 
 The **actor-graph** tables have semantics that aren't obvious from the columns:
 
@@ -162,6 +162,7 @@ Layout notes:
 - `20260502215921_remote_schema.sql` — baseline from `supabase db pull`. Never edit re-creatively; treat as a frozen snapshot. Drop targeted DDL via follow-ups.
 - `20260505013813_add_ag_graph_indexes.sql` — `pg_trgm` extension + reverse-direction edge index + GIN trigram indexes. Required for path-finder + search perf.
 - `20260505015531_drop_ag_acted_in_clone.sql` — drops a dev artifact captured by the initial `db pull`.
+- `20260908020619_add_user_data_cascade_fks.sql` — sweeps orphaned `UserFilms`/`UserRatings` rows, then adds the `ON DELETE CASCADE` FKs to `Users` (via `NOT VALID` + `VALIDATE`) so a profile delete no longer orphans its movie data.
 
 Local: `supabase start`, `supabase status`, `supabase db reset`, `supabase migration new <name>`.
 

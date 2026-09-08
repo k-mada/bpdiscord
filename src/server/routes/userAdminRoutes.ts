@@ -2,7 +2,7 @@ import { Router } from "express";
 
 import { authenticateToken, authorizeAdmin } from "../middleware/auth";
 import { handleValidationErrors } from "../middleware/errorHandler";
-import { validateUUIDParam } from "../middleware/validation";
+import { validateLbusernameParam, validateUUIDParam } from "../middleware/validation";
 import { UserAdminController } from "../controllers/userAdminController";
 
 const router = Router();
@@ -18,6 +18,13 @@ router.put(
   ...validateUUIDParam,
   handleValidationErrors,
   UserAdminController.update,
+);
+
+router.delete(
+  "/by-lbusername/:lbusername",
+  ...validateLbusernameParam,
+  handleValidationErrors,
+  UserAdminController.removeByLbusername,
 );
 
 router.delete(

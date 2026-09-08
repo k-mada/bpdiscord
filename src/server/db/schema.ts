@@ -40,7 +40,9 @@ export const userRatings = pgTable(
   'UserRatings',
   {
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
-    username: varchar('username').notNull(),
+    username: varchar('username')
+      .notNull()
+      .references(() => users.lbusername, { onDelete: 'cascade' }),
     rating: real('rating').notNull(),
     count: integer('count'),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
@@ -61,7 +63,9 @@ export const userFilms = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow(),
     filmSlug: varchar('film_slug').notNull(),
     rating: real('rating'),
-    lbusername: varchar('lbusername').notNull(),
+    lbusername: varchar('lbusername')
+      .notNull()
+      .references(() => users.lbusername, { onDelete: 'cascade' }),
     watched: timestamp('watched', { withTimezone: true }),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
     liked: boolean('liked'),
