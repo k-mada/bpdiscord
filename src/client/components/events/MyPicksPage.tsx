@@ -4,7 +4,9 @@ import { EventData, EventCategory, EventUserPick } from "../../types";
 import { apiService } from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
 import { formatNominee } from "./utils";
+import { buttonVariants } from "../ui/Button";
 import { Notification } from "../ui/Notification";
+import { cn } from "../../lib/utils";
 
 const MyPicksPage = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -101,7 +103,10 @@ const MyPicksPage = () => {
     <div className="max-w-3xl mx-auto px-2 sm:px-4">
       <Link
         to={`/events/${slug}`}
-        className="text-letterboxd-text-muted hover:text-letterboxd-text-primary text-sm mb-4 inline-block"
+        className={cn(
+          buttonVariants({ variant: "ghost" }),
+          "p-0 text-sm mb-4 inline-block",
+        )}
       >
         &larr; Back to event
       </Link>

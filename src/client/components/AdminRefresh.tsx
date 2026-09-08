@@ -1,12 +1,12 @@
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 
 import { useRefreshJob } from "../hooks/useRefreshJob";
 import JobProgress from "./JobProgress";
-import { Button } from "./ui/Button";
+import { Button, buttonVariants } from "./ui/Button";
 import { Notification } from "./ui/Notification";
+import { cn } from "../lib/utils";
 
 const AdminRefresh = () => {
-  const navigate = useNavigate();
   const { job, error, isTriggering, isCancelling, trigger, cancel } =
     useRefreshJob();
 
@@ -16,13 +16,12 @@ const AdminRefresh = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <button
-            type="button"
-            onClick={() => navigate("/dashboard")}
-            className="text-sm text-letterboxd-text-secondary hover:text-letterboxd-accent mb-2"
+          <Link
+            to="/dashboard"
+            className={cn(buttonVariants({ variant: "ghost" }), "p-0 text-sm mb-2")}
           >
             ← Dashboard
-          </button>
+          </Link>
           <h1 className="text-3xl font-bold text-letterboxd-text-primary">
             Refresh user film data
           </h1>

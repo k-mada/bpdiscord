@@ -1,12 +1,13 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { useAccounts } from "../../hooks/useAccounts";
 import { useUnclaimedLbUsernames } from "../../hooks/useUnclaimedLbUsernames";
 import { useAuth } from "../../contexts/AuthContext";
 import { Input } from "../ui/Input";
-import { Button } from "../ui/Button";
+import { Button, buttonVariants } from "../ui/Button";
 import { Modal, ModalBody, ModalHeader } from "../Modal";
+import { cn } from "../../lib/utils";
 import Spinner from "../Spinner";
 import type { AccountUpdateRequest, AccountView } from "../../types";
 import { Notification } from "../ui/Notification";
@@ -68,13 +69,12 @@ const UserAdmin = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <button
-            type="button"
-            onClick={() => navigate("/dashboard")}
-            className="text-sm text-letterboxd-text-secondary hover:text-letterboxd-accent mb-2"
+          <Link
+            to="/dashboard"
+            className={cn(buttonVariants({ variant: "ghost" }), "p-0 text-sm mb-2")}
           >
             ← Dashboard
-          </button>
+          </Link>
           <h1 className="text-3xl font-bold text-letterboxd-text-primary">
             User management
           </h1>
