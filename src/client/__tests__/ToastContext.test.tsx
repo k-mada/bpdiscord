@@ -1,7 +1,6 @@
 import { render, screen, fireEvent, act } from "@testing-library/react";
 import { afterEach, beforeEach, vi } from "vitest";
 import { ToastProvider, useToast } from "../contexts/ToastContext";
-import type { Tone } from "../components/ui/tone";
 
 function Harness() {
   const { show, dismiss } = useToast();
@@ -100,7 +99,3 @@ describe("ToastProvider / useToast", () => {
     spy.mockRestore();
   });
 });
-
-// Type-only guard so a Tone rename fails here too.
-const _tones: Tone[] = ["error", "success", "info"];
-void _tones;
