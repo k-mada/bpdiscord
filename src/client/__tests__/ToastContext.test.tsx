@@ -30,6 +30,10 @@ function setup() {
 
 const click = (label: string) => fireEvent.click(screen.getByText(label));
 const advance = (ms: number) => act(() => vi.advanceTimersByTime(ms));
+// The visual toast is the only thing carrying the dismiss control; the role=status
+// announcement region is persistent, so presence is tracked through the button.
+const toastButton = () =>
+  screen.queryByRole("button", { name: /dismiss notification/i });
 
 beforeEach(() => vi.useFakeTimers());
 afterEach(() => vi.useRealTimers());
@@ -39,13 +43,16 @@ describe("ToastProvider / useToast", () => {
     setup();
     click("show-success");
     expect(screen.getByRole("status")).toHaveTextContent("Saved.");
+    expect(toastButton()).toBeInTheDocument();
   });
 
   it("replaces the current toast rather than stacking", () => {
     setup();
     click("show-success");
     click("show-second");
-    expect(screen.getAllByRole("status")).toHaveLength(1);
+    expect(
+      screen.getAllByRole("button", { name: /dismiss notification/i }),
+    ).toHaveLength(1);
     expect(screen.getByRole("status")).toHaveTextContent("Second.");
   });
 
@@ -53,40 +60,42 @@ describe("ToastProvider / useToast", () => {
     setup();
     click("show-success");
     advance(5000);
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(toastButton()).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
   });
 
   it("keeps an error toast until dismissed", () => {
     setup();
     click("show-error");
     advance(60000);
-    expect(screen.getByRole("alert")).toHaveTextContent("Broke.");
+    expect(screen.getByRole("status")).toHaveTextContent("Broke.");
+    expect(toastButton()).toBeInTheDocument();
   });
 
   it("pauses the auto-dismiss timer while hovered", () => {
     setup();
     click("show-success");
-    const toast = screen.getByRole("status");
+    const toast = toastButton()!.closest("div")!;
     fireEvent.mouseEnter(toast);
     advance(60000);
-    expect(screen.getByRole("status")).toBeInTheDocument();
+    expect(toastButton()).toBeInTheDocument();
     fireEvent.mouseLeave(toast);
     advance(5000);
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(toastButton()).not.toBeInTheDocument();
   });
 
   it("dismisses on the X button", () => {
     setup();
     click("show-success");
-    fireEvent.click(screen.getByRole("button", { name: /dismiss notification/i }));
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    fireEvent.click(toastButton()!);
+    expect(toastButton()).not.toBeInTheDocument();
   });
 
   it("dismisses on Escape", () => {
     setup();
     click("show-success");
     fireEvent.keyDown(document, { key: "Escape" });
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(toastButton()).not.toBeInTheDocument();
   });
 
   it("throws when used outside a provider", () => {

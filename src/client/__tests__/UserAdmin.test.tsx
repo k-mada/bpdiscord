@@ -409,8 +409,8 @@ describe("UserAdmin — delete flow", () => {
     );
 
     // The row is gone, so the confirmation has to live somewhere global.
-    expect(await screen.findByRole("status")).toHaveTextContent(
-      "Account deleted.",
+    await waitFor(() =>
+      expect(screen.getByRole("status")).toHaveTextContent("Account deleted."),
     );
   });
 
@@ -431,9 +431,13 @@ describe("UserAdmin — delete flow", () => {
     );
     await userEvent.click(screen.getByRole("button", { name: "Yes, delete" }));
 
-    // Inline error inside the still-open modal; no global toast.
+    // Inline error inside the still-open modal; no global toast (its persistent
+    // live region stays empty, and no dismiss control is rendered).
     expect(await screen.findByRole("alert")).toHaveTextContent("Delete failed");
-    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
+    expect(
+      screen.queryByRole("button", { name: /dismiss notification/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("disables the delete button when editing your own account", async () => {

@@ -97,6 +97,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={api}>
       {children}
+      {/* Announcing from a region that always exists is reliable where a freshly
+          mounted role=status is not — the same reason MainLayout keeps one. */}
+      <div role="status" aria-atomic="true" className="sr-only">
+        {toast?.message ?? ""}
+      </div>
       <div className="pointer-events-none fixed inset-x-0 top-16 z-50 flex justify-center px-4">
         {toast && (
           <div className="w-full max-w-md">

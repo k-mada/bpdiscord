@@ -1,4 +1,4 @@
-import { ROLE, TONE, type Tone } from "./tone";
+import { TONE, type Tone } from "./tone";
 
 interface ToastNotificationProps {
   tone: Tone;
@@ -18,7 +18,6 @@ export function ToastNotification({
 }: ToastNotificationProps) {
   return (
     <div
-      role={ROLE[tone]}
       className={`animate-slide-down pointer-events-auto flex items-center gap-3 border rounded-lg p-4 text-sm shadow-lg ${TONE[tone]}`}
       onMouseEnter={onPause}
       onMouseLeave={onResume}
@@ -30,7 +29,7 @@ export function ToastNotification({
         type="button"
         onClick={onDismiss}
         aria-label="Dismiss notification"
-        className="shrink-0 -mr-1 rounded p-1 opacity-70 transition-opacity hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-letterboxd-accent"
+        className="shrink-0 -mr-1 rounded p-1 opacity-90 transition-opacity hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-letterboxd-accent"
       >
         <svg
           aria-hidden="true"
