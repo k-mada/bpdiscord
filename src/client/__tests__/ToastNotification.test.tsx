@@ -19,7 +19,7 @@ describe("ToastNotification", () => {
   it("pauses on pointer enter and resumes on leave", async () => {
     const onPause = vi.fn();
     const onResume = vi.fn();
-    const { container } = render(
+    render(
       <ToastNotification
         tone="success"
         message="x"
@@ -28,7 +28,7 @@ describe("ToastNotification", () => {
         onResume={onResume}
       />,
     );
-    const toast = container.firstElementChild as HTMLElement;
+    const toast = screen.getByText("x").parentElement as HTMLElement;
     await userEvent.hover(toast);
     expect(onPause).toHaveBeenCalled();
     await userEvent.unhover(toast);
@@ -36,11 +36,12 @@ describe("ToastNotification", () => {
   });
 
   it("carries a distinct tone per type", () => {
-    const { rerender, container } = render(
+    const toneLayer = () => screen.getByText("x").parentElement!.className;
+    const { rerender } = render(
       <ToastNotification tone="error" message="x" onDismiss={() => {}} />,
     );
-    expect(container.firstElementChild!.className).toContain("text-letterboxd-error");
+    expect(toneLayer()).toContain("text-letterboxd-error");
     rerender(<ToastNotification tone="success" message="x" onDismiss={() => {}} />);
-    expect(container.firstElementChild!.className).toContain("text-letterboxd-success");
+    expect(toneLayer()).toContain("text-letterboxd-success");
   });
 });
