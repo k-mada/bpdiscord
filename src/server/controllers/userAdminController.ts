@@ -4,6 +4,7 @@ import { createSupabaseAdminClient } from "../config/database";
 import { db } from "../db";
 import { appUsers, users, userScrapeJobs } from "../db/schema";
 import { LBUSERNAME_FORMAT, normalizeLbusername } from "../lib/lbusername";
+import { deleteUserCompletely } from "../lib/deleteUser";
 
 // No pagination yet — a response of exactly this many rows logs a warning
 // so we find out before accounts get silently truncated.
@@ -308,36 +309,31 @@ export class UserAdminController {
 
   static async remove(req: Request, res: Response): Promise<void> {
     try {
-      const id = req.params.id!;
-
-      // The cascade would invalidate the admin's own JWT mid-request and lock
-      // them out; self-deletion has to go through Supabase Studio.
-      if (req.user?.id === id) {
-        res.status(400).json({
-          error:
-            "Cannot delete your own account via this endpoint. Use a different admin or the Supabase Studio for self-deletion.",
-        });
-        return;
-      }
-
-      const adminClient = createSupabaseAdminClient();
-      const { error: deleteErr } = await adminClient.auth.admin.deleteUser(id);
-      if (deleteErr) {
-        const code = errorCode(deleteErr);
-        if (code === "user_not_found" || deleteErr.message?.toLowerCase().includes("not found")) {
-          res.status(404).json({ error: "Account not found." });
-          return;
-        }
-        console.error("auth.admin.deleteUser failed:", deleteErr);
-        res.status(500).json({ error: "Failed to delete account." });
-        return;
-      }
-
-      // The app_users row goes via ON DELETE CASCADE. user_scrape_jobs has no
-      // FK on started_by, so its rows persist as audit history.
-      res.status(200).json({ data: { id, deleted: true } });
+      const outcome = await deleteUserCompletely({
+        accountId: req.params.id!,
+        actingUserId: req.user!.id,
+      });
+      res.status(outcome.status).json(outcome.body);
     } catch (err) {
       console.error("Admin delete error:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+
+  static async removeByLbusername(req: Request, res: Response): Promise<void> {
+    try {
+      const lbusername = normalizeLbusername(req.params.lbusername);
+      if (lbusername === undefined || !LBUSERNAME_FORMAT.test(lbusername)) {
+        res.status(400).json({ error: "Invalid lbusername format." });
+        return;
+      }
+      const outcome = await deleteUserCompletely({
+        lbusername,
+        actingUserId: req.user!.id,
+      });
+      res.status(outcome.status).json(outcome.body);
+    } catch (err) {
+      console.error("Admin delete-by-lbusername error:", err);
       res.status(500).json({ error: "Internal server error" });
     }
   }

@@ -38,6 +38,14 @@ export const validateUUIDParam: ValidationChain[] = [
     .withMessage('Invalid ID format — expected a UUID')
 ];
 
+// Permissive on case — the controller lowercases via normalizeLbusername
+// before matching the stored (lowercase) profile key.
+export const validateLbusernameParam: ValidationChain[] = [
+  param('lbusername')
+    .matches(/^[A-Za-z0-9_-]{2,15}$/)
+    .withMessage('Invalid lbusername format'),
+];
+
 // No .toInt(): it would mutate req.params to a number while Express still
 // types it string, and a type lie is worse than parsing in the controller.
 export const validateIntParam = (name: string): ValidationChain[] => [
