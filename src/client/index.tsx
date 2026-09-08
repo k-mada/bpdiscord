@@ -4,6 +4,7 @@ import "./index.css";
 import App from "./App";
 import { AuthProvider } from "./contexts/AuthContext";
 import { DialogProvider } from "./contexts/DialogContext";
+import { ToastProvider } from "./contexts/ToastContext";
 import { Analytics } from "@vercel/analytics/react";
 
 const root = ReactDOM.createRoot(
@@ -13,9 +14,11 @@ root.render(
   <React.StrictMode>
     <Analytics />
     <AuthProvider>
-      <DialogProvider>
-        <App />
-      </DialogProvider>
+      <ToastProvider>
+        <DialogProvider>
+          <App />
+        </DialogProvider>
+      </ToastProvider>
     </AuthProvider>
   </React.StrictMode>,
 );

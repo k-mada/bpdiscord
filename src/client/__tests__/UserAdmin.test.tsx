@@ -6,6 +6,7 @@ import UserAdmin from "../components/admin/UserAdmin";
 import apiService from "../services/api";
 import { AuthProvider } from "../contexts/AuthContext";
 import { DialogProvider } from "../contexts/DialogContext";
+import { ToastProvider } from "../contexts/ToastContext";
 import type { AccountView, CurrentUser } from "../types";
 import { installFakeLocalStorage } from "./helpers/localStorage";
 import { futureJwt } from "./helpers/jwt";
@@ -71,11 +72,13 @@ const allLetterboxdUsers = [
 function renderPage() {
   return render(
     <AuthProvider>
-      <DialogProvider>
-        <MemoryRouter>
-          <UserAdmin />
-        </MemoryRouter>
-      </DialogProvider>
+      <ToastProvider>
+        <DialogProvider>
+          <MemoryRouter>
+            <UserAdmin />
+          </MemoryRouter>
+        </DialogProvider>
+      </ToastProvider>
     </AuthProvider>,
   );
 }
@@ -404,6 +407,33 @@ describe("UserAdmin — delete flow", () => {
     await waitFor(() =>
       expect(screen.queryByText("bob@example.com")).not.toBeInTheDocument(),
     );
+
+    // The row is gone, so the confirmation has to live somewhere global.
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Account deleted.",
+    );
+  });
+
+  it("shows no confirmation toast when the delete fails", async () => {
+    vi.mocked(apiService.deleteAccount).mockRejectedValue(
+      new Error("Delete failed"),
+    );
+
+    renderPage();
+    await waitFor(() =>
+      expect(screen.getByText("bob@example.com")).toBeInTheDocument(),
+    );
+
+    const bobRow = screen.getByText("bob@example.com").closest("tr")!;
+    await userEvent.click(within(bobRow).getByRole("button", { name: "Edit" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Delete account" }),
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Yes, delete" }));
+
+    // Inline error inside the still-open modal; no global toast.
+    expect(await screen.findByRole("alert")).toHaveTextContent("Delete failed");
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
   it("disables the delete button when editing your own account", async () => {
