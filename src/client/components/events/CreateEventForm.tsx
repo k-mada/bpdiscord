@@ -72,12 +72,13 @@ const CreateEventForm = ({ token, onSuccess, onCancel }: CreateEventFormProps) =
 
   return (
     <div className="max-w-2xl mx-auto px-2 sm:px-4">
-      <button
+      <Button
+        variant="ghost"
         onClick={onCancel}
-        className="text-letterboxd-text-muted hover:text-letterboxd-text-primary text-sm mb-4"
+        className="p-0 text-sm mb-4"
       >
         &larr; Back
-      </button>
+      </Button>
       <h2
         className="text-2xl font-bold text-letterboxd-text-primary mb-6"
         style={{ fontFamily: "'Playfair Display', serif" }}
