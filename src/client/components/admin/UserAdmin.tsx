@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useAccounts } from "../../hooks/useAccounts";
 import { useUnclaimedLbUsernames } from "../../hooks/useUnclaimedLbUsernames";
 import { useAuth } from "../../contexts/AuthContext";
+import { useToast } from "../../contexts/ToastContext";
 import { Input } from "../ui/Input";
 import { Button, buttonVariants } from "../ui/Button";
 import { Modal, ModalBody, ModalHeader } from "../Modal";
@@ -28,6 +29,7 @@ const formatDate = (iso: string | null): string => {
 const UserAdmin = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading, logout } = useAuth();
+  const { show: showToast } = useToast();
   const [editing, setEditing] = useState<AccountView | null>(null);
 
   const isAdmin = user?.role === "admin";
@@ -195,6 +197,7 @@ const UserAdmin = () => {
           onDelete={async () => {
             await remove(editing.id);
             setEditing(null);
+            showToast({ tone: "success", message: "Account deleted." });
           }}
         />
       )}

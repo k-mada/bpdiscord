@@ -5,7 +5,6 @@ import { documentTitleForPath, titleForPath } from "./routeTitles";
 
 const MAIN_ID = "main-content";
 
-// TODO: ADD CONFIRMATION TOAST
 const MainLayout = () => {
   const { pathname } = useLocation();
   const [announcement, setAnnouncement] = useState("");

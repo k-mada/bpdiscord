@@ -380,6 +380,21 @@ layer(base);
   animation: slideUp 0.25s ease-out;
 }
 
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-slide-down {
+  animation: slideDown 0.25s ease-out;
+}
+
 @keyframes bar-grow {
   from {
     width: 0;
@@ -392,7 +407,8 @@ layer(base);
 
 @media (prefers-reduced-motion: reduce) {
   .bar-grow,
-  .animate-slide-up {
+  .animate-slide-up,
+  .animate-slide-down {
     animation: none;
   }
 
