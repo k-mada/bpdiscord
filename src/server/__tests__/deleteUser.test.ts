@@ -219,4 +219,28 @@ describe("deleteUserCompletely", () => {
     expect(await countProfileRows("lb_partial")).toBe(0);
     errSpy.mockRestore();
   });
+
+  it("502 partial when the auth SDK throws (not just returns an error)", async () => {
+    await seedAuthUser(TARGET_ID, "deleteuser-test-throw@example.test");
+    await seedProfile("lb_throw");
+    await db.insert(appUsers).values({ id: TARGET_ID, lbusername: "lb_throw" });
+    const deleteUser = vi.fn(async () => {
+      throw new Error("network down");
+    });
+    vi.mocked(createSupabaseAdminClient).mockReturnValue({
+      auth: { admin: { deleteUser } },
+    } as never);
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    const out = await deleteUserCompletely({
+      lbusername: "lb_throw",
+      actingUserId: ADMIN_ID,
+    });
+
+    expect(out.status).toBe(502);
+    const data = (out.body as { data: Record<string, unknown> }).data;
+    expect(data).toMatchObject({ profileDeleted: true, accountDeleted: false });
+    expect(await countProfileRows("lb_throw")).toBe(0);
+    errSpy.mockRestore();
+  });
 });

@@ -33,19 +33,18 @@ function errorCode(e: unknown): string | undefined {
 }
 
 /**
- * Delete a user completely: the Letterboxd profile ("Users") and all of its
- * movie data (UserFilms / UserRatings / MFLUserPicks) AND the linked login
- * (auth.users, which cascades app_users). Films / FilmRatings are shared
- * aggregates and are kept.
+ * Delete a user completely: the Letterboxd profile ("Users") and its movie data
+ * (UserFilms / UserRatings / MFLUserPicks) AND the linked login (auth.users,
+ * which cascades app_users). Shared aggregates (Films / FilmRatings) are kept.
  *
- * Handles all three states — claimed (both sides), unclaimed profile (data
- * only), and login-only (account only) — resolving whichever identifier is
- * missing through app_users.
+ * Handles all three states — claimed, unclaimed profile, login-only — resolving
+ * the missing identifier through app_users.
  *
- * Not one atomic transaction: the profile+data delete runs in a Postgres
- * transaction, then the auth account is deleted through the Supabase admin SDK
- * (a separate system). Ordered DB-first so a failed auth delete leaves a
- * retryable state — re-invoking with the same identifier finishes the job.
+ * Two systems, not one atomic transaction: DB profile+data first, then the auth
+ * account via the Supabase admin SDK. DB-first so a failed auth delete leaves a
+ * retryable 502 — but only a retry by `accountId` finishes it, since deleting
+ * the profile SET-NULLs app_users.lbusername and the lbusername no longer
+ * resolves the account.
  */
 export async function deleteUserCompletely(
   input: DeleteUserInput,
@@ -58,7 +57,7 @@ export async function deleteUserCompletely(
     return { status: 400, body: { error: "An account id or lbusername is required." } };
   }
 
-  // Resolve the missing identifier through app_users so we act on both sides.
+  // Resolve the missing identifier through app_users.
   let accountId = accountIdArg;
   let lbusername = lbusernameArg;
 
@@ -78,8 +77,8 @@ export async function deleteUserCompletely(
     accountId = row[0]?.id ?? null;
   }
 
-  // Self-delete guard: cascading the acting admin's own account invalidates
-  // their in-flight JWT mid-request. Blocked for everyone (bpdiscord-xng).
+  // Self-delete would cascade the admin's own account and kill their in-flight
+  // JWT. Blocked for everyone (bpdiscord-xng).
   if (accountId !== null && accountId === actingUserId) {
     return {
       status: 400,
@@ -90,8 +89,8 @@ export async function deleteUserCompletely(
     };
   }
 
-  // Children deleted explicitly (not left to the FK cascade) so the counts are
-  // exact and the routine works whether or not the cascade migration is applied.
+  // Delete children explicitly (not via cascade) for exact counts, and so this
+  // works whether or not the migration is applied.
   const counts: DeletionCounts = { userFilms: 0, userRatings: 0, mflPicks: 0, profile: 0 };
   if (lbusername !== null) {
     await db.transaction(async (tx) => {
@@ -121,35 +120,38 @@ export async function deleteUserCompletely(
 
   const profileDeleted = counts.profile > 0;
 
+  // Profile is already gone; surface the partial state so a retry-by-accountId
+  // can finish the job.
+  const partial502: DeleteUserOutcome = {
+    status: 502,
+    body: {
+      error: "Deleted the profile and its data, but failed to delete the login account.",
+      data: { lbusername, accountId, profileDeleted, accountDeleted: false, counts },
+    },
+  };
+
   // Auth account (cascades app_users). Skipped for unclaimed profiles.
   let accountDeleted = false;
   if (accountId !== null) {
-    const admin = createSupabaseAdminClient();
-    const { error } = await admin.auth.admin.deleteUser(accountId);
-    if (error) {
-      const notFound =
-        errorCode(error) === "user_not_found" ||
-        error.message?.toLowerCase().includes("not found");
-      if (!notFound) {
-        console.error("auth.admin.deleteUser failed during account delete:", error);
-        // DB-first ordering means the profile is already gone; report the
-        // partial state so the admin can retry (idempotent).
-        return {
-          status: 502,
-          body: {
-            error: "Deleted the profile and its data, but failed to delete the login account.",
-            data: {
-              lbusername,
-              accountId,
-              profileDeleted,
-              accountDeleted: false,
-              counts,
-            },
-          },
-        };
+    try {
+      const admin = createSupabaseAdminClient();
+      const { error } = await admin.auth.admin.deleteUser(accountId);
+      if (error) {
+        const notFound =
+          errorCode(error) === "user_not_found" ||
+          error.message?.toLowerCase().includes("not found");
+        if (!notFound) {
+          console.error("auth.admin.deleteUser failed during account delete:", error);
+          return partial502;
+        }
+      } else {
+        accountDeleted = true;
       }
-    } else {
-      accountDeleted = true;
+    } catch (authErr) {
+      // A throw (network, or a missing service-role key) is the same partial
+      // state as a returned error — don't let it surface as a generic 500.
+      console.error("auth.admin.deleteUser threw during account delete:", authErr);
+      return partial502;
     }
   }
 
