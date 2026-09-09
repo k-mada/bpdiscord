@@ -1,10 +1,7 @@
 import { test, expect } from "@playwright/test";
 
-// Modal is the largest behavioural surface in the client — focus trap, dialog
-// stack, background inert, focus restore — and jsdom implements neither inert
-// nor real focus semantics, so its __tests__ twin cannot see any of it. The
-// harness renders without StrictMode (harness/modal/modal.tsx), so this
-// exercises the production focus path, not dev's double-invoke (bpdiscord-6gh).
+// Focus trap, background inert, and focus restore need a real browser — jsdom
+// has neither inert nor real focus semantics, so no __tests__ twin sees them.
 
 const HARNESS = "/e2e/harness/modal/";
 const PANEL = '[role="dialog"]';
@@ -28,8 +25,8 @@ test("opening moves focus into the panel", async ({ page }) => {
   await expect(panel).toBeFocused();
 });
 
-// The trap only matters at the ends; between them Tab is native. First
-// focusable is the header Close button, last is the final body control.
+// Trap fires only at the ends; between them Tab is native. First focusable is
+// the header Close button, last the final body control.
 test("Tab wraps forward at the last control and backward at the first", async ({
   page,
 }) => {
@@ -70,8 +67,7 @@ test("the background is inert while open and interactive after close", async ({
   expect(await backgroundIsInert(page)).toBe(false);
 });
 
-// The complement to inert: no Tab sweep, however long, escapes onto the
-// background trigger sealed behind [inert].
+// Complement to inert: no Tab sweep reaches the trigger sealed behind [inert].
 test("a background control cannot be reached by Tab while the dialog is open", async ({
   page,
 }) => {

@@ -4,8 +4,7 @@ import { DialogProvider } from "../../../contexts/DialogContext";
 import { Modal, ModalHeader, ModalBody } from "../../../components/Modal";
 import "../../../index.css";
 
-// No StrictMode: effects run once, so the harness exercises the production
-// focus path rather than dev's double-invoke (bpdiscord-6gh).
+// No StrictMode: effects run once (production path), not dev's double-invoke.
 const App = () => {
   const [open, setOpen] = useState(false);
   return (

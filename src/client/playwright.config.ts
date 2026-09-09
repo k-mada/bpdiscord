@@ -15,8 +15,8 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    // Dev server, but every harness entry renders without StrictMode, so effects
-    // run once and the suite tests the production focus path, not dev's double-invoke.
+    // Dev server, but harnesses render without StrictMode, so effects run once —
+    // the suite tests the production focus path, not dev's double-invoke.
     command: "yarn vite --port 5174 --strictPort",
     url: `${ORIGIN}/e2e/harness/`,
     reuseExistingServer: !process.env["CI"],
