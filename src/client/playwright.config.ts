@@ -15,10 +15,12 @@ export default defineConfig({
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   webServer: {
-    // BROWSER=none stops vite's `open: true` launching a real window mid-run.
+    // Dev server, but every harness entry renders without StrictMode, so effects
+    // run once and the suite tests the production focus path, not dev's double-invoke.
     command: "yarn vite --port 5174 --strictPort",
     url: `${ORIGIN}/e2e/harness/`,
     reuseExistingServer: !process.env["CI"],
+    // BROWSER=none stops vite's `open: true` launching a real window mid-run.
     env: { BROWSER: "none" },
     timeout: 120_000,
   },
