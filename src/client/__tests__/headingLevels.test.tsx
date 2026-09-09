@@ -18,8 +18,8 @@ vi.mock("../hooks/useTopFilmsByYear", () => ({
 vi.mock("../hooks/useRatingsDistribution", () => ({
   useRatingsDistribution: () => ({ data: [], loading: false, error: null }),
 }));
-vi.mock("../hooks/useRatingDifferential", () => ({
-  useRatingDifferential: () => ({
+vi.mock("../hooks/useRatingDeviation", () => ({
+  useRatingDeviation: () => ({
     over: [],
     under: [],
     loading: false,
@@ -85,7 +85,7 @@ describe("heading hierarchy", () => {
       </MemoryRouter>,
     );
 
-    expectNoSkippedLevels(8);
+    expectNoSkippedLevels(6);
   });
 
   it("starts Dashboard at h1 and skips no level", () => {

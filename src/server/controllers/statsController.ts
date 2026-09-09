@@ -4,7 +4,7 @@ import {
   dbGetAllUserFilms,
   dbGetUserFilmsCount,
   dbGetMissingFilms,
-  dbGetRatingDifferentialExtremes,
+  dbGetRatingDeviationExtremes,
   dbGetTopUserFilms,
   TopUserFilmsOrder,
 } from "./dataController";
@@ -79,12 +79,13 @@ export async function getTopFilmsByYear(
   });
 }
 
-export async function getRatingDifferential(
+export async function getRatingDeviation(
   req: Request,
   res: Response,
 ): Promise<void> {
-  // Same 20-all-time / 5-per-year floor as getTopFilmsByYear so a single
-  // enthusiastic rating can't top the over/under-performer lists.
+  // 20 all-time / 10 per-year: a raw extremum with no confidence weighting is
+  // the most noise-prone thing on the page, so it carries a higher floor than
+  // the Bayesian-weighted top-films lists (which use 5 per-year).
   let year: number | undefined;
   if (req.params.year !== undefined) {
     year = Number(req.params.year);
@@ -94,9 +95,9 @@ export async function getRatingDifferential(
     }
   }
 
-  const result = await dbGetRatingDifferentialExtremes({
+  const result = await dbGetRatingDeviationExtremes({
     ...(year !== undefined ? { year } : {}),
-    minRatings: year !== undefined ? 5 : 20,
+    minRatings: year !== undefined ? 10 : 20,
   });
 
   if (!result.success) {

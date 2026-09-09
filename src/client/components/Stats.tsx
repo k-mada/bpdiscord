@@ -1,11 +1,11 @@
 import { useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import RatingDistributionHistogram from "./RatingDistributionHistogram";
-import RatingPerformanceExtremes from "./RatingPerformanceExtremes";
+import RatingDeviations from "./RatingDeviations";
 import UserFilmsCount from "./UserFilmsCount";
 import { useRatingsDistribution } from "../hooks/useRatingsDistribution";
 import { useTopFilmsByYear } from "../hooks/useTopFilmsByYear";
-import { useRatingDifferential } from "../hooks/useRatingDifferential";
+import { useRatingDeviation } from "../hooks/useRatingDeviation";
 import Spinner from "./Spinner";
 import MovieBarChart from "./MovieBarChart";
 import { cn } from "../lib/utils";
@@ -46,8 +46,13 @@ const Dashboard = () => {
   const {
     over,
     under,
-    loading: diffLoading,
-  } = useRatingDifferential(selectedYear);
+    loading: deviationLoading,
+  } = useRatingDeviation(selectedYear);
+
+  // Mirror the top-films spinner: only block on the very first fetch, keep the
+  // cards mounted (dimmed) while a new year loads.
+  const deviationInitialLoad =
+    deviationLoading && over.length === 0 && under.length === 0;
 
   const years: number[] = [];
   for (let y = currentYear; y >= FIRST_YEAR; y--) years.push(y);
@@ -68,10 +73,6 @@ const Dashboard = () => {
     selectedYear === null
       ? "No watched films yet."
       : `No films released in ${selectedYear} watched yet.`;
-  const differentialHeading =
-    selectedYear === null
-      ? "Where our taste diverges from Letterboxd"
-      : `Where our taste diverges from Letterboxd (${selectedYear})`;
 
   // Keep the lists mounted (dimmed) while a new year loads to avoid a layout
   // jump; only show the full-page spinner before the first results arrive.
@@ -142,6 +143,21 @@ const Dashboard = () => {
             </option>
           ))}
         </select>
+      </div>
+
+      <h2 className="subheading max-md:text-base">Our biggest deviations</h2>
+      <div className="mb-8">
+        {deviationInitialLoad ? (
+          <div className="flex justify-center">
+            <Spinner />
+          </div>
+        ) : (
+          <RatingDeviations
+            over={over}
+            under={under}
+            loading={deviationLoading}
+          />
+        )}
       </div>
 
       {error ? (
@@ -223,13 +239,6 @@ const Dashboard = () => {
               />
             </div>
           </div>
-
-          <h2 className="subheading max-md:text-base mt-8">{differentialHeading}</h2>
-          <RatingPerformanceExtremes
-            over={over}
-            under={under}
-            loading={diffLoading}
-          />
         </>
       )}
     </div>

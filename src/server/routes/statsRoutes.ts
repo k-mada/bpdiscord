@@ -6,7 +6,7 @@ import {
   getAllUserFilms,
   getUserFilmsCount,
   getMissingFilms,
-  getRatingDifferential,
+  getRatingDeviation,
   getTopFilmsByYear,
 } from "../controllers/statsController";
 
@@ -42,9 +42,9 @@ router.get(
 // Optional param, same Express-4 `:year?` shape as /top-films: bare → all-time,
 // /:year → films released that year.
 router.get(
-  "/rating-differential/:year?",
+  "/rating-deviation/:year?",
   [statsLimiter, handleValidationErrors],
-  getRatingDifferential,
+  getRatingDeviation,
 );
 
 router.get(

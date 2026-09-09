@@ -5,7 +5,7 @@ import {
   AuthResponse,
   MovieSwapResult,
   FilmDetail,
-  RatingDifferentialResponse,
+  RatingDeviationResponse,
 } from "../../shared/types";
 import { ApiError } from "../lib/apiError";
 import {
@@ -239,12 +239,12 @@ class ApiService {
 
   // Films our users rate furthest above / below the Letterboxd average. Omit
   // `year` for all-time; pass a year to scope to that release year.
-  async getRatingDifferential(
+  async getRatingDeviation(
     year?: number,
     signal?: AbortSignal,
-  ): Promise<ApiResponse<RatingDifferentialResponse>> {
-    return this.request<RatingDifferentialResponse>(
-      `/stats/rating-differential${year ? `/${year}` : ""}`,
+  ): Promise<ApiResponse<RatingDeviationResponse>> {
+    return this.request<RatingDeviationResponse>(
+      `/stats/rating-deviation${year ? `/${year}` : ""}`,
       signal ? { signal } : {},
     );
   }

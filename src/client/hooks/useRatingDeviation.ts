@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { apiService } from "../services/api";
-import type { RatingDifferentialFilm } from "../../shared/types";
+import type { RatingDeviationFilm } from "../../shared/types";
 
-type Extremes = { over: RatingDifferentialFilm[]; under: RatingDifferentialFilm[] };
+type Extremes = { over: RatingDeviationFilm[]; under: RatingDeviationFilm[] };
 
 const EMPTY: Extremes = { over: [], under: [] };
 
@@ -11,7 +11,7 @@ const EMPTY: Extremes = { over: [], under: [] };
  * release year. Pass `null` for all-time (no year filter). Keeps the previous
  * results visible while a new year loads so the section doesn't flash empty.
  */
-export const useRatingDifferential = (year: number | null) => {
+export const useRatingDeviation = (year: number | null) => {
   const [data, setData] = useState<Extremes>(EMPTY);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,9 +21,9 @@ export const useRatingDifferential = (year: number | null) => {
     setLoading(true);
     setError(null);
 
-    async function fetchDifferential() {
+    async function fetchDeviation() {
       try {
-        const response = await apiService.getRatingDifferential(
+        const response = await apiService.getRatingDeviation(
           year ?? undefined,
           ac.signal,
         );
@@ -35,13 +35,13 @@ export const useRatingDifferential = (year: number | null) => {
         setData({ over: response.data.over, under: response.data.under });
       } catch (e) {
         if (e instanceof DOMException && e.name === "AbortError") return;
-        setError("Failed to load rating differential");
+        setError("Failed to load rating deviation");
       } finally {
         if (!ac.signal.aborted) setLoading(false);
       }
     }
 
-    fetchDifferential();
+    fetchDeviation();
 
     return () => ac.abort();
   }, [year]);

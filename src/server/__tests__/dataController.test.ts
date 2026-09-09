@@ -965,7 +965,7 @@ describe('dbGetTopUserFilms — highest-rated membership gate', () => {
 });
 
 // Owns the whole rating population so the extremes are deterministic.
-describe('dbGetRatingDifferentialExtremes', () => {
+describe('dbGetRatingDeviationExtremes', () => {
   beforeAll(async () => {
     await cleanDatabase();
     await db.insert(users).values([
@@ -982,6 +982,8 @@ describe('dbGetRatingDifferentialExtremes', () => {
       { filmSlug: 'diff-null', title: 'NoLb', lbRating: null, releaseYear: 2020 },
       { filmSlug: 'diff-lowsample', title: 'Lonely', lbRating: 1.0, releaseYear: 2020 },
       { filmSlug: 'diff-zeros', title: 'Zeros', lbRating: 3.0, releaseYear: 2001 },
+      { filmSlug: 'neg-a', title: 'Neg A', lbRating: 4.0, releaseYear: 2011 },
+      { filmSlug: 'neg-b', title: 'Neg B', lbRating: 4.5, releaseYear: 2011 },
       { filmSlug: 'tie-a', title: 'Tie A', lbRating: 3.0, releaseYear: 2005 },
       { filmSlug: 'tie-b', title: 'Tie B', lbRating: 3.0, releaseYear: 2005 },
       { filmSlug: 'tie-c', title: 'Tie C', lbRating: 3.0, releaseYear: 2005 },
@@ -999,6 +1001,8 @@ describe('dbGetRatingDifferentialExtremes', () => {
     rows.push({ filmSlug: 'diff-zeros', lbusername: 'du2', rating: 4.0 });
     rows.push({ filmSlug: 'diff-zeros', lbusername: 'du3', rating: 0 }); // unrated
     rows.push({ filmSlug: 'diff-zeros', lbusername: 'du4', rating: 0 }); // unrated
+    du.forEach((u) => rows.push({ filmSlug: 'neg-a', lbusername: u, rating: 3.5 })); // dev -0.5
+    du.forEach((u) => rows.push({ filmSlug: 'neg-b', lbusername: u, rating: 3.0 })); // dev -1.5
     ['tie-a', 'tie-b', 'tie-c', 'tie-d'].forEach((f) =>
       du.forEach((u) => rows.push({ filmSlug: f, lbusername: u, rating: 4.0 })),
     );
@@ -1010,7 +1014,7 @@ describe('dbGetRatingDifferentialExtremes', () => {
   });
 
   it('returns the most over- and under-performing film with the right sign, discord-scoped', async () => {
-    const { data } = await dc.dbGetRatingDifferentialExtremes({
+    const { data } = await dc.dbGetRatingDeviationExtremes({
       year: 2020,
       minRatings: 2,
     });
@@ -1022,15 +1026,15 @@ describe('dbGetRatingDifferentialExtremes', () => {
     });
     // 4.0, not 4.2 — the non-discord 5.0 rating is excluded.
     expect(data!.over[0]!.average_rating).toBeCloseTo(4.0, 2);
-    expect(data!.over[0]!.differential).toBeCloseTo(1.0, 2);
+    expect(data!.over[0]!.deviation).toBeCloseTo(1.0, 2);
 
     expect(data!.under).toHaveLength(1);
     expect(data!.under[0]!.film_slug).toBe('diff-under');
-    expect(data!.under[0]!.differential).toBeCloseTo(-1.5, 2);
+    expect(data!.under[0]!.deviation).toBeCloseTo(-1.5, 2);
   });
 
   it('excludes films with no Letterboxd rating and films below the minRatings gate', async () => {
-    const { data } = await dc.dbGetRatingDifferentialExtremes({
+    const { data } = await dc.dbGetRatingDeviationExtremes({
       year: 2020,
       minRatings: 2,
     });
@@ -1040,16 +1044,16 @@ describe('dbGetRatingDifferentialExtremes', () => {
   });
 
   it('lets a low-sample film win once the gate is lowered', async () => {
-    const { data } = await dc.dbGetRatingDifferentialExtremes({
+    const { data } = await dc.dbGetRatingDeviationExtremes({
       year: 2020,
       minRatings: 1,
     });
     expect(data!.over[0]!.film_slug).toBe('diff-lowsample');
-    expect(data!.over[0]!.differential).toBeCloseTo(4.0, 2);
+    expect(data!.over[0]!.deviation).toBeCloseTo(4.0, 2);
   });
 
   it('ignores 0-rated (unwatched) rows when averaging', async () => {
-    const { data } = await dc.dbGetRatingDifferentialExtremes({
+    const { data } = await dc.dbGetRatingDeviationExtremes({
       year: 2001,
       minRatings: 2,
     });
@@ -1057,15 +1061,27 @@ describe('dbGetRatingDifferentialExtremes', () => {
     // them gives 4.0 (diff +1.0).
     expect(data!.over[0]!.film_slug).toBe('diff-zeros');
     expect(data!.over[0]!.average_rating).toBeCloseTo(4.0, 2);
-    expect(data!.over[0]!.differential).toBeCloseTo(1.0, 2);
+    expect(data!.over[0]!.deviation).toBeCloseTo(1.0, 2);
   });
 
   it('returns up to 3 films tied at the extreme, capped at 3', async () => {
-    const { data } = await dc.dbGetRatingDifferentialExtremes({
+    const { data } = await dc.dbGetRatingDeviationExtremes({
       year: 2005,
       minRatings: 2,
     });
     expect(data!.over).toHaveLength(3);
-    data!.over.forEach((f) => expect(f.differential).toBeCloseTo(1.0, 2));
+    data!.over.forEach((f) => expect(f.deviation).toBeCloseTo(1.0, 2));
+  });
+
+  it('leaves the over side empty when no film beat its Letterboxd average', async () => {
+    // 2011 holds only under-performers; the sign gate keeps the least-negative
+    // film out of `over` rather than surfacing it as an over-performer.
+    const { data } = await dc.dbGetRatingDeviationExtremes({
+      year: 2011,
+      minRatings: 2,
+    });
+    expect(data!.over).toHaveLength(0);
+    expect(data!.under[0]!.film_slug).toBe('neg-b');
+    expect(data!.under[0]!.deviation).toBeCloseTo(-1.5, 2);
   });
 });

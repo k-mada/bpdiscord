@@ -46,21 +46,22 @@ export interface FilmDetail {
   ratings: FilmRater[];
 }
 
-// GET /api/stats/rating-differential[/:year]. `differential` is
+// GET /api/stats/rating-deviation[/:year]. `deviation` is
 // `average_rating - lb_rating` (positive = we rate it above Letterboxd).
-export interface RatingDifferentialFilm {
+// `over` holds only positive-deviation films, `under` only negative.
+export interface RatingDeviationFilm {
   film_slug: string;
   title: string;
   average_rating: number;
   lb_rating: number;
-  differential: number;
+  deviation: number;
   rating_count: number;
 }
 
-export interface RatingDifferentialResponse {
+export interface RatingDeviationResponse {
   year: number | null;
-  over: RatingDifferentialFilm[];
-  under: RatingDifferentialFilm[];
+  over: RatingDeviationFilm[];
+  under: RatingDeviationFilm[];
 }
 
 export interface User {

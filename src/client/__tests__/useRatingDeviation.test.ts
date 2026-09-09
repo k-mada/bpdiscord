@@ -1,26 +1,26 @@
 import { renderHook, waitFor } from "@testing-library/react";
-import { useRatingDifferential } from "../hooks/useRatingDifferential";
+import { useRatingDeviation } from "../hooks/useRatingDeviation";
 import { apiService } from "../services/api";
-import type { RatingDifferentialFilm } from "../../shared/types";
+import type { RatingDeviationFilm } from "../../shared/types";
 
 vi.mock("../services/api", () => ({
   apiService: {
-    getRatingDifferential: vi.fn(),
+    getRatingDeviation: vi.fn(),
   },
 }));
 
-const mockGet = vi.mocked(apiService.getRatingDifferential);
+const mockGet = vi.mocked(apiService.getRatingDeviation);
 
-const film = (slug: string, differential: number): RatingDifferentialFilm => ({
+const film = (slug: string, deviation: number): RatingDeviationFilm => ({
   film_slug: slug,
   title: slug,
   average_rating: 4,
-  lb_rating: 4 - differential,
-  differential,
+  lb_rating: 4 - deviation,
+  deviation,
   rating_count: 20,
 });
 
-describe("useRatingDifferential", () => {
+describe("useRatingDeviation", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
@@ -30,7 +30,7 @@ describe("useRatingDifferential", () => {
       data: { year: null, over: [film("a", 0.4)], under: [film("b", -0.5)] },
     });
 
-    const { result } = renderHook(() => useRatingDifferential(null));
+    const { result } = renderHook(() => useRatingDeviation(null));
 
     await waitFor(() => expect(result.current.loading).toBe(false));
     expect(mockGet).toHaveBeenCalledWith(undefined, expect.any(AbortSignal));
@@ -42,7 +42,7 @@ describe("useRatingDifferential", () => {
   it("scopes to the given year", async () => {
     mockGet.mockResolvedValue({ data: { year: 2021, over: [], under: [] } });
 
-    renderHook(() => useRatingDifferential(2021));
+    renderHook(() => useRatingDeviation(2021));
 
     await waitFor(() =>
       expect(mockGet).toHaveBeenCalledWith(2021, expect.any(AbortSignal)),
@@ -52,7 +52,7 @@ describe("useRatingDifferential", () => {
   it("sets an error when the payload has no data (controller 200 success:false)", async () => {
     mockGet.mockResolvedValue({ error: "db down" });
 
-    const { result } = renderHook(() => useRatingDifferential(null));
+    const { result } = renderHook(() => useRatingDeviation(null));
 
     await waitFor(() => expect(result.current.error).not.toBeNull());
     expect(result.current.over).toHaveLength(0);
@@ -61,7 +61,7 @@ describe("useRatingDifferential", () => {
   it("sets an error when the request rejects", async () => {
     mockGet.mockRejectedValue(new Error("boom"));
 
-    const { result } = renderHook(() => useRatingDifferential(null));
+    const { result } = renderHook(() => useRatingDeviation(null));
 
     await waitFor(() => expect(result.current.error).not.toBeNull());
   });
@@ -69,7 +69,7 @@ describe("useRatingDifferential", () => {
   it("refetches when the year changes", async () => {
     mockGet.mockResolvedValue({ data: { year: null, over: [], under: [] } });
 
-    const { rerender } = renderHook(({ y }) => useRatingDifferential(y), {
+    const { rerender } = renderHook(({ y }) => useRatingDeviation(y), {
       initialProps: { y: null as number | null },
     });
 

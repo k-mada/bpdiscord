@@ -7,6 +7,7 @@ import {
   isNotNull,
   notInArray,
   sql,
+  type SQL,
 } from "drizzle-orm";
 import { db } from "../db";
 import {
@@ -40,7 +41,7 @@ import {
 import {
   FilmDetail,
   FilmRater,
-  RatingDifferentialFilm,
+  RatingDeviationFilm,
   SwapFilm,
 } from "../../shared/types";
 
@@ -802,13 +803,13 @@ export async function dbGetTopUserFilms(
   });
 }
 
-export async function dbGetRatingDifferentialExtremes(
+export async function dbGetRatingDeviationExtremes(
   options: { year?: number; minRatings?: number } = {},
 ): Promise<{
   success: boolean;
   data?: {
-    over: RatingDifferentialFilm[];
-    under: RatingDifferentialFilm[];
+    over: RatingDeviationFilm[];
+    under: RatingDeviationFilm[];
   };
   error?: string;
 }> {
@@ -817,20 +818,24 @@ export async function dbGetRatingDifferentialExtremes(
 
   return dbOperation(async () => {
     const ratingCount = sql<number>`COUNT(*)::int`;
-    const averageRating = sql`ROUND(AVG(${userFilms.rating})::numeric, 2)`;
-    const differential = sql`ROUND((AVG(${userFilms.rating}) - ${films.lbRating})::numeric, 2)`;
+    const avgRounded = sql`ROUND(AVG(${userFilms.rating})::numeric, 2)`;
+    const lbRounded = sql`ROUND(${films.lbRating}::numeric, 2)`;
+    // Deviation is the difference of the two rounded values shown to the user,
+    // so the badge always equals (our average − LB average) to the cent.
+    const deviation = sql`(${avgRounded} - ${lbRounded})`;
 
     // Fresh builder per side — Drizzle query builders are mutable, so a shared
-    // base would have its ORDER BY clobbered by the second call.
-    const sideQuery = () =>
+    // base would have its ORDER BY clobbered by the second call. The sign gate
+    // lives in HAVING, so "over" only holds genuine over-performers.
+    const sideQuery = (signGate: SQL) =>
       db
         .select({
           film_slug: userFilms.filmSlug,
           title: films.title,
           rating_count: ratingCount,
-          average_rating: sql<string>`${averageRating}`,
-          lb_rating: sql<string>`ROUND(${films.lbRating}::numeric, 2)`,
-          differential: sql<string>`${differential}`,
+          average_rating: sql<string>`${avgRounded}`,
+          lb_rating: sql<string>`${lbRounded}`,
+          deviation: sql<string>`${deviation}`,
         })
         .from(userFilms)
         .innerJoin(users, eq(userFilms.lbusername, users.lbusername))
@@ -846,33 +851,33 @@ export async function dbGetRatingDifferentialExtremes(
           ),
         )
         .groupBy(userFilms.filmSlug, films.title, films.lbRating)
-        .having(sql`${ratingCount} >= ${minRatings}`);
+        .having(sql`${ratingCount} >= ${minRatings} AND ${signGate}`);
 
     const [overRows, underRows] = await Promise.all([
-      sideQuery()
-        .orderBy(desc(differential), desc(ratingCount), asc(userFilms.filmSlug))
+      sideQuery(sql`${deviation} > 0`)
+        .orderBy(desc(deviation), desc(ratingCount), asc(userFilms.filmSlug))
         .limit(3),
-      sideQuery()
-        .orderBy(asc(differential), desc(ratingCount), asc(userFilms.filmSlug))
+      sideQuery(sql`${deviation} < 0`)
+        .orderBy(asc(deviation), desc(ratingCount), asc(userFilms.filmSlug))
         .limit(3),
     ]);
 
-    const map = (r: (typeof overRows)[number]): RatingDifferentialFilm => ({
+    const map = (r: (typeof overRows)[number]): RatingDeviationFilm => ({
       film_slug: r.film_slug,
       title: r.title ?? "",
       average_rating: toNumber(r.average_rating),
       lb_rating: toNumber(r.lb_rating),
-      differential: toNumber(r.differential),
+      deviation: toNumber(r.deviation),
       rating_count: r.rating_count,
     });
 
     // Normally one winner per side; keep only films tied at the extreme
-    // (equal rounded differential), capped at 3 by the LIMIT above.
+    // (equal rounded deviation), capped at 3 by the LIMIT above.
     const tiedTop = (rows: typeof overRows) => {
       const mapped = rows.map(map);
       if (mapped.length === 0) return mapped;
-      const top = mapped[0]!.differential;
-      return mapped.filter((f) => f.differential === top);
+      const top = mapped[0]!.deviation;
+      return mapped.filter((f) => f.deviation === top);
     };
 
     return { over: tiedTop(overRows), under: tiedTop(underRows) };
