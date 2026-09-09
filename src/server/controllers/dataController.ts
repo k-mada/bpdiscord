@@ -1,4 +1,13 @@
-import { eq, and, asc, desc, inArray, notInArray, sql } from "drizzle-orm";
+import {
+  eq,
+  and,
+  asc,
+  desc,
+  inArray,
+  isNotNull,
+  notInArray,
+  sql,
+} from "drizzle-orm";
 import { db } from "../db";
 import {
   users,
@@ -28,7 +37,12 @@ import {
   toNumber,
   UNCATEGORISED,
 } from "../db/queryTypes";
-import { FilmDetail, FilmRater, SwapFilm } from "../../shared/types";
+import {
+  FilmDetail,
+  FilmRater,
+  RatingDifferentialFilm,
+  SwapFilm,
+} from "../../shared/types";
 
 export async function dbDeleteUserRatings(
   username: string,
@@ -785,6 +799,83 @@ export async function dbGetTopUserFilms(
     }
 
     return mapped;
+  });
+}
+
+export async function dbGetRatingDifferentialExtremes(
+  options: { year?: number; minRatings?: number } = {},
+): Promise<{
+  success: boolean;
+  data?: {
+    over: RatingDifferentialFilm[];
+    under: RatingDifferentialFilm[];
+  };
+  error?: string;
+}> {
+  const { year } = options;
+  const minRatings = options.minRatings ?? 0;
+
+  return dbOperation(async () => {
+    const ratingCount = sql<number>`COUNT(*)::int`;
+    const averageRating = sql`ROUND(AVG(${userFilms.rating})::numeric, 2)`;
+    const differential = sql`ROUND((AVG(${userFilms.rating}) - ${films.lbRating})::numeric, 2)`;
+
+    // Fresh builder per side — Drizzle query builders are mutable, so a shared
+    // base would have its ORDER BY clobbered by the second call.
+    const sideQuery = () =>
+      db
+        .select({
+          film_slug: userFilms.filmSlug,
+          title: films.title,
+          rating_count: ratingCount,
+          average_rating: sql<string>`${averageRating}`,
+          lb_rating: sql<string>`ROUND(${films.lbRating}::numeric, 2)`,
+          differential: sql<string>`${differential}`,
+        })
+        .from(userFilms)
+        .innerJoin(users, eq(userFilms.lbusername, users.lbusername))
+        .innerJoin(films, eq(userFilms.filmSlug, films.filmSlug))
+        .where(
+          and(
+            eq(users.isDiscord, true),
+            isNotNull(films.lbRating),
+            // `rating > 0` matches the documented "rated" definition — UserFilms
+            // stores 0 for unrated alongside NULL — so it can't drag the average.
+            sql`${userFilms.rating} IS NOT NULL AND ${userFilms.rating} > 0`,
+            year !== undefined ? eq(films.releaseYear, year) : undefined,
+          ),
+        )
+        .groupBy(userFilms.filmSlug, films.title, films.lbRating)
+        .having(sql`${ratingCount} >= ${minRatings}`);
+
+    const [overRows, underRows] = await Promise.all([
+      sideQuery()
+        .orderBy(desc(differential), desc(ratingCount), asc(userFilms.filmSlug))
+        .limit(3),
+      sideQuery()
+        .orderBy(asc(differential), desc(ratingCount), asc(userFilms.filmSlug))
+        .limit(3),
+    ]);
+
+    const map = (r: (typeof overRows)[number]): RatingDifferentialFilm => ({
+      film_slug: r.film_slug,
+      title: r.title ?? "",
+      average_rating: toNumber(r.average_rating),
+      lb_rating: toNumber(r.lb_rating),
+      differential: toNumber(r.differential),
+      rating_count: r.rating_count,
+    });
+
+    // Normally one winner per side; keep only films tied at the extreme
+    // (equal rounded differential), capped at 3 by the LIMIT above.
+    const tiedTop = (rows: typeof overRows) => {
+      const mapped = rows.map(map);
+      if (mapped.length === 0) return mapped;
+      const top = mapped[0]!.differential;
+      return mapped.filter((f) => f.differential === top);
+    };
+
+    return { over: tiedTop(overRows), under: tiedTop(underRows) };
   });
 }
 

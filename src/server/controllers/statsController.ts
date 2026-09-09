@@ -4,6 +4,7 @@ import {
   dbGetAllUserFilms,
   dbGetUserFilmsCount,
   dbGetMissingFilms,
+  dbGetRatingDifferentialExtremes,
   dbGetTopUserFilms,
   TopUserFilmsOrder,
 } from "./dataController";
@@ -74,6 +75,41 @@ export async function getTopFilmsByYear(
       year: year ?? null,
       topRated: rated.data,
       topWatched: watched.data,
+    },
+  });
+}
+
+export async function getRatingDifferential(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  // Same 20-all-time / 5-per-year floor as getTopFilmsByYear so a single
+  // enthusiastic rating can't top the over/under-performer lists.
+  let year: number | undefined;
+  if (req.params.year !== undefined) {
+    year = Number(req.params.year);
+    if (!Number.isInteger(year) || year < 1870 || year > 2100) {
+      res.status(400).json({ success: false, error: "Invalid year" });
+      return;
+    }
+  }
+
+  const result = await dbGetRatingDifferentialExtremes({
+    ...(year !== undefined ? { year } : {}),
+    minRatings: year !== undefined ? 5 : 20,
+  });
+
+  if (!result.success) {
+    res.json({ success: false, error: result.error });
+    return;
+  }
+
+  res.json({
+    success: true,
+    data: {
+      year: year ?? null,
+      over: result.data?.over ?? [],
+      under: result.data?.under ?? [],
     },
   });
 }

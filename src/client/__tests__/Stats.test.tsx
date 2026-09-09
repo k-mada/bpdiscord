@@ -9,6 +9,15 @@ vi.mock("../hooks/useTopFilmsByYear", () => ({
   useTopFilmsByYear: vi.fn(),
 }));
 
+vi.mock("../hooks/useRatingDifferential", () => ({
+  useRatingDifferential: () => ({
+    over: [],
+    under: [],
+    loading: false,
+    error: null,
+  }),
+}));
+
 vi.mock("../hooks/useRatingsDistribution", () => ({
   useRatingsDistribution: () => ({ data: [], loading: false, error: null }),
 }));
