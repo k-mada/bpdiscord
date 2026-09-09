@@ -5,6 +5,7 @@ import {
   AuthResponse,
   MovieSwapResult,
   FilmDetail,
+  RatingDeviationResponse,
 } from "../../shared/types";
 import { ApiError } from "../lib/apiError";
 import {
@@ -234,6 +235,18 @@ class ApiService {
       topRated: LBFilm[];
       topWatched: LBFilm[];
     }>(`/stats/top-films${year ? `/${year}` : ""}`, signal ? { signal } : {});
+  }
+
+  // Films our users rate furthest above / below the Letterboxd average. Omit
+  // `year` for all-time; pass a year to scope to that release year.
+  async getRatingDeviation(
+    year?: number,
+    signal?: AbortSignal,
+  ): Promise<ApiResponse<RatingDeviationResponse>> {
+    return this.request<RatingDeviationResponse>(
+      `/stats/rating-deviation${year ? `/${year}` : ""}`,
+      signal ? { signal } : {},
+    );
   }
 
   // Movie Swap endpoint — bidirectional recommendations between two users.

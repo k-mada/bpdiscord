@@ -5,11 +5,16 @@ import { mockReqRes } from "./helpers/mockReqRes";
 // branch logic; the DB query itself is dataController.test.ts's job.
 vi.mock('../controllers/dataController', () => ({
   dbGetTopUserFilms: vi.fn(),
+  dbGetRatingDeviationExtremes: vi.fn(),
   TopUserFilmsOrder: { HighestRated: 'highest_rated', MostWatched: 'most_watched' },
 }));
 
-import { getTopFilmsByYear } from '../controllers/statsController';
-import { dbGetTopUserFilms, TopUserFilmsOrder } from '../controllers/dataController';
+import { getTopFilmsByYear, getRatingDeviation } from '../controllers/statsController';
+import {
+  dbGetTopUserFilms,
+  dbGetRatingDeviationExtremes,
+  TopUserFilmsOrder,
+} from '../controllers/dataController';
 
 
 
@@ -64,5 +69,57 @@ describe('getTopFilmsByYear', () => {
 
     expect(statusCalls[0]).toBe(400);
     expect(dbGetTopUserFilms).not.toHaveBeenCalled();
+  });
+});
+
+describe('getRatingDeviation', () => {
+  beforeEach(() => {
+    vi.mocked(dbGetRatingDeviationExtremes).mockReset();
+    vi.mocked(dbGetRatingDeviationExtremes).mockResolvedValue({
+      success: true,
+      data: { over: [], under: [] },
+    } as never);
+  });
+
+  it('defaults to all-time with the 20-rating bar when no :year param', async () => {
+    const { req, res, jsonCalls } = mockReqRes({ params: {} });
+    await getRatingDeviation(req, res);
+
+    const opts = vi.mocked(dbGetRatingDeviationExtremes).mock.calls[0]?.[0];
+    expect(opts).toMatchObject({ minRatings: 20 });
+    expect(opts).not.toHaveProperty('year');
+    expect(jsonCalls[0]).toMatchObject({
+      success: true,
+      data: { year: null, over: [], under: [] },
+    });
+  });
+
+  it('scopes to the release year with the looser 10-rating bar when :year is present', async () => {
+    const { req, res, jsonCalls } = mockReqRes({ params: { year: '2021' } });
+    await getRatingDeviation(req, res);
+
+    const opts = vi.mocked(dbGetRatingDeviationExtremes).mock.calls[0]?.[0];
+    expect(opts).toMatchObject({ year: 2021, minRatings: 10 });
+    expect(jsonCalls[0]).toMatchObject({ success: true, data: { year: 2021 } });
+  });
+
+  it('400s on an out-of-range year and never touches the DB', async () => {
+    const { req, res, statusCalls, jsonCalls } = mockReqRes({ params: { year: '1700' } });
+    await getRatingDeviation(req, res);
+
+    expect(statusCalls[0]).toBe(400);
+    expect(jsonCalls[0]).toMatchObject({ success: false });
+    expect(dbGetRatingDeviationExtremes).not.toHaveBeenCalled();
+  });
+
+  it('surfaces a DB failure as { success: false }', async () => {
+    vi.mocked(dbGetRatingDeviationExtremes).mockResolvedValue({
+      success: false,
+      error: 'boom',
+    } as never);
+    const { req, res, jsonCalls } = mockReqRes({ params: {} });
+    await getRatingDeviation(req, res);
+
+    expect(jsonCalls[0]).toMatchObject({ success: false, error: 'boom' });
   });
 });

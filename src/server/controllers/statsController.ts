@@ -4,6 +4,7 @@ import {
   dbGetAllUserFilms,
   dbGetUserFilmsCount,
   dbGetMissingFilms,
+  dbGetRatingDeviationExtremes,
   dbGetTopUserFilms,
   TopUserFilmsOrder,
 } from "./dataController";
@@ -74,6 +75,42 @@ export async function getTopFilmsByYear(
       year: year ?? null,
       topRated: rated.data,
       topWatched: watched.data,
+    },
+  });
+}
+
+export async function getRatingDeviation(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  // 20 all-time / 10 per-year: a raw extremum with no confidence weighting is
+  // the most noise-prone thing on the page, so it carries a higher floor than
+  // the Bayesian-weighted top-films lists (which use 5 per-year).
+  let year: number | undefined;
+  if (req.params.year !== undefined) {
+    year = Number(req.params.year);
+    if (!Number.isInteger(year) || year < 1870 || year > 2100) {
+      res.status(400).json({ success: false, error: "Invalid year" });
+      return;
+    }
+  }
+
+  const result = await dbGetRatingDeviationExtremes({
+    ...(year !== undefined ? { year } : {}),
+    minRatings: year !== undefined ? 10 : 20,
+  });
+
+  if (!result.success) {
+    res.json({ success: false, error: result.error });
+    return;
+  }
+
+  res.json({
+    success: true,
+    data: {
+      year: year ?? null,
+      over: result.data?.over ?? [],
+      under: result.data?.under ?? [],
     },
   });
 }
