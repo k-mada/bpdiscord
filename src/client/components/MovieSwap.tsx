@@ -24,7 +24,7 @@ const SwapList = ({ films, rater, heading }: SwapListProps) => (
     {films.length === 0 ? (
       <p className="text-letterboxd-text-muted">Nothing to recommend.</p>
     ) : (
-      <div className="overflow-x-auto max-h-50vh">
+      <div className="overflow-x-auto max-h-[50vh]">
         <DataTable
           data={films}
           columns={swapFilmColumns}

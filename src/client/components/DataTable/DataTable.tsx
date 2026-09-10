@@ -67,7 +67,7 @@ export function DataTable<T, HeaderCtx = unknown>({
   );
 
   return (
-    <table className="data-table">
+    <table className="data-table [&_tbody_:is(a,button)]:scroll-mt-[72px]">
       <thead>
         <tr>
           {columns.map((column) => {
