@@ -39,7 +39,7 @@ const Harness = () => (
     </button>
 
     <div className="overflow-x-auto max-h-[50vh]" data-testid="scroller">
-      <DataTable data={ROWS} columns={columns} />
+      <DataTable data={ROWS} columns={columns} stickyHeader />
     </div>
   </main>
 );
