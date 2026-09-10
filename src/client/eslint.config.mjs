@@ -3,15 +3,7 @@ import tseslint from "typescript-eslint";
 import reactHooks from "eslint-plugin-react-hooks";
 import jsxA11y from "eslint-plugin-jsx-a11y";
 import globals from "globals";
-
-// Raw Tailwind palette families. Colour must come from the letterboxd-* tokens
-// so __tests__/palette.contrast.test.ts can actually gate every rendered pair.
-const TAILWIND_PALETTE =
-  "slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|" +
-  "teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose";
-const COLOUR_UTILITY =
-  "(?:bg|text|border|ring|from|via|to|placeholder|divide|outline|decoration|" +
-  `fill|stroke|caret|accent|shadow)-(?:${TAILWIND_PALETTE})-\\d{2,3}`;
+import { COLOUR_UTILITY } from "./palette-utilities.mjs";
 
 const rawColourMessage =
   "Use a letterboxd-* colour token instead of a raw Tailwind palette colour. " +
