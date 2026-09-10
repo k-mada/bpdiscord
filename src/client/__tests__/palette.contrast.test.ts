@@ -1,4 +1,8 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 import tailwindConfig from "../tailwind.config.js";
+import { COLOUR_UTILITY } from "../palette-utilities.mjs";
 
 // axe cannot evaluate contrast under jsdom, so the palette is measured straight
 // from the tokens. Gates the palette, not its usage in components.
@@ -246,6 +250,17 @@ const renderSwatchSvg = (): string => {
 };
 
 describe("letterboxd palette contrast (WCAG 2.2 AA)", () => {
+  // eslint's no-restricted-syntax only reads TS/TSX literals, so a raw palette
+  // colour @apply'd in index.css reaches the screen with nothing measuring it.
+  // Read from disk: vitest resolves a CSS import to an empty module, and its
+  // jsdom URL is not a node file URL, so resolve to a path string first.
+  it("index.css carries no raw Tailwind palette colours", () => {
+    const cssPath = join(dirname(fileURLToPath(import.meta.url)), "../index.css");
+    const css = readFileSync(cssPath, "utf8");
+    const hits = css.match(new RegExp(COLOUR_UTILITY, "g")) ?? [];
+    expect(hits).toEqual([]);
+  });
+
   // Pins the derived matrix so coverage changes — especially coverage quietly
   // disappearing — show up in a diff.
   it("asserts this coverage matrix", () => {

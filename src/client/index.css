@@ -213,8 +213,8 @@ layer(base);
   margin: 10px 0;
   width: 200px;
   height: 1px;
-  border: solid 1px white;
-  @apply border-gray-600;
+  border: solid 1px;
+  @apply border-letterboxd-border;
 }
 
 @utility differential-midpoint {
@@ -223,7 +223,7 @@ layer(base);
   left: 100px;
   width: 1px;
   height: 10px;
-  @apply border-solid border-gray-600;
+  @apply border-solid border-letterboxd-border;
   border-width: 1px;
 }
 
@@ -239,7 +239,7 @@ layer(base);
   left: 5px;
   padding: 0.1rem 0.5rem 0.1rem 0.2rem;
   border-radius: 4px 4px 4px 0;
-  @apply border border-solid border-white text-white bg-gray-700;
+  @apply border border-solid border-white text-white bg-letterboxd-bg-tertiary;
 }
 
 @utility rating-marker {
@@ -248,7 +248,7 @@ layer(base);
   width: 10px;
   height: 10px;
   border-radius: 50%;
-  @apply bg-green-500;
+  @apply bg-letterboxd-accent;
 }
 
 @utility rating-line {
@@ -349,7 +349,7 @@ layer(base);
 }
 
 .movie-counter-text {
-  @apply text-red-500;
+  @apply text-letterboxd-accent;
 }
 
 .movie-stats {
