@@ -3,9 +3,11 @@ import Spinner from "../Spinner";
 import { DataTable } from "../DataTable/DataTable";
 import { mflFilmSummaryColumns } from "../DataTable/columns";
 import { useMflData } from "../../hooks/useMflData";
+import { useFillViewportHeight } from "../../hooks/useFillViewportHeight";
 
 const MovieFantasyLeague = () => {
   const { movies, loading, error } = useMflData();
+  const { ref, maxHeight } = useFillViewportHeight<HTMLDivElement>();
 
   return (
     <div>
@@ -41,7 +43,7 @@ const MovieFantasyLeague = () => {
       )}
 
       {!loading && !error && movies.length > 0 && (
-        <div className="overflow-x-auto max-h-[50vh]">
+        <>
           <div className="mb-4 text-left">
             <span className="ml-2 inline-block w-2 h-2 rounded-full bg-letterboxd-accent"></span>{" "}
             Eligible for box office points
@@ -49,13 +51,19 @@ const MovieFantasyLeague = () => {
             <span className="ml-2 inline-block w-2 h-2 rounded-full bg-letterboxd-error-surface"></span>{" "}
             Not eligible for box office points
           </div>
-          <DataTable
-            data={movies}
-            columns={mflFilmSummaryColumns}
-            enableSort
-            initialSort={{ key: "price", direction: "desc" }}
-          />
-        </div>
+          <div
+            ref={ref}
+            className="overflow-x-auto max-h-[50vh]"
+            style={maxHeight !== undefined ? { maxHeight } : undefined}
+          >
+            <DataTable
+              data={movies}
+              columns={mflFilmSummaryColumns}
+              enableSort
+              initialSort={{ key: "price", direction: "desc" }}
+            />
+          </div>
+        </>
       )}
     </div>
   );
