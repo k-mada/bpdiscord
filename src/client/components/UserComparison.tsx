@@ -306,6 +306,7 @@ const UserComparison = () => {
                 data={moviesInCommonData.moviesInCommon}
                 columns={moviesInCommonColumns}
                 enableSort={false}
+                stickyHeader
                 headerContext={{
                   user1: user1Data?.displayName || moviesInCommonData.user1,
                   user2: user2Data?.displayName || moviesInCommonData.user2,

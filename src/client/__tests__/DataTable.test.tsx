@@ -97,6 +97,28 @@ describe("DataTable", () => {
         expect(header).toHaveAttribute("scope", "col");
       }
     });
+
+    it("does not pin the header by default", () => {
+      const { container } = render(
+        <DataTable data={rows} columns={basicColumns} />,
+      );
+
+      expect(container.querySelector("th")).not.toHaveClass("sticky");
+      expect(container.querySelector("table")).not.toHaveClass(
+        "[&_tbody_:is(a,button)]:scroll-mt-[72px]",
+      );
+    });
+
+    it("pins the header and offsets body focusables when stickyHeader", () => {
+      const { container } = render(
+        <DataTable data={rows} columns={basicColumns} stickyHeader />,
+      );
+
+      expect(container.querySelector("th")).toHaveClass("sticky", "top-0");
+      expect(container.querySelector("table")).toHaveClass(
+        "[&_tbody_:is(a,button)]:scroll-mt-[72px]",
+      );
+    });
   });
 
   describe("rows", () => {

@@ -17,4 +17,10 @@ export interface TableProps<T, HeaderCtx = unknown> {
   initialSort?: { key: string; direction: "asc" | "desc" };
   headerContext?: HeaderCtx;
   renderRow?: (data: T, index: number) => React.ReactNode;
+  /**
+   * Pin the header to the top and offset focused body links to clear it. Only
+   * meaningful inside a bounded scrolling ancestor, which the consumer owns —
+   * defaults false so a table in normal flow renders a plain header.
+   */
+  stickyHeader?: boolean;
 }
