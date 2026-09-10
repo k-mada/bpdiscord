@@ -290,7 +290,7 @@ const UserComparison = () => {
           </div>
 
           {moviesInCommonData.count > 0 && (
-            <div className="overflow-x-auto max-h-50vh">
+            <div className="overflow-x-auto max-h-[50vh]">
               <DataTable
                 data={moviesInCommonData.moviesInCommon}
                 columns={moviesInCommonColumns}

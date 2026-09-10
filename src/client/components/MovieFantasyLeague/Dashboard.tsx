@@ -41,7 +41,7 @@ const MovieFantasyLeague = () => {
       )}
 
       {!loading && !error && movies.length > 0 && (
-        <div className="overflow-x-auto max-h-50vh">
+        <div className="overflow-x-auto max-h-[50vh]">
           <div className="mb-4 text-left">
             <span className="ml-2 inline-block w-2 h-2 rounded-full bg-letterboxd-accent"></span>{" "}
             Eligible for box office points
