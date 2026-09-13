@@ -23,6 +23,7 @@ export function DataTable<T, HeaderCtx = unknown>({
   initialSort,
   headerContext,
   renderRow,
+  stickyHeader = false,
 }: TableProps<T, HeaderCtx>) {
   const [sortKey, setSortKey] = useState<SortKey>(
     initialSort
@@ -67,7 +68,11 @@ export function DataTable<T, HeaderCtx = unknown>({
   );
 
   return (
-    <table className="data-table [&_tbody_:is(a,button)]:scroll-mt-[72px]">
+    <table
+      className={`data-table${
+        stickyHeader ? " [&_tbody_:is(a,button)]:scroll-mt-[72px]" : ""
+      }`}
+    >
       <thead>
         <tr>
           {columns.map((column) => {
@@ -92,7 +97,9 @@ export function DataTable<T, HeaderCtx = unknown>({
                 )}
                 // align-bottom keeps one- and two-line headers sitting on the
                 // same baseline as the row beneath them.
-                className="sticky top-0 align-bottom text-left py-3 px-4 text-letterboxd-text-secondary font-medium z-1 bg-letterboxd-bg-secondary"
+                className={`${
+                  stickyHeader ? "sticky top-0 z-1 " : ""
+                }align-bottom text-left py-3 px-4 text-letterboxd-text-secondary font-medium bg-letterboxd-bg-secondary`}
               >
                 {canSort ? (
                   <button

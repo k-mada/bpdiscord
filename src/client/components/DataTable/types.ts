@@ -17,4 +17,5 @@ export interface TableProps<T, HeaderCtx = unknown> {
   initialSort?: { key: string; direction: "asc" | "desc" };
   headerContext?: HeaderCtx;
   renderRow?: (data: T, index: number) => React.ReactNode;
+  stickyHeader?: boolean;
 }
