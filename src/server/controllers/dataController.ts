@@ -1528,6 +1528,42 @@ export async function dbGetMFLMovies(): Promise<{
   });
 }
 
+export async function dbGetMFLLeaderboard(): Promise<{
+  success: boolean;
+  data?: Array<{
+    lbusername: string;
+    display_name: string | null;
+    total_points: number;
+  }>;
+  error?: string;
+}> {
+  return dbOperation(async () => {
+    // FROM picks (LEFT to tally) so only members with a roster appear, unscored
+    // ones at 0; the picks PK stops a tally row joining a member twice.
+    const rows = await db
+      .select({
+        lbusername: mflUserPicks.lbusername,
+        display_name: users.displayName,
+        // ::int per the house convention — SUM widens to numeric, which
+        // postgres.js returns as a string.
+        total_points: sql<number>`SUM(COALESCE(${mflScoringTally.pointsAwarded}, 0))::int`,
+      })
+      .from(mflUserPicks)
+      .leftJoin(
+        mflScoringTally,
+        eq(mflScoringTally.filmSlug, mflUserPicks.filmSlug),
+      )
+      .leftJoin(users, eq(users.lbusername, mflUserPicks.lbusername))
+      .groupBy(mflUserPicks.lbusername, users.displayName)
+      .orderBy(
+        desc(sql`SUM(COALESCE(${mflScoringTally.pointsAwarded}, 0))`),
+        asc(mflUserPicks.lbusername),
+      );
+
+    return rows;
+  });
+}
+
 const MFL_TALLY_FILM_METRIC_CONSTRAINT = "mfl_scoring_tally_film_metric_key";
 
 export async function dbUpsertMflMovieScore(

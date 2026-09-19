@@ -105,6 +105,14 @@ export interface MFLPick {
   price: number | null;
 }
 
+export interface MFLLeaderboardEntry {
+  /** Competition rank: equal totals share a rank, the next distinct total skips. */
+  rank: number;
+  lbusername: string;
+  displayName: string | null;
+  totalPoints: number;
+}
+
 export interface MFLMovieScore {
   scoringId: number;
   filmSlug: string;

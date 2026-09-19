@@ -14,6 +14,7 @@ import {
   MFLMovieScore,
   MFLCatalogueFilm,
   MFLPick,
+  MFLLeaderboardEntry,
   AwardShow,
   EventSummary,
   EventData,
@@ -268,6 +269,10 @@ class ApiService {
 
   async getMflMovies(): Promise<ApiResponse<MFLCatalogueFilm[]>> {
     return this.request<MFLCatalogueFilm[]>("/mfl/movies");
+  }
+
+  async getMflLeaderboard(): Promise<ApiResponse<MFLLeaderboardEntry[]>> {
+    return this.request<MFLLeaderboardEntry[]>("/mfl/leaderboard");
   }
 
   async getMflPicks(

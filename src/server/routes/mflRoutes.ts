@@ -5,6 +5,7 @@ import { validateIntParam } from "../middleware/validation";
 import {
   getMFLScoringMetrics,
   getMFLUserScores,
+  getMFLLeaderboard,
   getMFLMovies,
   getMflMovieScore,
   upsertMflMovieScore,
@@ -18,6 +19,7 @@ const router = Router();
 // Public reads
 router.get("/scoring-metrics", getMFLScoringMetrics);
 router.get("/user-scores/:username", getMFLUserScores);
+router.get("/leaderboard", getMFLLeaderboard);
 router.get("/movie-score/:filmSlug", getMflMovieScore);
 router.get("/movies", getMFLMovies);
 
