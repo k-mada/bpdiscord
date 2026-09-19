@@ -67,12 +67,26 @@ const MovieFantasyLeague = () => {
         </section>
 
         <section aria-labelledby="mfl-movies-heading">
-          <h2
-            id="mfl-movies-heading"
-            className="text-xl font-bold text-letterboxd-text-primary mb-4"
-          >
-            Eligible movies
-          </h2>
+          <div className="flex items-center gap-4 mb-4">
+            <h2
+              id="mfl-movies-heading"
+              className="text-xl font-bold text-letterboxd-text-primary"
+            >
+              Eligible movies
+            </h2>
+            {!loading && !error && movies.length > 0 && (
+              <div className="flex flex-col gap-0.5 text-xs text-letterboxd-text-secondary">
+                <span className="flex items-center gap-1.5">
+                  <span className="inline-block w-2 h-2 rounded-full bg-letterboxd-accent"></span>
+                  Eligible for box office points
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="inline-block w-2 h-2 rounded-full bg-letterboxd-error-surface"></span>
+                  Not eligible for box office points
+                </span>
+              </div>
+            )}
+          </div>
 
           {loading && <Spinner />}
 
@@ -88,13 +102,6 @@ const MovieFantasyLeague = () => {
 
           {!loading && !error && movies.length > 0 && (
             <>
-              <div className="mb-4 text-left">
-                <span className="ml-2 inline-block w-2 h-2 rounded-full bg-letterboxd-accent"></span>{" "}
-                Eligible for box office points
-                <br />
-                <span className="ml-2 inline-block w-2 h-2 rounded-full bg-letterboxd-error-surface"></span>{" "}
-                Not eligible for box office points
-              </div>
               <div className="overflow-x-auto max-h-[50vh]">
                 <DataTable
                   data={movies}
