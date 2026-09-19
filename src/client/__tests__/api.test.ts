@@ -133,6 +133,7 @@ describe("ApiService", () => {
     ["getUserFilmsCount", "/stats/user-films-count"],
     ["getMflScoringMetrics", "/mfl/scoring-metrics"],
     ["getMflMovies", "/mfl/movies"],
+    ["getMflLeaderboard", "/mfl/leaderboard"],
     ["getAwardShows", "/events/award-shows"],
   ] as const)("%s", (method, expectedUrl) => {
     it(`calls GET ${expectedUrl}`, async () => {

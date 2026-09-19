@@ -1,6 +1,10 @@
 import { Link } from "react-router-dom";
 import type { ColumnDef } from "./types";
-import type { MovieInCommon, MFLCatalogueFilm } from "../../types";
+import type {
+  MovieInCommon,
+  MFLCatalogueFilm,
+  MFLLeaderboardEntry,
+} from "../../types";
 import type { SwapFilm } from "../../../shared/types";
 import StarRating from "../StarRating";
 import { compareNullable, formatReleaseDate } from "../../utilities";
@@ -96,6 +100,34 @@ const renderReleaseDate = (releaseDate: string) => (
   </span>
 );
 
+const memberName = (entry: MFLLeaderboardEntry) =>
+  entry.displayName || entry.lbusername;
+
+/** The /mfl standings: server-ranked members, ties sharing a rank. */
+export const mflLeaderboardColumns: ColumnDef<MFLLeaderboardEntry>[] = [
+  {
+    key: "rank",
+    label: "#",
+    sortKey: "rank",
+    customSort: (a, b) => a.rank - b.rank,
+  },
+  {
+    key: "member",
+    label: "Member",
+    sortKey: "member",
+    customSort: (a, b) => memberName(a).localeCompare(memberName(b)),
+    renderColumn: (entry) => (
+      <Link to={`/user/${entry.lbusername}`}>{memberName(entry)}</Link>
+    ),
+  },
+  {
+    key: "totalPoints",
+    label: "Points",
+    sortKey: "totalPoints",
+    customSort: (a, b) => a.totalPoints - b.totalPoints,
+  },
+];
+
 /** The /mfl summary: four columns, no per-category breakdown. */
 export const mflFilmSummaryColumns: ColumnDef<MFLCatalogueFilm>[] = [
   {
@@ -126,7 +158,7 @@ export const mflFilmSummaryColumns: ColumnDef<MFLCatalogueFilm>[] = [
   },
   {
     key: "totalPoints",
-    label: "Total Points",
+    label: "Points",
     sortKey: "totalPoints",
     customSort: (a, b) => a.totalPoints - b.totalPoints,
   },

@@ -60,11 +60,13 @@ test("the background is inert while open and interactive after close", async ({
 
   await page.getByTestId("open").click();
   await expect(page.locator(PANEL)).toBeVisible();
-  expect(await backgroundIsInert(page)).toBe(true);
+  // inert is toggled a render after the panel mounts/unmounts (the provider
+  // clears it before restoring focus), so poll rather than read once.
+  await expect.poll(() => backgroundIsInert(page)).toBe(true);
 
   await page.keyboard.press("Escape");
   await expect(page.locator(PANEL)).toHaveCount(0);
-  expect(await backgroundIsInert(page)).toBe(false);
+  await expect.poll(() => backgroundIsInert(page)).toBe(false);
 });
 
 // Complement to inert: no Tab sweep reaches the trigger sealed behind [inert].
