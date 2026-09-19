@@ -6,6 +6,7 @@ import Spinner from "../Spinner";
 import { useMflData } from "../../hooks/useMflData";
 import { useAuth } from "../../contexts/AuthContext";
 import { Button } from "../ui/Button";
+import { Input } from "../ui/Input";
 import { Notification, Status } from "../ui/Notification";
 import { failureMessage } from "../../lib/failureMessage";
 
@@ -14,13 +15,6 @@ const getMetricById = (
   metricId: number,
 ) => {
   return scoringMetrics.find((metric) => metric.metricId === metricId);
-};
-
-const getMovieScoreByMetricId = (
-  movieScore: MFLMovieScore[],
-  metricId: number,
-) => {
-  return movieScore.find((score) => score.metricId === metricId);
 };
 
 const MFLAdmin = () => {
@@ -40,15 +34,11 @@ const MFLAdmin = () => {
     );
   }, [rawScoringMetrics]);
 
-  // selected scoring metric after user selects a movie
   const [selectedMetric, setSelectedMetric] = useState<MFLScoringMetric | null>(
     null,
   );
-
-  const [movieScore, setMovieScore] = useState<MFLMovieScore[]>([]); // list of scores for the selected movie
+  const [movieScore, setMovieScore] = useState<MFLMovieScore[]>([]);
   const [currentSelectedMovie, setCurrentSelectedMovie] = useState<string>("");
-  const [totalPoints, setTotalPoints] = useState(0); // total points for the selected movie
-  // loading state
   const [loading, setLoading] = useState(false);
   const [disableScoreInput, setDisableScoreInput] = useState(true);
   const [inputPointsAwarded, setInputPointsAwarded] = useState(0);
@@ -58,55 +48,63 @@ const MFLAdmin = () => {
   const [deleteStatus, setDeleteStatus] = useState<Status>({ type: "idle" });
   const customizableMetricIds = [1, 10, 338];
 
+  // Scores render in the dropdown's order, keyed by each metric's position in
+  // the (metricName-sorted) list so the two panels never disagree.
+  const orderedMovieScore = useMemo(() => {
+    const rank = new Map(
+      scoringMetrics.map((metric, index) => [metric.metricId, index]),
+    );
+    const fallback = scoringMetrics.length;
+    return [...movieScore].sort(
+      (a, b) =>
+        (rank.get(a.metricId) ?? fallback) - (rank.get(b.metricId) ?? fallback),
+    );
+  }, [movieScore, scoringMetrics]);
+
+  const totalPoints = useMemo(
+    () => movieScore.reduce((acc, curr) => acc + curr.pointsAwarded, 0),
+    [movieScore],
+  );
+
+  const movieTitle = useMemo(
+    () => movies.find((movie) => movie.filmSlug === currentSelectedMovie)?.title,
+    [movies, currentSelectedMovie],
+  );
+
   const handleMetricSelect = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const metricId = parseInt(event.target.value);
-
-    const selectedMetric = getMetricById(scoringMetrics, metricId);
-    if (selectedMetric) {
-      setSelectedMetric(selectedMetric);
-      setInputPointsAwarded(selectedMetric.pointValue);
-      if (customizableMetricIds.includes(selectedMetric.metricId)) {
-        setDisableScoreInput(false);
-      } else {
-        setDisableScoreInput(true);
-      }
+    const metric = getMetricById(scoringMetrics, metricId);
+    if (metric) {
+      setSelectedMetric(metric);
+      setInputPointsAwarded(metric.pointValue);
+      setDisableScoreInput(!customizableMetricIds.includes(metric.metricId));
     }
   };
 
   const resetForm = () => {
-    setSelectedScoringId(0);
+    setSelectedMetric(null);
     setInputPointsAwarded(0);
-    // setSelectedMetric(null);
     setDisableScoreInput(true);
   };
 
+  const refreshScores = async (filmSlug: string) => {
+    const scores = await getMovieScore(filmSlug);
+    setMovieScore(scores ?? []);
+  };
+
   const handleMovieSelect = async (filmSlug: string) => {
-    if (filmSlug === "-1") return;
+    resetForm();
+    if (filmSlug === "-1") {
+      setCurrentSelectedMovie("");
+      setMovieScore([]);
+      return;
+    }
 
     setLoading(true);
     setFormStatus({ type: "idle" });
     try {
-      const selectedMovieScore = await getMovieScore(filmSlug);
-      const sortedSelectedMovieScore = selectedMovieScore.sort((a, b) => {
-        if (a.metricName < b.metricName) {
-          return -1;
-        }
-        if (a.metricName > b.metricName) {
-          return 1;
-        }
-        return 0;
-      });
-      if (sortedSelectedMovieScore) {
-        const totalPoints = sortedSelectedMovieScore.reduce(
-          (acc, curr) => acc + curr.pointsAwarded,
-          0,
-        );
-        setTotalPoints(totalPoints);
-        setMovieScore(sortedSelectedMovieScore);
-        setCurrentSelectedMovie(filmSlug);
-        setInputPointsAwarded(0);
-        setSelectedMetric(null);
-      }
+      await refreshScores(filmSlug);
+      setCurrentSelectedMovie(filmSlug);
     } catch (error) {
       setFormStatus({ type: "error", message: failureMessage(error) });
     } finally {
@@ -114,30 +112,17 @@ const MFLAdmin = () => {
     }
   };
 
-  const movieTitle = useMemo(() => {
-    return movies.find((movie) => movie.filmSlug === movieScore[0]?.filmSlug)
-      ?.title;
-  }, [movieScore, movies]);
-
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
-    if (!selectedMetric?.metricId) return;
-
-    const existingScore = getMovieScoreByMetricId(
-      movieScore,
-      selectedMetric.metricId,
-    );
+    if (!selectedMetric?.metricId || !currentSelectedMovie) return;
 
     setFormStatus({ type: "idle" });
     try {
-      const isEdit = Boolean(existingScore && selectedScoringId > 0);
       await upsertMovieScore(
         {
-          filmSlug: isEdit ? existingScore!.filmSlug : currentSelectedMovie,
+          filmSlug: currentSelectedMovie,
           pointsAwarded: inputPointsAwarded,
           metricId: selectedMetric.metricId,
-          ...(isEdit ? { scoringId: existingScore!.scoringId } : {}),
         },
         token ?? "",
       );
@@ -146,18 +131,7 @@ const MFLAdmin = () => {
       // is one edit away rather than a full re-entry.
       resetForm();
       setFormStatus({ type: "success", message: "Score saved." });
-
-      if (currentSelectedMovie) {
-        const refreshedMovieScore = await getMovieScore(currentSelectedMovie);
-        if (refreshedMovieScore) {
-          const totalPoints = refreshedMovieScore.reduce(
-            (acc, curr) => acc + curr.pointsAwarded,
-            0,
-          );
-          setTotalPoints(totalPoints);
-          setMovieScore(refreshedMovieScore);
-        }
-      }
+      await refreshScores(currentSelectedMovie);
     } catch (error) {
       setFormStatus({ type: "error", message: failureMessage(error) });
     }
@@ -167,32 +141,6 @@ const MFLAdmin = () => {
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
     setInputPointsAwarded(parseInt(event.target.value));
-  };
-
-  const handleEditMetric = (event: React.MouseEvent<HTMLButtonElement>) => {
-    event.preventDefault();
-    const scoringId = event.currentTarget.getAttribute("data-scoring-id");
-    if (scoringId) {
-      const existingScoringId = parseInt(scoringId);
-      setSelectedScoringId(existingScoringId);
-
-      const score = movieScore.find(
-        (score: MFLMovieScore) => score.scoringId === existingScoringId,
-      );
-      if (score) {
-        setInputPointsAwarded(score.pointsAwarded);
-
-        const selectedMetric = getMetricById(scoringMetrics, score.metricId);
-        if (selectedMetric) {
-          setSelectedMetric(selectedMetric);
-        }
-        if (customizableMetricIds.includes(score.metricId)) {
-          setDisableScoreInput(false);
-        } else {
-          setDisableScoreInput(true);
-        }
-      }
-    }
   };
 
   const handleClose = () => {
@@ -215,17 +163,8 @@ const MFLAdmin = () => {
     setDeleteStatus({ type: "idle" });
     try {
       await deleteScore(selectedScoringId, token ?? "");
-
       if (currentSelectedMovie) {
-        const refreshedMovieScore = await getMovieScore(currentSelectedMovie);
-        if (refreshedMovieScore) {
-          const totalPoints = refreshedMovieScore.reduce(
-            (acc, curr) => acc + curr.pointsAwarded,
-            0,
-          );
-          setTotalPoints(totalPoints);
-          setMovieScore(refreshedMovieScore);
-        }
+        await refreshScores(currentSelectedMovie);
       }
       // Closing only here: a dialog that dismisses itself on failure reads as
       // success, and the admin loses the row they were trying to delete.
@@ -245,20 +184,6 @@ const MFLAdmin = () => {
         onClick={() => handleDeleteMetric(scoringId)}
       >
         Delete
-      </Button>
-    );
-  };
-
-  const EditMetric = ({ scoringId }: { scoringId: number }) => {
-    return (
-      <Button
-        type="button"
-        variant="link"
-        className="px-8"
-        onClick={handleEditMetric}
-        data-scoring-id={scoringId}
-      >
-        Edit
       </Button>
     );
   };
@@ -290,7 +215,7 @@ const MFLAdmin = () => {
     <div>
       <Modal isOpen={isModalOpen} onClose={handleClose}>
         <ModalHeader onClose={handleClose}>
-          Are you sure you want to delete this metric?
+          Are you sure you want to delete this score?
         </ModalHeader>
         <ModalBody>
           <p>This action cannot be undone.</p>
@@ -328,96 +253,115 @@ const MFLAdmin = () => {
       )}
       <MovieSelector movies={movies} onMovieSelect={handleMovieSelect} />
 
-      <form
-        onSubmit={handleSubmit}
-        className="my-8 rounded-lg border-2 border-letterboxd-border p-4"
-      >
-        <h2 className="text-xl text-letterboxd-text-primary mb-4">
-          Add new score for{" "}
-          <span className="font-bold letterboxd-text-accent">{movieTitle}</span>
-          :
-        </h2>
-        <div className="my-8">
-          <label htmlFor="lst-metric" className="mr-8">
-            Scoring metric:
-          </label>
-          <select
-            id="lst-metric"
-            className="input-field w-1/2"
-            value={selectedMetric?.metricId || "-1"}
-            onChange={handleMetricSelect}
-          >
-            <option value="-1">select a scoring metric</option>
-            {scoringMetrics.map((metric) => {
-              return (
-                <option key={metric.metricId} value={metric.metricId}>
-                  {metric.metricName} - {metric.category} -{" "}
-                  {metric.scoringCondition}
-                </option>
-              );
-            })}
-          </select>
-        </div>
-        <div className="my-8">
-          <label htmlFor="txt-points-awarded" className="mr-8">
-            Points awarded:
-          </label>
-          <input
-            type="text"
-            id="txt-points-awarded"
-            value={inputPointsAwarded}
-            disabled={disableScoreInput}
-            className="text-black"
-            onChange={handlePointsAwardedChange}
-          />
-        </div>
-
-        <Button type="submit">Add score</Button>
-      </form>
-
-      {loading && <Spinner />}
-      {!loading && movieScore.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Scoring Metric</th>
-                <th>Points Awarded</th>
-              </tr>
-            </thead>
-            <tbody>
-              {movieScore.map((score, id) => {
-                let scoringMetric: string;
-                if (
-                  score.metricName === "gross" ||
-                  score.metricName === "rank"
-                ) {
-                  scoringMetric = `${score.metricName} ${score.category}`;
-                } else {
-                  scoringMetric = `${score.metricName}  -${score.category} (${score.scoringCondition})`;
-                }
+      <div className="mt-8 grid gap-6 md:grid-cols-2">
+        <form
+          onSubmit={handleSubmit}
+          className="rounded-lg border-2 border-letterboxd-border p-4"
+        >
+          <h2 className="text-xl text-letterboxd-text-primary mb-4">
+            Add new score for{" "}
+            <span className="font-bold letterboxd-text-accent">
+              {movieTitle ?? "…"}
+            </span>
+            :
+          </h2>
+          <div className="my-8">
+            <label htmlFor="lst-metric" className="mr-8">
+              Scoring metric:
+            </label>
+            <select
+              id="lst-metric"
+              className="input-field w-1/2"
+              value={selectedMetric?.metricId || "-1"}
+              onChange={handleMetricSelect}
+            >
+              <option value="-1">select a scoring metric</option>
+              {scoringMetrics.map((metric) => {
                 return (
-                  <tr key={id}>
-                    <td>{scoringMetric}</td>
-                    <td>
-                      {score.pointsAwarded}
-                      {!customizableMetricIds.includes(score.metricId) ? (
-                        <DeleteMetric scoringId={score.scoringId} />
-                      ) : (
-                        <EditMetric scoringId={score.scoringId} />
-                      )}
-                    </td>
-                  </tr>
+                  <option key={metric.metricId} value={metric.metricId}>
+                    {metric.metricName} - {metric.category} -{" "}
+                    {metric.scoringCondition}
+                  </option>
                 );
               })}
-              <tr className="border-t-2 border-letterboxd-border">
-                <td className="font-bold text-xl">Total points:</td>
-                <td className="font-bold text-xl">{totalPoints}</td>
-              </tr>
-            </tbody>
-          </table>
+            </select>
+          </div>
+          <div className="my-8">
+            <label htmlFor="txt-points-awarded" className="mr-8">
+              Points awarded:
+            </label>
+            <Input
+              type="text"
+              id="txt-points-awarded"
+              value={inputPointsAwarded}
+              disabled={disableScoreInput}
+              onChange={handlePointsAwardedChange}
+            />
+          </div>
+
+          <Button type="submit" disabled={!currentSelectedMovie}>
+            Add score
+          </Button>
+        </form>
+
+        <div className="rounded-lg border-2 border-letterboxd-border p-4">
+          <h2 className="text-xl text-letterboxd-text-primary mb-4">
+            Scores for{" "}
+            <span className="font-bold letterboxd-text-accent">
+              {movieTitle ?? "…"}
+            </span>
+          </h2>
+          {loading && <Spinner />}
+          {!loading && !currentSelectedMovie && (
+            <p className="text-letterboxd-text-secondary">
+              Select a movie to see its scores.
+            </p>
+          )}
+          {!loading && currentSelectedMovie && movieScore.length === 0 && (
+            <p className="text-letterboxd-text-secondary">
+              No scores yet for this movie.
+            </p>
+          )}
+          {!loading && movieScore.length > 0 && (
+            <div className="overflow-x-auto">
+              <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Scoring Metric</th>
+                  <th>Points Awarded</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orderedMovieScore.map((score) => {
+                  let scoringMetric: string;
+                  if (
+                    score.metricName === "gross" ||
+                    score.metricName === "rank"
+                  ) {
+                    scoringMetric = `${score.metricName} ${score.category}`;
+                  } else {
+                    scoringMetric = `${score.metricName}  -${score.category} (${score.scoringCondition})`;
+                  }
+                  return (
+                    <tr key={score.scoringId}>
+                      <td>{scoringMetric}</td>
+                      <td>
+                        {score.pointsAwarded}
+                        <DeleteMetric scoringId={score.scoringId} />
+                      </td>
+                    </tr>
+                  );
+                })}
+                <tr className="border-t-2 border-letterboxd-border">
+                  <td className="font-bold text-xl">Total points:</td>
+                  <td className="font-bold text-xl">{totalPoints}</td>
+                </tr>
+              </tbody>
+              </table>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 };
