@@ -613,6 +613,130 @@ describe('dataController', () => {
     });
   });
 
+  describe('MFL Leaderboard', () => {
+    it('dbGetMFLLeaderboard returns empty when nobody has picks', async () => {
+      const result = await dc.dbGetMFLLeaderboard();
+
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual([]);
+    });
+
+    describe('with a ranked season', () => {
+      // Dedicated users so totals are controlled independently of fixtures.
+      const ALPHA = 'lb_alpha';
+      const BRAVO = 'lb_bravo';
+      const CHARLIE = 'lb_charlie';
+      const DELTA = 'lb_delta';
+      const ECHO = 'lb_echo';
+
+      beforeAll(async () => {
+        await db.insert(users).values([
+          { lbusername: ALPHA, displayName: 'Alpha' },
+          { lbusername: BRAVO, displayName: 'Bravo' },
+          { lbusername: CHARLIE, displayName: null },
+          { lbusername: DELTA, displayName: 'Delta' },
+          { lbusername: ECHO, displayName: 'Echo' },
+        ]);
+        await db.insert(mflFilms).values([
+          { filmSlug: 'lb-worth-30', title: 'Worth Thirty', price: 10 },
+          { filmSlug: 'lb-worth-20', title: 'Worth Twenty', price: 10 },
+          { filmSlug: 'lb-worth-0', title: 'Worth Nothing', price: 10 },
+        ]);
+        await db.insert(mflScoringMetrics).values([
+          { metricId: 8001, metricName: 'A', category: 'awards', pointValue: 30 },
+          { metricId: 8002, metricName: 'B', category: 'box_office', pointValue: 20 },
+        ]);
+        await db.insert(mflScoringTally).values([
+          { filmSlug: 'lb-worth-30', metricId: 8001, pointsAwarded: 30 },
+          { filmSlug: 'lb-worth-20', metricId: 8002, pointsAwarded: 20 },
+          // lb-worth-0 stays unscored.
+        ]);
+        await db.insert(mflUserPicks).values([
+          { lbusername: ALPHA, filmSlug: 'lb-worth-30' },
+          { lbusername: ALPHA, filmSlug: 'lb-worth-20' },
+          { lbusername: BRAVO, filmSlug: 'lb-worth-30' },
+          { lbusername: CHARLIE, filmSlug: 'lb-worth-30' },
+          { lbusername: DELTA, filmSlug: 'lb-worth-0' },
+          // ECHO submits no picks.
+        ]);
+      });
+
+      afterAll(async () => {
+        await db.delete(mflScoringTally).where(sql`1=1`);
+        await db.delete(mflScoringMetrics).where(sql`1=1`);
+        await db.delete(mflUserPicks).where(sql`1=1`);
+        await db.delete(mflFilms).where(sql`1=1`);
+        await db
+          .delete(users)
+          .where(sql`${users.lbusername} IN (${ALPHA}, ${BRAVO}, ${CHARLIE}, ${DELTA}, ${ECHO})`);
+      });
+
+      it('omits a member who submitted no picks', async () => {
+        const result = await dc.dbGetMFLLeaderboard();
+
+        expect(result.data!.map((r) => r.lbusername)).not.toContain(ECHO);
+      });
+
+      it('keeps a member whose picks are all unscored at zero', async () => {
+        const result = await dc.dbGetMFLLeaderboard();
+        const delta = result.data!.find((r) => r.lbusername === DELTA)!;
+
+        expect(delta.total_points).toBe(0);
+      });
+
+      it('returns totals as numbers, not numeric strings', async () => {
+        const result = await dc.dbGetMFLLeaderboard();
+
+        for (const row of result.data!) {
+          expect(typeof row.total_points).toBe('number');
+        }
+      });
+
+      it('orders by total desc, breaking ties on lbusername', async () => {
+        const result = await dc.dbGetMFLLeaderboard();
+
+        expect(result.data!.map((r) => [r.lbusername, r.total_points])).toEqual([
+          [ALPHA, 50],
+          [BRAVO, 30],
+          [CHARLIE, 30],
+          [DELTA, 0],
+        ]);
+      });
+
+      it('carries the display name through, null when unset', async () => {
+        const result = await dc.dbGetMFLLeaderboard();
+        const byUser = new Map(result.data!.map((r) => [r.lbusername, r]));
+
+        expect(byUser.get(ALPHA)!.display_name).toBe('Alpha');
+        expect(byUser.get(CHARLIE)!.display_name).toBeNull();
+      });
+
+      // The build-together invariant: a member's total is exactly the sum of
+      // their picked films' totals in the catalogue read.
+      it('totals match summing the same films in dbGetMFLMovies', async () => {
+        const leaderboard = await dc.dbGetMFLLeaderboard();
+        const catalogue = await dc.dbGetMFLMovies();
+        const filmTotal = new Map(
+          catalogue.data!.map((f) => [f.film_slug, f.total_points]),
+        );
+        const picks: Record<string, string[]> = {
+          [ALPHA]: ['lb-worth-30', 'lb-worth-20'],
+          [BRAVO]: ['lb-worth-30'],
+          [CHARLIE]: ['lb-worth-30'],
+          [DELTA]: ['lb-worth-0'],
+        };
+
+        for (const row of leaderboard.data!) {
+          const expected = picks[row.lbusername]!.reduce(
+            (sum, slug) => sum + filmTotal.get(slug)!,
+            0,
+          );
+          expect(row.total_points).toBe(expected);
+        }
+      });
+    });
+  });
+
   describe('Top Rated Films', () => {
     it('excludes non-discord raters from count and average', async () => {
       const result = await dc.dbGetTopRatedUserFilms({ minRatings: 1 });

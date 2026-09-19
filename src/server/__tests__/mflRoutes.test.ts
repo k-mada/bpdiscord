@@ -9,6 +9,7 @@ describe("mflRoutes wiring", () => {
   it("exposes exactly the routes it means to", () => {
     expect(routes.map((r) => `${r.method} ${r.path}`).sort()).toEqual([
       "DELETE /admin/movie-score/:scoringId",
+      "GET /leaderboard",
       "GET /movie-score/:filmSlug",
       "GET /movies",
       "GET /picks",
@@ -43,7 +44,7 @@ describe("mflRoutes wiring", () => {
       (r) => r.method === "GET" && r.path !== "/picks",
     );
 
-    expect(publicReads).toHaveLength(4);
+    expect(publicReads).toHaveLength(5);
     for (const route of publicReads) {
       expect(route.middleware).not.toContain("authenticateToken");
       expect(route.middleware).not.toContain("authorizeAdmin");

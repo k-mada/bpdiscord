@@ -4,6 +4,7 @@ import { NO_LBUSERNAME_MESSAGE } from "../../shared/utilities";
 import {
   dbGetMFLScoringMetrics,
   dbGetMFLUserScores,
+  dbGetMFLLeaderboard,
   dbGetMFLMovies,
   dbGetMflMovieScore,
   dbUpsertMflMovieScore,
@@ -64,6 +65,43 @@ export async function getMFLUserScores(
     res
       .status(500)
       .json({ error: dbResult.error || "Failed to get MFL user scores" });
+  }
+}
+
+export async function getMFLLeaderboard(
+  req: Request,
+  res: Response
+): Promise<void> {
+  const dbResult = await dbGetMFLLeaderboard();
+
+  if (dbResult.success && dbResult.data) {
+    // Competition rank: rows arrive sorted by total desc, so equal totals reuse
+    // the previous rank and the next distinct total jumps to its position.
+    let previousTotal: number | null = null;
+    let previousRank = 0;
+    const leaderboard = dbResult.data.map((row, index) => {
+      const rank =
+        row.total_points === previousTotal ? previousRank : index + 1;
+      previousTotal = row.total_points;
+      previousRank = rank;
+      return {
+        rank,
+        lbusername: row.lbusername,
+        displayName: row.display_name,
+        totalPoints: row.total_points,
+      };
+    });
+
+    const response: ApiResponse = {
+      message: "MFL leaderboard retrieved successfully",
+      data: leaderboard,
+    };
+
+    res.json(response);
+  } else {
+    res
+      .status(500)
+      .json({ error: dbResult.error || "Failed to get MFL leaderboard" });
   }
 }
 

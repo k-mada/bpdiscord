@@ -17,6 +17,7 @@ import { mockReqRes } from "./helpers/mockReqRes";
 // response contract only; the queries are dataController.test.ts's job.
 vi.mock('../controllers/dataController', () => ({
   dbGetMFLMovies: vi.fn(),
+  dbGetMFLLeaderboard: vi.fn(),
   dbGetMFLUserScores: vi.fn(),
   dbGetMFLScoringMetrics: vi.fn(),
   dbGetMflMovieScore: vi.fn(),
@@ -29,6 +30,7 @@ vi.mock('../controllers/dataController', () => ({
 
 import {
   getMFLMovies,
+  getMFLLeaderboard,
   getMFLUserScores,
   upsertMflMovieScore,
   getMflUserPicks,
@@ -36,6 +38,7 @@ import {
 } from '../controllers/mflController';
 import {
   dbGetMFLMovies,
+  dbGetMFLLeaderboard,
   dbGetMFLUserScores,
   dbUpsertMflMovieScore,
   dbResolveLbusername,
@@ -152,6 +155,84 @@ describe('getMFLMovies', () => {
 
     const { req, res, statusCalls } = mockReqRes();
     await getMFLMovies(req, res);
+
+    expect(statusCalls).toEqual([500]);
+  });
+});
+
+describe('getMFLLeaderboard', () => {
+  const rows = (
+    entries: Array<[string, string | null, number]>,
+  ) =>
+    entries.map(([lbusername, display_name, total_points]) => ({
+      lbusername,
+      display_name,
+      total_points,
+    }));
+
+  it('assigns competition rank: equal totals share a rank and the next total skips', async () => {
+    vi.mocked(dbGetMFLLeaderboard).mockResolvedValue({
+      success: true,
+      data: rows([
+        ['alpha', 'Alpha', 50],
+        ['bravo', 'Bravo', 30],
+        ['charlie', null, 30],
+        ['delta', 'Delta', 0],
+      ]),
+    } as never);
+
+    const { req, res, statusCalls, jsonCalls } = mockReqRes();
+    await getMFLLeaderboard(req, res);
+
+    expect(statusCalls).toEqual([]);
+    const data = (jsonCalls[0] as { data: Array<Record<string, unknown>> }).data;
+    expect(data.map((r) => [r.lbusername, r.rank, r.totalPoints])).toEqual([
+      ['alpha', 1, 50],
+      ['bravo', 2, 30],
+      ['charlie', 2, 30],
+      ['delta', 4, 0],
+    ]);
+  });
+
+  it('renames every column and carries a null display name through', async () => {
+    vi.mocked(dbGetMFLLeaderboard).mockResolvedValue({
+      success: true,
+      data: rows([['charlie', null, 10]]),
+    } as never);
+
+    const { req, res, jsonCalls } = mockReqRes();
+    await getMFLLeaderboard(req, res);
+
+    const [entry] = (jsonCalls[0] as { data: Record<string, unknown>[] }).data;
+    expect(entry).toEqual({
+      rank: 1,
+      lbusername: 'charlie',
+      displayName: null,
+      totalPoints: 10,
+    });
+  });
+
+  it('returns an empty list rather than failing when nobody has picks', async () => {
+    vi.mocked(dbGetMFLLeaderboard).mockResolvedValue({
+      success: true,
+      data: [],
+    } as never);
+
+    const { req, res, statusCalls, jsonCalls } = mockReqRes();
+    await getMFLLeaderboard(req, res);
+
+    expect(statusCalls).toEqual([]);
+    expect(jsonCalls[0]).toMatchObject({ data: [] });
+  });
+
+  it('500s when the query fails', async () => {
+    vi.mocked(dbGetMFLLeaderboard).mockResolvedValue({
+      success: false,
+      error: 'boom',
+    } as never);
+
+    const { req, res, statusCalls } = mockReqRes();
+    await getMFLLeaderboard(req, res);
 
     expect(statusCalls).toEqual([500]);
   });
