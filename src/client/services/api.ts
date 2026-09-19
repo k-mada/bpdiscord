@@ -271,8 +271,13 @@ class ApiService {
     return this.request<MFLCatalogueFilm[]>("/mfl/movies");
   }
 
-  async getMflLeaderboard(): Promise<ApiResponse<MFLLeaderboardEntry[]>> {
-    return this.request<MFLLeaderboardEntry[]>("/mfl/leaderboard");
+  async getMflLeaderboard(
+    signal?: AbortSignal,
+  ): Promise<ApiResponse<MFLLeaderboardEntry[]>> {
+    return this.request<MFLLeaderboardEntry[]>(
+      "/mfl/leaderboard",
+      signal ? { signal } : {},
+    );
   }
 
   async getMflPicks(
