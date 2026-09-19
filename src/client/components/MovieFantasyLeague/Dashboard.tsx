@@ -36,12 +36,14 @@ const MovieFantasyLeague = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
         <section aria-labelledby="mfl-standings-heading">
-          <h2
-            id="mfl-standings-heading"
-            className="text-xl font-bold text-letterboxd-text-primary mb-4"
-          >
-            Standings
-          </h2>
+          <div className="flex items-center min-h-9 mb-4">
+            <h2
+              id="mfl-standings-heading"
+              className="text-xl font-bold text-letterboxd-text-primary"
+            >
+              Standings
+            </h2>
+          </div>
 
           {standingsLoading && <Spinner />}
 
@@ -67,7 +69,7 @@ const MovieFantasyLeague = () => {
         </section>
 
         <section aria-labelledby="mfl-movies-heading">
-          <div className="flex items-center gap-4 mb-4">
+          <div className="flex items-center gap-4 min-h-9 mb-4">
             <h2
               id="mfl-movies-heading"
               className="text-xl font-bold text-letterboxd-text-primary"

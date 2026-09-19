@@ -158,7 +158,7 @@ export const mflFilmSummaryColumns: ColumnDef<MFLCatalogueFilm>[] = [
   },
   {
     key: "totalPoints",
-    label: "Total Points",
+    label: "Points",
     sortKey: "totalPoints",
     customSort: (a, b) => a.totalPoints - b.totalPoints,
   },

@@ -155,7 +155,7 @@ describe("MFL films page", () => {
     const headers = screen
       .getAllByRole("columnheader")
       .map((h) => h.textContent?.replace(/[⇅▲▼]/g, "").trim());
-    expect(headers).toEqual(["Film", "Released", "Price", "Total Points"]);
+    expect(headers).toEqual(["Film", "Released", "Price", "Points"]);
   });
 
   it("surfaces a fetch failure instead of an empty catalogue message", () => {
