@@ -6,6 +6,7 @@ import Spinner from "../Spinner";
 import { useMflData } from "../../hooks/useMflData";
 import { useAuth } from "../../contexts/AuthContext";
 import { Button } from "../ui/Button";
+import { Input } from "../ui/Input";
 import { Notification, Status } from "../ui/Notification";
 import { failureMessage } from "../../lib/failureMessage";
 
@@ -289,7 +290,7 @@ const MFLAdmin = () => {
             <label htmlFor="txt-points-awarded" className="mr-8">
               Points awarded:
             </label>
-            <input
+            <Input
               type="text"
               id="txt-points-awarded"
               value={inputPointsAwarded}
