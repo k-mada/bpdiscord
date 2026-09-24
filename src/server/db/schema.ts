@@ -155,12 +155,16 @@ export const mflRosters = pgTable(
     rosterId: bigserial('roster_id', { mode: 'number' }).primaryKey(),
     lbusername: varchar('lbusername').notNull(),
     name: text('name').notNull(),
+    isOfficial: boolean('is_official').default(false).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
     unique('mfl_rosters_user_name_key').on(table.lbusername, table.name),
     check('mfl_rosters_name_length', sql`char_length(btrim(${table.name})) between 1 and 80`),
+    uniqueIndex('mfl_rosters_one_official_per_user')
+      .on(table.lbusername)
+      .where(sql`${table.isOfficial}`),
   ]
 );
 

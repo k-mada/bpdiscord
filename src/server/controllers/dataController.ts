@@ -1653,12 +1653,16 @@ const MFL_ROSTER_NAME_CONSTRAINT = "mfl_rosters_user_name_key";
 
 export async function dbGetUserRosters(lbusername: string): Promise<{
   success: boolean;
-  data?: Array<{ roster_id: number; name: string }>;
+  data?: Array<{ roster_id: number; name: string; is_official: boolean }>;
   error?: string;
 }> {
   return dbOperation(async () => {
     return db
-      .select({ roster_id: mflRosters.rosterId, name: mflRosters.name })
+      .select({
+        roster_id: mflRosters.rosterId,
+        name: mflRosters.name,
+        is_official: mflRosters.isOfficial,
+      })
       .from(mflRosters)
       .where(eq(mflRosters.lbusername, lbusername))
       .orderBy(asc(mflRosters.createdAt), asc(mflRosters.rosterId));
@@ -1757,6 +1761,34 @@ export async function dbGetRosterView(
 const NOT_IN_CATALOGUE = "One or more of those films is not in the catalogue.";
 const DUPLICATE_ROSTER_NAME = "You already have a roster with that name.";
 
+type RosterTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/**
+ * Makes one roster the caller's official one. Clears the previous official first
+ * so the two updates never leave two rows set — mfl_rosters_one_official_per_user
+ * would reject that. Both run in the caller's transaction, so the switch is
+ * atomic: A stops being official and B starts in one commit.
+ */
+async function setOfficialRoster(
+  tx: RosterTx,
+  lbusername: string,
+  rosterId: number,
+): Promise<void> {
+  await tx
+    .update(mflRosters)
+    .set({ isOfficial: false })
+    .where(
+      and(
+        eq(mflRosters.lbusername, lbusername),
+        eq(mflRosters.isOfficial, true),
+      ),
+    );
+  await tx
+    .update(mflRosters)
+    .set({ isOfficial: true })
+    .where(eq(mflRosters.rosterId, rosterId));
+}
+
 /** Thrown inside the create transaction so a full roster rolls back cleanly. */
 class RosterLimitError extends Error {}
 
@@ -1765,6 +1797,7 @@ export async function dbCreateRoster(
   name: string,
   filmSlugs: string[],
   maxRosters: number,
+  isOfficial: boolean,
 ): Promise<{
   success: boolean;
   data?: number;
@@ -1795,6 +1828,9 @@ export async function dbCreateRoster(
         await tx
           .insert(mflUserPicks)
           .values(filmSlugs.map((filmSlug) => ({ rosterId: roster.rosterId, filmSlug })));
+      }
+      if (isOfficial) {
+        await setOfficialRoster(tx, lbusername, roster.rosterId);
       }
       return roster.rosterId;
     });
@@ -1827,8 +1863,9 @@ export async function dbCreateRoster(
  * the caller's to verify before this runs.
  */
 export async function dbUpdateRoster(
+  lbusername: string,
   rosterId: number,
-  changes: { name?: string; filmSlugs?: string[] },
+  changes: { name?: string; filmSlugs?: string[]; isOfficial?: boolean },
 ): Promise<{ success: boolean; error?: string; conflict?: boolean; notFound?: boolean }> {
   try {
     await db.transaction(async (tx) => {
@@ -1848,6 +1885,14 @@ export async function dbUpdateRoster(
             .insert(mflUserPicks)
             .values(changes.filmSlugs.map((filmSlug) => ({ rosterId, filmSlug })));
         }
+      }
+      if (changes.isOfficial === true) {
+        await setOfficialRoster(tx, lbusername, rosterId);
+      } else if (changes.isOfficial === false) {
+        await tx
+          .update(mflRosters)
+          .set({ isOfficial: false })
+          .where(eq(mflRosters.rosterId, rosterId));
       }
     });
     return { success: true };

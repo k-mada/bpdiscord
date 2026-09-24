@@ -108,6 +108,7 @@ export interface MFLPick {
 export interface MFLRoster {
   rosterId: number;
   name: string;
+  isOfficial: boolean;
 }
 
 export interface MFLRosterViewPick {

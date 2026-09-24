@@ -77,6 +77,7 @@ const MyPicks = () => {
   // null means the create-a-new-roster form; a number selects an existing one.
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [name, setName] = useState(EMPTY);
+  const [isOfficial, setIsOfficial] = useState(false);
   const [slots, setSlots] = useState<string[]>(emptySlots);
   const [editing, setEditing] = useState<number | null>(null);
   const [rostersLoading, setRostersLoading] = useState(true);
@@ -108,6 +109,7 @@ const MyPicks = () => {
         setRosters(loaded);
         setSelectedId(loaded[0]?.rosterId ?? null);
         setName(loaded[0]?.name ?? EMPTY);
+        setIsOfficial(loaded[0]?.isOfficial ?? false);
       } catch (error) {
         if (error instanceof Error && error.name === "AbortError") return;
         setStatus({ type: "error", message: failureMessage(error) });
@@ -194,12 +196,15 @@ const MyPicks = () => {
     if (value === NEW) {
       setSelectedId(null);
       setName(EMPTY);
+      setIsOfficial(false);
       setSlots(emptySlots());
       return;
     }
     const id = Number(value);
+    const roster = rosters.find((r) => r.rosterId === id);
     setSelectedId(id);
-    setName(rosters.find((r) => r.rosterId === id)?.name ?? EMPTY);
+    setName(roster?.name ?? EMPTY);
+    setIsOfficial(roster?.isOfficial ?? false);
   };
 
   async function refreshRosters(authToken: string): Promise<MFLRoster[]> {
@@ -215,14 +220,19 @@ const MyPicks = () => {
     setSaving(true);
     try {
       if (isCreate) {
-        const response = await apiService.createMflRoster(trimmedName, filled, token);
+        const response = await apiService.createMflRoster(
+          trimmedName,
+          filled,
+          isOfficial,
+          token,
+        );
         await refreshRosters(token);
         setSelectedId(response.data?.rosterId ?? null);
         setStatus({ type: "success", message: "Roster created." });
       } else {
         await apiService.updateMflRoster(
           selectedId,
-          { name: trimmedName, filmSlugs: filled },
+          { name: trimmedName, filmSlugs: filled, isOfficial },
           token,
         );
         await refreshRosters(token);
@@ -246,6 +256,7 @@ const MyPicks = () => {
       setConfirmingDelete(false);
       setSelectedId(next?.rosterId ?? null);
       setName(next?.name ?? EMPTY);
+      setIsOfficial(next?.isOfficial ?? false);
       if (!next) setSlots(emptySlots());
       setStatus({ type: "success", message: "Roster deleted." });
     } catch (error) {
@@ -313,7 +324,7 @@ const MyPicks = () => {
                   >
                     {rosters.map((roster) => (
                       <option key={roster.rosterId} value={String(roster.rosterId)}>
-                        {roster.name}
+                        {roster.isOfficial ? `${roster.name} (official)` : roster.name}
                       </option>
                     ))}
                     <option value={NEW}>+ New roster</option>
@@ -371,6 +382,20 @@ const MyPicks = () => {
               onChange={(e) => setName(e.target.value)}
               className="w-full sm:w-80"
             />
+            <label
+              htmlFor="roster-official"
+              className="mt-1 flex items-center gap-2 text-sm text-letterboxd-text-secondary"
+            >
+              <input
+                id="roster-official"
+                type="checkbox"
+                checked={isOfficial}
+                disabled={saving || picksLoading}
+                onChange={(e) => setIsOfficial(e.target.checked)}
+                className="w-4 h-4 rounded-xs border border-letterboxd-border-light bg-letterboxd-bg-secondary"
+              />
+              Make this my official roster
+            </label>
           </div>
 
           <ul className="flex flex-col gap-2">

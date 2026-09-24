@@ -334,7 +334,11 @@ export async function listRosters(req: Request, res: Response): Promise<void> {
 
   const response: ApiResponse = {
     message: "Rosters retrieved successfully",
-    data: dbResult.data.map((r) => ({ rosterId: r.roster_id, name: r.name })),
+    data: dbResult.data.map((r) => ({
+      rosterId: r.roster_id,
+      name: r.name,
+      isOfficial: r.is_official,
+    })),
   };
   res.json(response);
 }
@@ -409,11 +413,21 @@ export async function createRoster(req: Request, res: Response): Promise<void> {
     res.status(400).json({ error: picks.error });
     return;
   }
+  if (req.body.isOfficial !== undefined && typeof req.body.isOfficial !== "boolean") {
+    res.status(400).json({ error: "isOfficial must be a boolean" });
+    return;
+  }
 
   const lbusername = await requireLbusername(req, res);
   if (!lbusername) return;
 
-  const dbResult = await dbCreateRoster(lbusername, name.name, picks.filmSlugs, MAX_ROSTERS);
+  const dbResult = await dbCreateRoster(
+    lbusername,
+    name.name,
+    picks.filmSlugs,
+    MAX_ROSTERS,
+    req.body.isOfficial === true,
+  );
   if (dbResult.success) {
     res.status(201).json({ message: "Roster created", data: { rosterId: dbResult.data } });
     return;
@@ -430,7 +444,7 @@ export async function createRoster(req: Request, res: Response): Promise<void> {
 }
 
 export async function updateRoster(req: Request, res: Response): Promise<void> {
-  const changes: { name?: string; filmSlugs?: string[] } = {};
+  const changes: { name?: string; filmSlugs?: string[]; isOfficial?: boolean } = {};
 
   if (req.body.name !== undefined) {
     const name = validateName(req.body.name);
@@ -448,7 +462,18 @@ export async function updateRoster(req: Request, res: Response): Promise<void> {
     }
     changes.filmSlugs = picks.filmSlugs;
   }
-  if (changes.name === undefined && changes.filmSlugs === undefined) {
+  if (req.body.isOfficial !== undefined) {
+    if (typeof req.body.isOfficial !== "boolean") {
+      res.status(400).json({ error: "isOfficial must be a boolean" });
+      return;
+    }
+    changes.isOfficial = req.body.isOfficial;
+  }
+  if (
+    changes.name === undefined &&
+    changes.filmSlugs === undefined &&
+    changes.isOfficial === undefined
+  ) {
     res.status(400).json({ error: "Nothing to update" });
     return;
   }
@@ -459,7 +484,7 @@ export async function updateRoster(req: Request, res: Response): Promise<void> {
   const rosterId = await requireOwnedRoster(req, res, lbusername);
   if (rosterId === null) return;
 
-  const dbResult = await dbUpdateRoster(rosterId, changes);
+  const dbResult = await dbUpdateRoster(lbusername, rosterId, changes);
   if (dbResult.success) {
     res.json({ message: "Roster saved" });
     return;
