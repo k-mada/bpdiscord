@@ -30,12 +30,14 @@ import {
   dbTransaction,
   isUniqueViolation,
   isForeignKeyViolation,
+  DbResult,
 } from "../db/utils";
 import {
   HaterRankingRow,
   MissingFilmsRow,
   CompatibilityExtremeRow,
   CompatibilityRow,
+  RosterView,
   toNumber,
   UNCATEGORISED,
 } from "../db/queryTypes";
@@ -1709,24 +1711,9 @@ export async function dbGetRosterPicks(rosterId: number): Promise<{
  * A roster's public read-only view: its films with points, plus the total.
  * Returns null (not an error) when no such roster exists, so the caller 404s.
  */
-export async function dbGetRosterView(rosterId: number): Promise<{
-  success: boolean;
-  data?: {
-    roster_id: number;
-    name: string;
-    lbusername: string;
-    display_name: string | null;
-    picks: Array<{
-      film_slug: string;
-      title: string;
-      release_date: string | null;
-      price: number | null;
-      total_points: number;
-    }>;
-    total_points: number;
-  } | null;
-  error?: string;
-}> {
+export async function dbGetRosterView(
+  rosterId: number,
+): Promise<DbResult<RosterView | null>> {
   return dbOperation(async () => {
     // Meta separately from picks so an existing-but-empty roster is a 200 with
     // no films rather than indistinguishable from a missing one.
@@ -1757,7 +1744,9 @@ export async function dbGetRosterView(rosterId: number): Promise<{
       .innerJoin(mflFilms, eq(mflFilms.filmSlug, mflUserPicks.filmSlug))
       .leftJoin(mflScoringTally, eq(mflScoringTally.filmSlug, mflUserPicks.filmSlug))
       .where(eq(mflUserPicks.rosterId, rosterId))
-      .groupBy(mflFilms.filmSlug, mflFilms.title, mflFilms.releaseDate, mflFilms.price)
+      // Group by the films PK alone; title/release_date/price are functionally
+      // dependent on it, so Postgres allows selecting them ungrouped.
+      .groupBy(mflFilms.filmSlug)
       .orderBy(asc(mflFilms.title), asc(mflFilms.filmSlug));
 
     const total_points = picks.reduce((sum, p) => sum + p.total_points, 0);
