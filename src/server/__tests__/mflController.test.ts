@@ -175,18 +175,22 @@ describe('getMFLMovies', () => {
 });
 
 describe('getMFLLeaderboard', () => {
-  const rows = (
-    entries: Array<[string, string | null, number]>,
-  ) =>
-    entries.map(([lbusername, display_name, total_points], i) => ({
+  type LbTuple = [string, string | null, number, boolean?];
+  const rows = (entries: Array<LbTuple>) =>
+    entries.map(([lbusername, display_name, total_points, is_official], i) => ({
       roster_id: i + 1,
       name: `${lbusername}'s roster`,
       lbusername,
       display_name,
+      is_official: is_official ?? false,
       total_points,
     }));
 
-  it('assigns competition rank: equal totals share a rank and the next total skips', async () => {
+  type Entry = Record<string, unknown>;
+  const lists = (jsonCalls: unknown[]) =>
+    (jsonCalls[0] as { data: { official: Entry[]; all: Entry[] } }).data;
+
+  it('assigns competition rank in the all list: ties share a rank, the next skips', async () => {
     vi.mocked(dbGetMFLLeaderboard).mockResolvedValue({
       success: true,
       data: rows([
@@ -201,8 +205,8 @@ describe('getMFLLeaderboard', () => {
     await getMFLLeaderboard(req, res);
 
     expect(statusCalls).toEqual([]);
-    const data = (jsonCalls[0] as { data: Array<Record<string, unknown>> }).data;
-    expect(data.map((r) => [r.lbusername, r.rank, r.totalPoints])).toEqual([
+    const { all } = lists(jsonCalls);
+    expect(all.map((r) => [r.lbusername, r.rank, r.totalPoints])).toEqual([
       ['alpha', 1, 50],
       ['bravo', 2, 30],
       ['charlie', 2, 30],
@@ -210,27 +214,51 @@ describe('getMFLLeaderboard', () => {
     ]);
   });
 
-  it('renames every column and carries a null display name through', async () => {
+  it('ranks the official list among itself, not by all-roster position', async () => {
     vi.mocked(dbGetMFLLeaderboard).mockResolvedValue({
       success: true,
-      data: rows([['charlie', null, 10]]),
+      data: rows([
+        ['alpha', 'Alpha', 50, false],
+        ['bravo', 'Bravo', 30, true],
+        ['charlie', null, 20, true],
+      ]),
     } as never);
 
     const { req, res, jsonCalls } = mockReqRes();
     await getMFLLeaderboard(req, res);
 
-    const [entry] = (jsonCalls[0] as { data: Record<string, unknown>[] }).data;
-    expect(entry).toEqual({
+    const { official, all } = lists(jsonCalls);
+    // Official excludes alpha and re-ranks bravo/charlie from 1.
+    expect(official.map((r) => [r.lbusername, r.rank])).toEqual([
+      ['bravo', 1],
+      ['charlie', 2],
+    ]);
+    expect(all.map((r) => r.lbusername)).toEqual(['alpha', 'bravo', 'charlie']);
+  });
+
+  it('renames every column and carries a null display name through', async () => {
+    vi.mocked(dbGetMFLLeaderboard).mockResolvedValue({
+      success: true,
+      data: rows([['charlie', null, 10, true]]),
+    } as never);
+
+    const { req, res, jsonCalls } = mockReqRes();
+    await getMFLLeaderboard(req, res);
+
+    const { official, all } = lists(jsonCalls);
+    const expected = {
       rank: 1,
       rosterId: 1,
       name: "charlie's roster",
       lbusername: 'charlie',
       displayName: null,
       totalPoints: 10,
-    });
+    };
+    expect(all[0]).toEqual(expected);
+    expect(official[0]).toEqual(expected);
   });
 
-  it('returns an empty list rather than failing when nobody has picks', async () => {
+  it('returns empty lists rather than failing when nobody has picks', async () => {
     vi.mocked(dbGetMFLLeaderboard).mockResolvedValue({
       success: true,
       data: [],
@@ -240,7 +268,7 @@ describe('getMFLLeaderboard', () => {
     await getMFLLeaderboard(req, res);
 
     expect(statusCalls).toEqual([]);
-    expect(jsonCalls[0]).toMatchObject({ data: [] });
+    expect(jsonCalls[0]).toMatchObject({ data: { official: [], all: [] } });
   });
 
   it('500s when the query fails', async () => {

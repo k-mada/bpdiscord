@@ -73,6 +73,37 @@ export async function getMFLUserScores(
   }
 }
 
+type LeaderboardRow = {
+  roster_id: number;
+  name: string;
+  lbusername: string;
+  display_name: string | null;
+  total_points: number;
+};
+
+/**
+ * Ranks rosters already ordered by total descending. Competition rank: equal
+ * totals share a rank and the next distinct total jumps to its position. Called
+ * once per list so each list ranks 1..n within itself.
+ */
+function rankLeaderboard(rows: LeaderboardRow[]) {
+  let previousTotal: number | null = null;
+  let previousRank = 0;
+  return rows.map((row, index) => {
+    const rank = row.total_points === previousTotal ? previousRank : index + 1;
+    previousTotal = row.total_points;
+    previousRank = rank;
+    return {
+      rank,
+      rosterId: row.roster_id,
+      name: row.name,
+      lbusername: row.lbusername,
+      displayName: row.display_name,
+      totalPoints: row.total_points,
+    };
+  });
+}
+
 export async function getMFLLeaderboard(
   req: Request,
   res: Response
@@ -80,28 +111,14 @@ export async function getMFLLeaderboard(
   const dbResult = await dbGetMFLLeaderboard();
 
   if (dbResult.success && dbResult.data) {
-    // Competition rank: rows arrive sorted by total desc, so equal totals reuse
-    // the previous rank and the next distinct total jumps to its position.
-    let previousTotal: number | null = null;
-    let previousRank = 0;
-    const leaderboard = dbResult.data.map((row, index) => {
-      const rank =
-        row.total_points === previousTotal ? previousRank : index + 1;
-      previousTotal = row.total_points;
-      previousRank = rank;
-      return {
-        rank,
-        rosterId: row.roster_id,
-        name: row.name,
-        lbusername: row.lbusername,
-        displayName: row.display_name,
-        totalPoints: row.total_points,
-      };
-    });
-
+    // The DB rows are already sorted by total desc; filtering to official rosters
+    // keeps that order, so each list ranks correctly on its own.
     const response: ApiResponse = {
       message: "MFL leaderboard retrieved successfully",
-      data: leaderboard,
+      data: {
+        official: rankLeaderboard(dbResult.data.filter((row) => row.is_official)),
+        all: rankLeaderboard(dbResult.data),
+      },
     };
 
     res.json(response);

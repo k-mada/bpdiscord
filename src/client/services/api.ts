@@ -16,7 +16,7 @@ import {
   MFLPick,
   MFLRoster,
   MFLRosterView,
-  MFLLeaderboardEntry,
+  MFLLeaderboards,
   AwardShow,
   EventSummary,
   EventData,
@@ -275,8 +275,8 @@ class ApiService {
 
   async getMflLeaderboard(
     signal?: AbortSignal,
-  ): Promise<ApiResponse<MFLLeaderboardEntry[]>> {
-    return this.request<MFLLeaderboardEntry[]>(
+  ): Promise<ApiResponse<MFLLeaderboards>> {
+    return this.request<MFLLeaderboards>(
       "/mfl/leaderboard",
       signal ? { signal } : {},
     );
