@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import Spinner from "../Spinner";
 import { Button } from "../ui/Button";
+import { Input } from "../ui/Input";
 import { Notification, Status } from "../ui/Notification";
 import { MoviePickerModal } from "./MoviePickerModal";
 import { useMflData } from "../../hooks/useMflData";
@@ -281,33 +282,35 @@ const MyPicks = () => {
 
           {rosters.length > 0 && (
             <div className="mb-4 flex flex-wrap items-end gap-3">
-              <div className="flex flex-col gap-1">
+              <div className="flex flex-col gap-1 w-full sm:w-64">
                 <label
                   htmlFor="roster-select"
                   className="text-sm font-medium text-letterboxd-text-secondary"
                 >
                   Roster
                 </label>
-                <select
-                  id="roster-select"
-                  value={selectedId === null ? NEW : String(selectedId)}
-                  disabled={saving}
-                  onChange={(e) => {
-                    setConfirmingDelete(false);
-                    setStatus({ type: "idle" });
-                    setSelectedId(
-                      e.target.value === NEW ? null : Number(e.target.value),
-                    );
-                  }}
-                  className="rounded-lg border border-letterboxd-border-light bg-letterboxd-bg-secondary px-3 py-2 text-letterboxd-text-primary"
-                >
-                  {rosters.map((roster) => (
-                    <option key={roster.rosterId} value={String(roster.rosterId)}>
-                      {roster.name}
-                    </option>
-                  ))}
-                  <option value={NEW}>+ New roster</option>
-                </select>
+                <div className="select-wrapper">
+                  <select
+                    id="roster-select"
+                    value={selectedId === null ? NEW : String(selectedId)}
+                    disabled={saving}
+                    onChange={(e) => {
+                      setConfirmingDelete(false);
+                      setStatus({ type: "idle" });
+                      setSelectedId(
+                        e.target.value === NEW ? null : Number(e.target.value),
+                      );
+                    }}
+                    className="input-field w-full"
+                  >
+                    {rosters.map((roster) => (
+                      <option key={roster.rosterId} value={String(roster.rosterId)}>
+                        {roster.name}
+                      </option>
+                    ))}
+                    <option value={NEW}>+ New roster</option>
+                  </select>
+                </div>
               </div>
 
               {!isCreate &&
@@ -350,7 +353,7 @@ const MyPicks = () => {
             >
               Roster name
             </label>
-            <input
+            <Input
               id="roster-name"
               type="text"
               value={name}
@@ -358,7 +361,7 @@ const MyPicks = () => {
               disabled={saving || picksLoading}
               placeholder="My Movie Picks"
               onChange={(e) => setName(e.target.value)}
-              className="rounded-lg border border-letterboxd-border-light bg-letterboxd-bg-secondary px-3 py-2 text-letterboxd-text-primary"
+              className="w-full sm:w-80"
             />
           </div>
 
