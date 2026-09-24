@@ -156,20 +156,21 @@ const FilmPage = () => {
               value={data.letterboxdRating?.toFixed(2) ?? "—"}
             />
           </dl>
+          <div className="card">
+            <h2 className="subheading">How we rated it</h2>
+            {data.ratings.length > 0 ? (
+              <ul className="grid grid-cols-1 gap-x-8">
+                {data.ratings.map((rater) => (
+                  <RaterRow key={rater.username} rater={rater} />
+                ))}
+              </ul>
+            ) : (
+              <p className="body-text -prose italic opacity-70">
+                {emptyRatings}
+              </p>
+            )}
+          </div>
         </div>
-      </div>
-
-      <div className="card">
-        <h2 className="subheading">How we rated it</h2>
-        {data.ratings.length > 0 ? (
-          <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8">
-            {data.ratings.map((rater) => (
-              <RaterRow key={rater.username} rater={rater} />
-            ))}
-          </ul>
-        ) : (
-          <p className="body-text -prose italic opacity-70">{emptyRatings}</p>
-        )}
       </div>
     </div>
   );
