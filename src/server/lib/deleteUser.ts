@@ -1,7 +1,14 @@
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { createSupabaseAdminClient } from "../config/database";
 import { db } from "../db";
-import { appUsers, mflUserPicks, userFilms, userRatings, users } from "../db/schema";
+import {
+  appUsers,
+  mflRosters,
+  mflUserPicks,
+  userFilms,
+  userRatings,
+  users,
+} from "../db/schema";
 
 export interface DeleteUserInput {
   /** Supabase auth.users UUID, when entering from the account admin table. */
@@ -94,10 +101,21 @@ export async function deleteUserCompletely(
   const counts: DeletionCounts = { userFilms: 0, userRatings: 0, mflPicks: 0, profile: 0 };
   if (lbusername !== null) {
     await db.transaction(async (tx) => {
-      const picks = await tx
-        .delete(mflUserPicks)
-        .where(eq(mflUserPicks.lbusername, lbusername!))
-        .returning({ slug: mflUserPicks.filmSlug });
+      const rosterIds = (
+        await tx
+          .select({ id: mflRosters.rosterId })
+          .from(mflRosters)
+          .where(eq(mflRosters.lbusername, lbusername!))
+      ).map((r) => r.id);
+      const picks = rosterIds.length
+        ? await tx
+            .delete(mflUserPicks)
+            .where(inArray(mflUserPicks.rosterId, rosterIds))
+            .returning({ slug: mflUserPicks.filmSlug })
+        : [];
+      if (rosterIds.length) {
+        await tx.delete(mflRosters).where(inArray(mflRosters.rosterId, rosterIds));
+      }
       const films = await tx
         .delete(userFilms)
         .where(eq(userFilms.lbusername, lbusername!))

@@ -10,8 +10,12 @@ import {
   dbUpsertMflMovieScore,
   dbDeleteMflMovieScore,
   dbResolveLbusername,
-  dbGetMflUserPicks,
-  dbReplaceMflUserPicks,
+  dbGetUserRosters,
+  dbGetRosterOwner,
+  dbGetRosterPicks,
+  dbCreateRoster,
+  dbUpdateRoster,
+  dbDeleteRoster,
 } from "./dataController";
 
 export async function getMFLScoringMetrics(
@@ -86,6 +90,8 @@ export async function getMFLLeaderboard(
       previousRank = rank;
       return {
         rank,
+        rosterId: row.roster_id,
+        name: row.name,
         lbusername: row.lbusername,
         displayName: row.display_name,
         totalPoints: row.total_points,
@@ -233,7 +239,7 @@ export async function deleteMflMovieScore(
 
 /**
  * The caller's Letterboxd name, or null with the response already sent.
- * MFLUserPicks keys on lbusername; the JWT only identifies the auth account.
+ * Rosters key on lbusername; the JWT only identifies the auth account.
  */
 async function requireLbusername(
   req: Request,
@@ -258,18 +264,90 @@ async function requireLbusername(
   return result.data;
 }
 
-export async function getMflUserPicks(
+/** Guards data integrity only. Roster size and budget are Vulture's rules. */
+const MAX_PICKS = 20;
+const MAX_NAME_LENGTH = 80;
+/** Per-user roster cap, enforced atomically in dbCreateRoster. */
+const MAX_ROSTERS = 10;
+
+/** Validated film slugs, or an error string. Mirrors the DB name-length check. */
+function validateFilmSlugs(value: unknown): { filmSlugs: string[] } | { error: string } {
+  if (!Array.isArray(value) || value.some((s) => typeof s !== "string")) {
+    return { error: "filmSlugs must be an array of strings" };
+  }
+  if (value.length > MAX_PICKS) {
+    return { error: `A roster cannot exceed ${MAX_PICKS} films.` };
+  }
+  if (new Set(value).size !== value.length) {
+    return { error: "A film cannot be picked twice." };
+  }
+  return { filmSlugs: value as string[] };
+}
+
+/** Trimmed roster name, or an error string. */
+function validateName(value: unknown): { name: string } | { error: string } {
+  if (typeof value !== "string") {
+    return { error: "Roster name is required" };
+  }
+  const name = value.trim();
+  if (name === "") {
+    return { error: "Roster name is required" };
+  }
+  if (name.length > MAX_NAME_LENGTH) {
+    return { error: `Roster name cannot exceed ${MAX_NAME_LENGTH} characters.` };
+  }
+  return { name };
+}
+
+/**
+ * The roster the caller owns, or null with the response already sent. 404 hides
+ * whether an unowned id exists at all, so a roster cannot be probed by guessing.
+ */
+async function requireOwnedRoster(
   req: Request,
   res: Response,
-): Promise<void> {
+  lbusername: string,
+): Promise<number | null> {
+  const rosterId = Number(req.params.rosterId);
+  const ownerResult = await dbGetRosterOwner(rosterId);
+  if (!ownerResult.success) {
+    res.status(500).json({ error: ownerResult.error || "Failed to resolve roster" });
+    return null;
+  }
+  if (ownerResult.data !== lbusername) {
+    res.status(404).json({ error: "Roster not found" });
+    return null;
+  }
+  return rosterId;
+}
+
+export async function listRosters(req: Request, res: Response): Promise<void> {
   const lbusername = await requireLbusername(req, res);
   if (!lbusername) return;
 
-  const dbResult = await dbGetMflUserPicks(lbusername);
+  const dbResult = await dbGetUserRosters(lbusername);
   if (!dbResult.success || !dbResult.data) {
-    res
-      .status(500)
-      .json({ error: dbResult.error || "Failed to get MFL picks" });
+    res.status(500).json({ error: dbResult.error || "Failed to get rosters" });
+    return;
+  }
+
+  const response: ApiResponse = {
+    message: "Rosters retrieved successfully",
+    data: dbResult.data.map((r) => ({ rosterId: r.roster_id, name: r.name })),
+  };
+  res.json(response);
+}
+
+export async function getRosterPicks(req: Request, res: Response): Promise<void> {
+  const lbusername = await requireLbusername(req, res);
+  if (!lbusername) return;
+
+  const rosterId = await requireOwnedRoster(req, res, lbusername);
+  if (rosterId === null) return;
+
+  const dbResult = await dbGetRosterPicks(rosterId);
+  if (!dbResult.success || !dbResult.data) {
+    res.status(500).json({ error: dbResult.error || "Failed to get MFL picks" });
     return;
   }
 
@@ -285,39 +363,94 @@ export async function getMflUserPicks(
   res.json(response);
 }
 
-/** Guards data integrity only. Roster size and budget are Vulture's rules. */
-const MAX_PICKS = 20;
-
-export async function replaceMflUserPicks(
-  req: Request,
-  res: Response,
-): Promise<void> {
-  const { filmSlugs } = req.body;
-
-  if (!Array.isArray(filmSlugs) || filmSlugs.some((s) => typeof s !== "string")) {
-    res.status(400).json({ error: "filmSlugs must be an array of strings" });
+export async function createRoster(req: Request, res: Response): Promise<void> {
+  const name = validateName(req.body.name);
+  if ("error" in name) {
+    res.status(400).json({ error: name.error });
     return;
   }
-  if (filmSlugs.length > MAX_PICKS) {
-    res.status(400).json({ error: `A roster cannot exceed ${MAX_PICKS} films.` });
-    return;
-  }
-  if (new Set(filmSlugs).size !== filmSlugs.length) {
-    res.status(400).json({ error: "A film cannot be picked twice." });
+  const picks = validateFilmSlugs(req.body.filmSlugs ?? []);
+  if ("error" in picks) {
+    res.status(400).json({ error: picks.error });
     return;
   }
 
   const lbusername = await requireLbusername(req, res);
   if (!lbusername) return;
 
-  const dbResult = await dbReplaceMflUserPicks(lbusername, filmSlugs);
+  const dbResult = await dbCreateRoster(lbusername, name.name, picks.filmSlugs, MAX_ROSTERS);
   if (dbResult.success) {
-    res.json({ message: "Picks saved successfully" });
+    res.status(201).json({ message: "Roster created", data: { rosterId: dbResult.data } });
+    return;
+  }
+  if (dbResult.conflict || dbResult.limitReached) {
+    res.status(409).json({ error: dbResult.error });
     return;
   }
   if (dbResult.notFound) {
     res.status(404).json({ error: dbResult.error });
     return;
   }
-  res.status(500).json({ error: dbResult.error || "Failed to save picks" });
+  res.status(500).json({ error: dbResult.error || "Failed to create roster" });
+}
+
+export async function updateRoster(req: Request, res: Response): Promise<void> {
+  const changes: { name?: string; filmSlugs?: string[] } = {};
+
+  if (req.body.name !== undefined) {
+    const name = validateName(req.body.name);
+    if ("error" in name) {
+      res.status(400).json({ error: name.error });
+      return;
+    }
+    changes.name = name.name;
+  }
+  if (req.body.filmSlugs !== undefined) {
+    const picks = validateFilmSlugs(req.body.filmSlugs);
+    if ("error" in picks) {
+      res.status(400).json({ error: picks.error });
+      return;
+    }
+    changes.filmSlugs = picks.filmSlugs;
+  }
+  if (changes.name === undefined && changes.filmSlugs === undefined) {
+    res.status(400).json({ error: "Nothing to update" });
+    return;
+  }
+
+  const lbusername = await requireLbusername(req, res);
+  if (!lbusername) return;
+
+  const rosterId = await requireOwnedRoster(req, res, lbusername);
+  if (rosterId === null) return;
+
+  const dbResult = await dbUpdateRoster(rosterId, changes);
+  if (dbResult.success) {
+    res.json({ message: "Roster saved" });
+    return;
+  }
+  if (dbResult.conflict) {
+    res.status(409).json({ error: dbResult.error });
+    return;
+  }
+  if (dbResult.notFound) {
+    res.status(404).json({ error: dbResult.error });
+    return;
+  }
+  res.status(500).json({ error: dbResult.error || "Failed to save roster" });
+}
+
+export async function deleteRoster(req: Request, res: Response): Promise<void> {
+  const lbusername = await requireLbusername(req, res);
+  if (!lbusername) return;
+
+  const rosterId = await requireOwnedRoster(req, res, lbusername);
+  if (rosterId === null) return;
+
+  const dbResult = await dbDeleteRoster(rosterId);
+  if (dbResult.success) {
+    res.json({ message: "Roster deleted" });
+    return;
+  }
+  res.status(500).json({ error: dbResult.error || "Failed to delete roster" });
 }

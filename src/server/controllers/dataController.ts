@@ -20,6 +20,7 @@ import {
   mflScoringTally,
   mflFilms,
   mflUserPicks,
+  mflRosters,
   appUsers,
 } from "../db/schema";
 import {
@@ -1367,8 +1368,16 @@ export async function dbGetMFLUserScores(username: string): Promise<{
   error?: string;
 }> {
   return dbOperation(async () => {
-    // Joined, not an IN-subquery on a string table name, so a later rename is a
-    // compile error. The picks PK stops the join duplicating a tally row.
+    // The user's distinct films across all their rosters. DISTINCT matters now
+    // that a film can sit in more than one roster: without it the tally join
+    // would count the same award once per roster holding the film.
+    const userFilms = db
+      .selectDistinct({ filmSlug: mflUserPicks.filmSlug })
+      .from(mflUserPicks)
+      .innerJoin(mflRosters, eq(mflRosters.rosterId, mflUserPicks.rosterId))
+      .where(eq(mflRosters.lbusername, username))
+      .as("user_films");
+
     const result = await db
       .select({
         metric_id: mflScoringTally.metricId,
@@ -1376,13 +1385,7 @@ export async function dbGetMFLUserScores(username: string): Promise<{
         category: mflScoringMetrics.category,
       })
       .from(mflScoringTally)
-      .innerJoin(
-        mflUserPicks,
-        and(
-          eq(mflUserPicks.filmSlug, mflScoringTally.filmSlug),
-          eq(mflUserPicks.lbusername, username),
-        ),
-      )
+      .innerJoin(userFilms, eq(userFilms.filmSlug, mflScoringTally.filmSlug))
       .leftJoin(
         mflScoringMetrics,
         eq(mflScoringTally.metricId, mflScoringMetrics.metricId),
@@ -1531,6 +1534,8 @@ export async function dbGetMFLMovies(): Promise<{
 export async function dbGetMFLLeaderboard(): Promise<{
   success: boolean;
   data?: Array<{
+    roster_id: number;
+    name: string;
     lbusername: string;
     display_name: string | null;
     total_points: number;
@@ -1538,26 +1543,31 @@ export async function dbGetMFLLeaderboard(): Promise<{
   error?: string;
 }> {
   return dbOperation(async () => {
-    // FROM picks (LEFT to tally) so only members with a roster appear, unscored
-    // ones at 0; the picks PK stops a tally row joining a member twice.
+    // One row per roster. FROM picks (LEFT to tally) so only rosters that hold
+    // films appear, unscored ones at 0; the picks PK stops a tally row joining a
+    // roster twice.
     const rows = await db
       .select({
-        lbusername: mflUserPicks.lbusername,
+        roster_id: mflRosters.rosterId,
+        name: mflRosters.name,
+        lbusername: mflRosters.lbusername,
         display_name: users.displayName,
         // ::int per the house convention — SUM widens to numeric, which
         // postgres.js returns as a string.
         total_points: sql<number>`SUM(COALESCE(${mflScoringTally.pointsAwarded}, 0))::int`,
       })
       .from(mflUserPicks)
+      .innerJoin(mflRosters, eq(mflRosters.rosterId, mflUserPicks.rosterId))
       .leftJoin(
         mflScoringTally,
         eq(mflScoringTally.filmSlug, mflUserPicks.filmSlug),
       )
-      .leftJoin(users, eq(users.lbusername, mflUserPicks.lbusername))
-      .groupBy(mflUserPicks.lbusername, users.displayName)
+      .leftJoin(users, eq(users.lbusername, mflRosters.lbusername))
+      .groupBy(mflRosters.rosterId, mflRosters.name, mflRosters.lbusername, users.displayName)
       .orderBy(
         desc(sql`SUM(COALESCE(${mflScoringTally.pointsAwarded}, 0))`),
-        asc(mflUserPicks.lbusername),
+        asc(mflRosters.name),
+        asc(mflRosters.lbusername),
       );
 
     return rows;
@@ -1637,7 +1647,40 @@ export async function dbResolveLbusername(authUserId: string): Promise<{
   });
 }
 
-export async function dbGetMflUserPicks(lbusername: string): Promise<{
+const MFL_ROSTER_NAME_CONSTRAINT = "mfl_rosters_user_name_key";
+
+export async function dbGetUserRosters(lbusername: string): Promise<{
+  success: boolean;
+  data?: Array<{ roster_id: number; name: string }>;
+  error?: string;
+}> {
+  return dbOperation(async () => {
+    return db
+      .select({ roster_id: mflRosters.rosterId, name: mflRosters.name })
+      .from(mflRosters)
+      .where(eq(mflRosters.lbusername, lbusername))
+      .orderBy(asc(mflRosters.createdAt), asc(mflRosters.rosterId));
+  });
+}
+
+/** The roster's owner, or null when no such roster. The IDOR check keys on this. */
+export async function dbGetRosterOwner(rosterId: number): Promise<{
+  success: boolean;
+  data?: string | null;
+  error?: string;
+}> {
+  return dbOperation(async () => {
+    const rows = await db
+      .select({ lbusername: mflRosters.lbusername })
+      .from(mflRosters)
+      .where(eq(mflRosters.rosterId, rosterId))
+      .limit(1);
+
+    return rows[0]?.lbusername ?? null;
+  });
+}
+
+export async function dbGetRosterPicks(rosterId: number): Promise<{
   success: boolean;
   data?: Array<{
     film_slug: string;
@@ -1657,36 +1700,69 @@ export async function dbGetMflUserPicks(lbusername: string): Promise<{
       })
       .from(mflUserPicks)
       .innerJoin(mflFilms, eq(mflFilms.filmSlug, mflUserPicks.filmSlug))
-      .where(eq(mflUserPicks.lbusername, lbusername))
+      .where(eq(mflUserPicks.rosterId, rosterId))
       .orderBy(asc(mflFilms.title), asc(mflUserPicks.filmSlug));
   });
 }
 
-/**
- * Replaces the whole roster in one transaction, so a rejected submit leaves the
- * previous picks intact rather than half-applied.
- */
-export async function dbReplaceMflUserPicks(
+const NOT_IN_CATALOGUE = "One or more of those films is not in the catalogue.";
+const DUPLICATE_ROSTER_NAME = "You already have a roster with that name.";
+
+/** Thrown inside the create transaction so a full roster rolls back cleanly. */
+class RosterLimitError extends Error {}
+
+export async function dbCreateRoster(
   lbusername: string,
+  name: string,
   filmSlugs: string[],
-): Promise<{ success: boolean; error?: string; notFound?: boolean }> {
+  maxRosters: number,
+): Promise<{
+  success: boolean;
+  data?: number;
+  error?: string;
+  conflict?: boolean;
+  notFound?: boolean;
+  limitReached?: boolean;
+}> {
   try {
-    await db.transaction(async (tx) => {
-      await tx.delete(mflUserPicks).where(eq(mflUserPicks.lbusername, lbusername));
+    const rosterId = await db.transaction(async (tx) => {
+      // Serialize this user's creates so the count-then-insert below cannot race
+      // a concurrent create past the cap. The lock releases at commit/rollback.
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${lbusername}))`);
+      const [countRow] = await tx
+        .select({ n: sql<number>`count(*)::int` })
+        .from(mflRosters)
+        .where(eq(mflRosters.lbusername, lbusername));
+      if ((countRow?.n ?? 0) >= maxRosters) {
+        throw new RosterLimitError();
+      }
+
+      const [roster] = await tx
+        .insert(mflRosters)
+        .values({ lbusername, name })
+        .returning({ rosterId: mflRosters.rosterId });
+      if (!roster) throw new Error("Roster insert returned no row");
       if (filmSlugs.length > 0) {
         await tx
           .insert(mflUserPicks)
-          .values(filmSlugs.map((filmSlug) => ({ lbusername, filmSlug })));
+          .values(filmSlugs.map((filmSlug) => ({ rosterId: roster.rosterId, filmSlug })));
       }
+      return roster.rosterId;
     });
-    return { success: true };
+    return { success: true, data: rosterId };
   } catch (error) {
-    if (isForeignKeyViolation(error, MFL_PICKS_FILM_FK)) {
+    if (error instanceof RosterLimitError) {
       return {
         success: false,
-        notFound: true,
-        error: "One or more of those films is not in the catalogue.",
+        limitReached: true,
+        error: `You cannot have more than ${maxRosters} rosters.`,
       };
+    }
+    if (isUniqueViolation(error, MFL_ROSTER_NAME_CONSTRAINT)) {
+      return { success: false, conflict: true, error: DUPLICATE_ROSTER_NAME };
+    }
+    if (isForeignKeyViolation(error, MFL_PICKS_FILM_FK)) {
+      return { success: false, notFound: true, error: NOT_IN_CATALOGUE };
     }
     console.error("Database operation error:", error);
     return {
@@ -1694,4 +1770,58 @@ export async function dbReplaceMflUserPicks(
       error: error instanceof Error ? error.message : "Unknown database error",
     };
   }
+}
+
+/**
+ * Renames the roster and/or replaces its picks in one transaction, so a rejected
+ * submit leaves the previous state intact rather than half-applied. Ownership is
+ * the caller's to verify before this runs.
+ */
+export async function dbUpdateRoster(
+  rosterId: number,
+  changes: { name?: string; filmSlugs?: string[] },
+): Promise<{ success: boolean; error?: string; conflict?: boolean; notFound?: boolean }> {
+  try {
+    await db.transaction(async (tx) => {
+      // Touch the roster on any change — a pick swap is a modification too, not
+      // just a rename — so updated_at tracks the last edit either way.
+      await tx
+        .update(mflRosters)
+        .set({
+          ...(changes.name !== undefined ? { name: changes.name } : {}),
+          updatedAt: new Date(),
+        })
+        .where(eq(mflRosters.rosterId, rosterId));
+      if (changes.filmSlugs !== undefined) {
+        await tx.delete(mflUserPicks).where(eq(mflUserPicks.rosterId, rosterId));
+        if (changes.filmSlugs.length > 0) {
+          await tx
+            .insert(mflUserPicks)
+            .values(changes.filmSlugs.map((filmSlug) => ({ rosterId, filmSlug })));
+        }
+      }
+    });
+    return { success: true };
+  } catch (error) {
+    if (isUniqueViolation(error, MFL_ROSTER_NAME_CONSTRAINT)) {
+      return { success: false, conflict: true, error: DUPLICATE_ROSTER_NAME };
+    }
+    if (isForeignKeyViolation(error, MFL_PICKS_FILM_FK)) {
+      return { success: false, notFound: true, error: NOT_IN_CATALOGUE };
+    }
+    console.error("Database operation error:", error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown database error",
+    };
+  }
+}
+
+export async function dbDeleteRoster(rosterId: number): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  return dbMutation(async () => {
+    await db.delete(mflRosters).where(eq(mflRosters.rosterId, rosterId));
+  });
 }

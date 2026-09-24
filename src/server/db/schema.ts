@@ -149,14 +149,29 @@ export const mflFilms = pgTable(
   (table) => [check('mfl_films_price_non_negative', sql`${table.price} >= 0`)]
 );
 
+export const mflRosters = pgTable(
+  'MFLRosters',
+  {
+    rosterId: bigserial('roster_id', { mode: 'number' }).primaryKey(),
+    lbusername: varchar('lbusername').notNull(),
+    name: text('name').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique('mfl_rosters_user_name_key').on(table.lbusername, table.name),
+    check('mfl_rosters_name_length', sql`char_length(btrim(${table.name})) between 1 and 80`),
+  ]
+);
+
 export const mflUserPicks = pgTable(
   'MFLUserPicks',
   {
-    lbusername: varchar('lbusername').notNull(),
+    rosterId: bigint('roster_id', { mode: 'number' }).notNull(),
     filmSlug: text('film_slug').notNull(),
   },
   (table) => [
-    primaryKey({ columns: [table.lbusername, table.filmSlug] }),
+    primaryKey({ columns: [table.rosterId, table.filmSlug] }),
     index('idx_mfl_user_picks_film_slug').on(table.filmSlug),
   ]
 );
@@ -165,14 +180,22 @@ export const mflFilmsRelations = relations(mflFilms, ({ many }) => ({
   picks: many(mflUserPicks),
 }));
 
+export const mflRostersRelations = relations(mflRosters, ({ one, many }) => ({
+  user: one(users, {
+    fields: [mflRosters.lbusername],
+    references: [users.lbusername],
+  }),
+  picks: many(mflUserPicks),
+}));
+
 export const mflUserPicksRelations = relations(mflUserPicks, ({ one }) => ({
   film: one(mflFilms, {
     fields: [mflUserPicks.filmSlug],
     references: [mflFilms.filmSlug],
   }),
-  user: one(users, {
-    fields: [mflUserPicks.lbusername],
-    references: [users.lbusername],
+  roster: one(mflRosters, {
+    fields: [mflUserPicks.rosterId],
+    references: [mflRosters.rosterId],
   }),
 }));
 
@@ -430,6 +453,9 @@ export type NewMFLFilm = typeof mflFilms.$inferInsert;
 
 export type MFLUserPickRow = typeof mflUserPicks.$inferSelect;
 export type NewMFLUserPick = typeof mflUserPicks.$inferInsert;
+
+export type MFLRosterRow = typeof mflRosters.$inferSelect;
+export type NewMFLRoster = typeof mflRosters.$inferInsert;
 
 export type AwardShow = typeof awardShows.$inferSelect;
 export type NewAwardShow = typeof awardShows.$inferInsert;

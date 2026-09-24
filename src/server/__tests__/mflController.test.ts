@@ -24,8 +24,12 @@ vi.mock('../controllers/dataController', () => ({
   dbUpsertMflMovieScore: vi.fn(),
   dbDeleteMflMovieScore: vi.fn(),
   dbResolveLbusername: vi.fn(),
-  dbGetMflUserPicks: vi.fn(),
-  dbReplaceMflUserPicks: vi.fn(),
+  dbGetUserRosters: vi.fn(),
+  dbGetRosterOwner: vi.fn(),
+  dbGetRosterPicks: vi.fn(),
+  dbCreateRoster: vi.fn(),
+  dbUpdateRoster: vi.fn(),
+  dbDeleteRoster: vi.fn(),
 }));
 
 import {
@@ -33,8 +37,11 @@ import {
   getMFLLeaderboard,
   getMFLUserScores,
   upsertMflMovieScore,
-  getMflUserPicks,
-  replaceMflUserPicks,
+  listRosters,
+  getRosterPicks,
+  createRoster,
+  updateRoster,
+  deleteRoster,
 } from '../controllers/mflController';
 import {
   dbGetMFLMovies,
@@ -42,8 +49,12 @@ import {
   dbGetMFLUserScores,
   dbUpsertMflMovieScore,
   dbResolveLbusername,
-  dbGetMflUserPicks,
-  dbReplaceMflUserPicks,
+  dbGetUserRosters,
+  dbGetRosterOwner,
+  dbGetRosterPicks,
+  dbCreateRoster,
+  dbUpdateRoster,
+  dbDeleteRoster,
 } from '../controllers/dataController';
 
 
@@ -164,7 +175,9 @@ describe('getMFLLeaderboard', () => {
   const rows = (
     entries: Array<[string, string | null, number]>,
   ) =>
-    entries.map(([lbusername, display_name, total_points]) => ({
+    entries.map(([lbusername, display_name, total_points], i) => ({
+      roster_id: i + 1,
+      name: `${lbusername}'s roster`,
       lbusername,
       display_name,
       total_points,
@@ -206,6 +219,8 @@ describe('getMFLLeaderboard', () => {
     const [entry] = (jsonCalls[0] as { data: Record<string, unknown>[] }).data;
     expect(entry).toEqual({
       rank: 1,
+      rosterId: 1,
+      name: "charlie's roster",
       lbusername: 'charlie',
       displayName: null,
       totalPoints: 10,
@@ -391,116 +406,315 @@ describe('upsertMflMovieScore', () => {
   });
 });
 
-describe('MFL member picks', () => {
+describe('MFL rosters', () => {
   const AUTH = { user: { id: 'auth-uuid' } };
-  const body = { filmSlugs: ['anora', 'hamnet'] };
 
   const linked = () =>
     vi.mocked(dbResolveLbusername).mockResolvedValue({
       success: true,
       data: 'rooney',
     });
+  const owns = () =>
+    vi.mocked(dbGetRosterOwner).mockResolvedValue({ success: true, data: 'rooney' });
 
-  it('401s when the request carries no authenticated user', async () => {
-    const { req, res, statusCalls } = mockReqRes({ body });
-    await replaceMflUserPicks(req, res);
+  describe('createRoster', () => {
+    const body = { name: 'My Movie Picks', filmSlugs: ['anora', 'hamnet'] };
 
-    expect(statusCalls).toEqual([401]);
-    expect(dbReplaceMflUserPicks).not.toHaveBeenCalled();
-  });
+    it('401s when the request carries no authenticated user', async () => {
+      const { req, res, statusCalls } = mockReqRes({ body });
+      await createRoster(req, res);
 
-  // Reachable: signup makes lbusername optional.
-  it('409s when the account has no Letterboxd username linked', async () => {
-    vi.mocked(dbResolveLbusername).mockResolvedValue({ success: true, data: null });
-
-    const { req, res, statusCalls, jsonCalls } = mockReqRes({ ...AUTH, body });
-    await replaceMflUserPicks(req, res);
-
-    expect(statusCalls).toEqual([409]);
-    expect(jsonCalls[0]).toMatchObject({ error: expect.stringContaining('admin') });
-    expect(dbReplaceMflUserPicks).not.toHaveBeenCalled();
-  });
-
-  it('passes the resolved lbusername, never anything from the request', async () => {
-    linked();
-    vi.mocked(dbReplaceMflUserPicks).mockResolvedValue({ success: true });
-
-    const { req, res } = mockReqRes({
-      ...AUTH,
-      body: { ...body, lbusername: 'someone-else' },
-    });
-    await replaceMflUserPicks(req, res);
-
-    expect(dbReplaceMflUserPicks).toHaveBeenCalledWith('rooney', ['anora', 'hamnet']);
-  });
-
-  it.each([
-    ['not an array', { filmSlugs: 'anora' }],
-    ['a non-string entry', { filmSlugs: ['anora', 7] }],
-    ['a duplicate film', { filmSlugs: ['anora', 'anora'] }],
-  ])('400s on %s before touching the database', async (_label, bad) => {
-    const { req, res, statusCalls } = mockReqRes({ ...AUTH, body: bad });
-    await replaceMflUserPicks(req, res);
-
-    expect(statusCalls).toEqual([400]);
-    expect(dbResolveLbusername).not.toHaveBeenCalled();
-  });
-
-  it('accepts an empty roster, which clears the picks', async () => {
-    linked();
-    vi.mocked(dbReplaceMflUserPicks).mockResolvedValue({ success: true });
-
-    const { req, res, statusCalls } = mockReqRes({ ...AUTH, body: { filmSlugs: [] } });
-    await replaceMflUserPicks(req, res);
-
-    expect(statusCalls).toEqual([]);
-    expect(dbReplaceMflUserPicks).toHaveBeenCalledWith('rooney', []);
-  });
-
-  // Roster size and spend are Vulture's rules; this cap only stops an absurd
-  // payload.
-  it('400s a payload beyond the integrity cap', async () => {
-    const { req, res, statusCalls } = mockReqRes({
-      ...AUTH,
-      body: { filmSlugs: Array.from({ length: 21 }, (_, i) => `film-${i}`) },
-    });
-    await replaceMflUserPicks(req, res);
-
-    expect(statusCalls).toEqual([400]);
-  });
-
-  it('404s when a slug is not in the catalogue', async () => {
-    linked();
-    vi.mocked(dbReplaceMflUserPicks).mockResolvedValue({
-      success: false,
-      notFound: true,
-      error: 'One or more of those films is not in the catalogue.',
+      expect(statusCalls).toEqual([401]);
+      expect(dbCreateRoster).not.toHaveBeenCalled();
     });
 
-    const { req, res, statusCalls } = mockReqRes({ ...AUTH, body });
-    await replaceMflUserPicks(req, res);
+    // Reachable: signup makes lbusername optional.
+    it('409s when the account has no Letterboxd username linked', async () => {
+      vi.mocked(dbResolveLbusername).mockResolvedValue({ success: true, data: null });
 
-    expect(statusCalls).toEqual([404]);
-  });
+      const { req, res, statusCalls, jsonCalls } = mockReqRes({ ...AUTH, body });
+      await createRoster(req, res);
 
-  it('returns camelCase picks', async () => {
-    linked();
-    vi.mocked(dbGetMflUserPicks).mockResolvedValue({
-      success: true,
-      data: [
-        { film_slug: 'anora', title: 'Anora', release_date: '2026-10-18', price: 40 },
-      ],
+      expect(statusCalls).toEqual([409]);
+      expect(jsonCalls[0]).toMatchObject({ error: expect.stringContaining('admin') });
+      expect(dbCreateRoster).not.toHaveBeenCalled();
     });
 
-    const { req, res, jsonCalls } = mockReqRes(AUTH);
-    await getMflUserPicks(req, res);
+    it('passes the resolved lbusername, never anything from the request', async () => {
+      linked();
+      vi.mocked(dbCreateRoster).mockResolvedValue({ success: true, data: 5 });
 
-    const picks = (jsonCalls[0] as { data: Record<string, unknown>[] }).data;
-    expect(Object.keys(picks[0]!).sort()).toEqual([
-      'filmSlug',
-      'price',
-      'releaseDate',
-      'title',
-    ]);
+      const { req, res, statusCalls, jsonCalls } = mockReqRes({
+        ...AUTH,
+        body: { ...body, lbusername: 'someone-else' },
+      });
+      await createRoster(req, res);
+
+      expect(statusCalls).toEqual([201]);
+      expect(jsonCalls[0]).toMatchObject({ data: { rosterId: 5 } });
+      expect(dbCreateRoster).toHaveBeenCalledWith('rooney', 'My Movie Picks', ['anora', 'hamnet'], 10);
+    });
+
+    it('trims the roster name', async () => {
+      linked();
+      vi.mocked(dbCreateRoster).mockResolvedValue({ success: true, data: 1 });
+
+      const { req, res } = mockReqRes({ ...AUTH, body: { ...body, name: '  Padded  ' } });
+      await createRoster(req, res);
+
+      expect(dbCreateRoster).toHaveBeenCalledWith('rooney', 'Padded', ['anora', 'hamnet'], 10);
+    });
+
+    it('defaults filmSlugs to an empty roster when omitted', async () => {
+      linked();
+      vi.mocked(dbCreateRoster).mockResolvedValue({ success: true, data: 1 });
+
+      const { req, res, statusCalls } = mockReqRes({ ...AUTH, body: { name: 'Empty' } });
+      await createRoster(req, res);
+
+      expect(statusCalls).toEqual([201]);
+      expect(dbCreateRoster).toHaveBeenCalledWith('rooney', 'Empty', [], 10);
+    });
+
+    it.each([
+      ['a missing name', { filmSlugs: ['anora'] }],
+      ['a blank name', { name: '   ', filmSlugs: ['anora'] }],
+      ['a non-string name', { name: 7, filmSlugs: ['anora'] }],
+      ['an over-long name', { name: 'x'.repeat(81), filmSlugs: ['anora'] }],
+      ['filmSlugs not an array', { name: 'A', filmSlugs: 'anora' }],
+      ['a non-string entry', { name: 'A', filmSlugs: ['anora', 7] }],
+      ['a duplicate film', { name: 'A', filmSlugs: ['anora', 'anora'] }],
+      ['a payload beyond the integrity cap', {
+        name: 'A',
+        filmSlugs: Array.from({ length: 21 }, (_, i) => `film-${i}`),
+      }],
+    ])('400s on %s before touching the database', async (_label, bad) => {
+      const { req, res, statusCalls } = mockReqRes({ ...AUTH, body: bad });
+      await createRoster(req, res);
+
+      expect(statusCalls).toEqual([400]);
+      expect(dbResolveLbusername).not.toHaveBeenCalled();
+    });
+
+    it('409s on a duplicate roster name', async () => {
+      linked();
+      vi.mocked(dbCreateRoster).mockResolvedValue({
+        success: false,
+        conflict: true,
+        error: 'You already have a roster with that name.',
+      });
+
+      const { req, res, statusCalls } = mockReqRes({ ...AUTH, body });
+      await createRoster(req, res);
+
+      expect(statusCalls).toEqual([409]);
+    });
+
+    it('409s when the per-user roster cap is reached', async () => {
+      linked();
+      vi.mocked(dbCreateRoster).mockResolvedValue({
+        success: false,
+        limitReached: true,
+        error: 'You cannot have more than 10 rosters.',
+      });
+
+      const { req, res, statusCalls, jsonCalls } = mockReqRes({ ...AUTH, body });
+      await createRoster(req, res);
+
+      expect(statusCalls).toEqual([409]);
+      expect(jsonCalls[0]).toMatchObject({ error: expect.stringContaining('10 rosters') });
+    });
+
+    it('404s when a slug is not in the catalogue', async () => {
+      linked();
+      vi.mocked(dbCreateRoster).mockResolvedValue({
+        success: false,
+        notFound: true,
+        error: 'One or more of those films is not in the catalogue.',
+      });
+
+      const { req, res, statusCalls } = mockReqRes({ ...AUTH, body });
+      await createRoster(req, res);
+
+      expect(statusCalls).toEqual([404]);
+    });
+  });
+
+  describe('updateRoster', () => {
+    const params = { rosterId: '3' };
+
+    it('404s a roster the caller does not own, without writing', async () => {
+      linked();
+      vi.mocked(dbGetRosterOwner).mockResolvedValue({ success: true, data: 'someone-else' });
+
+      const { req, res, statusCalls } = mockReqRes({
+        ...AUTH,
+        params,
+        body: { filmSlugs: ['anora'] },
+      });
+      await updateRoster(req, res);
+
+      expect(statusCalls).toEqual([404]);
+      expect(dbUpdateRoster).not.toHaveBeenCalled();
+    });
+
+    it('404s a roster that does not exist', async () => {
+      linked();
+      vi.mocked(dbGetRosterOwner).mockResolvedValue({ success: true, data: null });
+
+      const { req, res, statusCalls } = mockReqRes({
+        ...AUTH,
+        params,
+        body: { filmSlugs: ['anora'] },
+      });
+      await updateRoster(req, res);
+
+      expect(statusCalls).toEqual([404]);
+      expect(dbUpdateRoster).not.toHaveBeenCalled();
+    });
+
+    it('replaces picks on an owned roster', async () => {
+      linked();
+      owns();
+      vi.mocked(dbUpdateRoster).mockResolvedValue({ success: true });
+
+      const { req, res, statusCalls } = mockReqRes({
+        ...AUTH,
+        params,
+        body: { filmSlugs: ['anora', 'hamnet'] },
+      });
+      await updateRoster(req, res);
+
+      expect(statusCalls).toEqual([]);
+      expect(dbUpdateRoster).toHaveBeenCalledWith(3, { filmSlugs: ['anora', 'hamnet'] });
+    });
+
+    it('renames without touching picks', async () => {
+      linked();
+      owns();
+      vi.mocked(dbUpdateRoster).mockResolvedValue({ success: true });
+
+      const { req, res } = mockReqRes({ ...AUTH, params, body: { name: 'Renamed' } });
+      await updateRoster(req, res);
+
+      expect(dbUpdateRoster).toHaveBeenCalledWith(3, { name: 'Renamed' });
+    });
+
+    it('accepts an empty roster, which clears the picks', async () => {
+      linked();
+      owns();
+      vi.mocked(dbUpdateRoster).mockResolvedValue({ success: true });
+
+      const { req, res, statusCalls } = mockReqRes({ ...AUTH, params, body: { filmSlugs: [] } });
+      await updateRoster(req, res);
+
+      expect(statusCalls).toEqual([]);
+      expect(dbUpdateRoster).toHaveBeenCalledWith(3, { filmSlugs: [] });
+    });
+
+    it('400s when nothing is provided to change', async () => {
+      linked();
+      owns();
+
+      const { req, res, statusCalls } = mockReqRes({ ...AUTH, params, body: {} });
+      await updateRoster(req, res);
+
+      expect(statusCalls).toEqual([400]);
+      expect(dbUpdateRoster).not.toHaveBeenCalled();
+    });
+
+    it('409s on a duplicate roster name', async () => {
+      linked();
+      owns();
+      vi.mocked(dbUpdateRoster).mockResolvedValue({
+        success: false,
+        conflict: true,
+        error: 'You already have a roster with that name.',
+      });
+
+      const { req, res, statusCalls } = mockReqRes({ ...AUTH, params, body: { name: 'Dup' } });
+      await updateRoster(req, res);
+
+      expect(statusCalls).toEqual([409]);
+    });
+  });
+
+  describe('deleteRoster', () => {
+    it('404s a roster the caller does not own, without deleting', async () => {
+      linked();
+      vi.mocked(dbGetRosterOwner).mockResolvedValue({ success: true, data: 'someone-else' });
+
+      const { req, res, statusCalls } = mockReqRes({ ...AUTH, params: { rosterId: '3' } });
+      await deleteRoster(req, res);
+
+      expect(statusCalls).toEqual([404]);
+      expect(dbDeleteRoster).not.toHaveBeenCalled();
+    });
+
+    it('deletes an owned roster', async () => {
+      linked();
+      owns();
+      vi.mocked(dbDeleteRoster).mockResolvedValue({ success: true });
+
+      const { req, res, statusCalls } = mockReqRes({ ...AUTH, params: { rosterId: '3' } });
+      await deleteRoster(req, res);
+
+      expect(statusCalls).toEqual([]);
+      expect(dbDeleteRoster).toHaveBeenCalledWith(3);
+    });
+  });
+
+  describe('listRosters', () => {
+    it('returns camelCase rosters for the caller', async () => {
+      linked();
+      vi.mocked(dbGetUserRosters).mockResolvedValue({
+        success: true,
+        data: [{ roster_id: 1, name: 'A' }, { roster_id: 2, name: 'B' }],
+      });
+
+      const { req, res, jsonCalls } = mockReqRes(AUTH);
+      await listRosters(req, res);
+
+      expect(jsonCalls[0]).toMatchObject({
+        data: [{ rosterId: 1, name: 'A' }, { rosterId: 2, name: 'B' }],
+      });
+      expect(dbGetUserRosters).toHaveBeenCalledWith('rooney');
+    });
+  });
+
+  describe('getRosterPicks', () => {
+    it('404s a roster the caller does not own', async () => {
+      linked();
+      vi.mocked(dbGetRosterOwner).mockResolvedValue({ success: true, data: 'someone-else' });
+
+      const { req, res, statusCalls } = mockReqRes({ ...AUTH, params: { rosterId: '3' } });
+      await getRosterPicks(req, res);
+
+      expect(statusCalls).toEqual([404]);
+      expect(dbGetRosterPicks).not.toHaveBeenCalled();
+    });
+
+    it('returns camelCase picks for an owned roster', async () => {
+      linked();
+      owns();
+      vi.mocked(dbGetRosterPicks).mockResolvedValue({
+        success: true,
+        data: [
+          { film_slug: 'anora', title: 'Anora', release_date: '2026-10-18', price: 40 },
+        ],
+      });
+
+      const { req, res, jsonCalls } = mockReqRes({ ...AUTH, params: { rosterId: '3' } });
+      await getRosterPicks(req, res);
+
+      const picks = (jsonCalls[0] as { data: Record<string, unknown>[] }).data;
+      expect(Object.keys(picks[0]!).sort()).toEqual([
+        'filmSlug',
+        'price',
+        'releaseDate',
+        'title',
+      ]);
+      expect(dbGetRosterPicks).toHaveBeenCalledWith(3);
+    });
   });
 });

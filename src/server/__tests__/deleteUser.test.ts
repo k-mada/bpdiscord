@@ -5,7 +5,7 @@
  * auth.users row. The Drizzle DB layer hits the real test database.
  */
 
-import { sql, eq } from "drizzle-orm";
+import { sql, eq, inArray } from "drizzle-orm";
 import { vi, describe, it, expect, beforeAll, afterAll, beforeEach } from "vitest";
 
 vi.mock("../config/database", async () => {
@@ -24,6 +24,7 @@ import {
   userFilms,
   userRatings,
   mflFilms,
+  mflRosters,
   mflUserPicks,
 } from "../db/schema";
 import { assertTestEnvironment, cleanDatabase, closeDatabase } from "./setup";
@@ -60,17 +61,29 @@ async function seedProfile(lbusername: string): Promise<void> {
   ]);
   await db.insert(userRatings).values({ username: lbusername, rating: 4, count: 1 });
   await db.insert(mflFilms).values({ filmSlug: "mfl-film", title: "MFL Film", price: 1 }).onConflictDoNothing();
-  await db.insert(mflUserPicks).values({ lbusername, filmSlug: "mfl-film" });
+  const [roster] = await db
+    .insert(mflRosters)
+    .values({ lbusername, name: "My Picks" })
+    .returning({ rosterId: mflRosters.rosterId });
+  await db.insert(mflUserPicks).values({ rosterId: roster.rosterId, filmSlug: "mfl-film" });
 }
 
 async function countProfileRows(lbusername: string): Promise<number> {
+  const rosterIds = (
+    await db
+      .select({ id: mflRosters.rosterId })
+      .from(mflRosters)
+      .where(eq(mflRosters.lbusername, lbusername))
+  ).map((r) => r.id);
   const [films, ratings, picks, profile] = await Promise.all([
     db.select().from(userFilms).where(eq(userFilms.lbusername, lbusername)),
     db.select().from(userRatings).where(eq(userRatings.username, lbusername)),
-    db.select().from(mflUserPicks).where(eq(mflUserPicks.lbusername, lbusername)),
+    rosterIds.length
+      ? db.select().from(mflUserPicks).where(inArray(mflUserPicks.rosterId, rosterIds))
+      : Promise.resolve([]),
     db.select().from(users).where(eq(users.lbusername, lbusername)),
   ]);
-  return films.length + ratings.length + picks.length + profile.length;
+  return films.length + ratings.length + picks.length + profile.length + rosterIds.length;
 }
 
 beforeAll(async () => {
@@ -119,7 +132,7 @@ describe("deleteUserCompletely", () => {
     expect(out.status).toBe(400);
     expect(deleteUser).not.toHaveBeenCalled();
     // Guard fires before any deletion — the profile survives intact.
-    expect(await countProfileRows("lb_admin")).toBe(5);
+    expect(await countProfileRows("lb_admin")).toBe(6);
   });
 
   it("deletes an unclaimed profile + data, no auth call", async () => {

@@ -16,6 +16,7 @@ import {
   mflFilms,
   mflScoringMetrics,
   mflScoringTally,
+  mflRosters,
   mflUserPicks,
   users,
 } from "../db/schema";
@@ -105,21 +106,59 @@ describe("MFLScoringTally uniqueness", () => {
   });
 });
 
-describe("MFLUserPicks referential behaviour", () => {
-  it("cascades picks when the user is deleted", async () => {
-    await db
-      .insert(mflUserPicks)
-      .values({ lbusername: LB_ALICE, filmSlug: SLUG });
+async function newRoster(lbusername: string, name: string): Promise<number> {
+  const [roster] = await db
+    .insert(mflRosters)
+    .values({ lbusername, name })
+    .returning({ rosterId: mflRosters.rosterId });
+  return roster.rosterId;
+}
+
+describe("MFLRosters referential behaviour", () => {
+  it("cascades rosters and their picks when the user is deleted", async () => {
+    const rosterId = await newRoster(LB_ALICE, "My Picks");
+    await db.insert(mflUserPicks).values({ rosterId, filmSlug: SLUG });
 
     await db.delete(users).where(eq(users.lbusername, LB_ALICE));
+
+    expect(await db.select().from(mflRosters)).toHaveLength(0);
+    expect(await db.select().from(mflUserPicks)).toHaveLength(0);
+  });
+
+  it("cascades picks when the roster is deleted", async () => {
+    const rosterId = await newRoster(LB_ALICE, "My Picks");
+    await db.insert(mflUserPicks).values({ rosterId, filmSlug: SLUG });
+
+    await db.delete(mflRosters).where(eq(mflRosters.rosterId, rosterId));
 
     expect(await db.select().from(mflUserPicks)).toHaveLength(0);
   });
 
+  it("rejects two rosters with the same name for one user", async () => {
+    await newRoster(LB_ALICE, "My Picks");
+
+    const constraint = await violatedConstraint(newRoster(LB_ALICE, "My Picks"));
+
+    expect(constraint).toBe("mfl_rosters_user_name_key");
+  });
+
+  it("rejects a roster naming an unknown user", async () => {
+    const constraint = await violatedConstraint(newRoster("nobody", "My Picks"));
+
+    expect(constraint).toBe("mfl_rosters_lbusername_fkey");
+  });
+
+  it("rejects a blank roster name", async () => {
+    const constraint = await violatedConstraint(newRoster(LB_ALICE, "   "));
+
+    expect(constraint).toBe("mfl_rosters_name_length");
+  });
+});
+
+describe("MFLUserPicks referential behaviour", () => {
   it("refuses to delete a film somebody has picked", async () => {
-    await db
-      .insert(mflUserPicks)
-      .values({ lbusername: LB_ALICE, filmSlug: SLUG });
+    const rosterId = await newRoster(LB_ALICE, "My Picks");
+    await db.insert(mflUserPicks).values({ rosterId, filmSlug: SLUG });
 
     const constraint = await violatedConstraint(
       db.delete(mflFilms).where(eq(mflFilms.filmSlug, SLUG)),
@@ -130,9 +169,8 @@ describe("MFLUserPicks referential behaviour", () => {
   });
 
   it("allows deleting a film nobody picked", async () => {
-    await db
-      .insert(mflUserPicks)
-      .values({ lbusername: LB_ALICE, filmSlug: SLUG });
+    const rosterId = await newRoster(LB_ALICE, "My Picks");
+    await db.insert(mflUserPicks).values({ rosterId, filmSlug: SLUG });
 
     await db.delete(mflFilms).where(eq(mflFilms.filmSlug, OTHER_SLUG));
 
@@ -141,32 +179,43 @@ describe("MFLUserPicks referential behaviour", () => {
   });
 
   it("rejects a pick naming a film that is not in the season", async () => {
+    const rosterId = await newRoster(LB_ALICE, "My Picks");
     const constraint = await violatedConstraint(
-      db
-        .insert(mflUserPicks)
-        .values({ lbusername: LB_ALICE, filmSlug: "not-in-the-season" }),
+      db.insert(mflUserPicks).values({ rosterId, filmSlug: "not-in-the-season" }),
     );
 
     expect(constraint).toBe("mfl_user_picks_film_slug_fkey");
   });
 
-  it("rejects a pick naming an unknown user", async () => {
+  it("rejects a pick naming an unknown roster", async () => {
     const constraint = await violatedConstraint(
-      db.insert(mflUserPicks).values({ lbusername: "nobody", filmSlug: SLUG }),
+      db.insert(mflUserPicks).values({ rosterId: 999999, filmSlug: SLUG }),
     );
 
-    expect(constraint).toBe("mfl_user_picks_lbusername_fkey");
+    expect(constraint).toBe("mfl_user_picks_roster_id_fkey");
   });
 
-  it("rejects the same user picking the same film twice", async () => {
-    await db
-      .insert(mflUserPicks)
-      .values({ lbusername: LB_ALICE, filmSlug: SLUG });
+  it("rejects the same roster picking the same film twice", async () => {
+    const rosterId = await newRoster(LB_ALICE, "My Picks");
+    await db.insert(mflUserPicks).values({ rosterId, filmSlug: SLUG });
 
     const constraint = await violatedConstraint(
-      db.insert(mflUserPicks).values({ lbusername: LB_ALICE, filmSlug: SLUG }),
+      db.insert(mflUserPicks).values({ rosterId, filmSlug: SLUG }),
     );
 
     expect(constraint).toBe("mfl_user_picks_pkey");
+  });
+
+  it("allows the same film in two of a user's rosters", async () => {
+    const first = await newRoster(LB_ALICE, "First");
+    const second = await newRoster(LB_ALICE, "Second");
+    await db.insert(mflUserPicks).values({ rosterId: first, filmSlug: SLUG });
+    await db.insert(mflUserPicks).values({ rosterId: second, filmSlug: SLUG });
+
+    const rows = await db
+      .select()
+      .from(mflUserPicks)
+      .where(eq(mflUserPicks.filmSlug, SLUG));
+    expect(rows).toHaveLength(2);
   });
 });
