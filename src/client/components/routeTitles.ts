@@ -15,6 +15,7 @@ const ROUTE_TITLES: Array<[string, RouteTitle]> = [
   ["/mfl/admin", "Movie Fantasy League admin"],
   ["/mfl/my-picks", "My MFL picks"],
   ["/mfl/film/:filmSlug", ({ filmSlug }) => `MFL score: ${filmSlug ?? "film"}`],
+  ["/mfl/roster/:rosterId", "MFL roster"],
   ["/compare", "Compare users"],
   ["/movie-swap", "Movie Swap"],
   ["/hater-rankings", "Hater Rankings"],

@@ -74,12 +74,19 @@ describe("MFL leaderboard columns", () => {
     expect(rowCells()).toEqual([["2", "Contenders (kevin)", "98"]]);
   });
 
-  it("links the roster to the owner's profile page", () => {
-    renderTable([entry({ name: "My Movie Picks", lbusername: "rooney" })]);
+  it("links the roster name to its read-only view", () => {
+    renderTable([entry({ rosterId: 42, name: "My Movie Picks", lbusername: "rooney" })]);
 
     expect(
-      screen.getByRole("link", { name: "My Movie Picks (rooney)" }),
-    ).toHaveAttribute("href", "/user/rooney");
+      screen.getByRole("link", { name: "My Movie Picks" }),
+    ).toHaveAttribute("href", "/mfl/roster/42");
+  });
+
+  it("shows the owner in parentheses as plain text, not a link", () => {
+    renderTable([entry({ name: "My Movie Picks", lbusername: "rooney" })]);
+
+    expect(screen.getByText("(rooney)").tagName).not.toBe("A");
+    expect(screen.queryByRole("link", { name: "rooney" })).not.toBeInTheDocument();
   });
 
   it("gives a user's two rosters their own rows", () => {
@@ -131,12 +138,12 @@ describe("MFL standings section", () => {
   it("renders the ranked rosters when standings load", () => {
     renderPage({
       leaderboard: [
-        entry({ rank: 1, name: "My Movie Picks", lbusername: "rooney", totalPoints: 143 }),
+        entry({ rosterId: 9, name: "My Movie Picks", lbusername: "rooney", totalPoints: 143 }),
       ],
     });
 
     expect(
-      screen.getByRole("link", { name: "My Movie Picks (rooney)" }),
-    ).toHaveAttribute("href", "/user/rooney");
+      screen.getByRole("link", { name: "My Movie Picks" }),
+    ).toHaveAttribute("href", "/mfl/roster/9");
   });
 });

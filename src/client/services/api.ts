@@ -15,6 +15,7 @@ import {
   MFLCatalogueFilm,
   MFLPick,
   MFLRoster,
+  MFLRosterView,
   MFLLeaderboardEntry,
   AwardShow,
   EventSummary,
@@ -300,6 +301,17 @@ class ApiService {
       headers: { Authorization: `Bearer ${token}` },
       ...(signal ? { signal } : {}),
     });
+  }
+
+  // Public read-only view of any roster — no token.
+  async getMflRosterView(
+    rosterId: number,
+    signal?: AbortSignal,
+  ): Promise<ApiResponse<MFLRosterView>> {
+    return this.request<MFLRosterView>(
+      `/mfl/rosters/${rosterId}`,
+      signal ? { signal } : {},
+    );
   }
 
   async createMflRoster(

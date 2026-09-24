@@ -14,6 +14,7 @@ describe("mflRoutes wiring", () => {
       "GET /movie-score/:filmSlug",
       "GET /movies",
       "GET /rosters",
+      "GET /rosters/:rosterId",
       "GET /rosters/:rosterId/picks",
       "GET /scoring-metrics",
       "GET /user-scores/:username",
@@ -40,18 +41,20 @@ describe("mflRoutes wiring", () => {
     },
   );
 
-  // Locking these down would break the public MFL dashboard and scoring page.
-  // The /rosters reads are authed: they return the caller's own rosters.
-  it("leaves every catalogue read public", () => {
-    const publicReads = routes.filter(
-      (r) => r.method === "GET" && !r.path.startsWith("/rosters"),
-    );
+  // Locking these down would break the public MFL dashboard, scoring page and
+  // the read-only roster view. GET /rosters and .../picks are the authed reads.
+  it.each([
+    "/scoring-metrics",
+    "/user-scores/:username",
+    "/leaderboard",
+    "/movie-score/:filmSlug",
+    "/movies",
+    "/rosters/:rosterId",
+  ])("leaves GET %s public", (path) => {
+    const route = routes.find((r) => r.method === "GET" && r.path === path)!;
 
-    expect(publicReads).toHaveLength(5);
-    for (const route of publicReads) {
-      expect(route.middleware).not.toContain("authenticateToken");
-      expect(route.middleware).not.toContain("authorizeAdmin");
-    }
+    expect(route.middleware).not.toContain("authenticateToken");
+    expect(route.middleware).not.toContain("authorizeAdmin");
   });
 
   it.each([

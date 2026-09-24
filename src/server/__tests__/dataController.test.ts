@@ -567,6 +567,42 @@ describe('dataController', () => {
         expect(pick.release_date).toBeNull();
       });
 
+      it('dbGetRosterView returns films with points and the roster total', async () => {
+        const view = await dc.dbGetRosterView(pickerRoster);
+
+        expect(view.success).toBe(true);
+        expect(view.data!.name).toBe('My Picks');
+        expect(view.data!.lbusername).toBe(PICKER);
+        expect(view.data!.picks).toEqual([
+          {
+            film_slug: 'anatomy-of-a-fall',
+            title: 'Anatomy of a Fall',
+            release_date: null,
+            price: 30,
+            total_points: 43,
+          },
+        ]);
+        // Matches the same film's total in dbGetMFLMovies.
+        expect(view.data!.total_points).toBe(43);
+      });
+
+      it('dbGetRosterView returns null (not an error) for a missing roster', async () => {
+        const view = await dc.dbGetRosterView(999999);
+
+        expect(view.success).toBe(true);
+        expect(view.data).toBeNull();
+      });
+
+      it('dbGetRosterView returns an existing empty roster with no picks at zero', async () => {
+        const { data: id } = await dc.dbCreateRoster(OTHER, 'Empty View', [], 10);
+
+        const view = await dc.dbGetRosterView(id!);
+        expect(view.data!.picks).toEqual([]);
+        expect(view.data!.total_points).toBe(0);
+
+        await dc.dbDeleteRoster(id!);
+      });
+
       it('dbCreateRoster creates a named roster with its picks', async () => {
         const created = await dc.dbCreateRoster(OTHER, 'Contenders', ['zulu-dawn'], 10);
         expect(created.success).toBe(true);

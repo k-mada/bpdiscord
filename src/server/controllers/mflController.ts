@@ -13,6 +13,7 @@ import {
   dbGetUserRosters,
   dbGetRosterOwner,
   dbGetRosterPicks,
+  dbGetRosterView,
   dbCreateRoster,
   dbUpdateRoster,
   dbDeleteRoster,
@@ -359,6 +360,40 @@ export async function getRosterPicks(req: Request, res: Response): Promise<void>
       releaseDate: pick.release_date,
       price: pick.price,
     })),
+  };
+  res.json(response);
+}
+
+// Public, read-only. Anyone can view any roster's films, points and total — the
+// same data the /mfl standings and catalogue already expose. No ownership gate.
+export async function getRosterView(req: Request, res: Response): Promise<void> {
+  const dbResult = await dbGetRosterView(Number(req.params.rosterId));
+  if (!dbResult.success) {
+    res.status(500).json({ error: dbResult.error || "Failed to get roster" });
+    return;
+  }
+  if (!dbResult.data) {
+    res.status(404).json({ error: "Roster not found" });
+    return;
+  }
+
+  const view = dbResult.data;
+  const response: ApiResponse = {
+    message: "Roster retrieved successfully",
+    data: {
+      rosterId: view.roster_id,
+      name: view.name,
+      lbusername: view.lbusername,
+      displayName: view.display_name,
+      totalPoints: view.total_points,
+      picks: view.picks.map((pick) => ({
+        filmSlug: pick.film_slug,
+        title: pick.title,
+        releaseDate: pick.release_date,
+        price: pick.price,
+        totalPoints: pick.total_points,
+      })),
+    },
   };
   res.json(response);
 }

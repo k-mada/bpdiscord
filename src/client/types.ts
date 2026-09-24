@@ -110,6 +110,23 @@ export interface MFLRoster {
   name: string;
 }
 
+export interface MFLRosterViewPick {
+  filmSlug: string;
+  title: string;
+  releaseDate: string | null;
+  price: number | null;
+  totalPoints: number;
+}
+
+export interface MFLRosterView {
+  rosterId: number;
+  name: string;
+  lbusername: string;
+  displayName: string | null;
+  picks: MFLRosterViewPick[];
+  totalPoints: number;
+}
+
 export interface MFLLeaderboardEntry {
   /** Competition rank: equal totals share a rank, the next distinct total skips. */
   rank: number;

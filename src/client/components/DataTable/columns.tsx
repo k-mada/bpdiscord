@@ -114,12 +114,12 @@ export const mflLeaderboardColumns: ColumnDef<MFLLeaderboardEntry>[] = [
     sortKey: "roster",
     customSort: (a, b) => a.name.localeCompare(b.name),
     renderColumn: (entry) => (
-      <Link to={`/user/${entry.lbusername}`}>
-        {entry.name}{" "}
+      <>
+        <Link to={`/mfl/roster/${entry.rosterId}`}>{entry.name}</Link>{" "}
         <span className="text-letterboxd-text-secondary">
           ({entry.lbusername})
         </span>
-      </Link>
+      </>
     ),
   },
   {
