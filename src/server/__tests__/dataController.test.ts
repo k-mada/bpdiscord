@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
-import { sql } from 'drizzle-orm';
+import { sql, eq } from 'drizzle-orm';
 import * as dc from '../controllers/dataController';
 import {
   resetDatabase,
@@ -24,6 +24,7 @@ import {
   films,
   userFilms,
   mflFilms,
+  mflRosters,
   mflUserPicks,
   mflScoringMetrics,
   mflScoringTally,
@@ -405,6 +406,7 @@ describe('dataController', () => {
     describe('with a seeded season', () => {
       const PICKER = 'test_user_active';
       const OTHER = 'test_user_minimal';
+      let pickerRoster: number;
 
       beforeAll(async () => {
         await db.insert(mflFilms).values([
@@ -426,8 +428,12 @@ describe('dataController', () => {
           // A null award, which must count as 0 rather than poison the sum.
           { filmSlug: 'nobody-picked-me', metricId: 9001, pointsAwarded: null },
         ]);
+        [{ rosterId: pickerRoster }] = await db
+          .insert(mflRosters)
+          .values({ lbusername: PICKER, name: 'My Picks' })
+          .returning({ rosterId: mflRosters.rosterId });
         await db.insert(mflUserPicks).values([
-          { lbusername: PICKER, filmSlug: 'anatomy-of-a-fall' },
+          { rosterId: pickerRoster, filmSlug: 'anatomy-of-a-fall' },
         ]);
       });
 
@@ -435,6 +441,7 @@ describe('dataController', () => {
         await db.delete(mflScoringTally).where(sql`1=1`);
         await db.delete(mflScoringMetrics).where(sql`1=1`);
         await db.delete(mflUserPicks).where(sql`1=1`);
+        await db.delete(mflRosters).where(sql`1=1`);
         await db.delete(mflFilms).where(sql`1=1`);
       });
 
@@ -534,65 +541,118 @@ describe('dataController', () => {
         expect(result.data).toHaveLength(4);
       });
 
-      it('dbGetMflUserPicks returns only the caller\'s own roster', async () => {
-        const mine = await dc.dbGetMflUserPicks(PICKER);
-        const theirs = await dc.dbGetMflUserPicks(OTHER);
+      it('dbGetUserRosters returns only the caller\'s own rosters', async () => {
+        const mine = await dc.dbGetUserRosters(PICKER);
+        const theirs = await dc.dbGetUserRosters(OTHER);
 
-        expect(mine.data!.map((p) => p.film_slug)).toEqual(['anatomy-of-a-fall']);
+        expect(mine.data!.map((r) => r.name)).toEqual(['My Picks']);
         expect(theirs.data).toEqual([]);
       });
 
-      it('dbGetMflUserPicks carries the catalogue columns through', async () => {
-        const picks = await dc.dbGetMflUserPicks(PICKER);
+      it('dbGetRosterOwner returns the owner, and null for an unknown roster', async () => {
+        const owner = await dc.dbGetRosterOwner(pickerRoster);
+        const missing = await dc.dbGetRosterOwner(999999);
+
+        expect(owner.data).toBe(PICKER);
+        expect(missing.data).toBeNull();
+      });
+
+      it('dbGetRosterPicks carries the catalogue columns through', async () => {
+        const picks = await dc.dbGetRosterPicks(pickerRoster);
         const pick = picks.data![0]!;
 
+        expect(pick.film_slug).toBe('anatomy-of-a-fall');
         expect(pick.title).toBe('Anatomy of a Fall');
         expect(pick.price).toBe(30);
         expect(pick.release_date).toBeNull();
       });
 
-      it('dbReplaceMflUserPicks swaps the whole roster', async () => {
-        await dc.dbReplaceMflUserPicks(OTHER, ['zulu-dawn', 'nobody-picked-me']);
-        let roster = await dc.dbGetMflUserPicks(OTHER);
-        expect(roster.data!.map((p) => p.film_slug).sort()).toEqual([
+      it('dbCreateRoster creates a named roster with its picks', async () => {
+        const created = await dc.dbCreateRoster(OTHER, 'Contenders', ['zulu-dawn']);
+        expect(created.success).toBe(true);
+
+        const picks = await dc.dbGetRosterPicks(created.data!);
+        expect(picks.data!.map((p) => p.film_slug)).toEqual(['zulu-dawn']);
+
+        await dc.dbDeleteRoster(created.data!);
+      });
+
+      it('dbCreateRoster rejects a duplicate name for the same user', async () => {
+        const first = await dc.dbCreateRoster(OTHER, 'Dupe', []);
+        const second = await dc.dbCreateRoster(OTHER, 'Dupe', []);
+
+        expect(second.success).toBe(false);
+        expect(second.conflict).toBe(true);
+
+        await dc.dbDeleteRoster(first.data!);
+      });
+
+      it('dbCreateRoster rejects an unknown slug and creates nothing', async () => {
+        const result = await dc.dbCreateRoster(OTHER, 'Bad', ['not-a-real-film']);
+
+        expect(result.success).toBe(false);
+        expect(result.notFound).toBe(true);
+        expect((await dc.dbGetUserRosters(OTHER)).data).toEqual([]);
+      });
+
+      it('dbUpdateRoster swaps the whole roster', async () => {
+        const { data: id } = await dc.dbCreateRoster(OTHER, 'Swap', ['zulu-dawn']);
+
+        await dc.dbUpdateRoster(id!, { filmSlugs: ['zulu-dawn', 'nobody-picked-me'] });
+        let picks = await dc.dbGetRosterPicks(id!);
+        expect(picks.data!.map((p) => p.film_slug).sort()).toEqual([
           'nobody-picked-me',
           'zulu-dawn',
         ]);
 
-        await dc.dbReplaceMflUserPicks(OTHER, ['zulu-dawn']);
-        roster = await dc.dbGetMflUserPicks(OTHER);
-        expect(roster.data!.map((p) => p.film_slug)).toEqual(['zulu-dawn']);
+        await dc.dbUpdateRoster(id!, { filmSlugs: [] });
+        picks = await dc.dbGetRosterPicks(id!);
+        expect(picks.data).toEqual([]);
 
-        await dc.dbReplaceMflUserPicks(OTHER, []);
-        roster = await dc.dbGetMflUserPicks(OTHER);
-        expect(roster.data).toEqual([]);
+        await dc.dbDeleteRoster(id!);
       });
 
-      it('dbReplaceMflUserPicks leaves the old roster intact when a slug is unknown', async () => {
-        await dc.dbReplaceMflUserPicks(OTHER, ['zulu-dawn']);
+      it('dbUpdateRoster leaves the old picks intact when a slug is unknown', async () => {
+        const { data: id } = await dc.dbCreateRoster(OTHER, 'Intact', ['zulu-dawn']);
 
-        const result = await dc.dbReplaceMflUserPicks(OTHER, [
-          'zulu-dawn',
-          'not-a-real-film',
-        ]);
+        const result = await dc.dbUpdateRoster(id!, {
+          filmSlugs: ['zulu-dawn', 'not-a-real-film'],
+        });
         expect(result.success).toBe(false);
         expect(result.notFound).toBe(true);
 
         // The delete and the insert share a transaction, so a rejected submit
         // must not have emptied the roster on its way through.
-        const roster = await dc.dbGetMflUserPicks(OTHER);
-        expect(roster.data!.map((p) => p.film_slug)).toEqual(['zulu-dawn']);
+        const picks = await dc.dbGetRosterPicks(id!);
+        expect(picks.data!.map((p) => p.film_slug)).toEqual(['zulu-dawn']);
 
-        await dc.dbReplaceMflUserPicks(OTHER, []);
+        await dc.dbDeleteRoster(id!);
       });
 
-      it('dbReplaceMflUserPicks does not touch another member\'s roster', async () => {
-        await dc.dbReplaceMflUserPicks(OTHER, ['zulu-dawn']);
+      it('dbUpdateRoster renames without touching picks', async () => {
+        const { data: id } = await dc.dbCreateRoster(OTHER, 'Old Name', ['zulu-dawn']);
 
-        const mine = await dc.dbGetMflUserPicks(PICKER);
-        expect(mine.data!.map((p) => p.film_slug)).toEqual(['anatomy-of-a-fall']);
+        await dc.dbUpdateRoster(id!, { name: 'New Name' });
 
-        await dc.dbReplaceMflUserPicks(OTHER, []);
+        expect((await dc.dbGetUserRosters(OTHER)).data!.map((r) => r.name)).toEqual([
+          'New Name',
+        ]);
+        expect((await dc.dbGetRosterPicks(id!)).data!.map((p) => p.film_slug)).toEqual([
+          'zulu-dawn',
+        ]);
+
+        await dc.dbDeleteRoster(id!);
+      });
+
+      it('dbDeleteRoster removes the roster and cascades its picks', async () => {
+        const { data: id } = await dc.dbCreateRoster(OTHER, 'Doomed', ['zulu-dawn']);
+
+        await dc.dbDeleteRoster(id!);
+
+        expect((await dc.dbGetUserRosters(OTHER)).data).toEqual([]);
+        expect(
+          await db.select().from(mflUserPicks).where(eq(mflUserPicks.rosterId, id!)),
+        ).toEqual([]);
       });
 
       it('dbResolveLbusername returns null for an account with nothing linked', async () => {
@@ -651,13 +711,20 @@ describe('dataController', () => {
           { filmSlug: 'lb-worth-20', metricId: 8002, pointsAwarded: 20 },
           // lb-worth-0 stays unscored.
         ]);
+        // One roster per user, named after the user so ties order the same way
+        // the pre-multi-roster tests expected. ECHO gets a roster with no picks.
+        const rosters = await db
+          .insert(mflRosters)
+          .values([ALPHA, BRAVO, CHARLIE, DELTA, ECHO].map((u) => ({ lbusername: u, name: u })))
+          .returning({ rosterId: mflRosters.rosterId, lbusername: mflRosters.lbusername });
+        const rosterOf = new Map(rosters.map((r) => [r.lbusername, r.rosterId]));
         await db.insert(mflUserPicks).values([
-          { lbusername: ALPHA, filmSlug: 'lb-worth-30' },
-          { lbusername: ALPHA, filmSlug: 'lb-worth-20' },
-          { lbusername: BRAVO, filmSlug: 'lb-worth-30' },
-          { lbusername: CHARLIE, filmSlug: 'lb-worth-30' },
-          { lbusername: DELTA, filmSlug: 'lb-worth-0' },
-          // ECHO submits no picks.
+          { rosterId: rosterOf.get(ALPHA)!, filmSlug: 'lb-worth-30' },
+          { rosterId: rosterOf.get(ALPHA)!, filmSlug: 'lb-worth-20' },
+          { rosterId: rosterOf.get(BRAVO)!, filmSlug: 'lb-worth-30' },
+          { rosterId: rosterOf.get(CHARLIE)!, filmSlug: 'lb-worth-30' },
+          { rosterId: rosterOf.get(DELTA)!, filmSlug: 'lb-worth-0' },
+          // ECHO's roster holds no picks.
         ]);
       });
 
@@ -665,6 +732,7 @@ describe('dataController', () => {
         await db.delete(mflScoringTally).where(sql`1=1`);
         await db.delete(mflScoringMetrics).where(sql`1=1`);
         await db.delete(mflUserPicks).where(sql`1=1`);
+        await db.delete(mflRosters).where(sql`1=1`);
         await db.delete(mflFilms).where(sql`1=1`);
         await db
           .delete(users)
@@ -692,7 +760,7 @@ describe('dataController', () => {
         }
       });
 
-      it('orders by total desc, breaking ties on lbusername', async () => {
+      it('orders by total desc, breaking ties on roster name then lbusername', async () => {
         const result = await dc.dbGetMFLLeaderboard();
 
         expect(result.data!.map((r) => [r.lbusername, r.total_points])).toEqual([
@@ -701,6 +769,19 @@ describe('dataController', () => {
           [CHARLIE, 30],
           [DELTA, 0],
         ]);
+      });
+
+      it('ranks each of a user\'s rosters as its own row', async () => {
+        const { data: extra } = await dc.dbCreateRoster(BRAVO, 'Bravo Backup', ['lb-worth-20']);
+        try {
+          const result = await dc.dbGetMFLLeaderboard();
+          const bravoRows = result.data!.filter((r) => r.lbusername === BRAVO);
+          expect(bravoRows.map((r) => r.total_points).sort((a, b) => b - a)).toEqual([30, 20]);
+          const backup = bravoRows.find((r) => r.name === 'Bravo Backup');
+          expect(backup!.total_points).toBe(20);
+        } finally {
+          await dc.dbDeleteRoster(extra!);
+        }
       });
 
       it('carries the display name through, null when unset', async () => {
