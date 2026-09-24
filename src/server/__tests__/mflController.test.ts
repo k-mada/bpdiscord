@@ -452,7 +452,7 @@ describe('MFL rosters', () => {
 
       expect(statusCalls).toEqual([201]);
       expect(jsonCalls[0]).toMatchObject({ data: { rosterId: 5 } });
-      expect(dbCreateRoster).toHaveBeenCalledWith('rooney', 'My Movie Picks', ['anora', 'hamnet']);
+      expect(dbCreateRoster).toHaveBeenCalledWith('rooney', 'My Movie Picks', ['anora', 'hamnet'], 10);
     });
 
     it('trims the roster name', async () => {
@@ -462,7 +462,7 @@ describe('MFL rosters', () => {
       const { req, res } = mockReqRes({ ...AUTH, body: { ...body, name: '  Padded  ' } });
       await createRoster(req, res);
 
-      expect(dbCreateRoster).toHaveBeenCalledWith('rooney', 'Padded', ['anora', 'hamnet']);
+      expect(dbCreateRoster).toHaveBeenCalledWith('rooney', 'Padded', ['anora', 'hamnet'], 10);
     });
 
     it('defaults filmSlugs to an empty roster when omitted', async () => {
@@ -473,7 +473,7 @@ describe('MFL rosters', () => {
       await createRoster(req, res);
 
       expect(statusCalls).toEqual([201]);
-      expect(dbCreateRoster).toHaveBeenCalledWith('rooney', 'Empty', []);
+      expect(dbCreateRoster).toHaveBeenCalledWith('rooney', 'Empty', [], 10);
     });
 
     it.each([
@@ -508,6 +508,21 @@ describe('MFL rosters', () => {
       await createRoster(req, res);
 
       expect(statusCalls).toEqual([409]);
+    });
+
+    it('409s when the per-user roster cap is reached', async () => {
+      linked();
+      vi.mocked(dbCreateRoster).mockResolvedValue({
+        success: false,
+        limitReached: true,
+        error: 'You cannot have more than 10 rosters.',
+      });
+
+      const { req, res, statusCalls, jsonCalls } = mockReqRes({ ...AUTH, body });
+      await createRoster(req, res);
+
+      expect(statusCalls).toEqual([409]);
+      expect(jsonCalls[0]).toMatchObject({ error: expect.stringContaining('10 rosters') });
     });
 
     it('404s when a slug is not in the catalogue', async () => {

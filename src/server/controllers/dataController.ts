@@ -1708,19 +1708,35 @@ export async function dbGetRosterPicks(rosterId: number): Promise<{
 const NOT_IN_CATALOGUE = "One or more of those films is not in the catalogue.";
 const DUPLICATE_ROSTER_NAME = "You already have a roster with that name.";
 
+/** Thrown inside the create transaction so a full roster rolls back cleanly. */
+class RosterLimitError extends Error {}
+
 export async function dbCreateRoster(
   lbusername: string,
   name: string,
   filmSlugs: string[],
+  maxRosters: number,
 ): Promise<{
   success: boolean;
   data?: number;
   error?: string;
   conflict?: boolean;
   notFound?: boolean;
+  limitReached?: boolean;
 }> {
   try {
     const rosterId = await db.transaction(async (tx) => {
+      // Serialize this user's creates so the count-then-insert below cannot race
+      // a concurrent create past the cap. The lock releases at commit/rollback.
+      await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext(${lbusername}))`);
+      const [countRow] = await tx
+        .select({ n: sql<number>`count(*)::int` })
+        .from(mflRosters)
+        .where(eq(mflRosters.lbusername, lbusername));
+      if ((countRow?.n ?? 0) >= maxRosters) {
+        throw new RosterLimitError();
+      }
+
       const [roster] = await tx
         .insert(mflRosters)
         .values({ lbusername, name })
@@ -1735,6 +1751,13 @@ export async function dbCreateRoster(
     });
     return { success: true, data: rosterId };
   } catch (error) {
+    if (error instanceof RosterLimitError) {
+      return {
+        success: false,
+        limitReached: true,
+        error: `You cannot have more than ${maxRosters} rosters.`,
+      };
+    }
     if (isUniqueViolation(error, MFL_ROSTER_NAME_CONSTRAINT)) {
       return { success: false, conflict: true, error: DUPLICATE_ROSTER_NAME };
     }
@@ -1760,12 +1783,15 @@ export async function dbUpdateRoster(
 ): Promise<{ success: boolean; error?: string; conflict?: boolean; notFound?: boolean }> {
   try {
     await db.transaction(async (tx) => {
-      if (changes.name !== undefined) {
-        await tx
-          .update(mflRosters)
-          .set({ name: changes.name, updatedAt: new Date() })
-          .where(eq(mflRosters.rosterId, rosterId));
-      }
+      // Touch the roster on any change — a pick swap is a modification too, not
+      // just a rename — so updated_at tracks the last edit either way.
+      await tx
+        .update(mflRosters)
+        .set({
+          ...(changes.name !== undefined ? { name: changes.name } : {}),
+          updatedAt: new Date(),
+        })
+        .where(eq(mflRosters.rosterId, rosterId));
       if (changes.filmSlugs !== undefined) {
         await tx.delete(mflUserPicks).where(eq(mflUserPicks.rosterId, rosterId));
         if (changes.filmSlugs.length > 0) {

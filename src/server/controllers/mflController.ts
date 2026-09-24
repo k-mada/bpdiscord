@@ -267,6 +267,8 @@ async function requireLbusername(
 /** Guards data integrity only. Roster size and budget are Vulture's rules. */
 const MAX_PICKS = 20;
 const MAX_NAME_LENGTH = 80;
+/** Per-user roster cap, enforced atomically in dbCreateRoster. */
+const MAX_ROSTERS = 10;
 
 /** Validated film slugs, or an error string. Mirrors the DB name-length check. */
 function validateFilmSlugs(value: unknown): { filmSlugs: string[] } | { error: string } {
@@ -376,12 +378,12 @@ export async function createRoster(req: Request, res: Response): Promise<void> {
   const lbusername = await requireLbusername(req, res);
   if (!lbusername) return;
 
-  const dbResult = await dbCreateRoster(lbusername, name.name, picks.filmSlugs);
+  const dbResult = await dbCreateRoster(lbusername, name.name, picks.filmSlugs, MAX_ROSTERS);
   if (dbResult.success) {
     res.status(201).json({ message: "Roster created", data: { rosterId: dbResult.data } });
     return;
   }
-  if (dbResult.conflict) {
+  if (dbResult.conflict || dbResult.limitReached) {
     res.status(409).json({ error: dbResult.error });
     return;
   }

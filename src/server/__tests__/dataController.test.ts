@@ -568,7 +568,7 @@ describe('dataController', () => {
       });
 
       it('dbCreateRoster creates a named roster with its picks', async () => {
-        const created = await dc.dbCreateRoster(OTHER, 'Contenders', ['zulu-dawn']);
+        const created = await dc.dbCreateRoster(OTHER, 'Contenders', ['zulu-dawn'], 10);
         expect(created.success).toBe(true);
 
         const picks = await dc.dbGetRosterPicks(created.data!);
@@ -578,8 +578,8 @@ describe('dataController', () => {
       });
 
       it('dbCreateRoster rejects a duplicate name for the same user', async () => {
-        const first = await dc.dbCreateRoster(OTHER, 'Dupe', []);
-        const second = await dc.dbCreateRoster(OTHER, 'Dupe', []);
+        const first = await dc.dbCreateRoster(OTHER, 'Dupe', [], 10);
+        const second = await dc.dbCreateRoster(OTHER, 'Dupe', [], 10);
 
         expect(second.success).toBe(false);
         expect(second.conflict).toBe(true);
@@ -588,15 +588,30 @@ describe('dataController', () => {
       });
 
       it('dbCreateRoster rejects an unknown slug and creates nothing', async () => {
-        const result = await dc.dbCreateRoster(OTHER, 'Bad', ['not-a-real-film']);
+        const result = await dc.dbCreateRoster(OTHER, 'Bad', ['not-a-real-film'], 10);
 
         expect(result.success).toBe(false);
         expect(result.notFound).toBe(true);
         expect((await dc.dbGetUserRosters(OTHER)).data).toEqual([]);
       });
 
+      it('dbCreateRoster refuses to exceed the per-user cap', async () => {
+        const a = await dc.dbCreateRoster(OTHER, 'Cap 1', [], 2);
+        const b = await dc.dbCreateRoster(OTHER, 'Cap 2', [], 2);
+        const over = await dc.dbCreateRoster(OTHER, 'Cap 3', [], 2);
+
+        expect(a.success).toBe(true);
+        expect(b.success).toBe(true);
+        expect(over.success).toBe(false);
+        expect(over.limitReached).toBe(true);
+        expect((await dc.dbGetUserRosters(OTHER)).data).toHaveLength(2);
+
+        await dc.dbDeleteRoster(a.data!);
+        await dc.dbDeleteRoster(b.data!);
+      });
+
       it('dbUpdateRoster swaps the whole roster', async () => {
-        const { data: id } = await dc.dbCreateRoster(OTHER, 'Swap', ['zulu-dawn']);
+        const { data: id } = await dc.dbCreateRoster(OTHER, 'Swap', ['zulu-dawn'], 10);
 
         await dc.dbUpdateRoster(id!, { filmSlugs: ['zulu-dawn', 'nobody-picked-me'] });
         let picks = await dc.dbGetRosterPicks(id!);
@@ -613,7 +628,7 @@ describe('dataController', () => {
       });
 
       it('dbUpdateRoster leaves the old picks intact when a slug is unknown', async () => {
-        const { data: id } = await dc.dbCreateRoster(OTHER, 'Intact', ['zulu-dawn']);
+        const { data: id } = await dc.dbCreateRoster(OTHER, 'Intact', ['zulu-dawn'], 10);
 
         const result = await dc.dbUpdateRoster(id!, {
           filmSlugs: ['zulu-dawn', 'not-a-real-film'],
@@ -630,7 +645,7 @@ describe('dataController', () => {
       });
 
       it('dbUpdateRoster renames without touching picks', async () => {
-        const { data: id } = await dc.dbCreateRoster(OTHER, 'Old Name', ['zulu-dawn']);
+        const { data: id } = await dc.dbCreateRoster(OTHER, 'Old Name', ['zulu-dawn'], 10);
 
         await dc.dbUpdateRoster(id!, { name: 'New Name' });
 
@@ -645,7 +660,7 @@ describe('dataController', () => {
       });
 
       it('dbDeleteRoster removes the roster and cascades its picks', async () => {
-        const { data: id } = await dc.dbCreateRoster(OTHER, 'Doomed', ['zulu-dawn']);
+        const { data: id } = await dc.dbCreateRoster(OTHER, 'Doomed', ['zulu-dawn'], 10);
 
         await dc.dbDeleteRoster(id!);
 
@@ -772,7 +787,7 @@ describe('dataController', () => {
       });
 
       it('ranks each of a user\'s rosters as its own row', async () => {
-        const { data: extra } = await dc.dbCreateRoster(BRAVO, 'Bravo Backup', ['lb-worth-20']);
+        const { data: extra } = await dc.dbCreateRoster(BRAVO, 'Bravo Backup', ['lb-worth-20'], 10);
         try {
           const result = await dc.dbGetMFLLeaderboard();
           const bravoRows = result.data!.filter((r) => r.lbusername === BRAVO);
