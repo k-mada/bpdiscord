@@ -100,10 +100,7 @@ const renderReleaseDate = (releaseDate: string) => (
   </span>
 );
 
-const memberName = (entry: MFLLeaderboardEntry) =>
-  entry.displayName || entry.lbusername;
-
-/** The /mfl standings: server-ranked members, ties sharing a rank. */
+/** The /mfl standings: server-ranked rosters, ties sharing a rank. */
 export const mflLeaderboardColumns: ColumnDef<MFLLeaderboardEntry>[] = [
   {
     key: "rank",
@@ -112,12 +109,17 @@ export const mflLeaderboardColumns: ColumnDef<MFLLeaderboardEntry>[] = [
     customSort: (a, b) => a.rank - b.rank,
   },
   {
-    key: "member",
-    label: "Member",
-    sortKey: "member",
-    customSort: (a, b) => memberName(a).localeCompare(memberName(b)),
+    key: "roster",
+    label: "Roster",
+    sortKey: "roster",
+    customSort: (a, b) => a.name.localeCompare(b.name),
     renderColumn: (entry) => (
-      <Link to={`/user/${entry.lbusername}`}>{memberName(entry)}</Link>
+      <>
+        <Link to={`/mfl/roster/${entry.rosterId}`}>{entry.name}</Link>{" "}
+        <span className="text-letterboxd-text-secondary">
+          ({entry.lbusername})
+        </span>
+      </>
     ),
   },
   {

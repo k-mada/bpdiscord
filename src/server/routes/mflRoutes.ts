@@ -12,6 +12,7 @@ import {
   deleteMflMovieScore,
   listRosters,
   getRosterPicks,
+  getRosterView,
   createRoster,
   updateRoster,
   deleteRoster,
@@ -25,6 +26,13 @@ router.get("/user-scores/:username", getMFLUserScores);
 router.get("/leaderboard", getMFLLeaderboard);
 router.get("/movie-score/:filmSlug", getMflMovieScore);
 router.get("/movies", getMFLMovies);
+// Public, read-only roster view — any roster's films, points and total.
+router.get(
+  "/rosters/:rosterId",
+  ...validateIntParam("rosterId"),
+  handleValidationErrors,
+  getRosterView,
+);
 
 // Roster CRUD. The handler resolves identity from the JWT; every :rosterId route
 // verifies the roster belongs to the caller before touching it.

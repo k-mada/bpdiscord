@@ -30,12 +30,14 @@ import {
   dbTransaction,
   isUniqueViolation,
   isForeignKeyViolation,
+  DbResult,
 } from "../db/utils";
 import {
   HaterRankingRow,
   MissingFilmsRow,
   CompatibilityExtremeRow,
   CompatibilityRow,
+  RosterView,
   toNumber,
   UNCATEGORISED,
 } from "../db/queryTypes";
@@ -1702,6 +1704,53 @@ export async function dbGetRosterPicks(rosterId: number): Promise<{
       .innerJoin(mflFilms, eq(mflFilms.filmSlug, mflUserPicks.filmSlug))
       .where(eq(mflUserPicks.rosterId, rosterId))
       .orderBy(asc(mflFilms.title), asc(mflUserPicks.filmSlug));
+  });
+}
+
+/**
+ * A roster's public read-only view: its films with points, plus the total.
+ * Returns null (not an error) when no such roster exists, so the caller 404s.
+ */
+export async function dbGetRosterView(
+  rosterId: number,
+): Promise<DbResult<RosterView | null>> {
+  return dbOperation(async () => {
+    // Meta separately from picks so an existing-but-empty roster is a 200 with
+    // no films rather than indistinguishable from a missing one.
+    const [meta] = await db
+      .select({
+        roster_id: mflRosters.rosterId,
+        name: mflRosters.name,
+        lbusername: mflRosters.lbusername,
+        display_name: users.displayName,
+      })
+      .from(mflRosters)
+      .leftJoin(users, eq(users.lbusername, mflRosters.lbusername))
+      .where(eq(mflRosters.rosterId, rosterId))
+      .limit(1);
+    if (!meta) return null;
+
+    const picks = await db
+      .select({
+        film_slug: mflFilms.filmSlug,
+        title: mflFilms.title,
+        release_date: mflFilms.releaseDate,
+        price: mflFilms.price,
+        // ::int per the house convention — SUM widens to numeric, returned as a
+        // string by postgres.js. The picks PK stops a tally row counting twice.
+        total_points: sql<number>`SUM(COALESCE(${mflScoringTally.pointsAwarded}, 0))::int`,
+      })
+      .from(mflUserPicks)
+      .innerJoin(mflFilms, eq(mflFilms.filmSlug, mflUserPicks.filmSlug))
+      .leftJoin(mflScoringTally, eq(mflScoringTally.filmSlug, mflUserPicks.filmSlug))
+      .where(eq(mflUserPicks.rosterId, rosterId))
+      // Group by the films PK alone; title/release_date/price are functionally
+      // dependent on it, so Postgres allows selecting them ungrouped.
+      .groupBy(mflFilms.filmSlug)
+      .orderBy(asc(mflFilms.title), asc(mflFilms.filmSlug));
+
+    const total_points = picks.reduce((sum, p) => sum + p.total_points, 0);
+    return { ...meta, picks, total_points };
   });
 }
 

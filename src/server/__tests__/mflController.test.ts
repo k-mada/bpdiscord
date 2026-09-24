@@ -27,6 +27,7 @@ vi.mock('../controllers/dataController', () => ({
   dbGetUserRosters: vi.fn(),
   dbGetRosterOwner: vi.fn(),
   dbGetRosterPicks: vi.fn(),
+  dbGetRosterView: vi.fn(),
   dbCreateRoster: vi.fn(),
   dbUpdateRoster: vi.fn(),
   dbDeleteRoster: vi.fn(),
@@ -39,6 +40,7 @@ import {
   upsertMflMovieScore,
   listRosters,
   getRosterPicks,
+  getRosterView,
   createRoster,
   updateRoster,
   deleteRoster,
@@ -52,6 +54,7 @@ import {
   dbGetUserRosters,
   dbGetRosterOwner,
   dbGetRosterPicks,
+  dbGetRosterView,
   dbCreateRoster,
   dbUpdateRoster,
   dbDeleteRoster,
@@ -401,6 +404,77 @@ describe('upsertMflMovieScore', () => {
 
     const { req, res, statusCalls } = mockReqRes({ body: award });
     await upsertMflMovieScore(req, res);
+
+    expect(statusCalls).toEqual([500]);
+  });
+});
+
+describe('getRosterView (public)', () => {
+  const view = {
+    roster_id: 7,
+    name: 'My Movie Picks',
+    lbusername: 'rooney',
+    display_name: 'Rooney',
+    total_points: 55,
+    picks: [
+      { film_slug: 'anora', title: 'Anora', release_date: '2026-10-18', price: 40, total_points: 30 },
+      { film_slug: 'hamnet', title: 'Hamnet', release_date: null, price: 25, total_points: 25 },
+    ],
+  };
+
+  it('returns the roster with camelCase picks and no auth required', async () => {
+    vi.mocked(dbGetRosterView).mockResolvedValue({ success: true, data: view } as never);
+
+    const { req, res, statusCalls, jsonCalls } = mockReqRes({ params: { rosterId: '7' } });
+    await getRosterView(req, res);
+
+    expect(statusCalls).toEqual([]);
+    expect(dbGetRosterView).toHaveBeenCalledWith(7);
+    expect(jsonCalls[0]).toMatchObject({
+      data: {
+        rosterId: 7,
+        name: 'My Movie Picks',
+        lbusername: 'rooney',
+        displayName: 'Rooney',
+        totalPoints: 55,
+        picks: [
+          { filmSlug: 'anora', title: 'Anora', releaseDate: '2026-10-18', price: 40, totalPoints: 30 },
+          { filmSlug: 'hamnet', title: 'Hamnet', releaseDate: null, price: 25, totalPoints: 25 },
+        ],
+      },
+    });
+  });
+
+  it('emits exactly the camelCase pick keys the client expects', async () => {
+    vi.mocked(dbGetRosterView).mockResolvedValue({ success: true, data: view } as never);
+
+    const { req, res, jsonCalls } = mockReqRes({ params: { rosterId: '7' } });
+    await getRosterView(req, res);
+
+    const [pick] = (jsonCalls[0] as { data: { picks: Record<string, unknown>[] } }).data.picks;
+    expect(Object.keys(pick).sort()).toEqual([
+      'filmSlug',
+      'price',
+      'releaseDate',
+      'title',
+      'totalPoints',
+    ]);
+  });
+
+  it('404s when the roster does not exist', async () => {
+    vi.mocked(dbGetRosterView).mockResolvedValue({ success: true, data: null } as never);
+
+    const { req, res, statusCalls } = mockReqRes({ params: { rosterId: '999' } });
+    await getRosterView(req, res);
+
+    expect(statusCalls).toEqual([404]);
+  });
+
+  it('500s when the query fails', async () => {
+    vi.mocked(dbGetRosterView).mockResolvedValue({ success: false, error: 'boom' } as never);
+
+    const { req, res, statusCalls } = mockReqRes({ params: { rosterId: '7' } });
+    await getRosterView(req, res);
 
     expect(statusCalls).toEqual([500]);
   });

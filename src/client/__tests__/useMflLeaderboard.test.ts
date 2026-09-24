@@ -6,8 +6,8 @@ import type { MFLLeaderboardEntry } from "../types";
 vi.mock("../services/api");
 
 const mockLeaderboard: MFLLeaderboardEntry[] = [
-  { rank: 1, lbusername: "rooney", displayName: "Rooney", totalPoints: 143 },
-  { rank: 2, lbusername: "kevin", displayName: null, totalPoints: 98 },
+  { rank: 1, rosterId: 1, name: "My Picks", lbusername: "rooney", displayName: "Rooney", totalPoints: 143 },
+  { rank: 2, rosterId: 2, name: "Backup", lbusername: "kevin", displayName: null, totalPoints: 98 },
 ];
 
 describe("useMflLeaderboard", () => {

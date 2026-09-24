@@ -42,6 +42,25 @@ export interface CompatibilityRow extends QueryRow {
   sample_size: number;
 }
 
+/** A roster's film with its accumulated points, for the public roster view. */
+export interface RosterViewFilm {
+  film_slug: string;
+  title: string;
+  release_date: string | null;
+  price: number | null;
+  total_points: number;
+}
+
+/** The public roster view: MFLRosters meta plus its films and running total. */
+export interface RosterView {
+  roster_id: number;
+  name: string;
+  lbusername: string;
+  display_name: string | null;
+  picks: RosterViewFilm[];
+  total_points: number;
+}
+
 /**
  * Bucket for points from a metric with no category. MFLScoringMetrics.category
  * is nullable, so without a named bucket those points reach a film's total but
