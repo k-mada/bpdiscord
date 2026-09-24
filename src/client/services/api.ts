@@ -14,6 +14,7 @@ import {
   MFLMovieScore,
   MFLCatalogueFilm,
   MFLPick,
+  MFLRoster,
   MFLLeaderboardEntry,
   AwardShow,
   EventSummary,
@@ -280,24 +281,58 @@ class ApiService {
     );
   }
 
-  async getMflPicks(
+  async getMflRosters(
     token: string,
     signal?: AbortSignal,
-  ): Promise<ApiResponse<MFLPick[]>> {
-    return this.request<MFLPick[]>("/mfl/picks", {
+  ): Promise<ApiResponse<MFLRoster[]>> {
+    return this.request<MFLRoster[]>("/mfl/rosters", {
       headers: { Authorization: `Bearer ${token}` },
       ...(signal ? { signal } : {}),
     });
   }
 
-  async replaceMflPicks(
+  async getMflRosterPicks(
+    rosterId: number,
+    token: string,
+    signal?: AbortSignal,
+  ): Promise<ApiResponse<MFLPick[]>> {
+    return this.request<MFLPick[]>(`/mfl/rosters/${rosterId}/picks`, {
+      headers: { Authorization: `Bearer ${token}` },
+      ...(signal ? { signal } : {}),
+    });
+  }
+
+  async createMflRoster(
+    name: string,
     filmSlugs: string[],
     token: string,
+  ): Promise<ApiResponse<{ rosterId: number }>> {
+    return this.request<{ rosterId: number }>("/mfl/rosters", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ name, filmSlugs }),
+    });
+  }
+
+  async updateMflRoster(
+    rosterId: number,
+    changes: { name?: string; filmSlugs?: string[] },
+    token: string,
   ): Promise<ApiResponse> {
-    return this.request("/mfl/picks", {
+    return this.request(`/mfl/rosters/${rosterId}`, {
       method: "PUT",
       headers: { Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ filmSlugs }),
+      body: JSON.stringify(changes),
+    });
+  }
+
+  async deleteMflRoster(
+    rosterId: number,
+    token: string,
+  ): Promise<ApiResponse> {
+    return this.request(`/mfl/rosters/${rosterId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
     });
   }
 

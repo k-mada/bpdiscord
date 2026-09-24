@@ -13,6 +13,8 @@ vi.mock("../hooks/useMflLeaderboard");
 function entry(over: Partial<MFLLeaderboardEntry> = {}): MFLLeaderboardEntry {
   return {
     rank: 1,
+    rosterId: 1,
+    name: "My Picks",
     lbusername: "rooney",
     displayName: "Rooney",
     totalPoints: 143,
@@ -64,36 +66,40 @@ function renderPage(
 }
 
 describe("MFL leaderboard columns", () => {
-  it("renders rank, member and points", () => {
-    renderTable([entry({ rank: 2, lbusername: "kevin", displayName: "kevin", totalPoints: 98 })]);
-
-    expect(rowCells()).toEqual([["2", "kevin", "98"]]);
-  });
-
-  it("links the member to their profile page", () => {
-    renderTable([entry({ lbusername: "rooney", displayName: "Rooney" })]);
-
-    expect(screen.getByRole("link", { name: "Rooney" })).toHaveAttribute(
-      "href",
-      "/user/rooney",
-    );
-  });
-
-  it("falls back to the lbusername when the display name is missing", () => {
-    renderTable([entry({ lbusername: "no_name", displayName: null })]);
-
-    expect(screen.getByRole("link", { name: "no_name" })).toHaveAttribute(
-      "href",
-      "/user/no_name",
-    );
-  });
-
-  it("shows tied members with the same rank", () => {
+  it("renders rank, the roster name with the owner in parentheses, and points", () => {
     renderTable([
-      entry({ rank: 1, lbusername: "rooney", displayName: "Rooney", totalPoints: 143 }),
-      entry({ rank: 2, lbusername: "alice", displayName: "alice", totalPoints: 98 }),
-      entry({ rank: 2, lbusername: "kevin", displayName: "kevin", totalPoints: 98 }),
-      entry({ rank: 4, lbusername: "bob", displayName: "bob", totalPoints: 0 }),
+      entry({ rank: 2, name: "Contenders", lbusername: "kevin", totalPoints: 98 }),
+    ]);
+
+    expect(rowCells()).toEqual([["2", "Contenders (kevin)", "98"]]);
+  });
+
+  it("links the roster to the owner's profile page", () => {
+    renderTable([entry({ name: "My Movie Picks", lbusername: "rooney" })]);
+
+    expect(
+      screen.getByRole("link", { name: "My Movie Picks (rooney)" }),
+    ).toHaveAttribute("href", "/user/rooney");
+  });
+
+  it("gives a user's two rosters their own rows", () => {
+    renderTable([
+      entry({ rank: 1, rosterId: 1, name: "A List", lbusername: "rooney", totalPoints: 143 }),
+      entry({ rank: 2, rosterId: 2, name: "Backup", lbusername: "rooney", totalPoints: 98 }),
+    ]);
+
+    expect(rowCells()).toEqual([
+      ["1", "A List (rooney)", "143"],
+      ["2", "Backup (rooney)", "98"],
+    ]);
+  });
+
+  it("shows tied rosters with the same rank", () => {
+    renderTable([
+      entry({ rank: 1, rosterId: 1, name: "A", lbusername: "rooney", totalPoints: 143 }),
+      entry({ rank: 2, rosterId: 2, name: "B", lbusername: "alice", totalPoints: 98 }),
+      entry({ rank: 2, rosterId: 3, name: "C", lbusername: "kevin", totalPoints: 98 }),
+      entry({ rank: 4, rosterId: 4, name: "D", lbusername: "bob", totalPoints: 0 }),
     ]);
 
     expect(rowCells().map((cells) => cells[0])).toEqual(["1", "2", "2", "4"]);
@@ -122,16 +128,15 @@ describe("MFL standings section", () => {
     expect(screen.queryByText("No standings yet.")).not.toBeInTheDocument();
   });
 
-  it("renders the ranked members when standings load", () => {
+  it("renders the ranked rosters when standings load", () => {
     renderPage({
       leaderboard: [
-        entry({ rank: 1, lbusername: "rooney", displayName: "Rooney", totalPoints: 143 }),
+        entry({ rank: 1, name: "My Movie Picks", lbusername: "rooney", totalPoints: 143 }),
       ],
     });
 
-    expect(screen.getByRole("link", { name: "Rooney" })).toHaveAttribute(
-      "href",
-      "/user/rooney",
-    );
+    expect(
+      screen.getByRole("link", { name: "My Movie Picks (rooney)" }),
+    ).toHaveAttribute("href", "/user/rooney");
   });
 });

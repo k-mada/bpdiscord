@@ -105,9 +105,16 @@ export interface MFLPick {
   price: number | null;
 }
 
+export interface MFLRoster {
+  rosterId: number;
+  name: string;
+}
+
 export interface MFLLeaderboardEntry {
   /** Competition rank: equal totals share a rank, the next distinct total skips. */
   rank: number;
+  rosterId: number;
+  name: string;
   lbusername: string;
   displayName: string | null;
   totalPoints: number;

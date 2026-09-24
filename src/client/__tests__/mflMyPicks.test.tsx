@@ -85,8 +85,18 @@ async function fill(count: number) {
   for (let i = 0; i < count; i++) await pick(i + 1, `Film ${i}`);
 }
 
-function setSaved(picks: MFLPick[]) {
-  vi.mocked(apiService.getMflPicks).mockResolvedValue({ data: picks });
+function setRosters(rosters: { rosterId: number; name: string }[]) {
+  vi.mocked(apiService.getMflRosters).mockResolvedValue({ data: rosters });
+}
+
+function setRosterPicks(picks: MFLPick[]) {
+  vi.mocked(apiService.getMflRosterPicks).mockResolvedValue({ data: picks });
+}
+
+async function typeName(text: string) {
+  const input = screen.getByLabelText("Roster name");
+  await userEvent.clear(input);
+  await userEvent.type(input, text);
 }
 
 beforeEach(() => {
@@ -98,16 +108,24 @@ beforeEach(() => {
   vi.mocked(apiService.getMflMovies).mockResolvedValue({
     data: [...CATALOGUE, DEAR],
   });
-  setSaved([]);
+  // Default: no rosters yet — the create form, eight empty slots, no dropdown.
+  setRosters([]);
+  setRosterPicks([]);
 });
 
 describe("MFL my picks", () => {
-  it("renders eight empty slots", async () => {
+  it("renders eight empty slots and no dropdown in the empty state", async () => {
     renderPage();
 
     await waitFor(() => expect(slotButtons()).toHaveLength(8));
     expect(screen.getAllByText("Select movie")).toHaveLength(8);
     expect(screen.getByText("0 of 8 movies selected")).toBeInTheDocument();
+    // Empty state: the name field is offered, the roster dropdown is not.
+    expect(screen.getByLabelText("Roster name")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Roster")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Create roster/ }),
+    ).toBeInTheDocument();
   });
 
   it("opens the picker for the slot that was clicked", async () => {
@@ -217,17 +235,18 @@ describe("MFL my picks", () => {
     expect(screen.getByText(/\$65 over the \$100 budget/)).toBeInTheDocument();
   });
 
-  it("disables submit until eight are chosen", async () => {
+  it("disables submit until eight are chosen and the roster is named", async () => {
     renderPage();
     await waitFor(() => expect(slotButtons()).toHaveLength(8));
 
-    const submit = screen.getByRole("button", { name: /Submit picks/ });
+    const submit = screen.getByRole("button", { name: /Create roster/ });
     expect(submit).toBeDisabled();
 
-    await fill(7);
+    await fill(8);
+    // Eight chosen but still nameless — the create form needs a name.
     expect(submit).toBeDisabled();
 
-    await pick(8, "Film 7");
+    await typeName("My Movie Picks");
     expect(submit).toBeEnabled();
   });
 
@@ -235,10 +254,11 @@ describe("MFL my picks", () => {
     renderPage();
     await waitFor(() => expect(slotButtons()).toHaveLength(8));
 
+    await typeName("My Movie Picks");
     await fill(7);
     await pick(8, "Dear One");
 
-    expect(screen.getByRole("button", { name: /Submit picks/ })).toBeDisabled();
+    expect(screen.getByRole("button", { name: /Create roster/ })).toBeDisabled();
   });
 
   it("clears a slot with its X and frees the film again", async () => {
@@ -253,23 +273,28 @@ describe("MFL my picks", () => {
     expect(filmRow(dialog, "Film 0")).toBeInTheDocument();
   });
 
-  it("submits all eight slugs at once", async () => {
-    vi.mocked(apiService.replaceMflPicks).mockResolvedValue({ message: "ok" });
+  it("creates a roster with a name and all eight slugs at once", async () => {
+    vi.mocked(apiService.createMflRoster).mockResolvedValue({
+      data: { rosterId: 5 },
+    });
     renderPage();
     await waitFor(() => expect(slotButtons()).toHaveLength(8));
 
+    await typeName("My Movie Picks");
     await fill(8);
-    await userEvent.click(screen.getByRole("button", { name: /Submit picks/ }));
+    await userEvent.click(screen.getByRole("button", { name: /Create roster/ }));
 
-    expect(apiService.replaceMflPicks).toHaveBeenCalledWith(
+    expect(apiService.createMflRoster).toHaveBeenCalledWith(
+      "My Movie Picks",
       ["film-0", "film-1", "film-2", "film-3", "film-4", "film-5", "film-6", "film-7"],
       TOKEN,
     );
-    expect(await screen.findByText("Picks saved.")).toBeInTheDocument();
+    expect(await screen.findByText("Roster created.")).toBeInTheDocument();
   });
 
   it("reloads a saved roster, edits it, and resubmits the change", async () => {
-    setSaved(
+    setRosters([{ rosterId: 7, name: "My Movie Picks" }]);
+    setRosterPicks(
       Array.from({ length: 8 }, (_, i) => ({
         filmSlug: `film-${i}`,
         title: `Film ${i}`,
@@ -277,34 +302,58 @@ describe("MFL my picks", () => {
         price: 10,
       })),
     );
-    vi.mocked(apiService.replaceMflPicks).mockResolvedValue({ message: "ok" });
+    vi.mocked(apiService.updateMflRoster).mockResolvedValue({ message: "ok" });
     renderPage();
 
     expect(await screen.findByText("8 of 8 movies selected")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Submit picks/ })).toBeEnabled();
+    // An existing roster shows the dropdown and the Save action.
+    expect(screen.getByLabelText("Roster")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Save picks/ })).toBeEnabled();
 
     await pick(3, "Film 8");
-    await userEvent.click(screen.getByRole("button", { name: /Submit picks/ }));
+    await userEvent.click(screen.getByRole("button", { name: /Save picks/ }));
 
-    expect(apiService.replaceMflPicks).toHaveBeenCalledWith(
-      ["film-0", "film-1", "film-8", "film-3", "film-4", "film-5", "film-6", "film-7"],
+    expect(await screen.findByText("Picks saved.")).toBeInTheDocument();
+    expect(apiService.updateMflRoster).toHaveBeenCalledWith(
+      7,
+      {
+        name: "My Movie Picks",
+        filmSlugs: ["film-0", "film-1", "film-8", "film-3", "film-4", "film-5", "film-6", "film-7"],
+      },
       TOKEN,
     );
   });
 
-  it("shows the server's message when a save is rejected", async () => {
-    vi.mocked(apiService.replaceMflPicks).mockRejectedValue(
-      new ApiError("A film cannot be picked twice.", 400),
+  it("shows the server's message when a create is rejected", async () => {
+    vi.mocked(apiService.createMflRoster).mockRejectedValue(
+      new ApiError("You already have a roster with that name.", 409),
     );
     renderPage();
     await waitFor(() => expect(slotButtons()).toHaveLength(8));
 
+    await typeName("Dupe");
     await fill(8);
-    await userEvent.click(screen.getByRole("button", { name: /Submit picks/ }));
+    await userEvent.click(screen.getByRole("button", { name: /Create roster/ }));
 
     expect(
-      await screen.findByText("A film cannot be picked twice."),
+      await screen.findByText("You already have a roster with that name."),
     ).toBeInTheDocument();
+  });
+
+  it("deletes the selected roster after confirmation", async () => {
+    setRosters([{ rosterId: 7, name: "Doomed" }]);
+    setRosterPicks([]);
+    vi.mocked(apiService.deleteMflRoster).mockResolvedValue({ message: "ok" });
+    renderPage();
+
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Delete roster" }),
+    );
+    // A guard step so a stray click can't wipe a roster.
+    await userEvent.click(screen.getByRole("button", { name: "Confirm delete" }));
+
+    expect(apiService.deleteMflRoster).toHaveBeenCalledWith(7, TOKEN);
+    expect(await screen.findByText("Roster deleted.")).toBeInTheDocument();
   });
 
   // Every price comes from the catalogue; without it the roster renders each
@@ -313,7 +362,8 @@ describe("MFL my picks", () => {
     vi.mocked(apiService.getMflMovies).mockRejectedValue(
       new ApiError("boom", 500),
     );
-    setSaved([
+    setRosters([{ rosterId: 7, name: "My Movie Picks" }]);
+    setRosterPicks([
       { filmSlug: "film-0", title: "Film 0", releaseDate: null, price: 10 },
     ]);
     renderPage();
@@ -341,6 +391,6 @@ describe("MFL my picks", () => {
       await screen.findByText(/Ask an admin to link one/),
     ).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /, slot 1$/ })).not.toBeInTheDocument();
-    expect(apiService.getMflPicks).not.toHaveBeenCalled();
+    expect(apiService.getMflRosters).not.toHaveBeenCalled();
   });
 });

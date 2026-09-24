@@ -9,15 +9,18 @@ import { useAuth } from "../../contexts/AuthContext";
 import apiService from "../../services/api";
 import { failureMessage } from "../../lib/failureMessage";
 import { NO_LBUSERNAME_MESSAGE } from "../../../shared/utilities";
-import { MFLCatalogueFilm } from "../../types";
+import { MFLCatalogueFilm, MFLRoster } from "../../types";
 
 // Vulture's rules, mirrored here only. The server validates data integrity, not
 // roster size or spend, so a rule change there does not need a deploy here.
 const ROSTER_SIZE = 8;
 const BUDGET = 100;
+const MAX_NAME_LENGTH = 80;
 const EMPTY = "";
+const NEW = "new";
 
 const priceOf = (film: MFLCatalogueFilm | undefined) => film?.price ?? 0;
+const emptySlots = () => Array<string>(ROSTER_SIZE).fill(EMPTY);
 
 interface SlotProps {
   index: number;
@@ -68,47 +71,87 @@ const MyPicks = () => {
     loading: catalogueLoading,
     error: catalogueError,
   } = useMflData();
-  const [slots, setSlots] = useState<string[]>(() =>
-    Array<string>(ROSTER_SIZE).fill(EMPTY),
-  );
+
+  const [rosters, setRosters] = useState<MFLRoster[]>([]);
+  // null means the create-a-new-roster form; a number selects an existing one.
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [name, setName] = useState(EMPTY);
+  const [slots, setSlots] = useState<string[]>(emptySlots);
   const [editing, setEditing] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [rostersLoading, setRostersLoading] = useState(true);
+  const [picksLoading, setPicksLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [status, setStatus] = useState<Status>({ type: "idle" });
 
   const isLinked = Boolean(user?.lbusername);
+  const isCreate = selectedId === null;
 
   useEffect(() => {
-    // Judging isLinked before /me resolves would flash eight empty slots at a
-    // member who already has a roster.
+    // Judging isLinked before /me resolves would flash the create form at a
+    // member who already has rosters.
     if (authLoading) return;
     if (!token || !isLinked) {
-      setLoading(false);
+      setRostersLoading(false);
       return;
     }
     const controller = new AbortController();
 
-    async function loadPicks(authToken: string) {
+    async function loadRosters(authToken: string) {
       try {
-        const response = await apiService.getMflPicks(
+        const response = await apiService.getMflRosters(
           authToken,
           controller.signal,
         );
-        const saved = (response.data ?? []).map((pick) => pick.filmSlug);
-        setSlots(
-          Array.from({ length: ROSTER_SIZE }, (_, i) => saved[i] ?? EMPTY),
-        );
+        const loaded = response.data ?? [];
+        setRosters(loaded);
+        setSelectedId(loaded[0]?.rosterId ?? null);
       } catch (error) {
         if (error instanceof Error && error.name === "AbortError") return;
         setStatus({ type: "error", message: failureMessage(error) });
       } finally {
-        setLoading(false);
+        setRostersLoading(false);
       }
     }
 
-    loadPicks(token);
+    loadRosters(token);
     return () => controller.abort();
   }, [authLoading, token, isLinked]);
+
+  useEffect(() => {
+    if (!token) return;
+
+    if (selectedId === null) {
+      setName(EMPTY);
+      setSlots(emptySlots());
+      return;
+    }
+
+    const roster = rosters.find((r) => r.rosterId === selectedId);
+    setName(roster?.name ?? EMPTY);
+
+    const controller = new AbortController();
+    async function loadPicks(authToken: string, rosterId: number) {
+      setPicksLoading(true);
+      try {
+        const response = await apiService.getMflRosterPicks(
+          rosterId,
+          authToken,
+          controller.signal,
+        );
+        const saved = (response.data ?? []).map((pick) => pick.filmSlug);
+        setSlots(Array.from({ length: ROSTER_SIZE }, (_, i) => saved[i] ?? EMPTY));
+      } catch (error) {
+        if (error instanceof Error && error.name === "AbortError") return;
+        setStatus({ type: "error", message: failureMessage(error) });
+      } finally {
+        setPicksLoading(false);
+      }
+    }
+
+    loadPicks(token, selectedId);
+    return () => controller.abort();
+  }, [token, selectedId, rosters]);
 
   const bySlug = useMemo(
     () => new Map(movies.map((movie) => [movie.filmSlug, movie])),
@@ -129,6 +172,10 @@ const MyPicks = () => {
   );
   const overBudget = totalSpend > BUDGET;
   const complete = filled.length === ROSTER_SIZE;
+  const trimmedName = name.trim();
+  const nameValid = trimmedName.length > 0 && trimmedName.length <= MAX_NAME_LENGTH;
+  const canSubmit =
+    complete && !overBudget && nameValid && !saving && !picksLoading;
 
   const handlePick = (filmSlug: string) => {
     const index = editing;
@@ -143,13 +190,32 @@ const MyPicks = () => {
     setSlots((prev) => prev.map((cur, i) => (i === index ? EMPTY : cur)));
   };
 
+  async function refreshRosters(authToken: string): Promise<MFLRoster[]> {
+    const response = await apiService.getMflRosters(authToken);
+    const loaded = response.data ?? [];
+    setRosters(loaded);
+    return loaded;
+  }
+
   const handleSubmit = async () => {
-    if (!token || !complete || overBudget) return;
+    if (!token || !canSubmit) return;
     setStatus({ type: "idle" });
     setSaving(true);
     try {
-      await apiService.replaceMflPicks(filled, token);
-      setStatus({ type: "success", message: "Picks saved." });
+      if (isCreate) {
+        const response = await apiService.createMflRoster(trimmedName, filled, token);
+        await refreshRosters(token);
+        setSelectedId(response.data?.rosterId ?? null);
+        setStatus({ type: "success", message: "Roster created." });
+      } else {
+        await apiService.updateMflRoster(
+          selectedId,
+          { name: trimmedName, filmSlugs: filled },
+          token,
+        );
+        await refreshRosters(token);
+        setStatus({ type: "success", message: "Picks saved." });
+      }
     } catch (error) {
       setStatus({ type: "error", message: failureMessage(error) });
     } finally {
@@ -157,7 +223,24 @@ const MyPicks = () => {
     }
   };
 
-  const busy = authLoading || loading || catalogueLoading;
+  const handleDelete = async () => {
+    if (!token || selectedId === null) return;
+    setStatus({ type: "idle" });
+    setSaving(true);
+    try {
+      await apiService.deleteMflRoster(selectedId, token);
+      const remaining = await refreshRosters(token);
+      setConfirmingDelete(false);
+      setSelectedId(remaining[0]?.rosterId ?? null);
+      setStatus({ type: "success", message: "Roster deleted." });
+    } catch (error) {
+      setStatus({ type: "error", message: failureMessage(error) });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const busy = authLoading || rostersLoading || catalogueLoading;
 
   // Every price on this page comes from the catalogue. Without it the roster
   // would render with each film at $0 and a total that is simply wrong.
@@ -178,9 +261,7 @@ const MyPicks = () => {
       </h1>
 
       {!isLinked && !busy ? (
-        <p className="text-letterboxd-text-secondary">
-          {NO_LBUSERNAME_MESSAGE}
-        </p>
+        <p className="text-letterboxd-text-secondary">{NO_LBUSERNAME_MESSAGE}</p>
       ) : busy ? (
         <Spinner />
       ) : blocked ? (
@@ -198,13 +279,96 @@ const MyPicks = () => {
             </div>
           )}
 
+          {rosters.length > 0 && (
+            <div className="mb-4 flex flex-wrap items-end gap-3">
+              <div className="flex flex-col gap-1">
+                <label
+                  htmlFor="roster-select"
+                  className="text-sm font-medium text-letterboxd-text-secondary"
+                >
+                  Roster
+                </label>
+                <select
+                  id="roster-select"
+                  value={selectedId === null ? NEW : String(selectedId)}
+                  disabled={saving}
+                  onChange={(e) => {
+                    setConfirmingDelete(false);
+                    setStatus({ type: "idle" });
+                    setSelectedId(
+                      e.target.value === NEW ? null : Number(e.target.value),
+                    );
+                  }}
+                  className="rounded-lg border border-letterboxd-border-light bg-letterboxd-bg-secondary px-3 py-2 text-letterboxd-text-primary"
+                >
+                  {rosters.map((roster) => (
+                    <option key={roster.rosterId} value={String(roster.rosterId)}>
+                      {roster.name}
+                    </option>
+                  ))}
+                  <option value={NEW}>+ New roster</option>
+                </select>
+              </div>
+
+              {!isCreate &&
+                (confirmingDelete ? (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      disabled={saving}
+                      onClick={handleDelete}
+                    >
+                      Confirm delete
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      disabled={saving}
+                      onClick={() => setConfirmingDelete(false)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    disabled={saving}
+                    onClick={() => setConfirmingDelete(true)}
+                  >
+                    Delete roster
+                  </Button>
+                ))}
+            </div>
+          )}
+
+          <div className="mb-4 flex flex-col gap-1">
+            <label
+              htmlFor="roster-name"
+              className="text-sm font-medium text-letterboxd-text-secondary"
+            >
+              Roster name
+            </label>
+            <input
+              id="roster-name"
+              type="text"
+              value={name}
+              maxLength={MAX_NAME_LENGTH}
+              disabled={saving || picksLoading}
+              placeholder="My Movie Picks"
+              onChange={(e) => setName(e.target.value)}
+              className="rounded-lg border border-letterboxd-border-light bg-letterboxd-bg-secondary px-3 py-2 text-letterboxd-text-primary"
+            />
+          </div>
+
           <ul className="flex flex-col gap-2">
             {slots.map((slug, index) => (
               <Slot
                 key={index}
                 index={index}
                 film={bySlug.get(slug)}
-                disabled={saving}
+                disabled={saving || picksLoading}
                 onOpen={setEditing}
                 onClear={handleClear}
               />
@@ -235,19 +399,18 @@ const MyPicks = () => {
             className="mt-2 text-sm text-letterboxd-text-secondary"
           >
             {filled.length} of {ROSTER_SIZE} movies selected
-            {overBudget &&
-              `, $${totalSpend - BUDGET} over the $${BUDGET} budget`}
+            {overBudget && `, $${totalSpend - BUDGET} over the $${BUDGET} budget`}
           </p>
 
           <Button
             type="button"
             className="mt-6 w-full sm:w-auto"
             aria-describedby="roster-progress"
-            disabled={!complete || overBudget}
+            disabled={!canSubmit}
             loading={saving}
             onClick={handleSubmit}
           >
-            Submit picks
+            {isCreate ? "Create roster" : "Save picks"}
           </Button>
 
           {editing !== null && (
