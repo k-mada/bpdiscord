@@ -322,6 +322,9 @@ describe("MFL my picks", () => {
       },
       TOKEN,
     );
+    // The post-save roster refresh must not retrigger a picks fetch — the
+    // selection did not change, so the picks effect stays put.
+    expect(apiService.getMflRosterPicks).toHaveBeenCalledTimes(1);
   });
 
   it("shows the server's message when a create is rejected", async () => {

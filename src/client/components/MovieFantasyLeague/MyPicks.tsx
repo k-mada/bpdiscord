@@ -107,6 +107,7 @@ const MyPicks = () => {
         const loaded = response.data ?? [];
         setRosters(loaded);
         setSelectedId(loaded[0]?.rosterId ?? null);
+        setName(loaded[0]?.name ?? EMPTY);
       } catch (error) {
         if (error instanceof Error && error.name === "AbortError") return;
         setStatus({ type: "error", message: failureMessage(error) });
@@ -119,17 +120,11 @@ const MyPicks = () => {
     return () => controller.abort();
   }, [authLoading, token, isLinked]);
 
+  // Fetch only. The selected roster's name and the empty-form reset are set by
+  // whoever changes the selection (below), so this depends on selectedId alone
+  // and never refetches just because the roster list was refreshed after a save.
   useEffect(() => {
-    if (!token) return;
-
-    if (selectedId === null) {
-      setName(EMPTY);
-      setSlots(emptySlots());
-      return;
-    }
-
-    const roster = rosters.find((r) => r.rosterId === selectedId);
-    setName(roster?.name ?? EMPTY);
+    if (!token || selectedId === null) return;
 
     const controller = new AbortController();
     async function loadPicks(authToken: string, rosterId: number) {
@@ -152,7 +147,7 @@ const MyPicks = () => {
 
     loadPicks(token, selectedId);
     return () => controller.abort();
-  }, [token, selectedId, rosters]);
+  }, [token, selectedId]);
 
   const bySlug = useMemo(
     () => new Map(movies.map((movie) => [movie.filmSlug, movie])),
@@ -189,6 +184,22 @@ const MyPicks = () => {
   const handleClear = (index: number) => {
     setStatus({ type: "idle" });
     setSlots((prev) => prev.map((cur, i) => (i === index ? EMPTY : cur)));
+  };
+
+  // Switching selection is an event, so it sets the form state here rather than
+  // in an effect. The picks effect keys on selectedId and does the fetch.
+  const chooseRoster = (value: string) => {
+    setConfirmingDelete(false);
+    setStatus({ type: "idle" });
+    if (value === NEW) {
+      setSelectedId(null);
+      setName(EMPTY);
+      setSlots(emptySlots());
+      return;
+    }
+    const id = Number(value);
+    setSelectedId(id);
+    setName(rosters.find((r) => r.rosterId === id)?.name ?? EMPTY);
   };
 
   async function refreshRosters(authToken: string): Promise<MFLRoster[]> {
@@ -231,8 +242,11 @@ const MyPicks = () => {
     try {
       await apiService.deleteMflRoster(selectedId, token);
       const remaining = await refreshRosters(token);
+      const next = remaining[0] ?? null;
       setConfirmingDelete(false);
-      setSelectedId(remaining[0]?.rosterId ?? null);
+      setSelectedId(next?.rosterId ?? null);
+      setName(next?.name ?? EMPTY);
+      if (!next) setSlots(emptySlots());
       setStatus({ type: "success", message: "Roster deleted." });
     } catch (error) {
       setStatus({ type: "error", message: failureMessage(error) });
@@ -294,13 +308,7 @@ const MyPicks = () => {
                     id="roster-select"
                     value={selectedId === null ? NEW : String(selectedId)}
                     disabled={saving}
-                    onChange={(e) => {
-                      setConfirmingDelete(false);
-                      setStatus({ type: "idle" });
-                      setSelectedId(
-                        e.target.value === NEW ? null : Number(e.target.value),
-                      );
-                    }}
+                    onChange={(e) => chooseRoster(e.target.value)}
                     className="input-field w-full"
                   >
                     {rosters.map((roster) => (
