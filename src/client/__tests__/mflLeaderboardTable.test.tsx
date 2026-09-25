@@ -1,4 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { DataTable } from "../components/DataTable/DataTable";
 import { mflLeaderboardColumns } from "../components/DataTable/columns";
@@ -44,7 +45,12 @@ function rowCells() {
 }
 
 function renderPage(
-  over: { leaderboard?: MFLLeaderboardEntry[]; loading?: boolean; error?: string | null } = {},
+  over: {
+    official?: MFLLeaderboardEntry[];
+    all?: MFLLeaderboardEntry[];
+    loading?: boolean;
+    error?: string | null;
+  } = {},
 ) {
   vi.mocked(useMflData).mockReturnValue({
     movies: [],
@@ -53,7 +59,8 @@ function renderPage(
     error: null,
   } as unknown as ReturnType<typeof useMflData>);
   vi.mocked(useMflLeaderboard).mockReturnValue({
-    leaderboard: over.leaderboard ?? [],
+    official: over.official ?? [],
+    all: over.all ?? [],
     loading: over.loading ?? false,
     error: over.error ?? null,
   });
@@ -118,12 +125,19 @@ describe("MFL standings section", () => {
     vi.clearAllMocks();
   });
 
-  it("tells the member there are no standings rather than an empty table", () => {
-    renderPage({ leaderboard: [] });
+  it("offers a Standings and a Sicko Mode tab", () => {
+    renderPage();
 
-    expect(screen.getByText("No standings yet.")).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Standings" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "Sicko Mode" })).toBeInTheDocument();
+  });
+
+  it("tells the member there are no standings rather than an empty table", () => {
+    renderPage({ official: [], all: [] });
+
+    // getByRole("tabpanel") returns only the visible (non-hidden) panel.
     expect(
-      screen.getByRole("heading", { name: "Standings" }),
+      within(screen.getByRole("tabpanel")).getByText("No standings yet."),
     ).toBeInTheDocument();
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
   });
@@ -135,15 +149,43 @@ describe("MFL standings section", () => {
     expect(screen.queryByText("No standings yet.")).not.toBeInTheDocument();
   });
 
-  it("renders the ranked rosters when standings load", () => {
+  it("opens on the official standings", () => {
     renderPage({
-      leaderboard: [
+      official: [
         entry({ rosterId: 9, name: "My Movie Picks", lbusername: "rooney", totalPoints: 143 }),
+      ],
+      all: [
+        entry({ rosterId: 9, name: "My Movie Picks", lbusername: "rooney", totalPoints: 143 }),
+        entry({ rank: 2, rosterId: 5, name: "Experiment", lbusername: "rooney", totalPoints: 12 }),
       ],
     });
 
+    const panel = screen.getByRole("tabpanel");
     expect(
-      screen.getByRole("link", { name: "My Movie Picks" }),
+      within(panel).getByRole("link", { name: "My Movie Picks" }),
     ).toHaveAttribute("href", "/mfl/roster/9");
+    // The official list excludes the non-official roster.
+    expect(
+      within(panel).queryByRole("link", { name: "Experiment" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows every roster after switching to Sicko Mode", async () => {
+    renderPage({
+      official: [
+        entry({ rosterId: 9, name: "My Movie Picks", lbusername: "rooney", totalPoints: 143 }),
+      ],
+      all: [
+        entry({ rosterId: 9, name: "My Movie Picks", lbusername: "rooney", totalPoints: 143 }),
+        entry({ rank: 2, rosterId: 5, name: "Experiment", lbusername: "rooney", totalPoints: 12 }),
+      ],
+    });
+
+    await userEvent.click(screen.getByRole("tab", { name: "Sicko Mode" }));
+
+    const panel = screen.getByRole("tabpanel");
+    expect(
+      within(panel).getByRole("link", { name: "Experiment" }),
+    ).toBeInTheDocument();
   });
 });

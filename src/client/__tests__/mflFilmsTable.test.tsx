@@ -67,7 +67,8 @@ function renderPage(
     ...over,
   } as unknown as ReturnType<typeof useMflData>);
   vi.mocked(useMflLeaderboard).mockReturnValue({
-    leaderboard: [],
+    official: [],
+    all: [],
     loading: false,
     error: null,
   });

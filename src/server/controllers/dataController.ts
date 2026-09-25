@@ -1540,6 +1540,7 @@ export async function dbGetMFLLeaderboard(): Promise<{
     name: string;
     lbusername: string;
     display_name: string | null;
+    is_official: boolean;
     total_points: number;
   }>;
   error?: string;
@@ -1554,6 +1555,7 @@ export async function dbGetMFLLeaderboard(): Promise<{
         name: mflRosters.name,
         lbusername: mflRosters.lbusername,
         display_name: users.displayName,
+        is_official: mflRosters.isOfficial,
         // ::int per the house convention — SUM widens to numeric, which
         // postgres.js returns as a string.
         total_points: sql<number>`SUM(COALESCE(${mflScoringTally.pointsAwarded}, 0))::int`,
@@ -1565,7 +1567,13 @@ export async function dbGetMFLLeaderboard(): Promise<{
         eq(mflScoringTally.filmSlug, mflUserPicks.filmSlug),
       )
       .leftJoin(users, eq(users.lbusername, mflRosters.lbusername))
-      .groupBy(mflRosters.rosterId, mflRosters.name, mflRosters.lbusername, users.displayName)
+      .groupBy(
+        mflRosters.rosterId,
+        mflRosters.name,
+        mflRosters.lbusername,
+        users.displayName,
+        mflRosters.isOfficial,
+      )
       .orderBy(
         desc(sql`SUM(COALESCE(${mflScoringTally.pointsAwarded}, 0))`),
         asc(mflRosters.name),

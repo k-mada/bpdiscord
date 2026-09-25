@@ -875,6 +875,28 @@ describe('dataController', () => {
         }
       });
 
+      it('carries is_official through for each roster', async () => {
+        const [alpha] = await db
+          .select({ id: mflRosters.rosterId })
+          .from(mflRosters)
+          .where(eq(mflRosters.lbusername, ALPHA));
+        await db
+          .update(mflRosters)
+          .set({ isOfficial: true })
+          .where(eq(mflRosters.rosterId, alpha!.id));
+        try {
+          const result = await dc.dbGetMFLLeaderboard();
+          const byUser = new Map(result.data!.map((r) => [r.lbusername, r]));
+          expect(byUser.get(ALPHA)!.is_official).toBe(true);
+          expect(byUser.get(BRAVO)!.is_official).toBe(false);
+        } finally {
+          await db
+            .update(mflRosters)
+            .set({ isOfficial: false })
+            .where(eq(mflRosters.rosterId, alpha!.id));
+        }
+      });
+
       it('carries the display name through, null when unset', async () => {
         const result = await dc.dbGetMFLLeaderboard();
         const byUser = new Map(result.data!.map((r) => [r.lbusername, r]));

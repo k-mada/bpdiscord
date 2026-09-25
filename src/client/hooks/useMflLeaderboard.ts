@@ -3,7 +3,8 @@ import { apiService } from "../services/api";
 import type { MFLLeaderboardEntry } from "../types";
 
 export const useMflLeaderboard = () => {
-  const [leaderboard, setLeaderboard] = useState<MFLLeaderboardEntry[]>([]);
+  const [official, setOfficial] = useState<MFLLeaderboardEntry[]>([]);
+  const [all, setAll] = useState<MFLLeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -15,7 +16,10 @@ export const useMflLeaderboard = () => {
     async function fetchLeaderboard() {
       try {
         const response = await apiService.getMflLeaderboard(ac.signal);
-        if (response.data) setLeaderboard(response.data);
+        if (response.data) {
+          setOfficial(response.data.official);
+          setAll(response.data.all);
+        }
       } catch (e) {
         if (e instanceof DOMException && e.name === "AbortError") return;
         setError("Failed to load standings");
@@ -29,5 +33,5 @@ export const useMflLeaderboard = () => {
     return () => ac.abort();
   }, []);
 
-  return { leaderboard, loading, error };
+  return { official, all, loading, error };
 };

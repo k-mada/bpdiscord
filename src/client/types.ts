@@ -138,6 +138,13 @@ export interface MFLLeaderboardEntry {
   totalPoints: number;
 }
 
+export interface MFLLeaderboards {
+  /** Only rosters each user marked official. Ranked among themselves. */
+  official: MFLLeaderboardEntry[];
+  /** Every roster that holds films. Ranked among themselves. */
+  all: MFLLeaderboardEntry[];
+}
+
 export interface MFLMovieScore {
   scoringId: number;
   filmSlug: string;
