@@ -526,7 +526,7 @@ describe('MFL rosters', () => {
 
       expect(statusCalls).toEqual([201]);
       expect(jsonCalls[0]).toMatchObject({ data: { rosterId: 5 } });
-      expect(dbCreateRoster).toHaveBeenCalledWith('rooney', 'My Movie Picks', ['anora', 'hamnet'], 10);
+      expect(dbCreateRoster).toHaveBeenCalledWith('rooney', 'My Movie Picks', ['anora', 'hamnet'], 10, false);
     });
 
     it('trims the roster name', async () => {
@@ -536,7 +536,28 @@ describe('MFL rosters', () => {
       const { req, res } = mockReqRes({ ...AUTH, body: { ...body, name: '  Padded  ' } });
       await createRoster(req, res);
 
-      expect(dbCreateRoster).toHaveBeenCalledWith('rooney', 'Padded', ['anora', 'hamnet'], 10);
+      expect(dbCreateRoster).toHaveBeenCalledWith('rooney', 'Padded', ['anora', 'hamnet'], 10, false);
+    });
+
+    it('forwards isOfficial to the create', async () => {
+      linked();
+      vi.mocked(dbCreateRoster).mockResolvedValue({ success: true, data: 1 });
+
+      const { req, res } = mockReqRes({ ...AUTH, body: { ...body, isOfficial: true } });
+      await createRoster(req, res);
+
+      expect(dbCreateRoster).toHaveBeenCalledWith('rooney', 'My Movie Picks', ['anora', 'hamnet'], 10, true);
+    });
+
+    it('400s on a non-boolean isOfficial before touching the database', async () => {
+      const { req, res, statusCalls } = mockReqRes({
+        ...AUTH,
+        body: { ...body, isOfficial: 'yes' },
+      });
+      await createRoster(req, res);
+
+      expect(statusCalls).toEqual([400]);
+      expect(dbResolveLbusername).not.toHaveBeenCalled();
     });
 
     it('defaults filmSlugs to an empty roster when omitted', async () => {
@@ -547,7 +568,7 @@ describe('MFL rosters', () => {
       await createRoster(req, res);
 
       expect(statusCalls).toEqual([201]);
-      expect(dbCreateRoster).toHaveBeenCalledWith('rooney', 'Empty', [], 10);
+      expect(dbCreateRoster).toHaveBeenCalledWith('rooney', 'Empty', [], 10, false);
     });
 
     it.each([
@@ -660,7 +681,7 @@ describe('MFL rosters', () => {
       await updateRoster(req, res);
 
       expect(statusCalls).toEqual([]);
-      expect(dbUpdateRoster).toHaveBeenCalledWith(3, { filmSlugs: ['anora', 'hamnet'] });
+      expect(dbUpdateRoster).toHaveBeenCalledWith('rooney', 3, { filmSlugs: ['anora', 'hamnet'] });
     });
 
     it('renames without touching picks', async () => {
@@ -671,7 +692,7 @@ describe('MFL rosters', () => {
       const { req, res } = mockReqRes({ ...AUTH, params, body: { name: 'Renamed' } });
       await updateRoster(req, res);
 
-      expect(dbUpdateRoster).toHaveBeenCalledWith(3, { name: 'Renamed' });
+      expect(dbUpdateRoster).toHaveBeenCalledWith('rooney', 3, { name: 'Renamed' });
     });
 
     it('accepts an empty roster, which clears the picks', async () => {
@@ -683,7 +704,38 @@ describe('MFL rosters', () => {
       await updateRoster(req, res);
 
       expect(statusCalls).toEqual([]);
-      expect(dbUpdateRoster).toHaveBeenCalledWith(3, { filmSlugs: [] });
+      expect(dbUpdateRoster).toHaveBeenCalledWith('rooney', 3, { filmSlugs: [] });
+    });
+
+    it('forwards isOfficial alone as a valid change', async () => {
+      linked();
+      owns();
+      vi.mocked(dbUpdateRoster).mockResolvedValue({ success: true });
+
+      const { req, res, statusCalls } = mockReqRes({
+        ...AUTH,
+        params,
+        body: { isOfficial: true },
+      });
+      await updateRoster(req, res);
+
+      expect(statusCalls).toEqual([]);
+      expect(dbUpdateRoster).toHaveBeenCalledWith('rooney', 3, { isOfficial: true });
+    });
+
+    it('400s on a non-boolean isOfficial', async () => {
+      linked();
+      owns();
+
+      const { req, res, statusCalls } = mockReqRes({
+        ...AUTH,
+        params,
+        body: { isOfficial: 1 },
+      });
+      await updateRoster(req, res);
+
+      expect(statusCalls).toEqual([400]);
+      expect(dbUpdateRoster).not.toHaveBeenCalled();
     });
 
     it('400s when nothing is provided to change', async () => {
@@ -743,14 +795,20 @@ describe('MFL rosters', () => {
       linked();
       vi.mocked(dbGetUserRosters).mockResolvedValue({
         success: true,
-        data: [{ roster_id: 1, name: 'A' }, { roster_id: 2, name: 'B' }],
+        data: [
+          { roster_id: 1, name: 'A', is_official: true },
+          { roster_id: 2, name: 'B', is_official: false },
+        ],
       });
 
       const { req, res, jsonCalls } = mockReqRes(AUTH);
       await listRosters(req, res);
 
       expect(jsonCalls[0]).toMatchObject({
-        data: [{ rosterId: 1, name: 'A' }, { rosterId: 2, name: 'B' }],
+        data: [
+          { rosterId: 1, name: 'A', isOfficial: true },
+          { rosterId: 2, name: 'B', isOfficial: false },
+        ],
       });
       expect(dbGetUserRosters).toHaveBeenCalledWith('rooney');
     });

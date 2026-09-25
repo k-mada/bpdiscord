@@ -85,8 +85,12 @@ async function fill(count: number) {
   for (let i = 0; i < count; i++) await pick(i + 1, `Film ${i}`);
 }
 
-function setRosters(rosters: { rosterId: number; name: string }[]) {
-  vi.mocked(apiService.getMflRosters).mockResolvedValue({ data: rosters });
+function setRosters(
+  rosters: { rosterId: number; name: string; isOfficial?: boolean }[],
+) {
+  vi.mocked(apiService.getMflRosters).mockResolvedValue({
+    data: rosters.map((r) => ({ isOfficial: false, ...r })),
+  });
 }
 
 function setRosterPicks(picks: MFLPick[]) {
@@ -287,9 +291,32 @@ describe("MFL my picks", () => {
     expect(apiService.createMflRoster).toHaveBeenCalledWith(
       "My Movie Picks",
       ["film-0", "film-1", "film-2", "film-3", "film-4", "film-5", "film-6", "film-7"],
+      false,
       TOKEN,
     );
     expect(await screen.findByText("Roster created.")).toBeInTheDocument();
+  });
+
+  it("creates an official roster when the box is checked", async () => {
+    vi.mocked(apiService.createMflRoster).mockResolvedValue({
+      data: { rosterId: 5 },
+    });
+    renderPage();
+    await waitFor(() => expect(slotButtons()).toHaveLength(8));
+
+    await typeName("My Movie Picks");
+    await fill(8);
+    await userEvent.click(
+      screen.getByLabelText("Make this my official roster"),
+    );
+    await userEvent.click(screen.getByRole("button", { name: /Create roster/ }));
+
+    expect(apiService.createMflRoster).toHaveBeenCalledWith(
+      "My Movie Picks",
+      ["film-0", "film-1", "film-2", "film-3", "film-4", "film-5", "film-6", "film-7"],
+      true,
+      TOKEN,
+    );
   });
 
   it("reloads a saved roster, edits it, and resubmits the change", async () => {
@@ -319,12 +346,53 @@ describe("MFL my picks", () => {
       {
         name: "My Movie Picks",
         filmSlugs: ["film-0", "film-1", "film-8", "film-3", "film-4", "film-5", "film-6", "film-7"],
+        isOfficial: false,
       },
       TOKEN,
     );
     // The post-save roster refresh must not retrigger a picks fetch — the
     // selection did not change, so the picks effect stays put.
     expect(apiService.getMflRosterPicks).toHaveBeenCalledTimes(1);
+  });
+
+  it("reflects the selected roster's official state and can switch it", async () => {
+    setRosters([{ rosterId: 7, name: "My Movie Picks", isOfficial: false }]);
+    setRosterPicks(
+      Array.from({ length: 8 }, (_, i) => ({
+        filmSlug: `film-${i}`,
+        title: `Film ${i}`,
+        releaseDate: null,
+        price: 10,
+      })),
+    );
+    vi.mocked(apiService.updateMflRoster).mockResolvedValue({ message: "ok" });
+    renderPage();
+
+    const box = await screen.findByLabelText("Make this my official roster");
+    expect(box).not.toBeChecked();
+
+    await userEvent.click(box);
+    await userEvent.click(screen.getByRole("button", { name: /Save picks/ }));
+
+    expect(await screen.findByText("Picks saved.")).toBeInTheDocument();
+    expect(apiService.updateMflRoster).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({ isOfficial: true }),
+      TOKEN,
+    );
+  });
+
+  it("marks the official roster in the dropdown and checks the box", async () => {
+    setRosters([{ rosterId: 7, name: "Starters", isOfficial: true }]);
+    setRosterPicks([]);
+    renderPage();
+
+    expect(
+      await screen.findByRole("option", { name: "Starters (official)" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("Make this my official roster"),
+    ).toBeChecked();
   });
 
   it("shows the server's message when a create is rejected", async () => {

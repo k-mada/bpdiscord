@@ -594,7 +594,7 @@ describe('dataController', () => {
       });
 
       it('dbGetRosterView returns an existing empty roster with no picks at zero', async () => {
-        const { data: id } = await dc.dbCreateRoster(OTHER, 'Empty View', [], 10);
+        const { data: id } = await dc.dbCreateRoster(OTHER, 'Empty View', [], 10, false);
 
         const view = await dc.dbGetRosterView(id!);
         expect(view.data!.picks).toEqual([]);
@@ -604,7 +604,7 @@ describe('dataController', () => {
       });
 
       it('dbCreateRoster creates a named roster with its picks', async () => {
-        const created = await dc.dbCreateRoster(OTHER, 'Contenders', ['zulu-dawn'], 10);
+        const created = await dc.dbCreateRoster(OTHER, 'Contenders', ['zulu-dawn'], 10, false);
         expect(created.success).toBe(true);
 
         const picks = await dc.dbGetRosterPicks(created.data!);
@@ -614,8 +614,8 @@ describe('dataController', () => {
       });
 
       it('dbCreateRoster rejects a duplicate name for the same user', async () => {
-        const first = await dc.dbCreateRoster(OTHER, 'Dupe', [], 10);
-        const second = await dc.dbCreateRoster(OTHER, 'Dupe', [], 10);
+        const first = await dc.dbCreateRoster(OTHER, 'Dupe', [], 10, false);
+        const second = await dc.dbCreateRoster(OTHER, 'Dupe', [], 10, false);
 
         expect(second.success).toBe(false);
         expect(second.conflict).toBe(true);
@@ -624,7 +624,7 @@ describe('dataController', () => {
       });
 
       it('dbCreateRoster rejects an unknown slug and creates nothing', async () => {
-        const result = await dc.dbCreateRoster(OTHER, 'Bad', ['not-a-real-film'], 10);
+        const result = await dc.dbCreateRoster(OTHER, 'Bad', ['not-a-real-film'], 10, false);
 
         expect(result.success).toBe(false);
         expect(result.notFound).toBe(true);
@@ -632,9 +632,9 @@ describe('dataController', () => {
       });
 
       it('dbCreateRoster refuses to exceed the per-user cap', async () => {
-        const a = await dc.dbCreateRoster(OTHER, 'Cap 1', [], 2);
-        const b = await dc.dbCreateRoster(OTHER, 'Cap 2', [], 2);
-        const over = await dc.dbCreateRoster(OTHER, 'Cap 3', [], 2);
+        const a = await dc.dbCreateRoster(OTHER, 'Cap 1', [], 2, false);
+        const b = await dc.dbCreateRoster(OTHER, 'Cap 2', [], 2, false);
+        const over = await dc.dbCreateRoster(OTHER, 'Cap 3', [], 2, false);
 
         expect(a.success).toBe(true);
         expect(b.success).toBe(true);
@@ -647,16 +647,16 @@ describe('dataController', () => {
       });
 
       it('dbUpdateRoster swaps the whole roster', async () => {
-        const { data: id } = await dc.dbCreateRoster(OTHER, 'Swap', ['zulu-dawn'], 10);
+        const { data: id } = await dc.dbCreateRoster(OTHER, 'Swap', ['zulu-dawn'], 10, false);
 
-        await dc.dbUpdateRoster(id!, { filmSlugs: ['zulu-dawn', 'nobody-picked-me'] });
+        await dc.dbUpdateRoster(OTHER, id!, { filmSlugs: ['zulu-dawn', 'nobody-picked-me'] });
         let picks = await dc.dbGetRosterPicks(id!);
         expect(picks.data!.map((p) => p.film_slug).sort()).toEqual([
           'nobody-picked-me',
           'zulu-dawn',
         ]);
 
-        await dc.dbUpdateRoster(id!, { filmSlugs: [] });
+        await dc.dbUpdateRoster(OTHER, id!, { filmSlugs: [] });
         picks = await dc.dbGetRosterPicks(id!);
         expect(picks.data).toEqual([]);
 
@@ -664,9 +664,9 @@ describe('dataController', () => {
       });
 
       it('dbUpdateRoster leaves the old picks intact when a slug is unknown', async () => {
-        const { data: id } = await dc.dbCreateRoster(OTHER, 'Intact', ['zulu-dawn'], 10);
+        const { data: id } = await dc.dbCreateRoster(OTHER, 'Intact', ['zulu-dawn'], 10, false);
 
-        const result = await dc.dbUpdateRoster(id!, {
+        const result = await dc.dbUpdateRoster(OTHER, id!, {
           filmSlugs: ['zulu-dawn', 'not-a-real-film'],
         });
         expect(result.success).toBe(false);
@@ -681,9 +681,9 @@ describe('dataController', () => {
       });
 
       it('dbUpdateRoster renames without touching picks', async () => {
-        const { data: id } = await dc.dbCreateRoster(OTHER, 'Old Name', ['zulu-dawn'], 10);
+        const { data: id } = await dc.dbCreateRoster(OTHER, 'Old Name', ['zulu-dawn'], 10, false);
 
-        await dc.dbUpdateRoster(id!, { name: 'New Name' });
+        await dc.dbUpdateRoster(OTHER, id!, { name: 'New Name' });
 
         expect((await dc.dbGetUserRosters(OTHER)).data!.map((r) => r.name)).toEqual([
           'New Name',
@@ -695,8 +695,48 @@ describe('dataController', () => {
         await dc.dbDeleteRoster(id!);
       });
 
+      it('dbCreateRoster can create the roster already official', async () => {
+        const { data: id } = await dc.dbCreateRoster(OTHER, 'Official', [], 10, true);
+
+        const official = (await dc.dbGetUserRosters(OTHER)).data!.filter(
+          (r) => r.is_official,
+        );
+        expect(official.map((r) => r.roster_id)).toEqual([id]);
+
+        await dc.dbDeleteRoster(id!);
+      });
+
+      it('dbUpdateRoster moves official from one roster to another in one call', async () => {
+        const { data: a } = await dc.dbCreateRoster(OTHER, 'Roster A', [], 10, true);
+        const { data: b } = await dc.dbCreateRoster(OTHER, 'Roster B', [], 10, false);
+
+        const result = await dc.dbUpdateRoster(OTHER, b!, { isOfficial: true });
+        expect(result.success).toBe(true);
+
+        const byId = new Map(
+          (await dc.dbGetUserRosters(OTHER)).data!.map((r) => [r.roster_id, r.is_official]),
+        );
+        expect(byId.get(a!)).toBe(false);
+        expect(byId.get(b!)).toBe(true);
+
+        await dc.dbDeleteRoster(a!);
+        await dc.dbDeleteRoster(b!);
+      });
+
+      it('dbUpdateRoster can clear official, leaving the user with none', async () => {
+        const { data: id } = await dc.dbCreateRoster(OTHER, 'Sole', [], 10, true);
+
+        await dc.dbUpdateRoster(OTHER, id!, { isOfficial: false });
+
+        expect(
+          (await dc.dbGetUserRosters(OTHER)).data!.every((r) => !r.is_official),
+        ).toBe(true);
+
+        await dc.dbDeleteRoster(id!);
+      });
+
       it('dbDeleteRoster removes the roster and cascades its picks', async () => {
-        const { data: id } = await dc.dbCreateRoster(OTHER, 'Doomed', ['zulu-dawn'], 10);
+        const { data: id } = await dc.dbCreateRoster(OTHER, 'Doomed', ['zulu-dawn'], 10, false);
 
         await dc.dbDeleteRoster(id!);
 
@@ -823,7 +863,7 @@ describe('dataController', () => {
       });
 
       it('ranks each of a user\'s rosters as its own row', async () => {
-        const { data: extra } = await dc.dbCreateRoster(BRAVO, 'Bravo Backup', ['lb-worth-20'], 10);
+        const { data: extra } = await dc.dbCreateRoster(BRAVO, 'Bravo Backup', ['lb-worth-20'], 10, false);
         try {
           const result = await dc.dbGetMFLLeaderboard();
           const bravoRows = result.data!.filter((r) => r.lbusername === BRAVO);

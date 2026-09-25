@@ -317,18 +317,19 @@ class ApiService {
   async createMflRoster(
     name: string,
     filmSlugs: string[],
+    isOfficial: boolean,
     token: string,
   ): Promise<ApiResponse<{ rosterId: number }>> {
     return this.request<{ rosterId: number }>("/mfl/rosters", {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ name, filmSlugs }),
+      body: JSON.stringify({ name, filmSlugs, isOfficial }),
     });
   }
 
   async updateMflRoster(
     rosterId: number,
-    changes: { name?: string; filmSlugs?: string[] },
+    changes: { name?: string; filmSlugs?: string[]; isOfficial?: boolean },
     token: string,
   ): Promise<ApiResponse> {
     return this.request(`/mfl/rosters/${rosterId}`, {

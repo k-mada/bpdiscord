@@ -153,6 +153,24 @@ describe("MFLRosters referential behaviour", () => {
 
     expect(constraint).toBe("mfl_rosters_name_length");
   });
+
+  it("rejects a second official roster for one user", async () => {
+    const first = await newRoster(LB_ALICE, "Roster A");
+    await db
+      .update(mflRosters)
+      .set({ isOfficial: true })
+      .where(eq(mflRosters.rosterId, first));
+    const second = await newRoster(LB_ALICE, "Roster B");
+
+    const constraint = await violatedConstraint(
+      db
+        .update(mflRosters)
+        .set({ isOfficial: true })
+        .where(eq(mflRosters.rosterId, second)),
+    );
+
+    expect(constraint).toBe("mfl_rosters_one_official_per_user");
+  });
 });
 
 describe("MFLUserPicks referential behaviour", () => {
