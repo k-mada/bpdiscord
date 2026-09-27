@@ -10,6 +10,7 @@ import {
   LBUSERNAME_FORMAT,
   normalizeLbusername,
 } from "../lib/lbusername";
+import { canonicalizeEmail } from "../lib/email";
 import {
   SignupRequest,
   AuthRequest,
@@ -314,11 +315,16 @@ export class AuthController {
   ): Promise<void> {
     try {
       const { email }: PasswordResetRequest = req.body;
+      if (!email) {
+        res.status(400).json({ error: "Email is required." } as ApiResponse);
+        return;
+      }
 
       const supabase = createSupabaseClient();
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${resolveClientUrl()}/reset-password`,
-      });
+      const { error } = await supabase.auth.resetPasswordForEmail(
+        canonicalizeEmail(email),
+        { redirectTo: `${resolveClientUrl()}/reset-password` }
+      );
 
       if (error) {
         const response: ApiResponse = { error: error.message };
