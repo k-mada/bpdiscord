@@ -17,12 +17,12 @@
  */
 
 import { sql } from 'drizzle-orm';
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from 'vitest';
 import type { Request } from 'express';
 import { mockReqRes } from "./helpers/mockReqRes";
 import type { MockedReqRes } from "./helpers/mockReqRes";
 
-import { AuthController, humanizeSupabaseAuthError } from '../controllers/authController';
+import { AuthController, humanizeSupabaseAuthError, resolveClientUrl } from '../controllers/authController';
 import { LBUSERNAME_FORMAT } from '../lib/lbusername';
 import { db } from '../db';
 import { appUsers, users } from '../db/schema';
@@ -202,6 +202,39 @@ describe('humanizeSupabaseAuthError', () => {
 
   it('returns a generic message when input is undefined', () => {
     expect(humanizeSupabaseAuthError(undefined)).toBe('Signup failed');
+  });
+});
+
+describe('resolveClientUrl', () => {
+  const originalClientUrl = process.env.CLIENT_URL;
+  const originalNodeEnv = process.env.NODE_ENV;
+
+  afterEach(() => {
+    process.env.CLIENT_URL = originalClientUrl;
+    process.env.NODE_ENV = originalNodeEnv;
+  });
+
+  it('returns CLIENT_URL when set', () => {
+    process.env.CLIENT_URL = 'https://bpdiscord.example';
+    expect(resolveClientUrl()).toBe('https://bpdiscord.example');
+  });
+
+  it('returns CLIENT_URL in production when set', () => {
+    process.env.CLIENT_URL = 'https://bpdiscord.example';
+    process.env.NODE_ENV = 'production';
+    expect(resolveClientUrl()).toBe('https://bpdiscord.example');
+  });
+
+  it('throws in production when CLIENT_URL is unset — never emails a localhost link', () => {
+    delete process.env.CLIENT_URL;
+    process.env.NODE_ENV = 'production';
+    expect(() => resolveClientUrl()).toThrow(/CLIENT_URL/);
+  });
+
+  it('falls back to the Vite dev origin outside production', () => {
+    delete process.env.CLIENT_URL;
+    process.env.NODE_ENV = 'development';
+    expect(resolveClientUrl()).toBe('http://localhost:5173');
   });
 });
 
