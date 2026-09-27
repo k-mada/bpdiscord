@@ -49,6 +49,18 @@ export function humanizeSupabaseAuthError(msg: string | undefined): string {
   return msg;
 }
 
+// A missing CLIENT_URL in prod used to silently email a localhost reset link.
+export function resolveClientUrl(): string {
+  const clientUrl = process.env.CLIENT_URL;
+  if (clientUrl) return clientUrl;
+  if (process.env.NODE_ENV === "production") {
+    throw new Error(
+      "CLIENT_URL must be set in production for the password-reset redirect"
+    );
+  }
+  return "http://localhost:5173";
+}
+
 export class AuthController {
   static async signup(req: Request, res: Response): Promise<void> {
     try {
@@ -305,9 +317,7 @@ export class AuthController {
 
       const supabase = createSupabaseClient();
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${
-          process.env.CLIENT_URL || "http://localhost:3000"
-        }/reset-password`,
+        redirectTo: `${resolveClientUrl()}/reset-password`,
       });
 
       if (error) {
