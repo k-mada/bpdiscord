@@ -8,6 +8,7 @@ import {
   getMissingFilms,
   getRatingDeviation,
   getTopFilmsByYear,
+  getMostWatchedFilms,
 } from "../controllers/statsController";
 
 const router = Router();
@@ -45,6 +46,12 @@ router.get(
   "/rating-deviation/:year?",
   [statsLimiter, handleValidationErrors],
   getRatingDeviation,
+);
+
+router.get(
+  "/most-watched",
+  [statsLimiter, handleValidationErrors],
+  getMostWatchedFilms,
 );
 
 router.get(

@@ -18,6 +18,7 @@ import MyPicks from "./components/MovieFantasyLeague/MyPicks";
 import HaterRankings2 from "./components/HaterRankings2";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Stats from "./components/Stats";
+import MostWatchedFilms from "./components/MostWatchedFilms";
 import OscarsPage from "./components/OscarsPage";
 import EventsListPage from "./components/events/EventsListPage";
 import EventPage from "./components/events/EventPage";
@@ -62,6 +63,7 @@ function App() {
             element={<HaterRankings2 isPublic={true} />}
           />
           <Route path="/stats" element={<Stats />} />
+          <Route path="/most-watched" element={<MostWatchedFilms />} />
           <Route path="/oscars-2026" element={<OscarsPage />} />
           <Route path="/events" element={<EventsListPage />} />
           <Route
