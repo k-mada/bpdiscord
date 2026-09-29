@@ -80,6 +80,7 @@ export async function getTopFilmsByYear(
 }
 
 const MOST_WATCHED_MIN = 30;
+const MOST_WATCHED_LIMIT = 50;
 
 export async function getMostWatchedFilms(
   req: Request,
@@ -88,7 +89,7 @@ export async function getMostWatchedFilms(
   const result = await dbGetTopUserFilms({
     orderBy: TopUserFilmsOrder.MostWatched,
     minWatched: MOST_WATCHED_MIN,
-    limit: null,
+    limit: MOST_WATCHED_LIMIT,
   });
 
   if (!result.success) {

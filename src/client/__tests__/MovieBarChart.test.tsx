@@ -49,4 +49,26 @@ describe("MovieBarChart", () => {
 
     expect(screen.getByText("1,234")).toBeInTheDocument();
   });
+
+  it("numbers the rows by position when showRank is set", () => {
+    const second: LBFilm = { ...film, film_slug: "collateral", title: "Collateral" };
+    render(
+      <MemoryRouter>
+        <MovieBarChart movies={[film, second]} showCount showRank animated={false} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("1")).toBeInTheDocument();
+    expect(screen.getByText("2")).toBeInTheDocument();
+  });
+
+  it("omits rank numbers by default", () => {
+    render(
+      <MemoryRouter>
+        <MovieBarChart movies={[film]} showCount animated={false} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByText("1")).not.toBeInTheDocument();
+  });
 });

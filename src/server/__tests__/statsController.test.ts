@@ -81,7 +81,7 @@ describe('getMostWatchedFilms', () => {
     vi.mocked(dbGetTopUserFilms).mockReset();
   });
 
-  it('requests every film with 30+ watchers, unbounded and most-watched first', async () => {
+  it('requests the top 50 films with 30+ watchers, most-watched first', async () => {
     const rows = [{ film_slug: 'a' }] as unknown[];
     vi.mocked(dbGetTopUserFilms).mockResolvedValue({ success: true, data: rows } as never);
     const { req, res, jsonCalls } = mockReqRes({});
@@ -90,7 +90,7 @@ describe('getMostWatchedFilms', () => {
     expect(dbGetTopUserFilms).toHaveBeenCalledWith({
       orderBy: TopUserFilmsOrder.MostWatched,
       minWatched: 30,
-      limit: null,
+      limit: 50,
     });
     expect(jsonCalls[0]).toEqual({ success: true, data: rows });
   });

@@ -9,6 +9,7 @@ type MovieBarChartProps = {
   movies: LBFilm[];
   showRating?: boolean;
   showCount?: boolean;
+  showRank?: boolean;
   animated?: boolean;
   emptyMessage?: string;
   size?: Size;
@@ -19,6 +20,7 @@ const MovieBarChart = ({
   movies,
   showRating = false,
   showCount = false,
+  showRank = false,
   animated = true,
   emptyMessage = "No films to show.",
   floorPct = 50,
@@ -64,6 +66,12 @@ const MovieBarChart = ({
               to={`/film/${movie.film_slug}`}
               className="group flex items-center gap-3"
             >
+              {showRank && (
+                <span className="w-7 max-md:w-6 shrink-0 text-right font-bold tabular-nums text-letterboxd-text-secondary">
+                  {index + 1}
+                </span>
+              )}
+
               {movie.poster ? (
                 <img
                   src={movie.poster}

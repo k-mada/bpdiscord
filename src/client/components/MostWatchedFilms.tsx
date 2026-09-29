@@ -11,7 +11,7 @@ const MostWatchedFilms = () => {
         Most watched movies
       </h1>
       <h2 className="subheading">
-        Every film at least 30 of us have watched
+        The top 50 most watched movies by the server
       </h2>
 
       {error ? (
@@ -26,6 +26,7 @@ const MostWatchedFilms = () => {
         <MovieBarChart
           movies={films}
           showCount={true}
+          showRank={true}
           emptyMessage="No film has 30 watchers yet."
         />
       )}

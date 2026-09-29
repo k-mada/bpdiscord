@@ -62,9 +62,6 @@ const Header = () => {
             <Link to="/movie-swap" {...navLinkProps("/movie-swap")}>
               Movie Swap
             </Link>
-            <Link to="/most-watched" {...navLinkProps("/most-watched")}>
-              Most Watched
-            </Link>
             <Link to="/hater-rankings" {...navLinkProps("/hater-rankings")}>
               Hater Rankings
             </Link>
@@ -146,12 +143,6 @@ const Header = () => {
                 {...navLinkProps("/movie-swap", MOBILE_LINK)}
               >
                 Movie Swap
-              </Link>
-              <Link
-                to="/most-watched"
-                {...navLinkProps("/most-watched", MOBILE_LINK)}
-              >
-                Most Watched
               </Link>
               <Link
                 to="/hater-rankings"
