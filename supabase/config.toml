@@ -1,1 +1,11 @@
 project_id = "bpdiscord"
+
+# Local-only: renders the branded templates in Mailpit so they can be previewed
+# before pasting into the hosted dashboard. Prod uses the dashboard copies.
+[auth.email.template.recovery]
+subject = "Reset your Big Picture Discord password"
+content_path = "./supabase/templates/recovery.html"
+
+[auth.email.template.magic_link]
+subject = "Your Big Picture Discord sign-in link"
+content_path = "./supabase/templates/magic_link.html"
