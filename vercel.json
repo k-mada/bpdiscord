@@ -23,7 +23,7 @@
       "dest": "/src/client/assets/$1"
     },
     {
-      "src": "/(favicon\\.ico|manifest\\.json|logo.*\\.png|robots\\.txt)",
+      "src": "/(favicon\\.ico|manifest\\.json|logo.*\\.png|bpd-logo\\.png|robots\\.txt)",
       "dest": "/src/client/$1"
     },
     {

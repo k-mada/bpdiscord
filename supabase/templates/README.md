@@ -48,5 +48,8 @@ Keep this repo copy and the dashboard in sync when either changes.
   sans stack approximates it.
 - "This link expires in 1 hour" matches Supabase's default OTP expiry. If you
   change that in Auth settings, update the copy in both files.
-- The logo is referenced by absolute URL (`https://thebigpicdiscord.com/logo192.png`),
-  served from the client `public/` dir. Relative paths don't work in email.
+- The logo is referenced by absolute URL (`https://thebigpicdiscord.com/bpd-logo.png`),
+  served from the client `public/` dir. Relative paths don't work in email. That
+  filename is allowlisted in `vercel.json`'s static-asset route; a new logo name
+  must be added there too or prod serves the SPA HTML instead of the image.
+  The image only resolves once this branch is deployed to prod.
