@@ -4,6 +4,7 @@ import { LBFilm } from "../types";
 import { cn } from "../lib/utils";
 
 type Size = "sm" | "md" | "lg";
+type Scale = "linear" | "sqrt" | "log";
 
 type MovieBarChartProps = {
   movies: LBFilm[];
@@ -14,6 +15,7 @@ type MovieBarChartProps = {
   emptyMessage?: string;
   size?: Size;
   floorPct?: number;
+  scale?: Scale;
 };
 
 const MovieBarChart = ({
@@ -24,6 +26,7 @@ const MovieBarChart = ({
   animated = true,
   emptyMessage = "No films to show.",
   floorPct = 50,
+  scale = "linear",
 }: MovieBarChartProps) => {
   if (movies.length === 0) {
     return <p className="body-text -prose italic opacity-70">{emptyMessage}</p>;
@@ -47,7 +50,16 @@ const MovieBarChart = ({
   const widthPct = (value: number) => {
     if (!showRating && !showCount) return 100;
     if (range === 0 || max <= 0) return floorPct;
-    return floorPct + ((value - min) / range) * (100 - floorPct);
+    const span = 100 - floorPct;
+    // Log spans raw values, so it needs a positive floor; other scales shape
+    // the min–max fraction, where sqrt lifts the low/mid pack off the floor.
+    if (scale === "log" && min > 0) {
+      const t = (Math.log(value) - Math.log(min)) / (Math.log(max) - Math.log(min));
+      return floorPct + t * span;
+    }
+    const norm = (value - min) / range;
+    const shaped = scale === "sqrt" ? Math.sqrt(norm) : norm;
+    return floorPct + shaped * span;
   };
 
   return (

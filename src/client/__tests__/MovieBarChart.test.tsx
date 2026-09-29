@@ -71,4 +71,41 @@ describe("MovieBarChart", () => {
 
     expect(screen.queryByText("1")).not.toBeInTheDocument();
   });
+
+  it("sqrt scale lifts mid bars above linear while pinning min and max", () => {
+    const films: LBFilm[] = [30, 45, 400].map((n, i) => ({
+      ...film,
+      film_slug: `f${i}`,
+      title: `F${i}`,
+      watch_count: n,
+    }));
+
+    const barWidths = (scale: "linear" | "sqrt") => {
+      const { container, unmount } = render(
+        <MemoryRouter>
+          <MovieBarChart
+            movies={films}
+            showCount
+            scale={scale}
+            floorPct={50}
+            animated={false}
+          />
+        </MemoryRouter>,
+      );
+      const widths = Array.from(
+        container.querySelectorAll<HTMLElement>('[style*="--bar-w"]'),
+      ).map((el) => parseFloat(el.style.getPropertyValue("--bar-w")));
+      unmount();
+      return widths;
+    };
+
+    const linear = barWidths("linear");
+    const sqrt = barWidths("sqrt");
+
+    expect(sqrt[0]).toBeCloseTo(50);
+    expect(sqrt[2]).toBeCloseTo(100);
+    expect(linear[0]).toBeCloseTo(50);
+    expect(linear[2]).toBeCloseTo(100);
+    expect(sqrt[1]!).toBeGreaterThan(linear[1]!);
+  });
 });

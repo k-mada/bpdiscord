@@ -27,6 +27,8 @@ const MostWatchedFilms = () => {
           movies={films}
           showCount={true}
           showRank={true}
+          scale="sqrt"
+          floorPct={60}
           emptyMessage="No film has 30 watchers yet."
         />
       )}
