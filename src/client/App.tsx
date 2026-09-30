@@ -63,7 +63,7 @@ function App() {
             element={<HaterRankings2 isPublic={true} />}
           />
           <Route path="/stats" element={<Stats />} />
-          <Route path="/most-watched" element={<MostWatchedFilms />} />
+          <Route path="/bpd-40-club" element={<MostWatchedFilms />} />
           <Route path="/oscars-2026" element={<OscarsPage />} />
           <Route path="/events" element={<EventsListPage />} />
           <Route

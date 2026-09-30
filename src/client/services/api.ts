@@ -240,7 +240,7 @@ class ApiService {
     }>(`/stats/top-films${year ? `/${year}` : ""}`, signal ? { signal } : {});
   }
 
-  // Every film watched by at least 30 Discord users, most-watched first.
+  // Every film watched by at least 40 Discord users, most-watched first.
   async getMostWatchedFilms(
     signal?: AbortSignal,
   ): Promise<ApiResponse<LBFilm[]>> {
