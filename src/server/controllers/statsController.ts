@@ -79,8 +79,7 @@ export async function getTopFilmsByYear(
   });
 }
 
-const MOST_WATCHED_MIN = 30;
-const MOST_WATCHED_LIMIT = 50;
+const MOST_WATCHED_MIN = 40;
 
 export async function getMostWatchedFilms(
   req: Request,
@@ -89,7 +88,7 @@ export async function getMostWatchedFilms(
   const result = await dbGetTopUserFilms({
     orderBy: TopUserFilmsOrder.MostWatched,
     minWatched: MOST_WATCHED_MIN,
-    limit: MOST_WATCHED_LIMIT,
+    limit: null,
   });
 
   if (!result.success) {

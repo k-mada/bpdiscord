@@ -3,7 +3,7 @@ import { apiService } from "../services/api";
 import type { LBFilm } from "../types";
 
 /**
- * Every film watched by at least 30 Discord users, ordered most-watched first.
+ * Every film watched by at least 40 Discord users, ordered most-watched first.
  */
 export const useMostWatchedFilms = () => {
   const [films, setFilms] = useState<LBFilm[]>([]);

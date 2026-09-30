@@ -18,7 +18,7 @@ const ROUTE_TITLES: Array<[string, RouteTitle]> = [
   ["/mfl/roster/:rosterId", "MFL roster"],
   ["/compare", "Compare users"],
   ["/movie-swap", "Movie Swap"],
-  ["/most-watched", "Most watched"],
+  ["/most-watched", "The BPD 40 Club"],
   ["/hater-rankings", "Hater Rankings"],
   ["/oscars-2026", "Oscars 2026"],
   ["/events", "Events"],

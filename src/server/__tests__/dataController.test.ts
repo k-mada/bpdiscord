@@ -1070,6 +1070,22 @@ describe('dataController', () => {
       expect(result.data![1]!.film_slug).toBe('test-film-popular');
     });
 
+    it('limit: null returns every matching row (no LIMIT)', async () => {
+      const capped = await dc.dbGetTopUserFilms({ limit: 2 });
+      const unbounded = await dc.dbGetTopUserFilms({ limit: null });
+
+      expect(capped.data!.length).toBe(2);
+      expect(unbounded.data!.length).toBe(6);
+    });
+
+    it('applies minWatched as a HAVING threshold on watch_count', async () => {
+      const result = await dc.dbGetTopUserFilms({ minWatched: 2 });
+
+      expect(result.success).toBe(true);
+      expect(result.data!.length).toBeGreaterThan(0);
+      expect(result.data!.every(f => f.watch_count >= 2)).toBe(true);
+    });
+
     it('returns watch_count, rating_count, average_rating as JS numbers (not strings)', async () => {
       const result = await dc.dbGetTopUserFilms();
       const first = result.data![0]!;

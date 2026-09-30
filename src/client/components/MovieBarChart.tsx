@@ -4,29 +4,24 @@ import { LBFilm } from "../types";
 import { cn } from "../lib/utils";
 
 type Size = "sm" | "md" | "lg";
-type Scale = "linear" | "sqrt";
 
 type MovieBarChartProps = {
   movies: LBFilm[];
   showRating?: boolean;
   showCount?: boolean;
-  showRank?: boolean;
   animated?: boolean;
   emptyMessage?: string;
   size?: Size;
   floorPct?: number;
-  scale?: Scale;
 };
 
 const MovieBarChart = ({
   movies,
   showRating = false,
   showCount = false,
-  showRank = false,
   animated = true,
   emptyMessage = "No films to show.",
   floorPct = 50,
-  scale = "linear",
 }: MovieBarChartProps) => {
   if (movies.length === 0) {
     return <p className="body-text -prose italic opacity-70">{emptyMessage}</p>;
@@ -50,11 +45,7 @@ const MovieBarChart = ({
   const widthPct = (value: number) => {
     if (!showRating && !showCount) return 100;
     if (range === 0 || max <= 0) return floorPct;
-    // sqrt lifts the low/mid pack off the floor so one high-count outlier
-    // can't flatten the rest of the bars against the minimum.
-    const norm = (value - min) / range;
-    const shaped = scale === "sqrt" ? Math.sqrt(norm) : norm;
-    return floorPct + shaped * (100 - floorPct);
+    return floorPct + ((value - min) / range) * (100 - floorPct);
   };
 
   return (
@@ -73,12 +64,6 @@ const MovieBarChart = ({
               to={`/film/${movie.film_slug}`}
               className="group flex items-center gap-3"
             >
-              {showRank && (
-                <span className="w-7 max-md:w-6 shrink-0 text-right font-bold tabular-nums text-letterboxd-text-secondary">
-                  {index + 1}
-                </span>
-              )}
-
               {movie.poster ? (
                 <img
                   src={movie.poster}
