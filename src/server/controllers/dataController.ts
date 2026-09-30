@@ -690,8 +690,9 @@ export enum TopUserFilmsOrder {
 export async function dbGetTopUserFilms(
   options: {
     orderBy?: TopUserFilmsOrder;
-    limit?: number;
+    limit?: number | null;
     minRatings?: number;
+    minWatched?: number;
     year?: number;
     m?: number;
   } = {},
@@ -711,8 +712,10 @@ export async function dbGetTopUserFilms(
   error?: string;
 }> {
   const orderBy = options.orderBy ?? TopUserFilmsOrder.MostWatched;
-  const limit = options.limit ?? 25;
+  // undefined → default 25; null → no LIMIT (return every matching row).
+  const limit = options.limit === undefined ? 25 : options.limit;
   const minRatings = options.minRatings ?? 0;
+  const minWatched = options.minWatched ?? 0;
   const year = options.year;
   const m = options.m ?? 10;
   const isHighestRated = orderBy === TopUserFilmsOrder.HighestRated;
@@ -772,12 +775,15 @@ export async function dbGetTopUserFilms(
         films.url,
       );
 
-    const filtered =
-      minRatings > 0
-        ? base.having(sql`${ratingCount} >= ${minRatings}`)
-        : base;
+    const havingParts: SQL[] = [];
+    if (minRatings > 0) havingParts.push(sql`${ratingCount} >= ${minRatings}`);
+    if (minWatched > 0) havingParts.push(sql`${watchCount} >= ${minWatched}`);
+    const filtered = havingParts.length
+      ? base.having(and(...havingParts))
+      : base;
 
-    const result = await filtered.orderBy(...orderClause).limit(limit);
+    const ordered = filtered.orderBy(...orderClause);
+    const result = await (limit === null ? ordered : ordered.limit(limit));
 
     const mapped = result.map((r) => ({
       film_slug: r.film_slug,

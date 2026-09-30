@@ -9,7 +9,11 @@ vi.mock('../controllers/dataController', () => ({
   TopUserFilmsOrder: { HighestRated: 'highest_rated', MostWatched: 'most_watched' },
 }));
 
-import { getTopFilmsByYear, getRatingDeviation } from '../controllers/statsController';
+import {
+  getTopFilmsByYear,
+  getRatingDeviation,
+  getMostWatchedFilms,
+} from '../controllers/statsController';
 import {
   dbGetTopUserFilms,
   dbGetRatingDeviationExtremes,
@@ -69,6 +73,34 @@ describe('getTopFilmsByYear', () => {
 
     expect(statusCalls[0]).toBe(400);
     expect(dbGetTopUserFilms).not.toHaveBeenCalled();
+  });
+});
+
+describe('getMostWatchedFilms', () => {
+  beforeEach(() => {
+    vi.mocked(dbGetTopUserFilms).mockReset();
+  });
+
+  it('requests every film with 40+ watchers, unbounded and most-watched first', async () => {
+    const rows = [{ film_slug: 'a' }] as unknown[];
+    vi.mocked(dbGetTopUserFilms).mockResolvedValue({ success: true, data: rows } as never);
+    const { req, res, jsonCalls } = mockReqRes({});
+    await getMostWatchedFilms(req, res);
+
+    expect(dbGetTopUserFilms).toHaveBeenCalledWith({
+      orderBy: TopUserFilmsOrder.MostWatched,
+      minWatched: 40,
+      limit: null,
+    });
+    expect(jsonCalls[0]).toEqual({ success: true, data: rows });
+  });
+
+  it('reports failure when the query fails', async () => {
+    vi.mocked(dbGetTopUserFilms).mockResolvedValue({ success: false, error: 'boom' } as never);
+    const { req, res, jsonCalls } = mockReqRes({});
+    await getMostWatchedFilms(req, res);
+
+    expect(jsonCalls[0]).toMatchObject({ success: false, error: 'boom' });
   });
 });
 

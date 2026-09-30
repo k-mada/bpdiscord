@@ -240,6 +240,16 @@ class ApiService {
     }>(`/stats/top-films${year ? `/${year}` : ""}`, signal ? { signal } : {});
   }
 
+  // Every film watched by at least 40 Discord users, most-watched first.
+  async getMostWatchedFilms(
+    signal?: AbortSignal,
+  ): Promise<ApiResponse<LBFilm[]>> {
+    return this.request<LBFilm[]>(
+      "/stats/most-watched",
+      signal ? { signal } : {},
+    );
+  }
+
   // Films our users rate furthest above / below the Letterboxd average. Omit
   // `year` for all-time; pass a year to scope to that release year.
   async getRatingDeviation(

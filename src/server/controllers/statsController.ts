@@ -79,6 +79,26 @@ export async function getTopFilmsByYear(
   });
 }
 
+const MOST_WATCHED_MIN = 40;
+
+export async function getMostWatchedFilms(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const result = await dbGetTopUserFilms({
+    orderBy: TopUserFilmsOrder.MostWatched,
+    minWatched: MOST_WATCHED_MIN,
+    limit: null,
+  });
+
+  if (!result.success) {
+    res.json({ success: false, error: result.error });
+    return;
+  }
+
+  res.json({ success: true, data: result.data });
+}
+
 export async function getRatingDeviation(
   req: Request,
   res: Response,
