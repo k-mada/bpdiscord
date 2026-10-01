@@ -18,7 +18,7 @@ const NomineesModal = ({ category, nominees, onClose }: NomineesModalProps) => (
       onClose={onClose}
       className="border-0 pb-0 text-letterboxd-pro"
     >
-      <span style={{ fontFamily: "'Playfair Display', serif" }}>{category}</span>
+      <span className="font-letterboxdBody">{category}</span>
     </ModalHeader>
     <ModalBody className="pb-8">
       <p className="text-[10px] uppercase tracking-widest text-letterboxd-text-muted mb-3">

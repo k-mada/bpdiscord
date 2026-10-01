@@ -67,8 +67,7 @@ const EventPage = () => {
           Awards Event
         </p>
         <h1
-          className="text-3xl sm:text-4xl font-bold text-letterboxd-text-primary tracking-tight"
-          style={{ fontFamily: "'Playfair Display', serif" }}
+          className="text-3xl sm:text-4xl font-bold text-letterboxd-text-primary tracking-tight font-letterboxdBody"
         >
           {event.editionNumber
             ? `The ${event.editionNumber}${getOrdinalSuffix(event.editionNumber)} ${event.awardShowName}`

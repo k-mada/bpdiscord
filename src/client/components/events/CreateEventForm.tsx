@@ -80,8 +80,7 @@ const CreateEventForm = ({ token, onSuccess, onCancel }: CreateEventFormProps) =
         &larr; Back
       </Button>
       <h2
-        className="text-2xl font-bold text-letterboxd-text-primary mb-6"
-        style={{ fontFamily: "'Playfair Display', serif" }}
+        className="text-2xl font-bold text-letterboxd-text-primary mb-6 font-letterboxdBody"
       >
         Create Event
       </h2>

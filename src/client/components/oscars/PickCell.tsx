@@ -17,8 +17,7 @@ const PickCell = ({ pick, isWinner, isCorrectPick }: PickCellProps) => (
       }`}
     >
       <p
-        className="text-base md:text-lg font-semibold text-letterboxd-text-primary leading-snug mb-0"
-        style={{ fontFamily: "'Playfair Display', serif" }}
+        className="text-base md:text-lg font-semibold text-letterboxd-text-primary leading-snug mb-0 font-letterboxdBody"
       >
         {isCorrectPick && (
           <>

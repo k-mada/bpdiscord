@@ -116,8 +116,7 @@ const MyPicksPage = () => {
           My Picks
         </p>
         <h1
-          className="text-3xl font-bold text-letterboxd-text-primary tracking-tight"
-          style={{ fontFamily: "'Playfair Display', serif" }}
+          className="text-3xl font-bold text-letterboxd-text-primary tracking-tight font-letterboxdBody"
         >
           {event.awardShowName}
         </h1>
@@ -188,8 +187,7 @@ const CategoryPickCard = ({
               } ${isSaving ? "opacity-50" : ""}`}
             >
               <p
-                className="text-sm font-semibold text-letterboxd-text-primary"
-                style={{ fontFamily: "'Playfair Display', serif" }}
+                className="text-sm font-semibold text-letterboxd-text-primary font-letterboxdBody"
               >
                 {primary}
                 {nominee.isWinner && (
