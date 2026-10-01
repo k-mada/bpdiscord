@@ -174,8 +174,13 @@
   }
 }
 
-@utility card {
-  @apply p-4;
+/* In @layer components (not @utility) so per-card utilities — status tints,
+   Dashboard hover — land in the later utilities layer and override the base
+   surface deterministically instead of racing it. */
+@layer components {
+  .card {
+    @apply bg-letterboxd-bg-secondary border border-letterboxd-border rounded-xl shadow-letterboxd p-4;
+  }
 }
 
 @utility input-field {
