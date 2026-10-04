@@ -135,4 +135,29 @@ describe("MFL admin score management", () => {
       text.indexOf("Box office"),
     );
   });
+
+  it("does not latch NaN in points awarded on non-numeric input, and stays editable", async () => {
+    vi.mocked(apiService.getMflMovieScore).mockResolvedValue({
+      data: [score(101, 2, "Best Picture")],
+    });
+
+    renderPage();
+    await selectFilm();
+
+    // metricId 1 is customizable, so selecting it enables the points field.
+    await userEvent.selectOptions(
+      screen.getByRole("combobox", { name: /scoring metric/i }),
+      "1",
+    );
+    const points = screen.getByLabelText(
+      /points awarded/i,
+    ) as HTMLInputElement;
+    expect(points).not.toBeDisabled();
+
+    await userEvent.type(points, "{selectall}a");
+    expect(points.value).not.toBe("NaN");
+
+    await userEvent.type(points, "{selectall}25");
+    expect(points.value).toBe("25");
+  });
 });
