@@ -140,7 +140,16 @@ const MFLAdmin = () => {
   const handlePointsAwardedChange = (
     event: React.ChangeEvent<HTMLInputElement>,
   ) => {
-    setInputPointsAwarded(parseInt(event.target.value));
+    const raw = event.target.value;
+    if (raw === "") {
+      setInputPointsAwarded(0);
+      return;
+    }
+    // Ignore non-numeric input so the controlled field never latches NaN.
+    const parsed = parseInt(raw, 10);
+    if (!Number.isNaN(parsed)) {
+      setInputPointsAwarded(parsed);
+    }
   };
 
   const handleClose = () => {
