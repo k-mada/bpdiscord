@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { ApiResponse } from "../../shared/types";
 import { NO_LBUSERNAME_MESSAGE } from "../../shared/utilities";
+import { normalizeLbusername } from "../lib/lbusername";
 import {
   dbGetMFLScoringMetrics,
   dbGetMFLUserScores,
@@ -52,7 +53,7 @@ export async function getMFLUserScores(
   req: Request,
   res: Response
 ): Promise<void> {
-  const { username } = req.params;
+  const username = normalizeLbusername(req.params.username);
 
   if (!username) {
     res.status(400).json({ error: "Username is required" });

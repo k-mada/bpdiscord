@@ -105,7 +105,7 @@ async function validateUsername(
     res.status(400).json({ error: "username is required" });
     return null;
   }
-  const username = raw.trim();
+  const username = raw.trim().toLowerCase();
   if (!USERNAME_REGEX.test(username) || username.length > USERNAME_MAX_LENGTH) {
     res.status(400).json({
       error: "Invalid username — expected alphanumeric, underscore, or dash",

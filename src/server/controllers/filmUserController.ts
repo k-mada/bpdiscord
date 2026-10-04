@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { normalizeLbusername } from "../lib/lbusername";
 import {
   dbGetUserRatings,
   dbGetUserProfile,
@@ -23,7 +24,7 @@ export async function getFilmRatings(
   try {
     const dbResult = await dbGetUserRatings(filmSlug);
     if (dbResult.success && dbResult.data && dbResult.data.length > 0) {
-      const ratings = dbResult.data.map((item: any) => ({
+      const ratings = dbResult.data.map((item) => ({
         rating: item.rating,
         count: item.count,
       }));
@@ -54,7 +55,7 @@ export async function getUserRatings(
   req: Request,
   res: Response
 ): Promise<void> {
-  const { username } = req.params;
+  const username = normalizeLbusername(req.params.username);
 
   if (!username) {
     res.status(400).json({ error: "Username is required" });
@@ -104,7 +105,7 @@ export async function getUserProfile(
   req: Request,
   res: Response
 ): Promise<void> {
-  const { username } = req.params;
+  const username = normalizeLbusername(req.params.username);
 
   if (!username) {
     res.status(400).json({ error: "Username is required" });
@@ -151,7 +152,7 @@ export async function getUserComplete(
   req: Request,
   res: Response
 ): Promise<void> {
-  const { username } = req.params;
+  const username = normalizeLbusername(req.params.username);
 
   if (!username) {
     res.status(400).json({ error: "Username is required" });
@@ -258,7 +259,7 @@ export async function getFilmsByUser(
   req: Request,
   res: Response
 ): Promise<void> {
-  const { username } = req.params;
+  const username = normalizeLbusername(req.params.username);
 
   if (!username) {
     res.status(400).json({ error: "Username is required" });

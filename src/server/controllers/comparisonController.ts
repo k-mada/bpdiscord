@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { ApiResponse } from "../../shared/types";
+import { normalizeLbusername } from "../lib/lbusername";
 import {
   dbGetAllUsernames,
   dbGetUserRatings,
@@ -239,7 +240,7 @@ export async function getCompatibilityExtremes(
   res: Response,
 ): Promise<void> {
   try {
-    const { username } = req.params;
+    const username = normalizeLbusername(req.params.username);
     if (!username) {
       const response: ApiResponse = { error: "username is required" };
       res.status(400).json(response);
