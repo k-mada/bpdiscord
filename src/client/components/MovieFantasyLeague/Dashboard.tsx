@@ -191,7 +191,7 @@ const MovieFantasyLeague = () => {
                   data={movies}
                   columns={mflFilmSummaryColumns}
                   enableSort
-                  initialSort={{ key: "price", direction: "desc" }}
+                  initialSort={{ key: "totalPoints", direction: "desc" }}
                   stickyHeader
                 />
               </div>

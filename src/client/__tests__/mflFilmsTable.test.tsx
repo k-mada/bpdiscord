@@ -145,6 +145,19 @@ describe("MFL films page", () => {
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
   });
 
+  it("opens the eligible-movies table sorted by points, descending", () => {
+    renderPage(
+      [
+        film({ title: "Low", filmSlug: "low", totalPoints: 5 }),
+        film({ title: "High", filmSlug: "high", totalPoints: 42 }),
+        film({ title: "Mid", filmSlug: "mid", totalPoints: 20 }),
+      ],
+      [metric("awards")],
+    );
+
+    expect(titleOrder()).toEqual(["High", "Mid", "Low"]);
+  });
+
   it("shows only the four summary columns, never one per category", () => {
     // A season defines well over a hundred categories; a column each is why
     // this table was unusable.
