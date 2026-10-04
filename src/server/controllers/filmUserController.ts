@@ -24,7 +24,7 @@ export async function getFilmRatings(
   try {
     const dbResult = await dbGetUserRatings(filmSlug);
     if (dbResult.success && dbResult.data && dbResult.data.length > 0) {
-      const ratings = dbResult.data.map((item: any) => ({
+      const ratings = dbResult.data.map((item) => ({
         rating: item.rating,
         count: item.count,
       }));
