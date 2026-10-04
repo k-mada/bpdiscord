@@ -45,7 +45,9 @@ If the worker handoff fails (502, timeout, etc.), the controller rolls back the 
 
 ## Database schema — non-obvious bits
 
-Tables `Users`, `UserRatings`, `Films`, `UserFilms` are straightforward — see `src/server/db/schema.ts` and `supabase/migrations/` for columns. One non-obvious edge: `UserFilms.lbusername` and `UserRatings.username` are FKs to `Users.lbusername` with `ON DELETE CASCADE` (added late — the columns predate the constraint), so deleting a `Users` row takes its movie data with it. `MFLRosters.lbusername` cascades too (and its picks cascade from the roster); `app_users.lbusername` is `SET NULL`. Deleting the login account is separate — `deleteUserCompletely` (`src/server/lib/deleteUser.ts`) removes both sides at once.
+Tables `Users`, `UserRatings`, `Films`, `UserFilms` are straightforward — see `src/server/db/schema.ts` and `supabase/migrations/` for columns. One non-obvious edge: `UserFilms.lbusername` and `UserRatings.username` are FKs to `Users.lbusername` with `ON DELETE CASCADE` (added late — the columns predate the constraint), so deleting a `Users` row takes its movie data with it. `MFLRosters.lbusername` cascades too (and its picks cascade from the roster); `app_users.lbusername` is `SET NULL`. Deleting the login account is separate — `deleteUserCompletely` (`src/server/lib/deleteUser.ts`) removes both sides at once. All four FKs also carry **`ON UPDATE CASCADE`**, so a key rename propagates to the children.
+
+`Users.lbusername` is **lowercase-canonical**. Letterboxd usernames are case-insensitive but the PK is case-sensitive, so a `BEFORE INSERT` trigger (`lowercase_lbusername`) folds every insert to lowercase — the one guard that stops a case-twin from any writer, including the external moviemaestro worker. `normalizeLbusername` mirrors it in app code, and read-path handlers lowercase the `:username` param before lookup. Never store or query a mixed-case lbusername.
 
 The **actor-graph** tables have semantics that aren't obvious from the columns:
 
@@ -170,6 +172,8 @@ Layout notes:
 - `20260908020619_add_user_data_cascade_fks.sql` — sweeps orphaned `UserFilms`/`UserRatings` rows, then adds the `ON DELETE CASCADE` FKs to `Users` (via `NOT VALID` + `VALIDATE`) so a profile delete no longer orphans its movie data.
 - `20260923180218_mfl_multi_roster.sql` — adds `MFLRosters`, backfills one `'My Picks'` roster per existing member, then repoints `MFLUserPicks` onto `roster_id` (drops the `lbusername` column and its FK, swaps the PK to `(roster_id, film_slug)`). Multiple rosters per user.
 - `20260924151502_mfl_official_roster.sql` — adds `MFLRosters.is_official` (default false), backfills each user's oldest roster as official, and creates the partial unique index `mfl_rosters_one_official_per_user (lbusername) WHERE is_official`.
+- `20261004195702_merge_case_duplicate_doogiefeeneydo.sql` — one-off data merge of the lone case-duplicate profile (`DoogieFeeneyDO` → `doogiefeeneydo`): copies NULL-only scalars onto the lowercase survivor, moves its extra `UserFilms`/`UserRatings` (`ON CONFLICT DO NOTHING`), deletes the loser. Idempotent.
+- `20261004204232_canonicalize_lbusername_lowercase.sql` — lowercases the remaining mixed-case `Users` keys, adds `ON UPDATE CASCADE` to the four `Users.lbusername` FKs (so the rename propagates), and installs the `lowercase_lbusername` `BEFORE INSERT` trigger that keeps every future insert lowercase.
 
 Local: `supabase start`, `supabase status`, `supabase db reset`, `supabase migration new <name>`.
 
