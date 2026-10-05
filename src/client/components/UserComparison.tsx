@@ -1,3 +1,4 @@
+import Card from "./Card";
 import { useId, useState, useEffect } from "react";
 import RatingDistributionHistogram from "./RatingDistributionHistogram";
 import TasteCompatibility from "./TasteCompatibility";
@@ -142,7 +143,7 @@ const UserComparison = () => {
       <h3 className="subheading">
         Compare rating statistics between two Letterboxd users
       </h3>
-      <div className="card">
+      <Card className="mb-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="relative">
             <div className="select-wrapper">
@@ -187,7 +188,7 @@ const UserComparison = () => {
             </div>
           </div>
         </div>
-      </div>
+      </Card>
       {displayError && (
         <Notification status={{ type: "error", message: displayError }} />
       )}
@@ -202,7 +203,7 @@ const UserComparison = () => {
       )}
 
       {(user1Data || user2Data) && (
-        <div className="card">
+        <Card className="mb-4">
           <h3 className="subheading">Rating Comparison</h3>
 
           <div className="overflow-x-auto">
@@ -254,10 +255,10 @@ const UserComparison = () => {
               Hover over distribution bars to see detailed rating information
             </p>
           </div>
-        </div>
+        </Card>
       )}
       {moviesInCommonData && (
-        <div className="card">
+        <Card className="mb-4">
           <h3 className="subheading">Movies in Common</h3>
 
           <div className="mb-4">
@@ -293,15 +294,7 @@ const UserComparison = () => {
           </div>
 
           {moviesInCommonData.count > 0 && (
-            <div
-              ref={tableRef}
-              className="overflow-x-auto max-h-[50vh]"
-              style={
-                tableMaxHeight !== undefined
-                  ? { maxHeight: tableMaxHeight }
-                  : undefined
-              }
-            >
+            <div ref={tableRef} className="overflow-x-auto max-h-[50vh]">
               <DataTable
                 data={moviesInCommonData.moviesInCommon}
                 columns={moviesInCommonColumns}
@@ -360,7 +353,7 @@ const UserComparison = () => {
               </p>
             </div>
           )}
-        </div>
+        </Card>
       )}
     </div>
   );

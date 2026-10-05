@@ -1,3 +1,4 @@
+import Card from "./Card";
 import {
   getPearsonLabel,
   getPearsonZone,
@@ -9,7 +10,10 @@ import {
   MIN_RELIABLE_SAMPLE,
   type PearsonZone,
 } from "../lib/ratingsCompatibility";
-import type { MovieInCommon, TasteCompatibility as TasteCompatibilityMetrics } from "../types";
+import type {
+  MovieInCommon,
+  TasteCompatibility as TasteCompatibilityMetrics,
+} from "../types";
 import CollapsibleSection from "./CollapsibleSection";
 import StarRating from "./StarRating";
 
@@ -114,7 +118,7 @@ const AnchorFilmSkeleton = () => (
 // Mirrors the real card's vertical rhythm so swapping users doesn't collapse
 // the layout mid-fetch. Keep roughly in sync with the component below.
 export const TasteCompatibilitySkeleton = () => (
-  <div className="card animate-pulse" aria-hidden="true">
+  <Card className="animate-pulse" aria-hidden="true">
     <div className="mb-4 space-y-2">
       <SkeletonBlock className="h-6 w-44 rounded-sm" />
       <SkeletonBlock className="h-4 w-32 rounded-sm" />
@@ -132,7 +136,7 @@ export const TasteCompatibilitySkeleton = () => (
         <AnchorFilmSkeleton />
       </div>
     </div>
-  </div>
+  </Card>
 );
 
 const TasteCompatibility = ({
@@ -165,7 +169,7 @@ const TasteCompatibility = ({
       : ZONE_MARKER_COLOR[getPearsonZone(pearson)];
 
   return (
-    <div className="card">
+    <Card className="mb-4">
       {/* Header row */}
       <div className="mb-4">
         <h4 className="text-xl font-semibold text-letterboxd-text-primary flex items-center gap-2">
@@ -271,7 +275,7 @@ const TasteCompatibility = ({
           Small sample — interpret with caution.
         </div>
       )}
-    </div>
+    </Card>
   );
 };
 

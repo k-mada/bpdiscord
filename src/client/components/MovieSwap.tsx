@@ -1,3 +1,4 @@
+import Card from "./Card";
 import { useMovieSwap } from "../hooks/useMovieSwap";
 import { DataTable } from "./DataTable/DataTable";
 import { swapFilmColumns } from "./DataTable/columns";
@@ -46,7 +47,7 @@ const MovieSwap = ({
   const { data, loading, error } = useMovieSwap(user1, user2);
 
   return (
-    <div className="card">
+    <Card>
       <h3 className="subheading">Movie Swap</h3>
       <p className="text-letterboxd-text-secondary mb-4">
         Films each user has rated that the other hasn't seen.
@@ -72,7 +73,7 @@ const MovieSwap = ({
           />
         </div>
       )}
-    </div>
+    </Card>
   );
 };
 

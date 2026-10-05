@@ -1,3 +1,4 @@
+import Card from "./Card";
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../lib/supabase";
@@ -84,7 +85,7 @@ const ResetPasswordPage = () => {
           <Subheading />
         </header>
 
-        <div className="card">
+        <Card>
           <h2 className="text-2xl font-semibold text-letterboxd-text-primary mb-6 text-center">
             Reset your password
           </h2>
@@ -164,7 +165,7 @@ const ResetPasswordPage = () => {
               </Button>
             </form>
           )}
-        </div>
+        </Card>
       </div>
     </div>
   );

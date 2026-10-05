@@ -1,3 +1,4 @@
+import Card from "./Card";
 import React, { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import apiService from "../services/api";
@@ -71,7 +72,7 @@ const LoginPage = () => {
   return (
     <div className="min-h-screen bg-letterboxd-bg-primary flex items-start mt-10 justify-center px-4">
       <div className="w-full max-w-md">
-        <div className="card">
+        <Card>
           <h2 className="text-2xl font-semibold text-letterboxd-text-primary mb-6 text-center">
             Log in to your account
           </h2>
@@ -147,7 +148,7 @@ const LoginPage = () => {
             </p>
             <Link to={"/forgot-password"}>Forgot your password?</Link>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );

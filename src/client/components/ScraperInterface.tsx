@@ -1,3 +1,4 @@
+import Card from "./Card";
 import { useState } from "react";
 
 import apiService from "../services/api";
@@ -98,7 +99,7 @@ const ScraperInterface = () => {
           Letterboxd ratings and films.
         </p>
       </div>
-      <div className="card">
+      <Card>
         <div className="space-y-4">
           <div>
             <label
@@ -167,7 +168,7 @@ const ScraperInterface = () => {
             )}
           </div>
         </div>
-      </div>
+      </Card>
       <Notification status={errorBanner} />
       {/* Live scrape job — same 3-phase progress as the admin bulk refresh. */}
       {job && <JobProgress job={job} />}

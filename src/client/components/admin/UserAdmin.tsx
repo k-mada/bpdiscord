@@ -1,3 +1,4 @@
+import Card from "../Card";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -40,9 +41,9 @@ const UserAdmin = () => {
   // a flash of "Access denied" while the identity round-trip is in flight.
   if (authLoading) {
     return (
-      <div className="card text-center py-12">
+      <Card className="text-center py-12">
         <Spinner />
-      </div>
+      </Card>
     );
   }
 
@@ -50,7 +51,7 @@ const UserAdmin = () => {
     // Role is sourced from the /me response. The server enforces the real gate
     // (authorizeAdmin middleware), so this is a UX guard, not a security one.
     return (
-      <div className="card border rounded-lg border-letterboxd-error-surface/60 bg-letterboxd-error-surface/20 text-letterboxd-text-primary">
+      <Card className="border rounded-lg border-letterboxd-error-surface/60 bg-letterboxd-error-surface/20 text-letterboxd-text-primary">
         <p className="font-semibold text-letterboxd-error">Access denied</p>
         <p className="text-letterboxd-text-primary text-sm mt-1">
           This page is only available to admin accounts.
@@ -63,7 +64,7 @@ const UserAdmin = () => {
         >
           Back to dashboard
         </Button>
-      </div>
+      </Card>
     );
   }
 
@@ -89,15 +90,15 @@ const UserAdmin = () => {
       {error && <Notification status={{ type: "error", message: error }} />}
 
       {loading ? (
-        <div className="card text-center py-12">
+        <Card className="text-center py-12">
           <Spinner />
-        </div>
+        </Card>
       ) : accounts.length === 0 && !error ? (
-        <div className="card text-center py-12">
+        <Card className="text-center py-12">
           <p className="text-letterboxd-text-secondary">No accounts found.</p>
-        </div>
+        </Card>
       ) : (
-        <div className="card overflow-x-auto">
+        <Card className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-letterboxd-border">
@@ -175,7 +176,7 @@ const UserAdmin = () => {
               ))}
             </tbody>
           </table>
-        </div>
+        </Card>
       )}
 
       {editing && (

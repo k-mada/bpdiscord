@@ -1,3 +1,4 @@
+import Card from "./Card";
 import { Link } from "react-router-dom";
 
 import { useRefreshJob } from "../hooks/useRefreshJob";
@@ -57,11 +58,11 @@ const AdminRefresh = () => {
       )}
 
       {!job && !error && (
-        <div className="card text-center py-12">
+        <Card className="text-center py-12">
           <p className="text-letterboxd-text-secondary">
             No active refresh job. Click "Run refresh" to start one.
           </p>
-        </div>
+        </Card>
       )}
 
       {job && <JobProgress job={job} />}

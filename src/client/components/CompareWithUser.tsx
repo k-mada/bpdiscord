@@ -1,3 +1,4 @@
+import Card from "./Card";
 import { useId, useState } from "react";
 import { useComparison } from "../hooks/useComparison";
 import { useMoviesInCommon } from "../hooks/useMoviesInCommon";
@@ -31,7 +32,7 @@ const CompareWithUser = ({
 
   return (
     <div className="space-y-4">
-      <div className="card">
+      <Card>
         <h4 className="text-xl font-semibold text-letterboxd-text-primary mb-3">
           Compare taste with…
         </h4>
@@ -53,20 +54,20 @@ const CompareWithUser = ({
             ))}
           </select>
         </div>
-      </div>
+      </Card>
 
       {error && (
-        <div role="alert" className="card text-letterboxd-error text-sm">
+        <Card role="alert" className="text-letterboxd-error text-sm">
           {error}
-        </div>
+        </Card>
       )}
 
       {loading && <TasteCompatibilitySkeleton />}
 
       {!loading && data && data.moviesInCommon.length === 0 && (
-        <div className="card text-letterboxd-text-muted text-sm text-center">
+        <Card className="text-letterboxd-text-muted text-sm text-center">
           No films in common with {selectedDisplayName || selected} yet.
-        </div>
+        </Card>
       )}
 
       {!loading && data && data.moviesInCommon.length > 0 && (

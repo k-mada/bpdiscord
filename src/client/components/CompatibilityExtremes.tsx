@@ -1,3 +1,4 @@
+import Card from "./Card";
 import {
   formatSignedPercent,
   getPearsonLabel,
@@ -34,9 +35,9 @@ const CompatibilityExtremes = ({ username }: Props) => {
 
   if (loading) {
     return (
-      <div className="card text-letterboxd-text-muted text-sm">
+      <Card className="text-letterboxd-text-muted text-sm">
         Loading compatibility…
-      </div>
+      </Card>
     );
   }
   if (error) {
@@ -48,14 +49,14 @@ const CompatibilityExtremes = ({ username }: Props) => {
 
   if (most.length === 0 && least.length === 0) {
     return (
-      <div className="card text-letterboxd-text-muted text-sm text-center">
+      <Card className="text-letterboxd-text-muted text-sm text-center">
         Not enough compatibility data yet.
-      </div>
+      </Card>
     );
   }
 
   return (
-    <div className="card">
+    <Card>
       <h4 className="text-xl font-semibold text-letterboxd-text-primary mb-4 flex items-center gap-2">
         🎯 Compatibility
       </h4>
@@ -85,7 +86,7 @@ const CompatibilityExtremes = ({ username }: Props) => {
           </ul>
         </section>
       )}
-    </div>
+    </Card>
   );
 };
 

@@ -1,3 +1,4 @@
+import Card from "./Card";
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import apiService from "../services/api";
@@ -43,7 +44,7 @@ const ForgotPassword = () => {
           Enter your email to receive a reset link
         </p>
 
-        <div className="card">
+        <Card>
           <form onSubmit={handleRequestReset} className="space-y-4">
             <div>
               <label
@@ -74,7 +75,7 @@ const ForgotPassword = () => {
           <div className="mt-6 text-center">
             <Link to={"/login"}>Back to login</Link>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );

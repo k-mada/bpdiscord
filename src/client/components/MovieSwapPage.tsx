@@ -1,3 +1,4 @@
+import Card from "./Card";
 import { useId, useState } from "react";
 import { useComparison } from "../hooks/useComparison";
 import MovieSwap from "./MovieSwap";
@@ -20,7 +21,7 @@ const MovieSwapPage = () => {
       <h3 className="subheading">
         Find films each user has rated that the other hasn't seen
       </h3>
-      <div className="card">
+      <Card>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="select-wrapper">
             {/* sr-only is position:absolute, so it cannot disturb the
@@ -61,7 +62,7 @@ const MovieSwapPage = () => {
             </select>
           </div>
         </div>
-      </div>
+      </Card>
 
       {selectedUser1 && selectedUser2 && selectedUser1 !== selectedUser2 && (
         <MovieSwap

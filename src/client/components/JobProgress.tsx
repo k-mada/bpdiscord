@@ -1,3 +1,4 @@
+import Card from "./Card";
 import { useState } from "react";
 
 import {
@@ -67,9 +68,9 @@ function isLetterboxdBlocked(job: RefreshJob): boolean {
 
 function BlockedBanner() {
   return (
-    <div
+    <Card
       role="status"
-      className="card border-l-2 border-letterboxd-warning-surface/60 bg-letterboxd-warning-surface/20"
+      className="border-l-2 border-letterboxd-warning-surface/60 bg-letterboxd-warning-surface/20"
     >
       <p className="text-sm text-letterboxd-warning">
         <span className="font-semibold">
@@ -77,7 +78,7 @@ function BlockedBanner() {
         </span>{" "}
         This usually clears in a few minutes — try again shortly.
       </p>
-    </div>
+    </Card>
   );
 }
 
@@ -118,7 +119,7 @@ function PhaseRow({
   }
 
   return (
-    <div className="card flex items-start gap-4">
+    <Card className="flex items-start gap-4">
       <div
         className={
           "text-xl w-6 text-center " +
@@ -158,7 +159,7 @@ function PhaseRow({
           </div>
         )}
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -166,7 +167,7 @@ function ErrorsPanel({ errors }: { errors: RefreshJob["errors"] }) {
   const [open, setOpen] = useState(false);
   if (errors.length === 0) return null;
   return (
-    <div className="card">
+    <Card>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -195,7 +196,7 @@ function ErrorsPanel({ errors }: { errors: RefreshJob["errors"] }) {
           ))}
         </ul>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -216,7 +217,7 @@ const JobProgress = ({ job }: { job: RefreshJob }) => {
     : statusBadge(job.status);
   return (
     <>
-      <div className="card">
+      <Card>
         <div className="flex items-baseline justify-between">
           <h2 className="text-lg font-semibold text-letterboxd-text-primary">
             Current job
@@ -239,7 +240,7 @@ const JobProgress = ({ job }: { job: RefreshJob }) => {
             {job.finishedAt ? new Date(job.finishedAt).toLocaleString() : "—"}
           </dd>
         </dl>
-      </div>
+      </Card>
 
       <div className="space-y-2">
         {PHASE_ORDER.map(({ key, label }) => (
@@ -257,14 +258,14 @@ const JobProgress = ({ job }: { job: RefreshJob }) => {
       />
 
       {job.logTail && (
-        <div className="card">
+        <Card>
           <h2 className="text-lg font-semibold text-letterboxd-text-primary mb-2">
             Log
           </h2>
           <pre className="text-xs font-mono whitespace-pre-wrap max-h-64 overflow-y-auto bg-letterboxd-bg-primary p-3 rounded-sm">
             {job.logTail}
           </pre>
-        </div>
+        </Card>
       )}
     </>
   );

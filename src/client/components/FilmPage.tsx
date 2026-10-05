@@ -1,3 +1,4 @@
+import Card from "./Card";
 import { useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useFilmDetail } from "../hooks/useFilmDetail";
@@ -54,9 +55,9 @@ const FilmPage = () => {
 
   if (loading) {
     return (
-      <div className="card text-letterboxd-text-muted text-sm" aria-busy="true">
+      <Card className="text-letterboxd-text-muted text-sm" aria-busy="true">
         Loading film…
-      </div>
+      </Card>
     );
   }
 
@@ -97,7 +98,7 @@ const FilmPage = () => {
 
   return (
     <div className="space-y-8">
-      <div className="card flex flex-col md:flex-row items-center md:items-start gap-6">
+      <Card className="flex flex-col md:flex-row items-center md:items-start gap-6">
         <a
           href={letterboxdUrl}
           target="_blank"
@@ -156,7 +157,7 @@ const FilmPage = () => {
               value={data.letterboxdRating?.toFixed(2) ?? "—"}
             />
           </dl>
-          <div className="card">
+          <Card>
             <h2 className="subheading">How we rated it</h2>
             {data.ratings.length > 0 ? (
               <ul className="grid grid-cols-1 gap-x-8">
@@ -169,9 +170,9 @@ const FilmPage = () => {
                 {emptyRatings}
               </p>
             )}
-          </div>
+          </Card>
         </div>
-      </div>
+      </Card>
     </div>
   );
 };

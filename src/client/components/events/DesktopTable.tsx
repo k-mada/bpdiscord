@@ -1,3 +1,4 @@
+import Card from "../Card";
 import { EventCategory } from "../../types";
 import { DesktopCategoryLabel } from "./CategoryLabel";
 import WinnerCell from "./WinnerCell";
@@ -13,7 +14,7 @@ const HEADER_CELL =
 // Explicit roles, not a <table>: display:grid strips the implicit table
 // semantics of native table elements in Chrome and Firefox.
 const DesktopTable = ({ categories, onCategoryTap }: DesktopTableProps) => (
-  <div className="card" role="table" aria-label="Winners by category">
+  <Card role="table" aria-label="Winners by category">
     <div
       role="row"
       className="grid grid-cols-[40%_1fr] sticky top-0 z-10 bg-letterboxd-bg-secondary shadow-md border-b border-letterboxd-pro/30"
@@ -43,7 +44,7 @@ const DesktopTable = ({ categories, onCategoryTap }: DesktopTableProps) => (
         </div>
       );
     })}
-  </div>
+  </Card>
 );
 
 export default DesktopTable;
