@@ -118,7 +118,7 @@ const AnchorFilmSkeleton = () => (
 // Mirrors the real card's vertical rhythm so swapping users doesn't collapse
 // the layout mid-fetch. Keep roughly in sync with the component below.
 export const TasteCompatibilitySkeleton = () => (
-  <Card className="animate-pulse" aria-hidden="true">
+  <Card className="mb-4 animate-pulse" aria-hidden="true">
     <div className="mb-4 space-y-2">
       <SkeletonBlock className="h-6 w-44 rounded-sm" />
       <SkeletonBlock className="h-4 w-32 rounded-sm" />

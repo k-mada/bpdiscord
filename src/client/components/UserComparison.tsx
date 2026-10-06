@@ -7,7 +7,6 @@ import { useMoviesInCommon } from "../hooks/useMoviesInCommon";
 import StarRating from "./StarRating";
 import { DataTable } from "./DataTable/DataTable";
 import { moviesInCommonColumns } from "./DataTable/columns";
-import { useFillViewportHeight } from "../hooks/useFillViewportHeight";
 import { MovieInCommon } from "../types";
 import { Notification } from "./ui/Notification";
 
@@ -37,7 +36,6 @@ const UserComparison = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filterNonRated, setFilterNonRated] = useState(false);
-  const { ref: tableRef } = useFillViewportHeight<HTMLDivElement>();
 
   const {
     data: moviesInCommonData,
@@ -293,7 +291,7 @@ const UserComparison = () => {
           </div>
 
           {moviesInCommonData.count > 0 && (
-            <div ref={tableRef} className="overflow-x-auto max-h-[50vh]">
+            <div className="overflow-x-auto max-h-[50vh]">
               <DataTable
                 data={moviesInCommonData.moviesInCommon}
                 columns={moviesInCommonColumns}
