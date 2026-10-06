@@ -37,8 +37,7 @@ const UserComparison = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [filterNonRated, setFilterNonRated] = useState(false);
-  const { ref: tableRef, maxHeight: tableMaxHeight } =
-    useFillViewportHeight<HTMLDivElement>();
+  const { ref: tableRef } = useFillViewportHeight<HTMLDivElement>();
 
   const {
     data: moviesInCommonData,
