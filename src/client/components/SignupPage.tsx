@@ -1,3 +1,4 @@
+import Card from "./Card";
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import apiService from "../services/api";
@@ -104,7 +105,7 @@ const SignupPage = () => {
   return (
     <div className="min-h-screen bg-letterboxd-bg-primary flex items-start mt-10 justify-center px-4">
       <div className="w-full max-w-md">
-        <div className="card">
+        <Card>
           <h2 className="text-2xl font-semibold text-letterboxd-text-primary mb-6 text-center">
             Create an account
           </h2>
@@ -230,7 +231,7 @@ const SignupPage = () => {
               </Link>
             </p>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   );

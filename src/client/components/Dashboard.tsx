@@ -1,3 +1,4 @@
+import Card from "./Card";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import { Button } from "./ui/Button";
@@ -41,7 +42,7 @@ const Dashboard = () => {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="card hover:bg-letterboxd-bg-tertiary transition-colors">
+        <Card className="hover:bg-letterboxd-bg-tertiary transition-colors">
           <h2 className="text-xl font-semibold text-letterboxd-text-primary mb-2">
             Profile
           </h2>
@@ -55,10 +56,10 @@ const Dashboard = () => {
           >
             {profilePath ? "Go to Profile" : "No Letterboxd username linked"}
           </Button>
-        </div>
+        </Card>
 
         {isDevMode && (
-          <div className="card hover:bg-letterboxd-bg-tertiary transition-colors">
+          <Card className="hover:bg-letterboxd-bg-tertiary transition-colors">
             <h2 className="text-xl font-semibold text-letterboxd-text-primary mb-2">
               Data Fetcher
             </h2>
@@ -68,10 +69,10 @@ const Dashboard = () => {
             <Button onClick={() => navigate("/fetcher")} className="w-full">
               Fetch Data
             </Button>
-          </div>
+          </Card>
         )}
 
-        <div className="card hover:bg-letterboxd-bg-tertiary transition-colors">
+        <Card className="hover:bg-letterboxd-bg-tertiary transition-colors">
           <h2 className="text-xl font-semibold text-letterboxd-text-primary mb-2">
             Compare Users
           </h2>
@@ -81,10 +82,10 @@ const Dashboard = () => {
           <Button onClick={() => navigate("/compare")} className="w-full">
             Compare
           </Button>
-        </div>
+        </Card>
 
         {isAdmin && isDevMode && (
-          <div className="card hover:bg-letterboxd-bg-tertiary transition-colors">
+          <Card className="hover:bg-letterboxd-bg-tertiary transition-colors">
             <h2 className="text-xl font-semibold text-letterboxd-text-primary mb-2">
               Refresh user film data
             </h2>
@@ -97,11 +98,11 @@ const Dashboard = () => {
             >
               Open
             </Button>
-          </div>
+          </Card>
         )}
 
         {isAdmin && (
-          <div className="card hover:bg-letterboxd-bg-tertiary transition-colors">
+          <Card className="hover:bg-letterboxd-bg-tertiary transition-colors">
             <h2 className="text-xl font-semibold text-letterboxd-text-primary mb-2">
               User management
             </h2>
@@ -111,7 +112,7 @@ const Dashboard = () => {
             <Button onClick={() => navigate("/admin/users")} className="w-full">
               Open
             </Button>
-          </div>
+          </Card>
         )}
       </div>
     </div>

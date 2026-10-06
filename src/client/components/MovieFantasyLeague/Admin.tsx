@@ -1,3 +1,4 @@
+import Card from "../Card";
 import { useMemo, useState } from "react";
 import MovieSelector from "./MovieSelector";
 import { MFLScoringMetric, MFLMovieScore } from "../../types";
@@ -201,9 +202,9 @@ const MFLAdmin = () => {
   // a flash of "Access denied" while the identity round-trip is in flight.
   if (authLoading) {
     return (
-      <div className="card text-center py-12">
+      <Card className="text-center py-12">
         <Spinner />
-      </div>
+      </Card>
     );
   }
 
@@ -211,12 +212,12 @@ const MFLAdmin = () => {
     // Same treatment as admin/UserAdmin.tsx. UX only — the real gate is
     // authorizeAdmin on /api/mfl/admin/*.
     return (
-      <div className="card border rounded-lg border-letterboxd-error-surface/60 bg-letterboxd-error-surface/20 text-letterboxd-text-primary">
+      <Card className="border rounded-lg border-letterboxd-error-surface/60 bg-letterboxd-error-surface/20 text-letterboxd-text-primary">
         <p className="font-semibold text-letterboxd-error">Access denied</p>
         <p className="text-letterboxd-text-primary text-sm mt-1">
           This page is only available to admin accounts.
         </p>
-      </div>
+      </Card>
     );
   }
 

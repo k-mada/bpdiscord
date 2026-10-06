@@ -1,3 +1,4 @@
+import Card from "../Card";
 import { OscarsCategory, OscarsPrediction, OscarsViewMode } from "../../types";
 import { STICKY_TOGGLE_HEIGHT } from "./constants";
 import { isCorrectPick } from "./utils";
@@ -25,7 +26,7 @@ const DesktopTable = ({
   viewMode,
   onCategoryTap,
 }: DesktopTableProps) => (
-  <div className="card" role="table" aria-label="Predictions by category">
+  <Card role="table" aria-label="Predictions by category">
     <div
       role="row"
       className={`grid grid-cols-[25%_1fr_1fr_1fr] sticky ${STICKY_TOGGLE_HEIGHT} z-10 bg-letterboxd-bg-secondary shadow-md border-b border-letterboxd-pro/30`}
@@ -72,7 +73,7 @@ const DesktopTable = ({
         </div>
       );
     })}
-  </div>
+  </Card>
 );
 
 export default DesktopTable;

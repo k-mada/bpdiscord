@@ -1,3 +1,4 @@
+import Card from "./Card";
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { apiService } from "../services/api";
@@ -45,9 +46,9 @@ const UserProfile = () => {
 
   if (loading) {
     return (
-      <div className="card text-letterboxd-text-muted text-sm">
+      <Card className="text-letterboxd-text-muted text-sm">
         Loading profile…
-      </div>
+      </Card>
     );
   }
 
@@ -64,7 +65,7 @@ const UserProfile = () => {
 
   return (
     <div className="space-y-8">
-      <div className="card flex justify-start md:justify-between flex-col md:flex-row items-center">
+      <Card className="flex justify-start md:justify-between flex-col md:flex-row items-center">
         <div>
           <h1 className="text-xl md:text-3xl font-bold text-letterboxd-text-primary">
             {displayName}
@@ -102,7 +103,7 @@ const UserProfile = () => {
             </span>
           </div>
         </div>
-      </div>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
         <CompareWithUser

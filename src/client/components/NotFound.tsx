@@ -1,3 +1,4 @@
+import Card from "./Card";
 import { Link } from "react-router-dom";
 
 interface NotFoundProps {
@@ -10,7 +11,7 @@ const NotFound = ({
   message = "The page you're looking for doesn't exist.",
 }: NotFoundProps) => {
   return (
-    <div className="card text-center py-16">
+    <Card className="text-center py-16">
       <h2 className="text-3xl font-bold text-letterboxd-text-primary mb-3">
         {title}
       </h2>
@@ -21,7 +22,7 @@ const NotFound = ({
       >
         ← Back to home
       </Link>
-    </div>
+    </Card>
   );
 };
 

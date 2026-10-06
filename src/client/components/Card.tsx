@@ -1,13 +1,11 @@
 import React from "react";
 
-const Card = ({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) => {
-  return <div className="card">{children}</div>;
-};
+type CardProps = React.HTMLAttributes<HTMLDivElement>;
+
+const Card = ({ className, children, ...rest }: CardProps) => (
+  <div className={className ? `card ${className}` : "card"} {...rest}>
+    {children}
+  </div>
+);
 
 export default Card;
