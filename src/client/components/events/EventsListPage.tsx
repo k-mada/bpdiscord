@@ -77,8 +77,7 @@ const EventsListPage = () => {
     <div className="max-w-4xl mx-auto px-2 sm:px-4">
       <div className="mb-8 sm:mb-10 text-center">
         <h1
-          className="text-3xl sm:text-4xl font-bold text-letterboxd-text-primary tracking-tight"
-          style={{ fontFamily: "'Playfair Display', serif" }}
+          className="text-3xl sm:text-4xl font-bold text-letterboxd-text-primary tracking-tight font-letterboxdBody"
         >
           Events
         </h1>

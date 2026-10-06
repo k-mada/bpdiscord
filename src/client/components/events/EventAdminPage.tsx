@@ -115,8 +115,7 @@ const EventAdminPage = () => {
           &larr; Back
         </Button>
         <h2
-          className="text-2xl font-bold text-letterboxd-text-primary mb-6"
-          style={{ fontFamily: "'Playfair Display', serif" }}
+          className="text-2xl font-bold text-letterboxd-text-primary mb-6 font-letterboxdBody"
         >
           Create Award Show
         </h2>
@@ -198,8 +197,7 @@ const EventAdminPage = () => {
     <div className="max-w-4xl mx-auto px-2 sm:px-4">
       <div className="mb-8 text-center">
         <h1
-          className="text-3xl font-bold text-letterboxd-text-primary"
-          style={{ fontFamily: "'Playfair Display', serif" }}
+          className="text-3xl font-bold text-letterboxd-text-primary font-letterboxdBody"
         >
           Event Admin
         </h1>

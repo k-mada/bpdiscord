@@ -1,8 +1,3 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap")
-layer(base);
-@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap")
-layer(base);
-
 @import "tailwindcss";
 
 @config './tailwind.config.js';
@@ -179,8 +174,13 @@ layer(base);
   }
 }
 
-@utility card {
-  @apply p-4;
+/* In @layer components (not @utility) so per-card utilities — status tints,
+   Dashboard hover — land in the later utilities layer and override the base
+   surface deterministically instead of racing it. */
+@layer components {
+  .card {
+    @apply bg-letterboxd-bg-secondary border border-letterboxd-border rounded-xl shadow-letterboxd p-4;
+  }
 }
 
 @utility input-field {

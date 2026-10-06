@@ -10,8 +10,7 @@ const WinnerCell = ({ cat }: { cat: OscarsCategory }) => (
         {cat.actual_winner.map((winner, i) => (
           <div key={i} className="inline-block px-2 py-1">
             <p
-              className="text-base md:text-lg font-semibold text-letterboxd-text-primary leading-snug mb-0"
-              style={{ fontFamily: "'Playfair Display', serif" }}
+              className="text-base md:text-lg font-semibold text-letterboxd-text-primary leading-snug mb-0 font-letterboxdBody"
             >
               {winner.title}
             </p>
