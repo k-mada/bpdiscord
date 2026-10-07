@@ -102,6 +102,9 @@ const UserAdmin = () => {
           <table className="w-full text-left">
             <thead>
               <tr className="border-b border-letterboxd-border">
+                <th scope="col" className="py-3 px-4">
+                  <span className="sr-only">Row number</span>
+                </th>
                 <th
                   scope="col"
                   className="py-3 px-4 text-letterboxd-text-secondary font-medium"
@@ -135,8 +138,11 @@ const UserAdmin = () => {
               </tr>
             </thead>
             <tbody>
-              {accounts.map((a) => (
+              {accounts.map((a, i) => (
                 <tr key={a.id} className="border-b border-letterboxd-border/50">
+                  <td className="py-3 px-4 text-letterboxd-text-secondary">
+                    {i + 1}
+                  </td>
                   <td className="py-3 px-4 text-letterboxd-text-primary">
                     {a.email ?? "—"}
                   </td>
