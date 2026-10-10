@@ -160,6 +160,41 @@ describe("JobProgress steps", () => {
     expect(screen.getByText("Current film: Dune")).toBeInTheDocument();
   });
 
+  it("renders an indeterminate progress bar (no aria-valuenow) before counts are known", () => {
+    render(
+      <JobProgress
+        job={makeJob({
+          status: "running",
+          phase: "user_scrape",
+          progress: { user_scrape: { processed: 0, total: 0 } },
+        })}
+      />,
+    );
+
+    const bar = screen.getByRole("progressbar", { name: /users/i });
+    expect(bar).not.toHaveAttribute("aria-valuenow");
+    expect(bar).not.toHaveAttribute("aria-valuemax");
+  });
+
+  it("announces each step's status to screen readers", () => {
+    render(
+      <JobProgress
+        job={makeJob({
+          status: "running",
+          phase: "user_scrape",
+          progress: { user_scrape: { processed: 1, total: 45 } },
+        })}
+      />,
+    );
+
+    expect(
+      screen.getByText("User film scrape").closest("h3"),
+    ).toHaveTextContent("in progress");
+    expect(
+      screen.getByText("Letterboxd ratings").closest("h3"),
+    ).toHaveTextContent("not started");
+  });
+
   it("styles a not-yet-started step as inactive", () => {
     render(
       <JobProgress
