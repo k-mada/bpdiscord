@@ -1,5 +1,5 @@
 import Card from "./Card";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import {
   LETTERBOXD_BLOCKED_REASON,
@@ -7,7 +7,6 @@ import {
   type RefreshJobPhase,
   type RefreshJobStatus,
 } from "../types";
-import Spinner from "./Spinner";
 
 const PHASE_ORDER: Array<{ key: RefreshJobPhase; label: string }> = [
   { key: "user_scrape", label: "User film scrape" },
@@ -16,6 +15,68 @@ const PHASE_ORDER: Array<{ key: RefreshJobPhase; label: string }> = [
 ];
 
 type PhaseRowStatus = "pending" | "running" | "done";
+
+function formatDuration(ms: number): string {
+  const total = Math.max(0, Math.floor(ms / 1000));
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
+}
+
+// Ticks every 1s while running — the 2s poll loop alone would stutter the
+// clock. Terminal jobs show the fixed finished−started span.
+function useElapsed(job: RefreshJob): string {
+  const start = new Date(job.startedAt).getTime();
+  const running = job.status === "running";
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!running) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [running]);
+
+  const end = running
+    ? now
+    : job.finishedAt
+      ? new Date(job.finishedAt).getTime()
+      : start;
+  return formatDuration(end - start);
+}
+
+function ProgressBar({
+  processed,
+  total,
+  label,
+}: {
+  processed: number;
+  total: number;
+  label: string;
+}) {
+  const pct = total > 0 ? Math.min(100, Math.round((processed / total) * 100)) : 0;
+  return (
+    <div
+      role="progressbar"
+      aria-valuenow={processed}
+      aria-valuemin={0}
+      aria-valuemax={total}
+      aria-label={`${label}: ${processed} of ${total}`}
+      className="space-y-1"
+    >
+      <div className="h-2 w-full overflow-hidden rounded-full bg-letterboxd-bg-primary">
+        <div
+          className="h-full rounded-full bg-letterboxd-accent transition-all duration-300"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <div className="text-letterboxd-text-secondary">
+        {processed.toLocaleString()} / {total.toLocaleString()} {label}
+      </div>
+    </div>
+  );
+}
 
 function phaseRowStatus(
   job: RefreshJob,
@@ -82,84 +143,124 @@ function BlockedBanner() {
   );
 }
 
-function phaseRowIcon(s: PhaseRowStatus) {
-  if (s === "done") return "✓";
-  if (s === "running") return <Spinner label={null} />;
-  return "○";
+function StepBadge({ status, step }: { status: PhaseRowStatus; step: number }) {
+  const active = status !== "pending";
+  const cls = active
+    ? "bg-letterboxd-accent text-black border-transparent"
+    : "border-letterboxd-border-light text-letterboxd-text-secondary";
+  return (
+    <span
+      aria-hidden
+      className={
+        "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-sm font-semibold " +
+        cls
+      }
+    >
+      {status === "done" ? "✓" : step}
+    </span>
+  );
 }
 
-function PhaseRow({
+function StepBody({
+  job,
+  phase,
+  status,
+}: {
+  job: RefreshJob;
+  phase: RefreshJobPhase;
+  status: PhaseRowStatus;
+}) {
+  if (job.progress[phase] === undefined) {
+    return (
+      <p className="mt-1 text-sm text-letterboxd-text-secondary">
+        {status === "running" ? "Starting…" : "Waiting for previous step"}
+      </p>
+    );
+  }
+
+  if (phase === "user_scrape" && job.progress.user_scrape) {
+    const p = job.progress.user_scrape;
+    return (
+      <div className="mt-2 space-y-1 text-sm">
+        <ProgressBar
+          processed={p.processed ?? 0}
+          total={p.total ?? 0}
+          label="users"
+        />
+        {p.current && (
+          <div className="text-letterboxd-text-secondary">
+            Current user: {p.current}
+          </div>
+        )}
+        {p.films_added !== undefined && (
+          <div className="text-letterboxd-text-secondary">
+            {p.films_added.toLocaleString()} films seen
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (phase === "film_ratings" && job.progress.film_ratings) {
+    const p = job.progress.film_ratings;
+    return (
+      <div className="mt-2 space-y-1 text-sm">
+        <ProgressBar
+          processed={p.processed ?? 0}
+          total={p.total ?? 0}
+          label="films"
+        />
+        {p.current && (
+          <div className="text-letterboxd-text-secondary">
+            Current film: {p.current}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (phase === "missing_films" && job.progress.missing_films) {
+    return (
+      <div className="mt-2 text-sm text-letterboxd-text-primary">
+        {job.progress.missing_films.count.toLocaleString()} missing slugs
+      </div>
+    );
+  }
+
+  return null;
+}
+
+function StepRow({
   job,
   phase,
   label,
+  step,
 }: {
   job: RefreshJob;
   phase: RefreshJobPhase;
   label: string;
+  step: number;
 }) {
-  const s = phaseRowStatus(job, phase);
-  const progress = job.progress[phase];
-
-  let counter = "";
-  let current = "";
-  let extra = "";
-
-  if (phase === "user_scrape" && job.progress.user_scrape) {
-    const p = job.progress.user_scrape;
-    counter = `${p.processed ?? 0} / ${p.total ?? 0} users`;
-    if (p.current) current = `currently: ${p.current}`;
-    if (p.films_added !== undefined)
-      extra = `${p.films_added.toLocaleString()} films seen`;
-  } else if (phase === "missing_films" && job.progress.missing_films) {
-    counter = `${job.progress.missing_films.count.toLocaleString()} missing slugs`;
-  } else if (phase === "film_ratings" && job.progress.film_ratings) {
-    const p = job.progress.film_ratings;
-    counter = `${p.processed ?? 0} / ${p.total ?? 0} films`;
-    if (p.current) current = `currently: ${p.current}`;
-  }
-
+  const status = phaseRowStatus(job, phase);
+  const inactive = status === "pending";
   return (
-    <Card className="flex items-start gap-4">
-      <div
-        className={
-          "text-xl w-6 text-center " +
-          (s === "running"
-            ? "text-letterboxd-info"
-            : s === "done"
-              ? "text-letterboxd-success"
-              : "text-letterboxd-text-secondary")
-        }
-      >
-        {phaseRowIcon(s)}
-      </div>
+    <li className={"flex items-start gap-3" + (inactive ? " opacity-60" : "")}>
+      <StepBadge status={status} step={step} />
       <div className="flex-1">
-        <div className="flex items-baseline justify-between">
-          <h3 className="text-lg font-semibold text-letterboxd-text-primary">
+        <div className="flex items-center gap-2">
+          <h3 className="text-base font-semibold text-letterboxd-text-primary">
             {label}
           </h3>
-          <span className="text-xs uppercase tracking-wide text-letterboxd-text-secondary">
-            {s}
-          </span>
+          {status === "running" && (
+            <span
+              aria-hidden
+              className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-letterboxd-info border-b-transparent"
+            />
+          )}
         </div>
-        {progress === undefined ? (
-          <p className="text-sm text-letterboxd-text-secondary mt-1">
-            Waiting for previous phase
-          </p>
-        ) : (
-          <div className="mt-1 space-y-0.5 text-sm">
-            {counter && (
-              <div className="text-letterboxd-text-primary">{counter}</div>
-            )}
-            {current && (
-              <div className="text-letterboxd-text-secondary">{current}</div>
-            )}
-            {extra && (
-              <div className="text-letterboxd-text-secondary">{extra}</div>
-            )}
-          </div>
-        )}
+        <StepBody job={job} phase={phase} status={status} />
       </div>
-    </Card>
+    </li>
   );
 }
 
@@ -201,9 +302,9 @@ function ErrorsPanel({ errors }: { errors: RefreshJob["errors"] }) {
 }
 
 /**
- * Renders the body of a refresh-job view: the "Current job" header card
- * (status badge + id + timestamps), the three-phase progress rows, the
- * collapsible errors panel, and the log tail.
+ * Renders the body of a refresh-job view: one "Current job" card holding the
+ * status badge, timestamps + elapsed time, and the three numbered phase steps;
+ * followed by the collapsible errors panel and the log tail in their own cards.
  *
  * Used by both /dashboard/refresh-films (bulk Hater Rankings refresh) and
  * /fetcher (per-user scrape). UserScrapeJob extends RefreshJob, so the same
@@ -215,38 +316,48 @@ const JobProgress = ({ job }: { job: RefreshJob }) => {
   const badge = blocked
     ? { text: "Blocked", cls: TONE.warning }
     : statusBadge(job.status);
+  const elapsed = useElapsed(job);
   return (
     <>
-      <Card>
-        <div className="flex items-baseline justify-between">
-          <h2 className="text-lg font-semibold text-letterboxd-text-primary">
-            Current job
-          </h2>
-          <span
-            className={
-              "text-xs uppercase tracking-wide px-2 py-1 rounded-sm " + badge.cls
-            }
-          >
-            {badge.text}
-          </span>
+      <Card className="space-y-5">
+        <div>
+          <div className="flex items-baseline justify-between">
+            <h2 className="text-lg font-semibold text-letterboxd-text-primary">
+              Current job
+            </h2>
+            <span
+              className={
+                "text-xs uppercase tracking-wide px-2 py-1 rounded-sm " +
+                badge.cls
+              }
+            >
+              {badge.text}
+            </span>
+          </div>
+          <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
+            <dt className="text-letterboxd-text-secondary">Started</dt>
+            <dd>{new Date(job.startedAt).toLocaleString()}</dd>
+            <dt className="text-letterboxd-text-secondary">Finished</dt>
+            <dd>
+              {job.finishedAt ? new Date(job.finishedAt).toLocaleString() : "—"}
+            </dd>
+            <dt className="text-letterboxd-text-secondary">Elapsed</dt>
+            <dd className="tabular-nums">{elapsed}</dd>
+          </dl>
         </div>
-        <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
-          <dt className="text-letterboxd-text-secondary">Job id</dt>
-          <dd className="font-mono text-xs">{job.id}</dd>
-          <dt className="text-letterboxd-text-secondary">Started</dt>
-          <dd>{new Date(job.startedAt).toLocaleString()}</dd>
-          <dt className="text-letterboxd-text-secondary">Finished</dt>
-          <dd>
-            {job.finishedAt ? new Date(job.finishedAt).toLocaleString() : "—"}
-          </dd>
-        </dl>
-      </Card>
 
-      <div className="space-y-2">
-        {PHASE_ORDER.map(({ key, label }) => (
-          <PhaseRow key={key} job={job} phase={key} label={label} />
-        ))}
-      </div>
+        <ol className="space-y-5 border-t border-letterboxd-border pt-5">
+          {PHASE_ORDER.map(({ key, label }, i) => (
+            <StepRow
+              key={key}
+              job={job}
+              phase={key}
+              label={label}
+              step={i + 1}
+            />
+          ))}
+        </ol>
+      </Card>
 
       {blocked && <BlockedBanner />}
 

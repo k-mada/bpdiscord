@@ -3,10 +3,6 @@ import { render, screen } from "@testing-library/react";
 import JobProgress from "../components/JobProgress";
 import type { RefreshJob, RefreshJobErrorEntry } from "../types";
 
-vi.mock("../components/Spinner", () => ({
-  default: () => <div data-testid="spinner" />,
-}));
-
 function makeJob(overrides: Partial<RefreshJob> = {}): RefreshJob {
   return {
     id: "job-1",
@@ -92,5 +88,97 @@ describe("JobProgress block handling", () => {
     expect(
       screen.queryByText(/temporarily blocking requests/i),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe("JobProgress header", () => {
+  it("does not render the job id", () => {
+    render(<JobProgress job={makeJob({ id: "job-xyz" })} />);
+    expect(screen.queryByText("Job id")).not.toBeInTheDocument();
+    expect(screen.queryByText("job-xyz")).not.toBeInTheDocument();
+  });
+
+  it("shows an elapsed time for a terminal job (finished − started)", () => {
+    render(
+      <JobProgress
+        job={makeJob({
+          status: "completed",
+          startedAt: "2026-06-25T00:00:00Z",
+          finishedAt: "2026-06-25T00:01:05Z",
+        })}
+      />,
+    );
+    expect(screen.getByText("Elapsed")).toBeInTheDocument();
+    expect(screen.getByText("1:05")).toBeInTheDocument();
+  });
+});
+
+describe("JobProgress steps", () => {
+  it("renders a users progress bar with aria values for the user_scrape step", () => {
+    render(
+      <JobProgress
+        job={makeJob({
+          status: "running",
+          phase: "user_scrape",
+          progress: {
+            user_scrape: {
+              processed: 40,
+              total: 45,
+              current: "alice",
+              films_added: 123,
+            },
+          },
+        })}
+      />,
+    );
+
+    const bar = screen.getByRole("progressbar", { name: /users/i });
+    expect(bar).toHaveAttribute("aria-valuenow", "40");
+    expect(bar).toHaveAttribute("aria-valuemax", "45");
+    expect(screen.getByText("Current user: alice")).toBeInTheDocument();
+    expect(screen.getByText("123 films seen")).toBeInTheDocument();
+  });
+
+  it("renders a films progress bar for the film_ratings step", () => {
+    render(
+      <JobProgress
+        job={makeJob({
+          status: "running",
+          phase: "film_ratings",
+          progress: {
+            user_scrape: { processed: 45, total: 45 },
+            missing_films: { count: 10 },
+            film_ratings: { processed: 3, total: 10, current: "Dune" },
+          },
+        })}
+      />,
+    );
+
+    const bar = screen.getByRole("progressbar", { name: /films/i });
+    expect(bar).toHaveAttribute("aria-valuenow", "3");
+    expect(bar).toHaveAttribute("aria-valuemax", "10");
+    expect(screen.getByText("Current film: Dune")).toBeInTheDocument();
+  });
+
+  it("styles a not-yet-started step as inactive", () => {
+    render(
+      <JobProgress
+        job={makeJob({
+          status: "running",
+          phase: "user_scrape",
+          progress: { user_scrape: { processed: 1, total: 45 } },
+        })}
+      />,
+    );
+
+    const pending = screen
+      .getByText("Letterboxd ratings")
+      .closest("li") as HTMLElement;
+    expect(pending.className).toContain("opacity-60");
+
+    const active = screen
+      .getByText("User film scrape")
+      .closest("li") as HTMLElement;
+    expect(active.className).not.toContain("opacity-60");
   });
 });
