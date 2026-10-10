@@ -25,9 +25,9 @@ function formatDuration(ms: number): string {
   return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`;
 }
 
-// Ticks every 1s while running — the 2s poll loop alone would stutter the
-// clock. Terminal jobs show the fixed finished−started span.
-function useElapsed(job: RefreshJob): string {
+// Own component so the 1s tick re-renders only this node, not the sibling log
+// tail and errors panel. The 2s poll loop alone would stutter the clock.
+function Elapsed({ job }: { job: RefreshJob }) {
   const start = new Date(job.startedAt).getTime();
   const running = job.status === "running";
   const [now, setNow] = useState(() => Date.now());
@@ -43,7 +43,7 @@ function useElapsed(job: RefreshJob): string {
     : job.finishedAt
       ? new Date(job.finishedAt).getTime()
       : start;
-  return formatDuration(end - start);
+  return <>{formatDuration(end - start)}</>;
 }
 
 function ProgressBar({
@@ -55,24 +55,26 @@ function ProgressBar({
   total: number;
   label: string;
 }) {
-  const pct = total > 0 ? Math.min(100, Math.round((processed / total) * 100)) : 0;
+  const hasTotal = total > 0;
+  const value = Math.max(0, hasTotal ? Math.min(processed, total) : processed);
+  const pct = hasTotal ? Math.round((value / total) * 100) : 0;
   return (
-    <div
-      role="progressbar"
-      aria-valuenow={processed}
-      aria-valuemin={0}
-      aria-valuemax={total}
-      aria-label={`${label}: ${processed} of ${total}`}
-      className="space-y-1"
-    >
-      <div className="h-2 w-full overflow-hidden rounded-full bg-letterboxd-bg-primary">
+    <div className="space-y-1">
+      <div
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={hasTotal ? total : undefined}
+        aria-valuenow={hasTotal ? value : undefined}
+        aria-label={`${label}: ${value} of ${total}`}
+        className="h-2 w-full overflow-hidden rounded-full bg-letterboxd-bg-primary"
+      >
         <div
           className="h-full rounded-full bg-letterboxd-accent transition-all duration-300"
           style={{ width: `${pct}%` }}
         />
       </div>
       <div className="text-letterboxd-text-secondary">
-        {processed.toLocaleString()} / {total.toLocaleString()} {label}
+        {value.toLocaleString()} / {total.toLocaleString()} {label}
       </div>
     </div>
   );
@@ -142,6 +144,12 @@ function BlockedBanner() {
     </Card>
   );
 }
+
+const STEP_STATUS_LABEL: Record<PhaseRowStatus, string> = {
+  pending: "not started",
+  running: "in progress",
+  done: "completed",
+};
 
 function StepBadge({ status, step }: { status: PhaseRowStatus; step: number }) {
   const active = status !== "pending";
@@ -250,6 +258,7 @@ function StepRow({
         <div className="flex items-center gap-2">
           <h3 className="text-base font-semibold text-letterboxd-text-primary">
             {label}
+            <span className="sr-only"> — {STEP_STATUS_LABEL[status]}</span>
           </h3>
           {status === "running" && (
             <span
@@ -316,7 +325,6 @@ const JobProgress = ({ job }: { job: RefreshJob }) => {
   const badge = blocked
     ? { text: "Blocked", cls: TONE.warning }
     : statusBadge(job.status);
-  const elapsed = useElapsed(job);
   return (
     <>
       <Card className="space-y-5">
@@ -342,7 +350,9 @@ const JobProgress = ({ job }: { job: RefreshJob }) => {
               {job.finishedAt ? new Date(job.finishedAt).toLocaleString() : "—"}
             </dd>
             <dt className="text-letterboxd-text-secondary">Elapsed</dt>
-            <dd className="tabular-nums">{elapsed}</dd>
+            <dd className="tabular-nums">
+              <Elapsed job={job} />
+            </dd>
           </dl>
         </div>
 
