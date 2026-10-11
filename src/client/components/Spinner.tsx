@@ -11,7 +11,7 @@ const Spinner = ({ size = "md", label = "Loading" }: SpinnerProps) => {
 
   return (
     <div
-      className="flex justify-center items-center min-h-64 mx-4"
+      className="flex justify-center items-center min-h-32 mx-4"
       role={decorative ? undefined : "status"}
       aria-hidden={decorative || undefined}
     >

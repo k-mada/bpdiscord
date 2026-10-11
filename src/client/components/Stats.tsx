@@ -137,7 +137,7 @@ const Dashboard = () => {
       <h2 className="subheading">{ratingsHeading}</h2>
       {/* min-h matches the md histogram's fixed height (h-32) so swapping in the
           loading spinner doesn't collapse the row and shift the page. */}
-      <div className="flex min-h-32 items-center justify-center mb-4">
+      <div className="flex min-h-16 items-center justify-center mb-4">
         {ratingsLoading ? (
           <Spinner />
         ) : (
