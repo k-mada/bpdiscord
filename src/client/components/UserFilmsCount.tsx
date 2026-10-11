@@ -5,7 +5,7 @@ const UserFilmsCount = () => {
   const { data, loading, error } = useUserFilmsCount();
 
   return (
-    <div className="movie-counter">
+    <div className="movie-counter text-4xl">
       <h2>Movies watched by this Discord:</h2>
       {loading ? (
         <Spinner size="sm" />
@@ -14,10 +14,7 @@ const UserFilmsCount = () => {
           {error}
         </p>
       ) : (
-        <span
-          data-testid="user-films-count"
-          className="ml-5 text-3xl font-bold"
-        >
+        <span data-testid="user-films-count" className="ml-5 font-bold">
           {data}
         </span>
       )}

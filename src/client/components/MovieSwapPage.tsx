@@ -21,11 +21,11 @@ const MovieSwapPage = () => {
       <h3 className="subheading">
         Find films each user has rated that the other hasn't seen
       </h3>
-      <Card>
+      <Card className="mb-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="select-wrapper">
             {/* sr-only is position:absolute, so it cannot disturb the
-              * wrapper's ::after arrow. Text matches the placeholder (2.5.3). */}
+             * wrapper's ::after arrow. Text matches the placeholder (2.5.3). */}
             <label htmlFor={user1Id} className="sr-only">
               Select User 1
             </label>
