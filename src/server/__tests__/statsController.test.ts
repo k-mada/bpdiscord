@@ -6,6 +6,7 @@ import { mockReqRes } from "./helpers/mockReqRes";
 vi.mock('../controllers/dataController', () => ({
   dbGetTopUserFilms: vi.fn(),
   dbGetRatingDeviationExtremes: vi.fn(),
+  dbGetTotalRatingsDistribution: vi.fn(),
   TopUserFilmsOrder: { HighestRated: 'highest_rated', MostWatched: 'most_watched' },
 }));
 
@@ -13,10 +14,12 @@ import {
   getTopFilmsByYear,
   getRatingDeviation,
   getMostWatchedFilms,
+  getTotalRatings,
 } from '../controllers/statsController';
 import {
   dbGetTopUserFilms,
   dbGetRatingDeviationExtremes,
+  dbGetTotalRatingsDistribution,
   TopUserFilmsOrder,
 } from '../controllers/dataController';
 
@@ -101,6 +104,45 @@ describe('getMostWatchedFilms', () => {
     await getMostWatchedFilms(req, res);
 
     expect(jsonCalls[0]).toMatchObject({ success: false, error: 'boom' });
+  });
+});
+
+describe('getTotalRatings', () => {
+  beforeEach(() => {
+    vi.mocked(dbGetTotalRatingsDistribution).mockReset();
+    vi.mocked(dbGetTotalRatingsDistribution).mockResolvedValue(okRows as never);
+  });
+
+  it('passes no year to the query when no :year param', async () => {
+    const { req, res, jsonCalls } = mockReqRes({ params: {} });
+    await getTotalRatings(req, res);
+
+    expect(dbGetTotalRatingsDistribution).toHaveBeenCalledWith(undefined);
+    expect(jsonCalls[0]).toEqual(okRows);
+  });
+
+  it('passes the parsed year when :year is present', async () => {
+    const { req, res } = mockReqRes({ params: { year: '2021' } });
+    await getTotalRatings(req, res);
+
+    expect(dbGetTotalRatingsDistribution).toHaveBeenCalledWith(2021);
+  });
+
+  it('400s on an out-of-range year and never touches the DB', async () => {
+    const { req, res, statusCalls, jsonCalls } = mockReqRes({ params: { year: '1700' } });
+    await getTotalRatings(req, res);
+
+    expect(statusCalls[0]).toBe(400);
+    expect(jsonCalls[0]).toMatchObject({ success: false });
+    expect(dbGetTotalRatingsDistribution).not.toHaveBeenCalled();
+  });
+
+  it('400s on a non-numeric year', async () => {
+    const { req, res, statusCalls } = mockReqRes({ params: { year: 'abc' } });
+    await getTotalRatings(req, res);
+
+    expect(statusCalls[0]).toBe(400);
+    expect(dbGetTotalRatingsDistribution).not.toHaveBeenCalled();
   });
 });
 

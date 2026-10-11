@@ -9,11 +9,32 @@ import {
   TopUserFilmsOrder,
 } from "./dataController";
 
+// Shared by the three `:year?` stats handlers. No param → all-time
+// (`year` undefined, no error); an out-of-range or non-numeric value → error,
+// which the caller turns into a 400 before touching the DB.
+function parseYearParam(raw: string | undefined): {
+  year?: number;
+  error?: string;
+} {
+  if (raw === undefined) return {};
+  const year = Number(raw);
+  if (!Number.isInteger(year) || year < 1870 || year > 2100) {
+    return { error: "Invalid year" };
+  }
+  return { year };
+}
+
 export async function getTotalRatings(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const result = await dbGetTotalRatingsDistribution();
+  const { year, error } = parseYearParam(req.params.year);
+  if (error) {
+    res.status(400).json({ success: false, error });
+    return;
+  }
+
+  const result = await dbGetTotalRatingsDistribution(year);
   res.json(result);
 }
 
@@ -39,13 +60,10 @@ export async function getTopFilmsByYear(
 ): Promise<void> {
   // All-time (no :year) keeps the historical 20-rating bar; a single release
   // year has far fewer ratings, so year-scoped uses a looser 5-rating bar.
-  let year: number | undefined;
-  if (req.params.year !== undefined) {
-    year = Number(req.params.year);
-    if (!Number.isInteger(year) || year < 1870 || year > 2100) {
-      res.status(400).json({ success: false, error: "Invalid year" });
-      return;
-    }
+  const { year, error } = parseYearParam(req.params.year);
+  if (error) {
+    res.status(400).json({ success: false, error });
+    return;
   }
 
   const yearOpt = year !== undefined ? { year } : {};
@@ -106,13 +124,10 @@ export async function getRatingDeviation(
   // 20 all-time / 10 per-year: a raw extremum with no confidence weighting is
   // the most noise-prone thing on the page, so it carries a higher floor than
   // the Bayesian-weighted top-films lists (which use 5 per-year).
-  let year: number | undefined;
-  if (req.params.year !== undefined) {
-    year = Number(req.params.year);
-    if (!Number.isInteger(year) || year < 1870 || year > 2100) {
-      res.status(400).json({ success: false, error: "Invalid year" });
-      return;
-    }
+  const { year, error } = parseYearParam(req.params.year);
+  if (error) {
+    res.status(400).json({ success: false, error });
+    return;
   }
 
   const result = await dbGetRatingDeviationExtremes({
