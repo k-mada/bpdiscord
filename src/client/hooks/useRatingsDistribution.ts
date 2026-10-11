@@ -1,29 +1,42 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { apiService } from "../services/api";
 
 type RatingsDistribution = Array<{ rating: number; count: number }>;
 
-export const useRatingsDistribution = () => {
+/**
+ * Rating distribution for the histogram. Pass `null` for all-time (no year
+ * filter), or a release year to scope to ratings on films released that year.
+ * Keeps the previous data visible while a new year loads.
+ */
+export const useRatingsDistribution = (year: number | null) => {
   const [data, setData] = useState<RatingsDistribution>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await apiService.getRatingsDistribution();
-      if (response.data) setData(response.data);
-    } catch {
-      setError("Failed to load ratings distribution");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    const ac = new AbortController();
+    setLoading(true);
+    setError(null);
 
-  return { data, loading, error, refetch: fetchData };
+    async function fetchDistribution() {
+      try {
+        const response = await apiService.getRatingsDistribution(
+          year ?? undefined,
+          ac.signal,
+        );
+        if (response.data) setData(response.data);
+      } catch (e) {
+        if (e instanceof DOMException && e.name === "AbortError") return;
+        setError("Failed to load ratings distribution");
+      } finally {
+        if (!ac.signal.aborted) setLoading(false);
+      }
+    }
+
+    fetchDistribution();
+
+    return () => ac.abort();
+  }, [year]);
+
+  return { data, loading, error };
 };
