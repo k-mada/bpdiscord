@@ -292,6 +292,34 @@ describe('dataController', () => {
         expect(r.count).toBeGreaterThan(0);
       });
     });
+
+    it('scopes to films released in the given year', async () => {
+      // Discord-scoped UserFilms on 2020 films: active popular 4.0 + classic 5.0,
+      // minimal popular 4.5 + classic 5.0.
+      const result = await dc.dbGetTotalRatingsDistribution(2020);
+
+      expect(result.success).toBe(true);
+      const counts = new Map(result.data!.map(r => [r.rating, r.count]));
+      expect(counts.get(4.0)).toBe(1);
+      expect(counts.get(4.5)).toBe(1);
+      expect(counts.get(5.0)).toBe(2);
+      // 2021 ratings (divisive 1.5, obscure 3.5) are absent.
+      expect(counts.has(1.5)).toBe(false);
+      expect(counts.has(3.5)).toBe(false);
+      // Non-discord popular 2.0 is still excluded under the year filter.
+      expect(counts.has(2.0)).toBe(false);
+    });
+
+    it('excludes NULL-releaseYear films that the all-time view includes', async () => {
+      // test-film-unlisted (releaseYear NULL) carries a discord 3.0 rating.
+      const all = await dc.dbGetTotalRatingsDistribution();
+      const allCounts = new Map(all.data!.map(r => [r.rating, r.count]));
+      expect(allCounts.get(3.0)).toBe(1);
+
+      const y2020 = await dc.dbGetTotalRatingsDistribution(2020);
+      const yCounts = new Map(y2020.data!.map(r => [r.rating, r.count]));
+      expect(yCounts.has(3.0)).toBe(false);
+    });
   });
 
   describe('Missing Films', () => {

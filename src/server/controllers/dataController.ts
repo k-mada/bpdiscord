@@ -450,22 +450,36 @@ export async function dbUpsertUserProfile(
   });
 }
 
-export async function dbGetTotalRatingsDistribution(): Promise<{
+export async function dbGetTotalRatingsDistribution(year?: number): Promise<{
   success: boolean;
   data?: Array<{ rating: number; count: number }>;
   error?: string;
 }> {
   return dbOperation(async () => {
-    // Matches RPC: get_rating_distribution_all
-    // Only counts ratings from users where is_discord = true, excludes 0 ratings
-    const result = await db
+    // Only counts ratings from users where is_discord = true, excludes 0 ratings.
+    const base = db
       .select({
         rating: userFilms.rating,
         count: sql<number>`COUNT(${userFilms.rating})::int`,
       })
       .from(userFilms)
-      .innerJoin(users, eq(userFilms.lbusername, users.lbusername))
-      .where(sql`${users.isDiscord} = true AND ${userFilms.rating} != 0`)
+      .innerJoin(users, eq(userFilms.lbusername, users.lbusername));
+
+    // The Films join is year-only: joining it unconditionally would drop
+    // ratings whose film_slug has no Films row and change the all-time total.
+    const scoped =
+      year !== undefined
+        ? base.innerJoin(films, eq(userFilms.filmSlug, films.filmSlug))
+        : base;
+
+    const result = await scoped
+      .where(
+        and(
+          eq(users.isDiscord, true),
+          sql`${userFilms.rating} != 0`,
+          year !== undefined ? eq(films.releaseYear, year) : undefined,
+        ),
+      )
       .groupBy(userFilms.rating)
       .orderBy(asc(userFilms.rating));
 

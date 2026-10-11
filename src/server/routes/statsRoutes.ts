@@ -20,8 +20,10 @@ const statsLimiter = rateLimit({
   message: { error: "Too many stats requests, please try again later." },
 });
 
+// Optional param, same Express-4 `:year?` shape as /top-films: bare → all-time,
+// /:year → ratings on films released that year.
 router.get(
-  "/total-ratings",
+  "/total-ratings/:year?",
   [statsLimiter, handleValidationErrors],
   getTotalRatings,
 );

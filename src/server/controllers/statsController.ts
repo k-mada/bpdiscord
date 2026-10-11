@@ -13,7 +13,16 @@ export async function getTotalRatings(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const result = await dbGetTotalRatingsDistribution();
+  let year: number | undefined;
+  if (req.params.year !== undefined) {
+    year = Number(req.params.year);
+    if (!Number.isInteger(year) || year < 1870 || year > 2100) {
+      res.status(400).json({ success: false, error: "Invalid year" });
+      return;
+    }
+  }
+
+  const result = await dbGetTotalRatingsDistribution(year);
   res.json(result);
 }
 
