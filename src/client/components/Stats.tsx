@@ -39,8 +39,10 @@ const Dashboard = () => {
   const currentYear = new Date().getFullYear();
   const selectedYear = parseYear(searchParams.get("year"), currentYear);
 
+  // All-time on purpose: a rating-activity histogram scoped by film release
+  // year reads as the wrong thing, and we have no watch/rating date to scope by.
   const { data: allRatings, loading: ratingsLoading } =
-    useRatingsDistribution(selectedYear);
+    useRatingsDistribution(null);
   const { topRated, topWatched, loading, error } =
     useTopFilmsByYear(selectedYear);
   const {
@@ -57,10 +59,6 @@ const Dashboard = () => {
   const years: number[] = [];
   for (let y = currentYear; y >= FIRST_YEAR; y--) years.push(y);
 
-  const ratingsHeading =
-    selectedYear === null
-      ? "How we rated all of our movies:"
-      : `How we rated movies from ${selectedYear}:`;
   const ratedHeading =
     selectedYear === null
       ? "Our highest rated movies (20+ ratings)"
@@ -107,6 +105,19 @@ const Dashboard = () => {
       <h1 className="sr-only">Discord stats</h1>
       <UserFilmsCount />
 
+      <h2 className="subheading">How we rated all of our movies:</h2>
+      {/* min-h matches the md histogram's fixed height (h-32) so swapping in the
+          loading spinner doesn't collapse the row and shift the page. */}
+      <div className="flex min-h-32 items-center justify-center mb-4">
+        {ratingsLoading ? (
+          <Spinner />
+        ) : (
+          <RatingDistributionHistogram size="md" distribution={allRatings} />
+        )}
+      </div>
+
+      {/* Scopes only the release-year sections below (deviations + lists); the
+          count and histogram above are all-time. */}
       <div className="flex items-center gap-2 mb-6 justify-center">
         <label htmlFor="stats-year" className="body-text">
           Filter by release year:
@@ -132,17 +143,6 @@ const Dashboard = () => {
             </option>
           ))}
         </select>
-      </div>
-
-      <h2 className="subheading">{ratingsHeading}</h2>
-      {/* min-h matches the md histogram's fixed height (h-32) so swapping in the
-          loading spinner doesn't collapse the row and shift the page. */}
-      <div className="flex min-h-32 items-center justify-center mb-4">
-        {ratingsLoading ? (
-          <Spinner />
-        ) : (
-          <RatingDistributionHistogram size="md" distribution={allRatings} />
-        )}
       </div>
 
       <h2 className="subheading max-md:text-base">Our biggest deviations</h2>
