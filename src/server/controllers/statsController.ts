@@ -50,7 +50,13 @@ export async function getUserFilmsCount(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const result = await dbGetUserFilmsCount();
+  const { year, error } = parseYearParam(req.params.year);
+  if (error) {
+    res.status(400).json({ success: false, error });
+    return;
+  }
+
+  const result = await dbGetUserFilmsCount(year);
   res.json(result);
 }
 

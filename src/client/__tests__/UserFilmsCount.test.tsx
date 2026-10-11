@@ -26,6 +26,24 @@ describe("UserFilmsCount", () => {
     });
   });
 
+  it("scopes the heading and the request to the given year", async () => {
+    vi.mocked(apiService.getUserFilmsCount).mockResolvedValue({ data: 3 });
+
+    render(<UserFilmsCount year={2020} />);
+
+    expect(
+      screen.getByText("Movies from 2020 watched by this Discord:"),
+    ).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.getByText("3")).toBeInTheDocument();
+    });
+    expect(apiService.getUserFilmsCount).toHaveBeenCalledWith(
+      2020,
+      expect.any(AbortSignal),
+    );
+  });
+
   describe("loading state", () => {
     it("shows the spinner while the request is in flight", () => {
       vi.mocked(apiService.getUserFilmsCount).mockReturnValue(

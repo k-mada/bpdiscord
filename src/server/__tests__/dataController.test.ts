@@ -160,6 +160,28 @@ describe('dataController', () => {
       expect(result.data).toBe(expectedResults.discordUserFilmsCount);
     });
 
+    it('dbGetUserFilmsCount scopes to a release year', async () => {
+      // Discord-watched 2020 films: test-film-popular + test-film-classic = 2.
+      const result = await dc.dbGetUserFilmsCount(2020);
+
+      expect(result.success).toBe(true);
+      expect(result.data).toBe(2);
+    });
+
+    it('dbGetUserFilmsCount excludes NULL-releaseYear films the all-time count includes', async () => {
+      // test-film-unlisted (releaseYear NULL) is one of the 6 all-time distinct
+      // films but belongs to no year, so no single year counts it.
+      const all = await dc.dbGetUserFilmsCount();
+      const y2020 = await dc.dbGetUserFilmsCount(2020);
+      const y2021 = await dc.dbGetUserFilmsCount(2021);
+      const y2022 = await dc.dbGetUserFilmsCount(2022);
+
+      expect(all.data).toBe(6);
+      expect(
+        (y2020.data ?? 0) + (y2021.data ?? 0) + (y2022.data ?? 0),
+      ).toBe(5);
+    });
+
     it('dbGetFilmsByUser returns films with metadata', async () => {
       const result = await dc.dbGetFilmsByUser('test_user_minimal');
 

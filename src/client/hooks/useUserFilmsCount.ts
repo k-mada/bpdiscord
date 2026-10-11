@@ -1,27 +1,41 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { apiService } from "../services/api";
 
-export const useUserFilmsCount = () => {
-  const [data, setData] = useState<number>(0);
+/**
+ * Distinct films watched by the Discord. Pass `null` for all-time, or a release
+ * year to scope the count. `data` is null until the first result arrives, so a
+ * reload on year change can keep the previous number visible instead of
+ * flashing a spinner.
+ */
+export const useUserFilmsCount = (year: number | null) => {
+  const [data, setData] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchData = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await apiService.getUserFilmsCount();
-      if (response.data !== undefined) setData(response.data);
-    } catch {
-      setError("Failed to load user films count");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    const ac = new AbortController();
+    setLoading(true);
+    setError(null);
 
-  return { data, loading, error, refetch: fetchData };
+    async function fetchCount() {
+      try {
+        const response = await apiService.getUserFilmsCount(
+          year ?? undefined,
+          ac.signal,
+        );
+        if (response.data !== undefined) setData(response.data);
+      } catch (e) {
+        if (e instanceof DOMException && e.name === "AbortError") return;
+        setError("Failed to load user films count");
+      } finally {
+        if (!ac.signal.aborted) setLoading(false);
+      }
+    }
+
+    fetchCount();
+
+    return () => ac.abort();
+  }, [year]);
+
+  return { data, loading, error };
 };

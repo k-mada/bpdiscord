@@ -221,8 +221,16 @@ class ApiService {
     );
   }
 
-  async getUserFilmsCount(): Promise<ApiResponse<number>> {
-    return this.request<number>("/stats/user-films-count");
+  // Distinct films watched by the Discord. Omit `year` for all-time; pass a
+  // year to scope to films released that year.
+  async getUserFilmsCount(
+    year?: number,
+    signal?: AbortSignal,
+  ): Promise<ApiResponse<number>> {
+    return this.request<number>(
+      `/stats/user-films-count${year ? `/${year}` : ""}`,
+      signal ? { signal } : {},
+    );
   }
 
   // Top films for a release year. Omit `year` for all-time (server returns

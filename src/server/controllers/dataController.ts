@@ -550,20 +550,33 @@ export async function dbGetUserFilms(lbusername: string): Promise<{
   });
 }
 
-export async function dbGetUserFilmsCount(): Promise<{
+export async function dbGetUserFilmsCount(year?: number): Promise<{
   success: boolean;
   data?: number;
   error?: string;
 }> {
   return dbOperation(async () => {
-    // Counts distinct films watched by discord users
-    const result = await db
+    // Counts distinct films watched by discord users.
+    const base = db
       .select({
         count: sql<number>`COUNT(DISTINCT ${userFilms.filmSlug})::int`,
       })
       .from(userFilms)
-      .innerJoin(users, eq(userFilms.lbusername, users.lbusername))
-      .where(eq(users.isDiscord, true));
+      .innerJoin(users, eq(userFilms.lbusername, users.lbusername));
+
+    // Year-only Films join: an unconditional join would drop films with no
+    // Films row and change the all-time count, so the bare query keeps none.
+    const scoped =
+      year !== undefined
+        ? base.innerJoin(films, eq(userFilms.filmSlug, films.filmSlug))
+        : base;
+
+    const result = await scoped.where(
+      and(
+        eq(users.isDiscord, true),
+        year !== undefined ? eq(films.releaseYear, year) : undefined,
+      ),
+    );
 
     return result[0]?.count ?? 0;
   });

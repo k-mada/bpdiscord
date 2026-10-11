@@ -105,7 +105,7 @@ const Dashboard = () => {
       {/* Visually absent by design: the page opens on the welcome copy, and the
           logo is the visible title. The hierarchy still needs a root. */}
       <h1 className="sr-only">Discord stats</h1>
-      <UserFilmsCount />
+      <UserFilmsCount year={selectedYear} />
 
       <div className="flex items-center gap-2 mb-6 justify-center">
         <label htmlFor="stats-year" className="body-text">

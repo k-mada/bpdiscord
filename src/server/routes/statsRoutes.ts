@@ -56,8 +56,10 @@ router.get(
   getMostWatchedFilms,
 );
 
+// Optional param, same Express-4 `:year?` shape as /top-films: bare → all-time
+// distinct count, /:year → distinct films released that year.
 router.get(
-  "/user-films-count",
+  "/user-films-count/:year?",
   [statsLimiter, handleValidationErrors],
   getUserFilmsCount,
 );

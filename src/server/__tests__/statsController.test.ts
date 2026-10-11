@@ -7,6 +7,7 @@ vi.mock('../controllers/dataController', () => ({
   dbGetTopUserFilms: vi.fn(),
   dbGetRatingDeviationExtremes: vi.fn(),
   dbGetTotalRatingsDistribution: vi.fn(),
+  dbGetUserFilmsCount: vi.fn(),
   TopUserFilmsOrder: { HighestRated: 'highest_rated', MostWatched: 'most_watched' },
 }));
 
@@ -15,11 +16,13 @@ import {
   getRatingDeviation,
   getMostWatchedFilms,
   getTotalRatings,
+  getUserFilmsCount,
 } from '../controllers/statsController';
 import {
   dbGetTopUserFilms,
   dbGetRatingDeviationExtremes,
   dbGetTotalRatingsDistribution,
+  dbGetUserFilmsCount,
   TopUserFilmsOrder,
 } from '../controllers/dataController';
 
@@ -143,6 +146,37 @@ describe('getTotalRatings', () => {
 
     expect(statusCalls[0]).toBe(400);
     expect(dbGetTotalRatingsDistribution).not.toHaveBeenCalled();
+  });
+});
+
+describe('getUserFilmsCount', () => {
+  beforeEach(() => {
+    vi.mocked(dbGetUserFilmsCount).mockReset();
+    vi.mocked(dbGetUserFilmsCount).mockResolvedValue({ success: true, data: 7 } as never);
+  });
+
+  it('passes no year to the query when no :year param', async () => {
+    const { req, res, jsonCalls } = mockReqRes({ params: {} });
+    await getUserFilmsCount(req, res);
+
+    expect(dbGetUserFilmsCount).toHaveBeenCalledWith(undefined);
+    expect(jsonCalls[0]).toEqual({ success: true, data: 7 });
+  });
+
+  it('passes the parsed year when :year is present', async () => {
+    const { req, res } = mockReqRes({ params: { year: '2021' } });
+    await getUserFilmsCount(req, res);
+
+    expect(dbGetUserFilmsCount).toHaveBeenCalledWith(2021);
+  });
+
+  it('400s on an out-of-range year and never touches the DB', async () => {
+    const { req, res, statusCalls, jsonCalls } = mockReqRes({ params: { year: '1700' } });
+    await getUserFilmsCount(req, res);
+
+    expect(statusCalls[0]).toBe(400);
+    expect(jsonCalls[0]).toMatchObject({ success: false });
+    expect(dbGetUserFilmsCount).not.toHaveBeenCalled();
   });
 });
 
