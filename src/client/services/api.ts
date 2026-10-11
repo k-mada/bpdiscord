@@ -201,11 +201,15 @@ class ApiService {
     );
   }
 
-  async getRatingsDistribution(): Promise<
-    ApiResponse<Array<{ rating: number; count: number }>>
-  > {
+  // Rating distribution. Omit `year` for all-time; pass a year to scope to
+  // ratings on films released that year.
+  async getRatingsDistribution(
+    year?: number,
+    signal?: AbortSignal,
+  ): Promise<ApiResponse<Array<{ rating: number; count: number }>>> {
     return this.request<Array<{ rating: number; count: number }>>(
-      "/stats/total-ratings",
+      `/stats/total-ratings${year ? `/${year}` : ""}`,
+      signal ? { signal } : {},
     );
   }
 

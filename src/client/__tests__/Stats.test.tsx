@@ -77,7 +77,7 @@ const renderAt = (entry: string) =>
     </MemoryRouter>,
   );
 
-const yearSelect = () => screen.getByLabelText("Filter top films by year:");
+const yearSelect = () => screen.getByLabelText("Filter by release year:");
 const search = () => screen.getByTestId("search").textContent;
 const goBack = () =>
   userEvent.click(screen.getByRole("button", { name: "go back" }));
@@ -106,6 +106,9 @@ describe("Stats year URL parameter", () => {
     renderAt("/?year=2023");
 
     expect(
+      screen.getByText("How we rated movies from 2023:"),
+    ).toBeInTheDocument();
+    expect(
       screen.getByText("Top rated movies of 2023 (5+ ratings)"),
     ).toBeInTheDocument();
     expect(screen.getByText("Most watched movies of 2023")).toBeInTheDocument();
@@ -127,6 +130,9 @@ describe("Stats year URL parameter", () => {
     withNoFilms();
     renderAt("/");
 
+    expect(
+      screen.getByText("How we rated all of our movies:"),
+    ).toBeInTheDocument();
     expect(
       screen.getByText("Our highest rated movies (20+ ratings)"),
     ).toBeInTheDocument();

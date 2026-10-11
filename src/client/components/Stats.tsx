@@ -40,7 +40,7 @@ const Dashboard = () => {
   const selectedYear = parseYear(searchParams.get("year"), currentYear);
 
   const { data: allRatings, loading: ratingsLoading } =
-    useRatingsDistribution();
+    useRatingsDistribution(selectedYear);
   const { topRated, topWatched, loading, error } =
     useTopFilmsByYear(selectedYear);
   const {
@@ -57,6 +57,10 @@ const Dashboard = () => {
   const years: number[] = [];
   for (let y = currentYear; y >= FIRST_YEAR; y--) years.push(y);
 
+  const ratingsHeading =
+    selectedYear === null
+      ? "How we rated all of our movies:"
+      : `How we rated movies from ${selectedYear}:`;
   const ratedHeading =
     selectedYear === null
       ? "Our highest rated movies (20+ ratings)"
@@ -102,21 +106,13 @@ const Dashboard = () => {
           logo is the visible title. The hierarchy still needs a root. */}
       <h1 className="sr-only">Discord stats</h1>
       <UserFilmsCount />
-      <h2 className="subheading">How we rated all of our movies:</h2>
-      <div className="flex mb-4 justify-center">
-        {ratingsLoading ? (
-          <Spinner />
-        ) : (
-          <RatingDistributionHistogram size="md" distribution={allRatings} />
-        )}
-      </div>
 
       <div className="flex items-center gap-2 mb-6 justify-center">
-        <label htmlFor="top-films-year" className="body-text">
-          Filter top films by year:
+        <label htmlFor="stats-year" className="body-text">
+          Filter by release year:
         </label>
         <select
-          id="top-films-year"
+          id="stats-year"
           className="input-field"
           value={selectedYear ?? ""}
           onChange={(e) => {
@@ -136,6 +132,15 @@ const Dashboard = () => {
             </option>
           ))}
         </select>
+      </div>
+
+      <h2 className="subheading">{ratingsHeading}</h2>
+      <div className="flex mb-4 justify-center">
+        {ratingsLoading ? (
+          <Spinner />
+        ) : (
+          <RatingDistributionHistogram size="md" distribution={allRatings} />
+        )}
       </div>
 
       <h2 className="subheading max-md:text-base">Our biggest deviations</h2>
