@@ -80,7 +80,7 @@ const MovieBarChart = ({
               <div className="flex-1 min-w-0">
                 <div
                   className={cn(
-                    "flex items-center justify-between gap-3 h-16 max-md:h-14 px-3 rounded-md bg-letterboxd-bg-tertiary",
+                    "film-strip-bar flex items-center justify-between gap-3 h-16 max-md:h-14 px-3 rounded-md",
                     animated && "bar-grow",
                   )}
                   style={barStyle}

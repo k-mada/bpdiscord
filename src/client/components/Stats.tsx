@@ -101,13 +101,6 @@ const Dashboard = () => {
       {/* Visually absent by design: the page opens on the welcome copy, and the
           logo is the visible title. The hierarchy still needs a root. */}
       <h1 className="sr-only">Discord stats</h1>
-      <div className="body-text -prose">
-        <p>
-          Welcome to the Big Picture Discord. This is a fun project meant to
-          augment the Letterboxd experience specifically for the members of this
-          Discord.
-        </p>
-      </div>
       <UserFilmsCount />
       <h2 className="subheading">How we rated all of our movies:</h2>
       <div className="flex mb-4 justify-center">

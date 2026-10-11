@@ -1,5 +1,5 @@
 import Card from "./Card";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useFilmDetail } from "../hooks/useFilmDetail";
 import { posterAtWidth } from "../lib/poster";
@@ -7,15 +7,16 @@ import StarRating from "./StarRating";
 import NotFound from "./NotFound";
 import type { FilmRater } from "../../shared/types";
 import { Notification } from "./ui/Notification";
+import { SITE_NAME } from "./routeTitles";
 
 const POSTER_WIDTH = 320;
 
 const StatTile = ({ label, value }: { label: string; value: string }) => (
-  <div className="flex flex-col-reverse text-center">
-    <dt className="text-letterboxd-text-muted text-sm">{label}</dt>
-    <dd className="text-2xl text-letterboxd-text-primary tabular-nums">
+  <div className="flex flex-row items-center">
+    <dd className="text-2xl text-letterboxd-text-primary tabular-nums font-bold">
       {value}
     </dd>
+    <dt className="ml-2 text-letterboxd-text-muted text-sm">{label}</dt>
   </div>
 );
 
@@ -52,6 +53,12 @@ const FilmPage = () => {
   // Keyed by URL, not a boolean: one film's missing crop must not disable
   // upscaling for every film visited afterwards.
   const [failedPoster, setFailedPoster] = useState<string | null>(null);
+
+  // MainLayout seeds document.title from the slug on navigation; the real title
+  // only exists once the fetch resolves, so override it here.
+  useEffect(() => {
+    if (data?.title) document.title = `${data.title} — ${SITE_NAME}`;
+  }, [data?.title]);
 
   if (loading) {
     return (
@@ -99,57 +106,39 @@ const FilmPage = () => {
   return (
     <div className="space-y-8">
       <Card className="flex flex-col md:flex-row items-center md:items-start gap-6">
-        <a
-          href={letterboxdUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={`View ${data.title} on Letterboxd`}
-          className="block w-full max-w-[320px] shrink-0 transition-transform duration-300 hover:scale-[1.02]"
-        >
-          {posterSrc ? (
-            <img
-              src={posterSrc}
-              srcSet={posterSrcSet}
-              sizes={`${POSTER_WIDTH}px`}
-              alt={`${data.title} poster`}
-              width={POSTER_WIDTH}
-              height={POSTER_WIDTH * 1.5}
-              onError={() => setFailedPoster(data.poster)}
-              className="w-full aspect-[2/3] object-cover rounded"
-            />
-          ) : (
-            <div className="flex w-full aspect-[2/3] items-center justify-center rounded bg-letterboxd-bg-tertiary text-sm text-letterboxd-text-muted">
-              No poster
-            </div>
-          )}
-        </a>
-
-        <div className="w-full min-w-0 flex-1">
-          <h1 className="text-2xl md:text-4xl font-bold text-letterboxd-text-primary">
-            {data.title}
-          </h1>
-          {data.releaseYear && (
-            <p className="text-letterboxd-text-secondary mt-1">
-              {data.releaseYear}
-            </p>
-          )}
+        <div className="w-half flex-grow-0 grid grid-cols-[7rem_1fr] items-start gap-4 sm:grid-cols-[9rem_1fr] md:block md:self-start md:sticky md:top-6">
           <a
             href={letterboxdUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-block mt-2 text-letterboxd-text-secondary hover:text-letterboxd-accent"
+            aria-label={`View ${data.title} on Letterboxd`}
+            className="block w-full max-w-[320px] shrink-0 transition-transform duration-300 hover:scale-[1.02]"
           >
-            View on Letterboxd ↗
+            {posterSrc ? (
+              <img
+                src={posterSrc}
+                srcSet={posterSrcSet}
+                sizes={`${POSTER_WIDTH}px`}
+                alt={`${data.title} poster`}
+                width={POSTER_WIDTH}
+                height={POSTER_WIDTH * 1.5}
+                onError={() => setFailedPoster(data.poster)}
+                className="w-full aspect-[2/3] object-cover rounded"
+              />
+            ) : (
+              <div className="flex w-full aspect-[2/3] items-center justify-center rounded bg-letterboxd-bg-tertiary text-sm text-letterboxd-text-muted">
+                No poster
+              </div>
+            )}
           </a>
-
-          <dl className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <dl className="grid grid-rows-4 gap-4 md:mt-6">
             <StatTile
               label="watched"
               value={data.watchedCount.toLocaleString()}
             />
             <StatTile label="rated" value={data.ratedCount.toLocaleString()} />
             <StatTile
-              label="our average"
+              label="Our average"
               value={data.averageRating?.toFixed(2) ?? "—"}
             />
             <StatTile
@@ -157,20 +146,25 @@ const FilmPage = () => {
               value={data.letterboxdRating?.toFixed(2) ?? "—"}
             />
           </dl>
-          <Card>
-            <h2 className="subheading">How we rated it</h2>
-            {data.ratings.length > 0 ? (
-              <ul className="grid grid-cols-1 gap-x-8">
-                {data.ratings.map((rater) => (
-                  <RaterRow key={rater.username} rater={rater} />
-                ))}
-              </ul>
-            ) : (
-              <p className="body-text -prose italic opacity-70">
-                {emptyRatings}
-              </p>
-            )}
-          </Card>
+        </div>
+        <div className="w-half min-w-0 flex-1">
+          <h1 className="text-2xl md:text-4xl font-bold text-letterboxd-text-primary">
+            {data.title}
+          </h1>
+          <p className="letterboxd-text-secondary text-sm">
+            {data.releaseYear}
+          </p>
+
+          <h2 className="subheading mt-4">How we rated it</h2>
+          {data.ratings.length > 0 ? (
+            <ul className="grid grid-cols-1 gap-x-8">
+              {data.ratings.map((rater) => (
+                <RaterRow key={rater.username} rater={rater} />
+              ))}
+            </ul>
+          ) : (
+            <p className="body-text -prose italic opacity-70">{emptyRatings}</p>
+          )}
         </div>
       </Card>
     </div>

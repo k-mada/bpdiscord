@@ -187,6 +187,33 @@
   @apply bg-letterboxd-bg-secondary border border-letterboxd-border-light rounded-lg px-4 py-3 text-letterboxd-text-primary placeholder-letterboxd-text-muted transition-all duration-200;
 }
 
+/* Abstracted film-strip: a dark frame with sprocket perforations running
+   along the top and bottom edges, drawn with gradients so the ::before/::after
+   rows grow with the bar's width animation. */
+@utility film-strip-bar {
+  position: relative;
+  background-color: theme(colors.letterboxd.bg-secondary);
+  &::before,
+  &::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0.45rem;
+    height: 0.34rem;
+    pointer-events: none;
+    background-image: repeating-linear-gradient(
+      to right,
+      theme(colors.letterboxd.border) 0 0.3rem,
+      transparent 0.3rem 0.68rem
+    );
+  }
+  &::before {
+    top: 0.3rem;
+  }
+  &::after {
+    bottom: 0.3rem;
+  }
+}
+
 @utility section-title {
   @apply text-xl font-semibold text-letterboxd-text-primary uppercase tracking-wide mb-4;
 }
