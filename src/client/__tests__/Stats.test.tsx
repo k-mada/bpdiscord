@@ -105,8 +105,10 @@ describe("Stats year URL parameter", () => {
   it("keeps the year-scoped headings in sync with the URL param", () => {
     renderAt("/?year=2023");
 
+    // The histogram heading stays all-time — only the release-year sections
+    // (deviations + lists) are scoped.
     expect(
-      screen.getByText("How we rated movies from 2023:"),
+      screen.getByText("How we rated all of our movies:"),
     ).toBeInTheDocument();
     expect(
       screen.getByText("Top rated movies of 2023 (5+ ratings)"),
