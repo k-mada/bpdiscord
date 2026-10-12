@@ -16,10 +16,10 @@ Anything else under `.claude/` (settings, hooks, worktrees) is local-only and mu
 - Use ES modules (import/export) syntax, not commonJS (require)
 - Destructure imports when possible (e.g. import { foo } from 'bar')
 - Async work inside `useEffect`: declare a named inner function and call it (not an IIFE). Pass `AbortSignal` from a controller created in the effect, abort unconditionally in the cleanup, and ignore `AbortError` in the catch. Named functions show in stack traces; AbortController cancels the actual request instead of just discarding the response. See `src/client/hooks/useCompatibilityExtremes.ts` for the canonical shape. Extend `apiService` methods with an optional `signal?: AbortSignal` parameter as you touch them — don't retrofit all at once.
-- Colour comes from the `letterboxd-*` tokens, never a raw Tailwind palette class (`text-red-400`, `bg-slate-800`). Raw colours bypass `src/client/__tests__/palette.contrast.test.ts`, which reads the tokens and gates every pairing — a colour it cannot see is a colour nothing checks. Enforced at `warn` by `no-restricted-syntax` in `src/client/eslint.config.mjs`; ~84 pre-existing violations are being burned down. New surfaces or text colours need a token, and the contrast test picks them up automatically.
+- Colour comes from the `letterboxd-*` tokens, never a raw Tailwind palette class (`text-red-400`, `bg-slate-800`). Raw colours bypass `src/client/__tests__/palette.contrast.test.ts`, which reads the tokens and gates every pairing — a colour it cannot see is a colour nothing checks. Enforced at `warn` by `no-restricted-syntax` in `src/client/eslint.config.mjs` (pre-existing violations are being burned down). New surfaces or text colours need a token, and the contrast test picks them up automatically.
 - Accessibility lint (`eslint-plugin-jsx-a11y`) runs at **`error` across `**/*.tsx`** — every rule, every file, including tests and the e2e harness. There is no per-file promotion list: it enumerated what was protected rather than what wasn't, and an unmatched flat-config `files` pattern is silent, so a `git mv` dropped a file back to `warn` with nothing printed and a zero exit. If a rule genuinely cannot express a legitimate shape, widen its **options** for that file and keep the severity at `error` — `components/RatingDistributionHistogram.tsx` is the worked example. Never downgrade a file wholesale.
 - Hover- or focus-revealed content is a **tooltip** or a **popover**, never both. A tooltip opens on hover and on *keyboard* focus, closes on pointer-leave, blur or Esc, and is never pinned by a click — gate the focus branch on `:focus-visible` so pointer-derived focus cannot latch it. A popover opens on activation, closes on activation again or Esc, and carries `aria-expanded`. WCAG 1.4.13 applies to both: Esc must dismiss without moving the pointer (a hovering user holds no focus, so that listener goes on `document`), and the pointer must be able to travel onto the panel — put the visual gap *inside* the panel wrapper as padding and make the panel a DOM descendant of its trigger, so neither geometry nor hit-testing interrupts the trip. `RatingDistributionHistogram.tsx` is the worked example; `src/client/e2e/histogram.spec.ts` is what proves it, because jsdom has no `:focus-visible` and no layout.
-- Comments: default to none. When an inline comment is warranted (non-obvious WHY only — workaround, hidden constraint, surprising invariant), keep it to ≤2 lines. **Hard ceiling: no more than 2 consecutive comment lines outside JSDoc** — a 3+-line non-JSDoc comment block is a policy violation, trim it. JSDoc on exported APIs is fine at any reasonable length since IDEs surface it on hover. Multi-paragraph narrative explanations belong in the PR description or commit body, not in source — they bloat files and rot in place.
+- Comments: default to none. When an inline comment is warranted (non-obvious WHY only — workaround, hidden constraint, surprising invariant), keep it to ≤2 lines. **Hard ceiling: no more than 2 consecutive comment lines outside JSDoc** — a 3+-line non-JSDoc comment block is a policy violation, trim it. JSDoc on exported APIs is fine at any reasonable length since IDEs surface it on hover. Multi-paragraph narrative explanations belong in the PR description or commit body, not in source — they bloat files and rot in place. Before opening a PR, scan the diff for comment blocks over two lines that restate the code and delete them.
 
 # BPDiscord
 
@@ -39,7 +39,7 @@ All Letterboxd scraping is performed by moviemaestro (`WORKER_URL=https://moviem
 
 If the worker handoff fails (502, timeout, etc.), the controller rolls back the job row to `status='failed'` so the partial unique index releases and the next trigger can succeed.
 
-**Why this architecture:** Puppeteer in a Vercel serverless function is fragile (cold-start, memory limits, Chromium binary), and the previous in-Node implementation was responsible for most of the server's complexity and production failures. Offloading to a long-lived Python worker means scraping runs on hardware sized for it, and the Node tier stays a thin orchestration layer.
+**Why this architecture:** Puppeteer in a Vercel function is fragile (cold-start, memory, Chromium binary) and drove most of the server's complexity and prod failures. A long-lived Python worker runs scraping on hardware sized for it and keeps the Node tier a thin orchestrator.
 
 **Worker handoff security**: `WORKER_SHARED_SECRET` Bearer token on every server→worker call. Job rows scoped by `started_by`; partial unique indexes prevent concurrent duplicate work at the DB level.
 
@@ -71,7 +71,10 @@ Routes are defined under `src/server/routes/`. Quick map:
 - `/api/scrape-user` — **JWT-authed** per-user refresh job (trigger / poll / cancel). Delegates to moviemaestro. Per-username rate limit 10 req / 5 min; poll 120 req / 60s per IP.
 - `/api/admin/refresh-rankings` — **admin only** bulk refresh, same delegation pattern.
 - `/api/comparison` — public read endpoints powering the compare + hater-rankings pages.
-- `/api/stats` — public, DB-only reads powering the Stats page. Rate-limited 200 req / 5 min per IP (skipped outside production). `top-films/:year?`, `rating-deviation/:year?`, and `total-ratings/:year?` share the optional Express-4 `:year?` shape (bare → all-time, `/:year` → that release year; 400 on a year outside 1870–2100). `total-ratings` powers the rating-distribution histogram, which calls it **all-time only** — the Stats year filter is deliberately scoped to the release-year sections (deviations + top-films lists), not the histogram or the headline count, which read as rating/watch *activity* and have no activity-date to scope by (`UserFilms.watched` is unpopulated). The `:year?` branch (inner join to `Films` on `film_slug` + `releaseYear`, dropping ratings on NULL/absent-release-year films; the bare query keeps **no** `Films` join so its total is unchanged and counts ratings whose film has no `Films` row) is retained for a future feature but is currently unused by the UI. `rating-deviation` returns the films whose Discord-scoped average diverges most above (`over`) and below (`under`) `Films.lb_rating`, one winner per side expanding to ≤3 on an exact tie; the sign gate is server-side, so `over` holds only positive-deviation films. Min ratings: **20** all-time, **10** per-year — higher than top-films' 5 because it is a raw extremum with no Bayesian weighting to damp low-N noise. `most-watched` returns every Discord-scoped film with **≥40 watchers** ("The BPD 40 Club"), most-watched first and **unbounded** (`dbGetTopUserFilms` with `minWatched: 40, limit: null`; `null` skips the `LIMIT`, `undefined` keeps the default 25) — powering the `/bpd-40-club` page, a responsive poster grid. (The API path stays `/api/stats/most-watched`.)
+- `/api/stats` — public, DB-only reads powering the Stats page. Rate-limited 200 req / 5 min per IP (skipped outside production). `top-films/:year?`, `rating-deviation/:year?`, and `total-ratings/:year?` share the optional Express-4 `:year?` shape (bare → all-time, `/:year` → that release year; 400 on a year outside 1870–2100); the year-scoped branch adds an inner join to `Films` on `film_slug` + `releaseYear`, while the bare query keeps **no** `Films` join so its total is unchanged and still counts rows whose film has no `Films` row.
+  - **The Stats year filter scopes only the release-year sections** — deviations + top-films lists. The histogram and the headline count (`user-films-count`, all-time, no `:year?`) stay all-time: they read as rating/watch *activity*, which there is no date to scope by (`UserFilms.watched` is unpopulated). `total-ratings` keeps its unused `:year?` branch for a future feature.
+  - `rating-deviation` — films whose Discord-scoped average diverges most above (`over`) and below (`under`) `Films.lb_rating`, one winner per side expanding to ≤3 on an exact tie; the sign gate is server-side. Min ratings **20** all-time / **10** per-year — higher than top-films' 5 because it's a raw extremum with no Bayesian weighting to damp low-N noise.
+  - `most-watched` — every Discord-scoped film with **≥40 watchers** ("The BPD 40 Club"), most-watched first and **unbounded** (`dbGetTopUserFilms` with `minWatched: 40, limit: null`; `null` skips the `LIMIT`, `undefined` keeps the default 25). Powers the `/bpd-40-club` poster grid; API path stays `/api/stats/most-watched`.
 - `/api/actor-graph` — public, **cache-through to TMDB** for the Six-Degrees feature:
   - `path-finder/:a1/:a2` — layer-by-layer BFS over `ag_acted_in` (one indexed self-join per layer, global visited map; O(V+E) over the connected component). Rate-limited tighter: 20 req / 5 min per IP.
   - `search?q=...` — merges DB hits (pg_trgm GIN, ILIKE wildcards `%`/`_`/`\` escaped) with TMDB `/search/person`+`/search/movie`. Either source degrades gracefully on the other's failure. `q` length clamped 2–80. Rate-limited 60 req / 5 min per IP.
@@ -79,7 +82,7 @@ Routes are defined under `src/server/routes/`. Quick map:
   - Public despite being cache-through writers: writes are bounded (top-15 cast per ingestion), source is TMDB (itself public), per-IP rate limiters cap abuse. Requires `TMDB_READ_API_TOKEN` (503 if unset).
 - `/api/users` — JWT-protected CRUD for app accounts (admin-only for list/edit/delete of others).
 - `/api/mfl` — Movie Fantasy League. The catalogue/member reads are **public**; the two writes are **admin only** and live under `/mfl/admin/*`.
-  - `GET /leaderboard` — public. Returns **two ranked lists** `{ official, all }`: `all` is every roster (the "Sicko Mode" tab), `official` is only rosters marked `is_official` (the "Standings" tab). **One row per roster** (a user with several rosters appears several times), ranked by total points descending. Totals reuse `dbGetMFLMovies`'s aggregation — the same `MFLScoringTally` rows, grouped by `roster_id` instead of by film — so a roster's rank matches the films table. Only rosters that hold films appear; a roster whose picks are all unscored still ranks at 0. Ties get **competition rank** (equal totals share a rank, the next distinct total skips), computed server-side **per list** so each ranks 1..n within itself; rows order total desc, then roster name asc, then lbusername asc. Each row carries `rank`, `rosterId`, `name`, `lbusername`, `displayName`, `totalPoints` — the client renders `name (lbusername)`.
+  - `GET /leaderboard` — public. Returns **two ranked lists** `{ official, all }`: `all` is every roster ("Sicko Mode" tab), `official` only the `is_official` ones ("Standings" tab). **One row per roster** (a multi-roster user appears several times), ranked by total points desc. Totals reuse `dbGetMFLMovies`'s `MFLScoringTally` aggregation grouped by `roster_id`, so ranks match the films table. Only rosters holding films appear; an all-unscored roster ranks at 0. Ties get **competition rank** computed **per list** (equal totals share a rank, the next distinct total skips); order is total desc, then name asc, then lbusername asc. Each row: `rank`, `rosterId`, `name`, `lbusername`, `displayName`, `totalPoints` — client renders `name (lbusername)`.
   - `GET /rosters/:rosterId` — **public**, read-only roster view: the roster's name, owner, and each film with its price and accumulated points, plus the roster total (same aggregation as `dbGetMFLMovies`, scoped to the roster). 404 when no such roster; an existing empty roster is a 200 with `picks: []`. Powers the `/mfl/roster/:rosterId` page the standings link to.
   - `GET /rosters`, `POST /rosters`, `GET /rosters/:rosterId/picks`, `PUT /rosters/:rosterId`, `DELETE /rosters/:rosterId` — **JWT-authed** roster CRUD. Identity resolves from the JWT (never the request body); every `:rosterId` route verifies the roster belongs to the caller and returns **404** otherwise, so an unowned id can't be probed. `POST` takes `{name, filmSlugs?, isOfficial?}` and returns `201 {rosterId}`; `PUT` takes `{name?, filmSlugs?, isOfficial?}` (at least one). `isOfficial: true` makes this the caller's official roster and clears the previous one in the same transaction; `false` clears it, leaving none. A duplicate name **or** the 10-roster cap is **409**; a slug not in `MFLFilms` is **404**; the account with no linked `lbusername` is **409**. Picks are replaced whole in one transaction, so a rejected submit leaves the previous picks intact. Integrity cap: ≤20 films per roster, no duplicate slug (roster size/budget are the client's rules). `GET /rosters` returns `{rosterId, name, isOfficial}` per roster.
   - `POST /admin/movie-score`, `DELETE /admin/movie-score/:scoringId` — both write `MFLScoringTally`, a film's award of one scoring metric, despite the legacy "scoring metric" naming that survived until bpdiscord-ayy. A repeat award hits the `mfl_scoring_tally_film_metric_key` constraint and returns **409**; `points_awarded` of 0 is legitimate, so the handler validates types rather than truthiness. Editing the metrics themselves is bpdiscord-s6t and does not exist yet.
@@ -208,9 +211,9 @@ git push
 
 GitHub then sees the branch as mergeable.
 
-This matters most for `.beads/issues.jsonl`. It is a generated export that `bd` rewrites on every command with unstable line order — the five `bd remember` memory records come out of a Go map, so their order changes on every single command while the issue records stay put. A **clean filter** canonicalises the file to sorted order so git never sees that churn, and a **merge driver** unions by record id so branches touching unrelated issues don't collide. The merge driver works **only locally**, because GitHub cannot run repo-supplied merge code. GitHub will still report the file as conflicted; ignore that and merge locally.
+This matters most for `.beads/issues.jsonl`, a generated export that `bd` rewrites with unstable line order. A **clean filter** canonicalises it to sorted order so git never sees that churn, and a **merge driver** unions by record id so branches touching unrelated issues don't collide. The merge driver works **only locally** (GitHub can't run repo-supplied merge code), so GitHub may still report the file as conflicted — ignore that and merge locally.
 
-Resolving it by hand duplicates records. `main` was carrying a duplicated memory from an earlier hand-resolution. If you ever must, take either side and run `bd export --all -o .beads/issues.jsonl` — the local Dolt DB is the source of truth.
+Resolving it by hand duplicates records. If you must, take either side and run `bd export --all -o .beads/issues.jsonl` — the local Dolt DB is the source of truth.
 
 One-time per clone. Both are named by `.gitattributes`, and git **silently skips** either one when it isn't configured — an unconfigured clone commits unsorted exports and reintroduces the churn for everyone else:
 
@@ -223,10 +226,6 @@ git config filter.beads-jsonl.smudge cat
 
 The filter only changes what git stores; the working-tree file stays in whatever order `bd` last wrote. `git diff` on a file `bd` has just rewritten should be empty — if it isn't, check `git check-attr filter -- .beads/issues.jsonl` and the config above. `LC_ALL=C` is required: a locale-dependent sort is not the same canonical form on every machine.
 
-### Before opening a PR
-
-Scan the diff for comment blocks over two lines that restate the code, and delete them.
-
 ### PR descriptions
 
 **Hard ceiling: ~200 words.** A reviewer should get the shape of the change in about 30 seconds. Follow `.github/pull_request_template.md`.
@@ -236,8 +235,6 @@ Scan the diff for comment blocks over two lines that restate the code, and delet
 - Cut process narration ("first I…, then I…"), restatements of the diff, and measurements that support a decision rather than being the decision.
 - Detailed reasoning that doesn't fit goes in the **commit body**, not the description. The description is for reviewing; the commit body is for the archaeology later.
 - **Keep it self-contained.** Describe the change on its own terms, so a reviewer needs nothing but the diff and the description. Don't name other issues, branches or PRs to carry the explanation — say "a later change drops this table", not the issue id. Cite one only when it is a real dependency a reviewer must act on, such as a PR that has to merge first. Issue ids belong in the title and the commit trailer, where they are already tracked.
-
-The comment policy sends narrative out of source and into the PR. That is right, but the PR is not an unbounded destination — the same discipline applies.
 
 ## Pull request size
 
@@ -265,7 +262,7 @@ A PR carrying files you did not touch means the branch was cut from the wrong ba
 
 ## Keeping this file in sync
 
-AGENTS.md is the source-of-truth for engineers (and AI agents) starting on the project. Doc-code drift is a real cost — e.g. a React 18 / React 19 mismatch caught during Stage 3 planning, where the docs said 18 but the codebase was already on 19.
+AGENTS.md is the source-of-truth for engineers (and AI agents) starting on the project, so doc-code drift is a real cost (e.g. docs saying React 18 while the code is on 19).
 
 Before opening any PR, check whether the changes affect anything documented here. If yes, update AGENTS.md as part of the **same PR**.
 
@@ -275,27 +272,7 @@ Watch for: stack versions (React, Tailwind, Drizzle, etc.), table/schema/FK/RLS 
 
 ## Non-Interactive Shell Commands
 
-**ALWAYS use non-interactive flags** with file operations to avoid hanging on confirmation prompts.
-
-Shell commands like `cp`, `mv`, and `rm` may be aliased to include `-i` (interactive) mode on some systems, causing the agent to hang indefinitely waiting for y/n input.
-
-**Use these forms instead:**
-```bash
-# Force overwrite without prompting
-cp -f source dest           # NOT: cp source dest
-mv -f source dest           # NOT: mv source dest
-rm -f file                  # NOT: rm file
-
-# For recursive operations
-rm -rf directory            # NOT: rm -r directory
-cp -rf source dest          # NOT: cp -r source dest
-```
-
-**Other commands that may prompt:**
-- `scp` - use `-o BatchMode=yes` for non-interactive
-- `ssh` - use `-o BatchMode=yes` to fail instead of prompting
-- `apt-get` - use `-y` flag
-- `brew` - use `HOMEBREW_NO_AUTO_UPDATE=1` env var
+`cp`/`mv`/`rm` may be aliased to `-i` and hang waiting for y/n — always force: `cp -f`, `mv -f`, `rm -f`, `rm -rf`, `cp -rf`. Other prompts: `scp`/`ssh` need `-o BatchMode=yes`, `apt-get` needs `-y`, `brew` needs `HOMEBREW_NO_AUTO_UPDATE=1`.
 
 <!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:ca08a54f -->
 ## Beads Issue Tracker
