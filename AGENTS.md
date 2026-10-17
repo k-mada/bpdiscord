@@ -177,6 +177,7 @@ Layout notes:
 - `20260924151502_mfl_official_roster.sql` — adds `MFLRosters.is_official` (default false), backfills each user's oldest roster as official, and creates the partial unique index `mfl_rosters_one_official_per_user (lbusername) WHERE is_official`.
 - `20261004195702_merge_case_duplicate_doogiefeeneydo.sql` — one-off data merge of the lone case-duplicate profile (`DoogieFeeneyDO` → `doogiefeeneydo`): copies NULL-only scalars onto the lowercase survivor, moves its extra `UserFilms`/`UserRatings` (`ON CONFLICT DO NOTHING`), deletes the loser. Idempotent.
 - `20261004204232_canonicalize_lbusername_lowercase.sql` — lowercases the remaining mixed-case `Users` keys, adds `ON UPDATE CASCADE` to the four `Users.lbusername` FKs (so the rename propagates), and installs the `lowercase_lbusername` `BEFORE INSERT` trigger that keeps every future insert lowercase.
+- `20261016195046_merge_duplicate_obsession_slug.sql` — one-off data merge of a duplicate film slug (`obsession-2025-2` → `obsession-2025`, both TMDB 1339713, re-slugged by Letterboxd mid-scrape): repoints the lone dash2-only `UserFilms` row to the canonical slug, drops the overlapping dash2 rows, deletes the stale `Films` row. Survivor ratings win on conflict. Idempotent.
 
 Local: `supabase start`, `supabase status`, `supabase db reset`, `supabase migration new <name>`.
 
