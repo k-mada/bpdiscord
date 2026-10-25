@@ -15,6 +15,7 @@ export interface MockReqResArgs {
   body?: Record<string, unknown>;
   params?: Record<string, string>;
   query?: Record<string, string>;
+  headers?: Record<string, string>;
   /** Populated as the authenticateToken middleware would. */
   user?: { id: string; email?: string; user_metadata?: Record<string, unknown> };
 }
@@ -52,6 +53,7 @@ export function mockReqRes(args: MockReqResArgs = {}): MockedReqRes {
     body: args.body ?? {},
     params: args.params ?? {},
     query: args.query ?? {},
+    headers: args.headers ?? {},
     user: args.user,
   } as unknown as Request;
 
