@@ -48,8 +48,8 @@ const getTmdbClient = (): AxiosInstance => {
   return tmdbClient;
 };
 
-class TmdbUnavailableError extends Error {}
-class TmdbNotFoundError extends Error {}
+export class TmdbUnavailableError extends Error {}
+export class TmdbNotFoundError extends Error {}
 
 const posterUrl = (path: string | null | undefined, size = "w342") =>
   path ? `${TMDB_IMAGE_BASE}/${size}${path}` : null;
@@ -636,7 +636,7 @@ async function dbSearchMovies(
 
 type HandlerError = { status: number; body: ApiResponse };
 
-function classifyError(error: unknown, context: string): HandlerError {
+export function classifyError(error: unknown, context: string): HandlerError {
   if (error instanceof TmdbNotFoundError) {
     return { status: 404, body: { error: "Not found" } };
   }
