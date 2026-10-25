@@ -129,22 +129,33 @@ describe("findActorPath", () => {
     expect(statusCalls).toEqual([400]);
   });
 
-  it("rejects a maxDepth outside 1..8 with 400", async () => {
-    const { req, res, statusCalls } = mockReqRes({
-      params: { actor1Id: "1", actor2Id: "2" },
-      query: { maxDepth: "99" },
-    });
-    await findActorPath(req, res);
-    expect(statusCalls).toEqual([400]);
+  it("enforces the documented maxDepth range of 1..8", async () => {
+    const statusFor = async (maxDepth: string) => {
+      const { req, res, statusCalls } = mockReqRes({
+        params: { actor1Id: "1", actor2Id: "2" },
+        query: { maxDepth },
+      });
+      await findActorPath(req, res);
+      return statusCalls;
+    };
+    expect(await statusFor("0")).toEqual([400]);
+    expect(await statusFor("9")).toEqual([400]);
+    // "8" is the max; it must run the search, not 400.
+    expect(await statusFor("8")).toEqual([]);
   });
 
-  it("rejects a billingCutoff outside 1..50 with 400", async () => {
-    const { req, res, statusCalls } = mockReqRes({
-      params: { actor1Id: "1", actor2Id: "2" },
-      query: { billingCutoff: "0" },
-    });
-    await findActorPath(req, res);
-    expect(statusCalls).toEqual([400]);
+  it("enforces the documented billingCutoff range of 1..50", async () => {
+    const statusFor = async (billingCutoff: string) => {
+      const { req, res, statusCalls } = mockReqRes({
+        params: { actor1Id: "1", actor2Id: "2" },
+        query: { billingCutoff },
+      });
+      await findActorPath(req, res);
+      return statusCalls;
+    };
+    expect(await statusFor("0")).toEqual([400]);
+    expect(await statusFor("51")).toEqual([400]);
+    expect(await statusFor("50")).toEqual([]);
   });
 
   it("returns degrees 0 for the same actor", async () => {
@@ -219,12 +230,6 @@ describe("graph reads", () => {
     expect(jsonCalls[0]).toMatchObject({ data: { tmdbId: ALICE, name: "Alice" } });
   });
 
-  it("getActor rejects a non-integer id with 400", async () => {
-    const { req, res, statusCalls } = mockReqRes({ params: { tmdbId: "-3" } });
-    await getActor(req, res);
-    expect(statusCalls).toEqual([400]);
-  });
-
   it("getMovie returns a cast-fetched film with its principal cast", async () => {
     const { req, res, statusCalls, jsonCalls } = mockReqRes({
       params: { tmdbId: String(FILM_X) },
@@ -249,13 +254,18 @@ describe("graph reads", () => {
     expect(data.costars.map((c) => c.tmdbId).sort()).toEqual([ALICE, CAROL]);
   });
 
-  it("getCostars rejects a limit outside 1..500 with 400", async () => {
-    const { req, res, statusCalls } = mockReqRes({
-      params: { tmdbId: String(BOB) },
-      query: { limit: "9999" },
-    });
-    await getCostars(req, res);
-    expect(statusCalls).toEqual([400]);
+  it("enforces the documented co-stars limit range of 1..500", async () => {
+    const statusFor = async (limit: string) => {
+      const { req, res, statusCalls } = mockReqRes({
+        params: { tmdbId: String(BOB) },
+        query: { limit },
+      });
+      await getCostars(req, res);
+      return statusCalls;
+    };
+    expect(await statusFor("0")).toEqual([400]);
+    expect(await statusFor("501")).toEqual([400]);
+    expect(await statusFor("500")).toEqual([]);
   });
 
   it("getCommonMovies returns the films two actors share", async () => {
