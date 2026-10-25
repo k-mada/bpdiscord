@@ -30,7 +30,7 @@ import { createSupabaseAdminClient } from '../config/database';
 import { authorizeAdmin } from '../middleware/auth';
 import { db } from '../db';
 import { appUsers, users, userScrapeJobs } from '../db/schema';
-import { assertTestEnvironment, resetDatabase, closeDatabase } from './setup';
+import { assertTestEnvironment, resetDatabase, closeDatabase, seedAuthUser } from './setup';
 
 // Stable IDs so tests can reference the same fixture across assertions.
 const ADMIN_ID = '00000000-0000-0000-0000-000000000001';
@@ -76,14 +76,6 @@ function adminReq(extras: Parameters<typeof mockReqRes>[0]): MockedResponse {
       ...extras.user,
     } as { id: string; user_metadata: Record<string, unknown> },
   });
-}
-
-async function seedAuthUser(id: string, email: string): Promise<void> {
-  await db.execute(sql`
-    INSERT INTO auth.users (id, email)
-    VALUES (${id}::uuid, ${email})
-    ON CONFLICT (id) DO NOTHING
-  `);
 }
 
 async function seedAppUser(id: string, lbusername: string | null = null): Promise<void> {

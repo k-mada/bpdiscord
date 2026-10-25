@@ -85,6 +85,17 @@ export async function seedDatabase(): Promise<void> {
 }
 
 /**
+ * Seed a Supabase auth.users row. Idempotent — controller tests that touch
+ * app_users or a profile need the matching auth account to exist first.
+ */
+export async function seedAuthUser(id: string, email: string): Promise<void> {
+  await db.execute(sql`
+    INSERT INTO auth.users (id, email) VALUES (${id}::uuid, ${email})
+    ON CONFLICT (id) DO NOTHING
+  `);
+}
+
+/**
  * Reset database to clean state with test fixtures
  */
 export async function resetDatabase(): Promise<void> {

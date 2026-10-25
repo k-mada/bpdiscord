@@ -27,7 +27,7 @@ import {
   mflRosters,
   mflUserPicks,
 } from "../db/schema";
-import { assertTestEnvironment, cleanDatabase, closeDatabase } from "./setup";
+import { assertTestEnvironment, cleanDatabase, closeDatabase, seedAuthUser } from "./setup";
 
 const ADMIN_ID = "00000000-0000-0000-0000-0000000000a1";
 const TARGET_ID = "00000000-0000-0000-0000-0000000000a2";
@@ -44,13 +44,6 @@ function installDeleteUserMock(): DeleteUserFn {
     auth: { admin: { deleteUser } },
   } as never);
   return deleteUser;
-}
-
-async function seedAuthUser(id: string, email: string): Promise<void> {
-  await db.execute(sql`
-    INSERT INTO auth.users (id, email) VALUES (${id}::uuid, ${email})
-    ON CONFLICT (id) DO NOTHING
-  `);
 }
 
 async function seedProfile(lbusername: string): Promise<void> {
