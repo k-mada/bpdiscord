@@ -60,7 +60,10 @@ describe("authenticateToken", () => {
 
     expect(getUser).toHaveBeenCalledWith("good-token");
     expect(req.user).toEqual(user);
+    // The per-request client must be scoped to the caller's token so RLS
+    // runs as that user, not anonymously.
     expect(req.supabase).toBeDefined();
+    expect(createSupabaseClient).toHaveBeenCalledWith("good-token");
     expect(next).toHaveBeenCalledTimes(1);
     expect(statusCalls).toEqual([]);
   });
