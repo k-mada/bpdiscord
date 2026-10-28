@@ -473,6 +473,110 @@ describe('UserAdminController.update', () => {
     });
   });
 
+  it('updates role via app_metadata, preserving sibling keys, never user_metadata', async () => {
+    await seedAuthUser(TARGET_ID, 'useradmin-test-role@example.test');
+    await seedAppUser(TARGET_ID);
+
+    const sdk = installSdkMock();
+    sdk.auth.admin.getUserById.mockResolvedValue({
+      data: {
+        user: {
+          id: TARGET_ID,
+          email: 'useradmin-test-role@example.test',
+          user_metadata: { name: 'Target' },
+          app_metadata: { role: 'member', provider: 'email' },
+        },
+      },
+      error: null,
+    });
+    sdk.auth.admin.updateUserById.mockResolvedValue({
+      data: { user: { id: TARGET_ID } },
+      error: null,
+    });
+
+    const { req, res, statusCalls, jsonCalls } = adminReq({
+      params: { id: TARGET_ID },
+      body: { role: 'editor' },
+    });
+    await UserAdminController.update(req, res);
+
+    expect(statusCalls).toEqual([200]);
+    expect(sdk.auth.admin.updateUserById).toHaveBeenCalledWith(TARGET_ID, {
+      app_metadata: { role: 'editor', provider: 'email' },
+    });
+    expect(jsonCalls[0]).toMatchObject({ data: { role: 'editor' } });
+  });
+
+  it('rejects an invalid role with 400 and no SDK write', async () => {
+    const sdk = installSdkMock();
+
+    const { req, res, statusCalls } = adminReq({
+      params: { id: TARGET_ID },
+      body: { role: 'superuser' },
+    });
+    await UserAdminController.update(req, res);
+
+    expect(statusCalls).toEqual([400]);
+    expect(sdk.auth.admin.updateUserById).not.toHaveBeenCalled();
+    // 400 is returned before the existence lookup.
+    expect(sdk.auth.admin.getUserById).not.toHaveBeenCalled();
+  });
+
+  it('blocks an admin changing their own role (403)', async () => {
+    await seedAuthUser(ADMIN_ID, 'useradmin-test-selfrole@example.test');
+    await seedAppUser(ADMIN_ID);
+
+    const sdk = installSdkMock();
+    sdk.auth.admin.getUserById.mockResolvedValue({
+      data: {
+        user: {
+          id: ADMIN_ID,
+          email: 'useradmin-test-selfrole@example.test',
+          app_metadata: { role: 'admin' },
+        },
+      },
+      error: null,
+    });
+
+    const { req, res, statusCalls, jsonCalls } = adminReq({
+      params: { id: ADMIN_ID },
+      body: { role: 'member' },
+    });
+    await UserAdminController.update(req, res);
+
+    expect(statusCalls).toEqual([403]);
+    expect(jsonCalls[0]).toMatchObject({
+      error: expect.stringContaining('your own role'),
+    });
+    expect(sdk.auth.admin.updateUserById).not.toHaveBeenCalled();
+  });
+
+  it('allows an admin to set their own role to the same value (no-op, no write)', async () => {
+    await seedAuthUser(ADMIN_ID, 'useradmin-test-selfnoop@example.test');
+    await seedAppUser(ADMIN_ID);
+
+    const sdk = installSdkMock();
+    sdk.auth.admin.getUserById.mockResolvedValue({
+      data: {
+        user: {
+          id: ADMIN_ID,
+          email: 'useradmin-test-selfnoop@example.test',
+          app_metadata: { role: 'admin' },
+        },
+      },
+      error: null,
+    });
+
+    const { req, res, statusCalls } = adminReq({
+      params: { id: ADMIN_ID },
+      body: { role: 'admin' },
+    });
+    await UserAdminController.update(req, res);
+
+    expect(statusCalls).toEqual([200]);
+    expect(sdk.auth.admin.updateUserById).not.toHaveBeenCalled();
+  });
+
   it('updates email with email_confirm:true (skips confirmation flow)', async () => {
     await seedAuthUser(TARGET_ID, 'useradmin-test-email@example.test');
     await seedAppUser(TARGET_ID);

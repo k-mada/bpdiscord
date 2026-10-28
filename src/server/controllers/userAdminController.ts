@@ -5,6 +5,11 @@ import { db } from "../db";
 import { appUsers, users, userScrapeJobs } from "../db/schema";
 import { LBUSERNAME_FORMAT, normalizeLbusername } from "../lib/lbusername";
 import { deleteUserCompletely } from "../lib/deleteUser";
+import { Role } from "../types";
+
+const ROLES: readonly Role[] = ["member", "editor", "admin"];
+const isRole = (value: unknown): value is Role =>
+  typeof value === "string" && (ROLES as readonly string[]).includes(value);
 
 // No pagination yet — a response of exactly this many rows logs a warning
 // so we find out before accounts get silently truncated.
@@ -14,6 +19,7 @@ interface AccountView {
   id: string;
   email: string | null;
   name: string | null;
+  role: Role;
   lbusername: string | null;
   createdAt: string | null;
   updatedAt: string | null;
@@ -23,6 +29,7 @@ type AuthUserLike = {
   id: string;
   email?: string | null;
   user_metadata?: { name?: string | null } & Record<string, unknown>;
+  app_metadata?: { role?: Role } & Record<string, unknown>;
 };
 
 type AppUsersRow = {
@@ -37,6 +44,9 @@ function mergeAccount(authUser: AuthUserLike, appUserRow: AppUsersRow | null): A
     id: authUser.id,
     email: authUser.email ?? null,
     name: (authUser.user_metadata?.name as string | undefined) ?? null,
+    // Absent app_metadata.role (e.g. a post-migration signup) is the base
+    // role, so the admin table always shows a concrete value.
+    role: authUser.app_metadata?.role ?? "member",
     lbusername: appUserRow?.lbusername ?? null,
     createdAt: appUserRow?.createdAt?.toISOString() ?? null,
     updatedAt: appUserRow?.updatedAt?.toISOString() ?? null,
@@ -115,11 +125,17 @@ export class UserAdminController {
   static async update(req: Request, res: Response): Promise<void> {
     try {
       const id = req.params.id!;
-      const { email, name, lbusername: rawLbusername } = req.body as {
+      const { email, name, role: rawRole, lbusername: rawLbusername } = req.body as {
         email?: string;
         name?: string;
+        role?: unknown;
         lbusername?: string | null;
       };
+
+      if (rawRole !== undefined && !isRole(rawRole)) {
+        res.status(400).json({ error: "Invalid role." });
+        return;
+      }
 
       // Resolve the lbusername intent. `undefined` = no change. `null` =
       // unlink. A string is normalized + format-checked.
@@ -151,6 +167,22 @@ export class UserAdminController {
         return;
       }
 
+      // Resolve the role intent against the current role so a no-op passes.
+      // An admin may not change their OWN role — blocks self-demotion and the
+      // last-admin lockout it would cause.
+      let roleUpdate: Role | undefined;
+      if (rawRole !== undefined) {
+        const currentRole =
+          (currentData.user.app_metadata?.role as Role | undefined) ?? "member";
+        if (rawRole !== currentRole) {
+          if (req.user!.id === id) {
+            res.status(403).json({ error: "You cannot change your own role." });
+            return;
+          }
+          roleUpdate = rawRole;
+        }
+      }
+
       // Fast-path only; the unique constraint is the race-safe gate. The
       // response omits the existing claimer to keep PII out of error paths.
       if (lbusernameUpdate !== null && lbusernameUpdate !== undefined) {
@@ -172,14 +204,16 @@ export class UserAdminController {
         }
       }
 
-      // Email / name update via Supabase admin SDK. We merge the existing
-      // user_metadata so we don't accidentally wipe `role: "admin"` etc.
+      // Email / name / role update via Supabase admin SDK. We merge the
+      // existing metadata so we don't wipe sibling keys. Role goes into
+      // app_metadata (service-role-only), never user_metadata.
       let requiresReauth = false;
-      if (email !== undefined || name !== undefined) {
+      if (email !== undefined || name !== undefined || roleUpdate !== undefined) {
         const updatePayload: {
           email?: string;
           email_confirm?: boolean;
           user_metadata?: Record<string, unknown>;
+          app_metadata?: Record<string, unknown>;
         } = {};
 
         if (email !== undefined) {
@@ -197,6 +231,13 @@ export class UserAdminController {
           updatePayload.user_metadata = {
             ...(currentData.user.user_metadata ?? {}),
             name,
+          };
+        }
+
+        if (roleUpdate !== undefined) {
+          updatePayload.app_metadata = {
+            ...(currentData.user.app_metadata ?? {}),
+            role: roleUpdate,
           };
         }
 
@@ -283,6 +324,10 @@ export class UserAdminController {
           name !== undefined
             ? { ...(currentData.user.user_metadata ?? {}), name }
             : (currentData.user.user_metadata ?? {}),
+        app_metadata:
+          roleUpdate !== undefined
+            ? { ...(currentData.user.app_metadata ?? {}), role: roleUpdate }
+            : (currentData.user.app_metadata ?? {}),
       };
       const refreshedAppRow = await db
         .select()

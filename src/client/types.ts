@@ -315,12 +315,15 @@ export interface UserScrapeJob extends RefreshJob {
   lbusername: string;
 }
 
+export type AccountRole = "member" | "editor" | "admin";
+
 // GET /api/admin/users — auth.users joined with app_users by id. Canonical
 // mapping lives in userAdminController.mergeAccount.
 export interface AccountView {
   id: string;
   email: string | null;
   name: string | null;
+  role: AccountRole;
   lbusername: string | null;
   createdAt: string | null;
   updatedAt: string | null;
@@ -331,6 +334,7 @@ export interface AccountView {
 export interface AccountUpdateRequest {
   email?: string;
   name?: string;
+  role?: AccountRole;
   lbusername?: string | null;
 }
 

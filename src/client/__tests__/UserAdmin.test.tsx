@@ -40,6 +40,7 @@ const accounts: AccountView[] = [
     id: "admin-id",
     email: "admin@example.com",
     name: "Admin",
+    role: "admin",
     lbusername: "admin-lb",
     createdAt: "2026-01-01T00:00:00.000Z",
     updatedAt: "2026-01-01T00:00:00.000Z",
@@ -48,6 +49,7 @@ const accounts: AccountView[] = [
     id: "bob-id",
     email: "bob@example.com",
     name: "Bob",
+    role: "member",
     lbusername: null,
     createdAt: "2026-01-02T00:00:00.000Z",
     updatedAt: "2026-01-02T00:00:00.000Z",
@@ -56,6 +58,7 @@ const accounts: AccountView[] = [
     id: "carol-id",
     email: "carol@example.com",
     name: "Carol",
+    role: "editor",
     lbusername: "carol-lb",
     createdAt: "2026-01-03T00:00:00.000Z",
     updatedAt: "2026-01-03T00:00:00.000Z",
@@ -191,6 +194,7 @@ describe("UserAdmin — edit flow", () => {
         id: "bob-id",
         email: "bob@example.com",
         name: "Bobby",
+        role: "member",
         lbusername: "unclaimed-1",
         createdAt: "2026-01-02T00:00:00.000Z",
         updatedAt: "2026-01-04T00:00:00.000Z",
@@ -241,6 +245,61 @@ describe("UserAdmin — edit flow", () => {
     });
   });
 
+  it("changes a user's role and sends it in the patch", async () => {
+    vi.mocked(apiService.updateAccount).mockResolvedValue({
+      data: {
+        id: "bob-id",
+        email: "bob@example.com",
+        name: "Bob",
+        role: "editor",
+        lbusername: null,
+        createdAt: "2026-01-02T00:00:00.000Z",
+        updatedAt: "2026-01-04T00:00:00.000Z",
+      },
+    });
+
+    renderPage();
+    await waitFor(() =>
+      expect(screen.getByText("bob@example.com")).toBeInTheDocument(),
+    );
+
+    const bobRow = screen.getByText("bob@example.com").closest("tr")!;
+    await userEvent.click(within(bobRow).getByRole("button", { name: "Edit" }));
+
+    await userEvent.selectOptions(screen.getByLabelText("Role"), "editor");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() =>
+      expect(apiService.updateAccount).toHaveBeenCalledWith(
+        "bob-id",
+        { role: "editor" },
+        TOKEN,
+      ),
+    );
+
+    await waitFor(() => {
+      const newBobRow = screen.getByText("bob@example.com").closest("tr")!;
+      expect(within(newBobRow).getByText("editor")).toBeInTheDocument();
+    });
+  });
+
+  it("disables the role dropdown when editing your own account", async () => {
+    renderPage();
+    await waitFor(() =>
+      expect(screen.getByText("admin@example.com")).toBeInTheDocument(),
+    );
+
+    const adminRow = screen.getByText("admin@example.com").closest("tr")!;
+    await userEvent.click(
+      within(adminRow).getByRole("button", { name: "Edit" }),
+    );
+
+    expect(screen.getByLabelText("Role")).toBeDisabled();
+    expect(
+      screen.getByText(/can't change your own role/i),
+    ).toBeInTheDocument();
+  });
+
   it("does not call the API when nothing changed", async () => {
     renderPage();
     await waitFor(() =>
@@ -266,6 +325,7 @@ describe("UserAdmin — edit flow", () => {
         id: "carol-id",
         email: "carol@example.com",
         name: "Carol",
+        role: "editor",
         lbusername: null,
         createdAt: "2026-01-03T00:00:00.000Z",
         updatedAt: "2026-01-04T00:00:00.000Z",

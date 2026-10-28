@@ -11,7 +11,13 @@ import { Button, buttonVariants } from "../ui/Button";
 import { Modal, ModalBody, ModalHeader } from "../Modal";
 import { cn } from "../../lib/utils";
 import Spinner from "../Spinner";
-import type { AccountUpdateRequest, AccountView } from "../../types";
+import type { AccountRole, AccountUpdateRequest, AccountView } from "../../types";
+
+const ROLE_OPTIONS: { value: AccountRole; label: string }[] = [
+  { value: "member", label: "Member" },
+  { value: "editor", label: "Editor" },
+  { value: "admin", label: "Admin" },
+];
 import { Notification } from "../ui/Notification";
 
 // UX-only pre-check. Server is the source of truth — keep in sync with
@@ -121,6 +127,12 @@ const UserAdmin = () => {
                   scope="col"
                   className="py-3 px-4 text-letterboxd-text-secondary font-medium"
                 >
+                  Role
+                </th>
+                <th
+                  scope="col"
+                  className="py-3 px-4 text-letterboxd-text-secondary font-medium"
+                >
                   Letterboxd
                 </th>
                 <th
@@ -148,6 +160,9 @@ const UserAdmin = () => {
                   </td>
                   <td className="py-3 px-4 text-letterboxd-text-primary">
                     {a.name ?? "—"}
+                  </td>
+                  <td className="py-3 px-4 text-letterboxd-text-primary capitalize">
+                    {a.role}
                   </td>
                   <td className="py-3 px-4 text-letterboxd-text-primary">
                     {a.lbusername ? (
@@ -231,6 +246,7 @@ const EditAccountModal = ({
 }: EditAccountModalProps) => {
   const [email, setEmail] = useState(account.email ?? "");
   const [name, setName] = useState(account.name ?? "");
+  const [role, setRole] = useState<AccountRole>(account.role);
   const [lbusername, setLbusername] = useState(account.lbusername ?? "");
   const [submitting, setSubmitting] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -254,6 +270,7 @@ const EditAccountModal = ({
 
     if (trimmedEmail !== (account.email ?? "")) patch.email = trimmedEmail;
     if (trimmedName !== (account.name ?? "")) patch.name = trimmedName;
+    if (role !== account.role) patch.role = role;
     if (trimmedLb !== (account.lbusername ?? "")) {
       patch.lbusername = trimmedLb.length === 0 ? null : trimmedLb;
     }
@@ -342,6 +359,37 @@ const EditAccountModal = ({
               disabled={submitting}
               className="w-full"
             />
+          </div>
+
+          <div>
+            <label
+              htmlFor="edit-role"
+              className="block text-sm font-medium text-letterboxd-text-secondary mb-2"
+            >
+              Role
+            </label>
+            <select
+              id="edit-role"
+              value={role}
+              onChange={(e) => setRole(e.target.value as AccountRole)}
+              disabled={submitting || isSelf}
+              aria-describedby={isSelf ? "edit-role-help" : undefined}
+              className="input-field w-full"
+            >
+              {ROLE_OPTIONS.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+            {isSelf && (
+              <p
+                id="edit-role-help"
+                className="text-xs text-letterboxd-text-muted mt-1"
+              >
+                You can't change your own role. Another admin must do it.
+              </p>
+            )}
           </div>
 
           <div>
