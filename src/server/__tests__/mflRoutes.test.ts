@@ -28,15 +28,15 @@ describe("mflRoutes wiring", () => {
     ["POST", "/admin/movie-score"],
     ["DELETE", "/admin/movie-score/:scoringId"],
   ])(
-    "gates %s %s behind authenticateToken then authorizeAdmin",
+    "gates %s %s behind authenticateToken then authorizeEditor",
     (method, path) => {
       const route = routes.find((r) => r.method === method && r.path === path)!;
 
       expect(route.middleware).toContain("authenticateToken");
-      expect(route.middleware).toContain("authorizeAdmin");
-      // Order matters: authorizeAdmin reads req.user, which only authenticateToken sets.
+      expect(route.middleware).toContain("authorizeEditor");
+      // Order matters: authorizeEditor reads req.user, which only authenticateToken sets.
       expect(route.middleware.indexOf("authenticateToken")).toBeLessThan(
-        route.middleware.indexOf("authorizeAdmin"),
+        route.middleware.indexOf("authorizeEditor"),
       );
     },
   );

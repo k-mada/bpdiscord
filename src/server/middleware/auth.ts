@@ -87,3 +87,17 @@ export const authorizeAdmin = (
 
   res.status(403).json({ error: "Admin access required" });
 };
+
+export const authorizeEditor = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void => {
+  const role = resolveRole(req.user);
+  if (role === "editor" || role === "admin") {
+    next();
+    return;
+  }
+
+  res.status(403).json({ error: "Editor access required" });
+};

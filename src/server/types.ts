@@ -12,7 +12,7 @@ export interface UpdateUserRequest {
   email?: string;
 }
 
-export type Role = "admin" | "member";
+export type Role = "admin" | "editor" | "member";
 
 export interface SupabaseUser {
   id: string;
