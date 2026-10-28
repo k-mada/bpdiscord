@@ -20,7 +20,7 @@ const getMetricById = (
 
 const MFLAdmin = () => {
   const { token, user, loading: authLoading } = useAuth();
-  const isAdmin = user?.role === "admin";
+  const canEditScores = user?.role === "admin" || user?.role === "editor";
   const {
     movies,
     scoringMetrics: rawScoringMetrics,
@@ -208,14 +208,14 @@ const MFLAdmin = () => {
     );
   }
 
-  if (!isAdmin) {
+  if (!canEditScores) {
     // Same treatment as admin/UserAdmin.tsx. UX only — the real gate is
-    // authorizeAdmin on /api/mfl/admin/*.
+    // authorizeEditor on /api/mfl/admin/*.
     return (
       <Card className="border rounded-lg border-letterboxd-error-surface/60 bg-letterboxd-error-surface/20 text-letterboxd-text-primary">
         <p className="font-semibold text-letterboxd-error">Access denied</p>
         <p className="text-letterboxd-text-primary text-sm mt-1">
-          This page is only available to admin accounts.
+          This page is only available to editor and admin accounts.
         </p>
       </Card>
     );

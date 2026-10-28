@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { authenticateToken, authorizeAdmin } from "../middleware/auth";
+import { authenticateToken, authorizeEditor } from "../middleware/auth";
 import { handleValidationErrors } from "../middleware/errorHandler";
 import { validateIntParam } from "../middleware/validation";
 import {
@@ -60,18 +60,19 @@ router.delete(
   deleteRoster,
 );
 
-// Admin — per-route middleware, not router.use, because the reads above stay
-// public.
+// Editor or admin — per-route middleware, not router.use, because the reads
+// above stay public. Scoring is an editor-grantable capability; the path stays
+// /admin/* for backwards compatibility.
 router.post(
   "/admin/movie-score",
   authenticateToken,
-  authorizeAdmin,
+  authorizeEditor,
   upsertMflMovieScore,
 );
 router.delete(
   "/admin/movie-score/:scoringId",
   authenticateToken,
-  authorizeAdmin,
+  authorizeEditor,
   ...validateIntParam("scoringId"),
   handleValidationErrors,
   deleteMflMovieScore,

@@ -25,6 +25,7 @@ vi.mock("../config/database", async () => {
 import {
   authenticateToken,
   authorizeAdmin,
+  authorizeEditor,
   authorizeOwnerOrAdmin,
 } from "../middleware/auth";
 import { createSupabaseClient } from "../config/database";
@@ -171,6 +172,53 @@ describe("authorizeAdmin", () => {
     const next = vi.fn();
 
     authorizeAdmin(req, res, next);
+
+    expect(statusCalls).toEqual([403]);
+    expect(next).not.toHaveBeenCalled();
+  });
+});
+
+describe("authorizeEditor", () => {
+  it.each([["editor"], ["admin"]])("calls next for an %s", (role) => {
+    const { req, res, statusCalls } = mockReqRes({
+      user: { id: "a", app_metadata: { role } },
+    });
+    const next = vi.fn();
+
+    authorizeEditor(req, res, next);
+
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(statusCalls).toEqual([]);
+  });
+
+  it("403s a member", () => {
+    const { req, res, statusCalls, jsonCalls } = mockReqRes({ user });
+    const next = vi.fn();
+
+    authorizeEditor(req, res, next);
+
+    expect(statusCalls).toEqual([403]);
+    expect(jsonCalls[0]).toMatchObject({ error: "Editor access required" });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("403s when there is no authenticated user", () => {
+    const { req, res, statusCalls } = mockReqRes();
+    const next = vi.fn();
+
+    authorizeEditor(req, res, next);
+
+    expect(statusCalls).toEqual([403]);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("ignores a self-set user_metadata.role", () => {
+    const { req, res, statusCalls } = mockReqRes({
+      user: { id: "a", user_metadata: { role: "editor" } },
+    });
+    const next = vi.fn();
+
+    authorizeEditor(req, res, next);
 
     expect(statusCalls).toEqual([403]);
     expect(next).not.toHaveBeenCalled();
