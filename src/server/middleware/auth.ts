@@ -1,6 +1,12 @@
 import { Request, Response, NextFunction } from "express";
 import { createSupabaseClient } from "../config/database";
-import { SupabaseUser } from "../types";
+import { Role, SupabaseUser } from "../types";
+
+// app_metadata is the authoritative, service-role-only claim. user_metadata
+// is the legacy location, read only as a fallback until the prod backfill
+// completes — remove it once every account has app_metadata.role.
+export const resolveRole = (user?: SupabaseUser): Role | undefined =>
+  user?.app_metadata?.role ?? user?.user_metadata?.role;
 
 export const authenticateToken = async (
   req: Request,
@@ -60,7 +66,7 @@ export const authorizeOwnerOrAdmin = (
     return;
   }
 
-  if (req.user?.user_metadata?.role === "admin") {
+  if (resolveRole(req.user) === "admin") {
     next();
     return;
   }
@@ -75,7 +81,7 @@ export const authorizeAdmin = (
   res: Response,
   next: NextFunction
 ): void => {
-  if (req.user?.user_metadata?.role === "admin") {
+  if (resolveRole(req.user) === "admin") {
     next();
     return;
   }
