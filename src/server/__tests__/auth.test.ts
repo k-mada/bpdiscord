@@ -138,32 +138,21 @@ describe("authorizeAdmin", () => {
     expect(statusCalls).toEqual([]);
   });
 
-  it("reads app_metadata.role, not a conflicting user_metadata.role", () => {
-    const { req, res, statusCalls } = mockReqRes({
+  it("ignores user_metadata.role entirely — only app_metadata grants admin", () => {
+    const { req, res, statusCalls, jsonCalls } = mockReqRes({
       user: {
         id: "a",
-        app_metadata: { role: "admin" },
-        user_metadata: { role: "member" },
+        // The self-writable field claims admin; it must not be honored.
+        user_metadata: { role: "admin" },
       },
     });
     const next = vi.fn();
 
     authorizeAdmin(req, res, next);
 
-    expect(next).toHaveBeenCalledTimes(1);
-    expect(statusCalls).toEqual([]);
-  });
-
-  it("falls back to user_metadata.role when app_metadata is absent", () => {
-    const { req, res, statusCalls } = mockReqRes({
-      user: { id: "a", user_metadata: { role: "admin" } },
-    });
-    const next = vi.fn();
-
-    authorizeAdmin(req, res, next);
-
-    expect(next).toHaveBeenCalledTimes(1);
-    expect(statusCalls).toEqual([]);
+    expect(statusCalls).toEqual([403]);
+    expect(jsonCalls[0]).toMatchObject({ error: "Admin access required" });
+    expect(next).not.toHaveBeenCalled();
   });
 
   it("403s a non-admin", () => {

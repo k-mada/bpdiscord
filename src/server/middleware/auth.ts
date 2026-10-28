@@ -2,11 +2,10 @@ import { Request, Response, NextFunction } from "express";
 import { createSupabaseClient } from "../config/database";
 import { Role, SupabaseUser } from "../types";
 
-// app_metadata is the authoritative, service-role-only claim. user_metadata
-// is the legacy location, read only as a fallback until the prod backfill
-// completes — remove it once every account has app_metadata.role.
+// app_metadata is the authoritative, service-role-only claim, so a user
+// cannot self-promote. Absent means no elevated role (non-admin).
 export const resolveRole = (user?: SupabaseUser): Role | undefined =>
-  user?.app_metadata?.role ?? user?.user_metadata?.role;
+  user?.app_metadata?.role;
 
 export const authenticateToken = async (
   req: Request,

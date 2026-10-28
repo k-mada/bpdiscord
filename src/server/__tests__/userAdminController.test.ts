@@ -637,7 +637,7 @@ describe('admin gating (authorizeAdmin middleware)', () => {
     res.status = vi.fn().mockReturnValue(res);
     res.json = vi.fn().mockReturnValue(res);
     const req = {
-      user: { id: ADMIN_ID, user_metadata: { role: 'admin' } },
+      user: { id: ADMIN_ID, app_metadata: { role: 'admin' } },
     } as unknown as Request;
     const next: NextFunction = vi.fn();
 
