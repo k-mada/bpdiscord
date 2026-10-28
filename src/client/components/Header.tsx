@@ -45,7 +45,7 @@ const Header = () => {
     <header>
       {/* One landmark over both menus: two navs sharing a name is a duplicate. */}
       <nav aria-label="Main">
-        <div className="max-w-5xl mx-auto flex justify-between items-center">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
           <Link
             to="/"
             className="text-2xl text-left font-bold text-letterboxd-text-primary hover:text-letterboxd-accent transition-colors duration-200"
