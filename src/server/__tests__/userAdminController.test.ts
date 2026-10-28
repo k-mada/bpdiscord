@@ -121,7 +121,7 @@ describe('UserAdminController.list', () => {
           {
             id: TARGET_ID,
             email: 'useradmin-test-1@example.test',
-            user_metadata: { name: 'Target User', role: 'user' },
+            user_metadata: { name: 'Target User', role: 'member' },
           },
         ],
       },
@@ -153,7 +153,7 @@ describe('UserAdminController.list', () => {
           {
             id: TARGET_ID,
             email: 'useradmin-test-orphan@example.test',
-            user_metadata: { name: 'Orphan', role: 'user' },
+            user_metadata: { name: 'Orphan', role: 'member' },
           },
         ],
       },
@@ -239,7 +239,7 @@ describe('UserAdminController.update', () => {
         user: {
           id: TARGET_ID,
           email: 'useradmin-test-fmt@example.test',
-          user_metadata: { role: 'user' },
+          user_metadata: { role: 'member' },
         },
       },
       error: null,
@@ -266,7 +266,7 @@ describe('UserAdminController.update', () => {
         user: {
           id: TARGET_ID,
           email: 'useradmin-test-target@example.test',
-          user_metadata: { role: 'user' },
+          user_metadata: { role: 'member' },
         },
       },
       error: null,
@@ -301,7 +301,7 @@ describe('UserAdminController.update', () => {
         user: {
           id: TARGET_ID,
           email: 'useradmin-test-link@example.test',
-          user_metadata: { role: 'user' },
+          user_metadata: { role: 'member' },
         },
       },
       error: null,
@@ -352,7 +352,7 @@ describe('UserAdminController.update', () => {
         user: {
           id: TARGET_ID,
           email: 'useradmin-test-existing@example.test',
-          user_metadata: { role: 'user' },
+          user_metadata: { role: 'member' },
         },
       },
       error: null,
@@ -382,7 +382,7 @@ describe('UserAdminController.update', () => {
         user: {
           id: TARGET_ID,
           email: 'useradmin-test-unlink@example.test',
-          user_metadata: { role: 'user' },
+          user_metadata: { role: 'member' },
         },
       },
       error: null,
@@ -416,7 +416,7 @@ describe('UserAdminController.update', () => {
         user: {
           id: TARGET_ID,
           email: 'useradmin-test-empty@example.test',
-          user_metadata: { role: 'user' },
+          user_metadata: { role: 'member' },
         },
       },
       error: null,
@@ -483,7 +483,7 @@ describe('UserAdminController.update', () => {
         user: {
           id: TARGET_ID,
           email: 'useradmin-test-email@example.test',
-          user_metadata: { role: 'user' },
+          user_metadata: { role: 'member' },
         },
       },
       error: null,
@@ -622,7 +622,7 @@ describe('admin gating (authorizeAdmin middleware)', () => {
       return res;
     };
     const req = {
-      user: { id: TARGET_ID, user_metadata: { role: 'user' } },
+      user: { id: TARGET_ID, user_metadata: { role: 'member' } },
     } as unknown as Request;
     const next: NextFunction = vi.fn();
 

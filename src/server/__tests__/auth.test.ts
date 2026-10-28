@@ -29,7 +29,7 @@ import {
 } from "../middleware/auth";
 import { createSupabaseClient } from "../config/database";
 
-const user = { id: "user-1", user_metadata: { role: "user" } };
+const user = { id: "user-1", user_metadata: { role: "member" } };
 
 describe("authenticateToken", () => {
   beforeEach(() => {
