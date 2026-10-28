@@ -29,7 +29,7 @@ import {
 } from "../middleware/auth";
 import { createSupabaseClient } from "../config/database";
 
-const user = { id: "user-1", user_metadata: { role: "member" } };
+const user = { id: "user-1", app_metadata: { role: "member" } };
 
 describe("authenticateToken", () => {
   beforeEach(() => {
@@ -128,6 +128,34 @@ describe("authenticateToken", () => {
 describe("authorizeAdmin", () => {
   it("calls next for an admin", () => {
     const { req, res, statusCalls } = mockReqRes({
+      user: { id: "a", app_metadata: { role: "admin" } },
+    });
+    const next = vi.fn();
+
+    authorizeAdmin(req, res, next);
+
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(statusCalls).toEqual([]);
+  });
+
+  it("reads app_metadata.role, not a conflicting user_metadata.role", () => {
+    const { req, res, statusCalls } = mockReqRes({
+      user: {
+        id: "a",
+        app_metadata: { role: "admin" },
+        user_metadata: { role: "member" },
+      },
+    });
+    const next = vi.fn();
+
+    authorizeAdmin(req, res, next);
+
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(statusCalls).toEqual([]);
+  });
+
+  it("falls back to user_metadata.role when app_metadata is absent", () => {
+    const { req, res, statusCalls } = mockReqRes({
       user: { id: "a", user_metadata: { role: "admin" } },
     });
     const next = vi.fn();
@@ -190,7 +218,7 @@ describe("authorizeOwnerOrAdmin", () => {
   it("calls next when a non-owner is an admin", () => {
     const { req, res, statusCalls } = mockReqRes({
       params: { id: "someone-else" },
-      user: { id: "admin-1", user_metadata: { role: "admin" } },
+      user: { id: "admin-1", app_metadata: { role: "admin" } },
     });
     const next = vi.fn();
 

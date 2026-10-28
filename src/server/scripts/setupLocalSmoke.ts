@@ -19,7 +19,7 @@
  *   email:    admin@local.test
  *   password: dev-admin-pw
  *
- * The seeded user gets user_metadata.role = "admin" and an app_users
+ * The seeded user gets app_metadata.role = "admin" and an app_users
  * row so /admin/users + admin-gated routes work end-to-end.
  */
 
@@ -249,6 +249,9 @@ async function seedAdmin(
         user_metadata: {
           ...(existing.user_metadata ?? {}),
           name: flags.name,
+        },
+        app_metadata: {
+          ...(existing.app_metadata ?? {}),
           role: "admin",
         },
         password: flags.password,
@@ -266,7 +269,8 @@ async function seedAdmin(
         email: flags.email,
         password: flags.password,
         email_confirm: true,
-        user_metadata: { name: flags.name, role: "admin" },
+        user_metadata: { name: flags.name },
+        app_metadata: { role: "admin" },
       });
     if (createErr || !created?.user) {
       console.error(

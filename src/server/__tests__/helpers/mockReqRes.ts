@@ -17,7 +17,12 @@ export interface MockReqResArgs {
   query?: Record<string, string>;
   headers?: Record<string, string>;
   /** Populated as the authenticateToken middleware would. */
-  user?: { id: string; email?: string; user_metadata?: Record<string, unknown> };
+  user?: {
+    id: string;
+    email?: string;
+    user_metadata?: Record<string, unknown>;
+    app_metadata?: Record<string, unknown>;
+  };
 }
 
 /**

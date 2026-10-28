@@ -12,7 +12,7 @@ import {
 const router = Router();
 
 // Every admin route requires a valid JWT and an admin role
-// (user_metadata.role === 'admin' set in Supabase).
+// (app_metadata.role === 'admin' set in Supabase).
 router.use(authenticateToken, authorizeAdmin);
 
 router.post("/refresh-rankings", triggerRefresh);

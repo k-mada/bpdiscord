@@ -93,6 +93,7 @@ export interface AuthenticatedUser {
   app_metadata?: {
     provider?: string;
     providers?: string[];
+    role?: "admin" | "member";
   };
 }
 

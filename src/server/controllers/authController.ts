@@ -11,6 +11,7 @@ import {
   normalizeLbusername,
 } from "../lib/lbusername";
 import { canonicalizeEmail } from "../lib/email";
+import { resolveRole } from "../middleware/auth";
 import {
   SignupRequest,
   AuthRequest,
@@ -104,7 +105,7 @@ export class AuthController {
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { name, role: "member" } },
+        options: { data: { name } },
       });
 
       if (signUpError || !signUpData.user) {
@@ -368,7 +369,7 @@ export class AuthController {
         data: {
           id: authUser.id,
           email: authUser.email ?? null,
-          role: authUser.user_metadata?.role ?? null,
+          role: resolveRole(authUser) ?? null,
           lbusername: row?.lbusername ?? null,
           displayName: row?.displayName ?? null,
         },

@@ -12,12 +12,21 @@ export interface UpdateUserRequest {
   email?: string;
 }
 
+export type Role = "admin" | "member";
+
 export interface SupabaseUser {
   id: string;
   email?: string;
   user_metadata?: {
     name?: string;
-    role?: "admin" | "member";
+    // Legacy location. Still read as a fallback until the prod backfill
+    // moves every role to app_metadata; never written on new accounts.
+    role?: Role;
+  };
+  // Authoritative role claim. Only the service-role key can write it, so a
+  // user cannot self-promote the way they can with user_metadata.
+  app_metadata?: {
+    role?: Role;
   };
   created_at: string;
   updated_at?: string;

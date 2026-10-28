@@ -285,7 +285,7 @@ function mockMeReqRes(
     ? ({
         id: user.id,
         email: user.email,
-        user_metadata: user.role ? { role: user.role } : {},
+        app_metadata: user.role ? { role: user.role } : {},
       } as unknown as Request["user"])
     : undefined;
   return base;
