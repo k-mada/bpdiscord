@@ -21,6 +21,7 @@
     "seed:graph": "cd src/server && yarn seed:graph",
     "seed:retry": "cd src/server && yarn seed:retry",
     "backfill:film-years": "cd src/server && yarn backfill:film-years",
+    "backfill:roles": "cd src/server && yarn backfill:roles",
     "install:all": "yarn install && cd src/server && yarn install && cd ../client && yarn install",
     "clean": "rimraf src/server/dist && cd src/client && rimraf build",
     "kill-dev": "pkill -9 -f 'ts-node-dev' || true && pkill -9 -f 'vite' || true && echo 'Dev servers killed'"
