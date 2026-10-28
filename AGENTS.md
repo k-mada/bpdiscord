@@ -116,6 +116,7 @@ In-process request coalescing dedupes concurrent same-id ingestions within a sin
 - **Admin editing own email** → server returns `requiresReauth: true`; the page clears the token and redirects to `/login` (the old JWT just rotated).
 - **Admin user table** unclaimed-lbusername datalist is the intersection of `GET /api/film-users` minus `GET /api/admin/users` lbusernames. The currently-edited account's own lbusername is intentionally included even though it's "claimed" so the current value stays valid.
 - **Admin self-delete is disabled** in the UI (forced to use Supabase Studio; the FK cascade would invalidate the in-flight JWT mid-request).
+- **Role assignment** lives in the Edit Account modal: a dropdown (`member`/`editor`/`admin`) on `PUT /api/admin/users/:id`. The server writes the role to `app_metadata` (never `user_metadata`), validates the enum (400 otherwise), and **refuses an admin changing their own role** (403) — this blocks self-demotion and the last-admin lockout it would cause. The dropdown is disabled when editing yourself. `member` is the base role; an account with no `app_metadata.role` reads as `member` in the admin table.
 - The page-level admin gate (`useAuth().user?.role === 'admin'`, sourced from `/me`) is **UX only**. The real gate is the server-side `authorizeAdmin` middleware.
 
 ## Development
