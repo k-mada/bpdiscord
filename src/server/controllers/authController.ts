@@ -104,7 +104,7 @@ export class AuthController {
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
-        options: { data: { name, role: "user" } },
+        options: { data: { name, role: "member" } },
       });
 
       if (signUpError || !signUpData.user) {

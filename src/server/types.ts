@@ -17,7 +17,7 @@ export interface SupabaseUser {
   email?: string;
   user_metadata?: {
     name?: string;
-    role?: "admin" | "user";
+    role?: "admin" | "member";
   };
   created_at: string;
   updated_at?: string;
