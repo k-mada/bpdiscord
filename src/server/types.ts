@@ -19,12 +19,9 @@ export interface SupabaseUser {
   email?: string;
   user_metadata?: {
     name?: string;
-    // Legacy location. Still read as a fallback until the prod backfill
-    // moves every role to app_metadata; never written on new accounts.
-    role?: Role;
   };
   // Authoritative role claim. Only the service-role key can write it, so a
-  // user cannot self-promote the way they can with user_metadata.
+  // user cannot self-promote the way they could with user_metadata.
   app_metadata?: {
     role?: Role;
   };
