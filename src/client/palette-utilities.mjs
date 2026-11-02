@@ -9,3 +9,19 @@ export const TAILWIND_PALETTE =
 export const COLOUR_UTILITY =
   "(?:bg|text|border|ring|from|via|to|placeholder|divide|outline|decoration|" +
   `fill|stroke|caret|accent|shadow)-(?:${TAILWIND_PALETTE})-\\d{2,3}`;
+
+// Tokens live in the @theme block in index.css, not a JS config; parse the
+// --color-letterboxd-<name> declarations back into the test's { name: hex } shape.
+/**
+ * @param {string} cssText
+ * @returns {Record<string, string>}
+ */
+export const readLetterboxdPalette = (cssText) => {
+  /** @type {Record<string, string>} */
+  const palette = {};
+  const pattern = /--color-letterboxd-([a-z-]+):\s*([^;]+);/g;
+  for (const [, name, value] of cssText.matchAll(pattern)) {
+    palette[name] = value.trim();
+  }
+  return palette;
+};
