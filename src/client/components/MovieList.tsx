@@ -74,10 +74,10 @@ const MovieList = ({
                       className="w-full aspect-[2/3] object-cover"
                     />
                   ) : (
-                    <div className="w-full aspect-[2/3] bg-slate-800" />
+                    <div className="w-full aspect-[2/3] bg-letterboxd-bg-secondary" />
                   )}
                 </Link>
-                <div className="pointer-events-none absolute inset-0 hidden items-end bg-gradient-to-b from-transparent to-slate-900 py-5 text-xl opacity-0 transition-opacity duration-500 ease-in-out group-hover:opacity-100 group-has-[:focus-visible]:opacity-100 hover-desktop:flex">
+                <div className="pointer-events-none absolute inset-0 hidden items-end bg-gradient-to-b from-transparent to-letterboxd-bg-primary py-5 text-xl opacity-0 transition-opacity duration-500 ease-in-out group-hover:opacity-100 group-has-[:focus-visible]:opacity-100 hover-desktop:flex">
                   {statLine}
                 </div>
               </div>

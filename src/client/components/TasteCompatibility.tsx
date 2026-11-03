@@ -35,8 +35,8 @@ const SCORE_EXPLANATION =
   "higher means you tend to react the same way to the same films. lower means you tend to react in opposite directions — when one of you loves it, the other reliably hates it. the middle means there's no pattern: sometimes you agree, sometimes you don't, but you can't predict it from each other.";
 
 const ZONE_MARKER_COLOR: Record<PearsonZone, string> = {
-  aligned: "bg-green-400",
-  opposite: "bg-red-400",
+  aligned: "bg-letterboxd-success",
+  opposite: "bg-letterboxd-error",
   independent: "bg-letterboxd-text-muted",
 };
 
@@ -70,10 +70,10 @@ const AnchorFilm = ({ film, label, user1Name, user2Name }: AnchorFilmProps) => {
           <img
             src={posterUrl}
             alt={film.title}
-            className="aspect-2/3 w-full rounded-md border border-slate-500 bg-slate-700 object-cover"
+            className="aspect-2/3 w-full rounded-md border border-letterboxd-border-light bg-letterboxd-bg-tertiary object-cover"
           />
         ) : (
-          <div className="flex aspect-2/3 w-full items-center justify-center bg-slate-700 border rounded-md border-slate-500 p-2">
+          <div className="flex aspect-2/3 w-full items-center justify-center bg-letterboxd-bg-tertiary border rounded-md border-letterboxd-border-light p-2">
             <div className="text-center text-xs text-letterboxd-text-primary">
               {film.title}
               {film.year !== null && (
@@ -85,7 +85,7 @@ const AnchorFilm = ({ film, label, user1Name, user2Name }: AnchorFilmProps) => {
           </div>
         )}
       </a>
-      <div className="w-full mt-2 p-2 px-12 text-center border rounded-md  border-slate-500 bg-slate-800 text-sm space-y-0.5">
+      <div className="w-full mt-2 p-2 px-12 text-center border rounded-md  border-letterboxd-border-light bg-letterboxd-bg-secondary text-sm space-y-0.5">
         <div>
           <span className="text-letterboxd-text-muted">{user1Name}:</span>{" "}
           <span className="text-letterboxd-text-primary font-semibold tabular-nums">
@@ -104,7 +104,7 @@ const AnchorFilm = ({ film, label, user1Name, user2Name }: AnchorFilmProps) => {
 };
 
 const SkeletonBlock = ({ className }: { className: string }) => (
-  <div className={`bg-slate-700 ${className}`} />
+  <div className={`bg-letterboxd-bg-tertiary ${className}`} />
 );
 
 const AnchorFilmSkeleton = () => (
@@ -194,7 +194,7 @@ const TasteCompatibility = ({
        * the full description for screen readers.
        */}
       <div
-        className="relative h-2 rounded-full bg-linear-to-r from-red-400/15 via-letterboxd-text-muted/20 to-green-400/15"
+        className="relative h-2 rounded-full bg-linear-to-r from-letterboxd-error/15 via-letterboxd-text-muted/20 to-letterboxd-success/15"
         role="img"
         aria-label={
           pearson === null
@@ -271,7 +271,7 @@ const TasteCompatibility = ({
       )}
 
       {lowSample && (
-        <div className="text-xs text-amber-400 mt-3 text-center">
+        <div className="text-xs text-letterboxd-warning mt-3 text-center">
           Small sample — interpret with caution.
         </div>
       )}

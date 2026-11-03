@@ -69,8 +69,7 @@ const MOUSE_EVENT_OPTIONS = {
   hoverOutHandlers: ["onMouseOut", "onMouseLeave"],
 };
 
-// Same two selectors at either severity: files cleaned by the burn-down are
-// promoted to `error` so they cannot regress, the rest stay at `warn`.
+// Raw palette colours are banned everywhere; the burn-down is complete.
 const rawColour = (severity) => [
   severity,
   { selector: `Literal[value=/${COLOUR_UTILITY}/]`, message: rawColourMessage },
@@ -100,7 +99,7 @@ export default tseslint.config(
         "error",
         { args: "none", ignoreRestSiblings: true },
       ],
-      "no-restricted-syntax": rawColour("warn"),
+      "no-restricted-syntax": rawColour("error"),
       // Warn until each category's burn-down lands (Phase 3 type, Phase 4 spacing).
       "tailwind-ban/no-raw-typography": "warn",
       "tailwind-ban/no-raw-spacing": "warn",
@@ -141,19 +140,5 @@ export default tseslint.config(
         },
       ],
     },
-  },
-  {
-    // Inverted ratchet: raw colour is an error everywhere except the files the
-    // burn-down has not reached, so new code starts protected by default.
-    files: ["**/*.{ts,tsx}"],
-    ignores: [
-      "components/TasteCompatibility.tsx",
-      "components/RatingDistributionHistogram.tsx",
-      "components/MovieList.tsx",
-      "components/UserProfile.tsx",
-      // Unrouted and slated for deprecation — see bpdiscord-y6q.
-      "components/HaterRankings.tsx",
-    ],
-    rules: { "no-restricted-syntax": rawColour("error") },
   },
 );

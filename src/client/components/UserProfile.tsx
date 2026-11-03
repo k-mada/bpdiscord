@@ -86,7 +86,7 @@ const UserProfile = () => {
         />
 
         <div className="flex mt-4 md:mt-0 ml-0 md:ml-auto items-center">
-          <div className="pr-10 border-r-2 border-gray-700 text-center">
+          <div className="pr-10 border-r-2 border-letterboxd-border text-center">
             <span className="block text-2xl text-letterboxd-text-primary">
               {profile.totalWatched.toLocaleString()}
             </span>
