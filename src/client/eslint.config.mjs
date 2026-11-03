@@ -3,11 +3,48 @@ import tseslint from "typescript-eslint";
 import reactHooks from "eslint-plugin-react-hooks";
 import jsxA11y from "eslint-plugin-jsx-a11y";
 import globals from "globals";
-import { COLOUR_UTILITY } from "./palette-utilities.mjs";
+import {
+  COLOUR_UTILITY,
+  TYPOGRAPHY_UTILITY,
+  SPACING_UTILITY,
+} from "./palette-utilities.mjs";
 
 const rawColourMessage =
   "Use a letterboxd-* colour token instead of a raw Tailwind palette colour. " +
   "Raw colours bypass the contrast gate in __tests__/palette.contrast.test.ts.";
+
+const typographyMessage =
+  "Use a type-* role class (type-h2, type-body, type-caption, …) instead of a raw " +
+  "Tailwind font-size/weight utility. See src/client/THEME.md.";
+
+const spacingMessage =
+  "Use a spacing primitive (stack-*, cluster-*, pad-card, pad-control, section-gap) " +
+  "instead of a raw Tailwind spacing utility. See src/client/THEME.md.";
+
+// Separate rules because no-restricted-syntax has one severity for all its
+// selectors, but colour is already error while type/spacing must stay warn.
+const classScanRule = (pattern, message) => ({
+  meta: { type: "suggestion", schema: [] },
+  create(context) {
+    const re = new RegExp(pattern);
+    const report = (node, text) => {
+      if (typeof text === "string" && re.test(text)) {
+        context.report({ node, message });
+      }
+    };
+    return {
+      Literal: (node) => report(node, node.value),
+      TemplateElement: (node) => report(node, node.value.raw),
+    };
+  },
+});
+
+const tailwindBan = {
+  rules: {
+    "no-raw-typography": classScanRule(TYPOGRAPHY_UTILITY, typographyMessage),
+    "no-raw-spacing": classScanRule(SPACING_UTILITY, spacingMessage),
+  },
+};
 
 // Severity-only override. A bare string would drop recommended's options, and
 // several rules' schema defaults are far wider than what recommended sets.
@@ -53,6 +90,7 @@ export default tseslint.config(
     languageOptions: {
       globals: { ...globals.browser, ...globals.es2021 },
     },
+    plugins: { "tailwind-ban": tailwindBan },
     rules: {
       // TS owns undefined-name detection; the core rule misfires on globals
       // (vitest's describe/it/expect are used un-imported in tests).
@@ -63,6 +101,9 @@ export default tseslint.config(
         { args: "none", ignoreRestSiblings: true },
       ],
       "no-restricted-syntax": rawColour("warn"),
+      // Warn until each category's burn-down lands (Phase 3 type, Phase 4 spacing).
+      "tailwind-ban/no-raw-typography": "warn",
+      "tailwind-ban/no-raw-spacing": "warn",
     },
   },
   {

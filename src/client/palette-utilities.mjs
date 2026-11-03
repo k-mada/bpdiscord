@@ -10,6 +10,17 @@ export const COLOUR_UTILITY =
   "(?:bg|text|border|ring|from|via|to|placeholder|divide|outline|decoration|" +
   `fill|stroke|caret|accent|shadow)-(?:${TAILWIND_PALETTE})-\\d{2,3}`;
 
+// Raw font-size and named-weight utilities; use a type-* role instead. Alignment
+// (text-left/center/…), text-letterboxd-*, and font-sans/mono/letterboxdBody are excluded.
+export const TYPOGRAPHY_UTILITY =
+  "(?<![\\w])(?:text-(?:xs|sm|base|lg|xl|[2-9]xl)|" +
+  "font-(?:thin|extralight|light|normal|medium|semibold|bold|extrabold|black))(?![\\w])";
+
+// Raw spacing utilities with a numeric step; use a stack-*/cluster-*/pad-*/
+// section-gap primitive instead. mx-auto, max-w-*, min-h-*, arbitrary values excluded.
+export const SPACING_UTILITY =
+  "(?<![\\w])(?:space-[xy]-[\\w.]+|gap(?:-[xy])?-[\\w.]+|[pm][trblxy]?-\\d[\\d.]*)";
+
 // Tokens live in the @theme block in index.css, not a JS config; parse the
 // --color-letterboxd-<name> declarations back into the test's { name: hex } shape.
 /**
