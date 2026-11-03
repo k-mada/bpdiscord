@@ -157,10 +157,10 @@ const RatingDistributionHistogram = ({
               <div
                 className={`rounded-xs ${
                   count === 0
-                    ? "bg-green-800 opacity-30"
+                    ? "bg-letterboxd-success-surface opacity-30"
                     : isTallestBar
                       ? "bg-letterboxd-accent"
-                      : "bg-green-800"
+                      : "bg-letterboxd-success-surface"
                 }`}
                 style={{
                   height: `${heightPx}px`,
