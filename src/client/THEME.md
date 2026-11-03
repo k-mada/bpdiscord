@@ -141,6 +141,41 @@ Type scale runs `text-xs` (0.75rem) through `text-4xl` (2.25rem); each step carr
 paired line-height from Tailwind v4's default `text-*` scale (the `@theme` block in
 `index.css` overrides none of it).
 
+## Semantic type & spacing roles
+
+Markup names a **role**, not a primitive — `className="type-h2 stack-md"`, never
+`text-xl font-semibold space-y-4`. ESLint flags raw font-size, font-weight, and
+spacing utilities in `.tsx` (`tailwind-ban/no-raw-typography`, `no-raw-spacing`);
+both are at `warn` until each category's markup burn-down lands. These `@utility`
+classes live in `index.css`. `type-*` carries size, line-height, weight, and family
+but **not** colour, so colour stays composable.
+
+| Typography | Bundles | Replaces |
+| --- | --- | --- |
+| `type-display` | `clamp(2.25rem, 4vw, 3rem)`, bold, sans | `text-4xl/5xl font-bold` |
+| `type-h1` | `text-2xl`, semibold, sans | `text-2xl font-semibold` |
+| `type-h2` | `text-xl`, semibold, sans | `text-xl font-semibold` |
+| `type-h3` | `text-lg`, semibold, sans | `text-lg font-semibold` |
+| `type-body` | `text-base`, normal, sans | `text-base` |
+| `type-body-sm` | `text-sm`, normal, sans | `text-sm` |
+| `type-body-strong` | `text-sm`, medium, sans | `text-sm font-medium` |
+| `type-prose` | 1.2rem, normal, PT Serif | long-form reading |
+| `type-caption` | `text-xs`, normal, sans | `text-xs` |
+| `type-label` | `text-xs`, medium, uppercase, tracked, sans | table headers |
+
+Spacing is a locked five-step scale (`--space-xs` 0.25 / `sm` 0.5 / `md` 1 /
+`lg` 1.5 / `xl` 2rem, in `@theme`) exposed through intent primitives:
+
+| Spacing | Implements | Replaces |
+| --- | --- | --- |
+| `stack-sm` / `stack-md` / `stack-lg` | flex-column + gap `sm`/`md`/`xl` | `space-y-2/4/8` |
+| `cluster-sm` / `cluster-md` | flex-row + gap `sm`/`md` | `gap-2/4` |
+| `pad-card` | padding `md` | `p-4` |
+| `pad-control` | padding `0.75rem md` | `px-4 py-3` |
+| `section-gap` | `margin-block-end lg` | `mb-6` |
+
+Page-level vertical padding stays in `main-content`, not markup.
+
 ## Component utilities
 
 Defined as `@utility` blocks in `index.css`.

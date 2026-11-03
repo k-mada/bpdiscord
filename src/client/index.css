@@ -36,6 +36,14 @@
 
   --animate-fade-in: fadeIn 0.3s ease-in-out;
   --animate-slide-up: slideUp 0.3s ease-out;
+
+  /* The five locked spacing steps. The --space- prefix is not a utility-generating
+     v4 namespace, so these centralise the scale without emitting spacing classes. */
+  --space-xs: 0.25rem;
+  --space-sm: 0.5rem;
+  --space-md: 1rem;
+  --space-lg: 1.5rem;
+  --space-xl: 2rem;
 }
 
 @custom-variant hover-desktop (@media (hover: hover) and (min-width: 768px));
@@ -63,6 +71,97 @@
     outline: 2px solid var(--color-letterboxd-text-primary);
     outline-offset: 2px;
   }
+}
+
+/* Typography roles: each bundles size + line-height + weight + family so a role
+   is one class. Colour is deliberately excluded so it stays composable. */
+@utility type-display {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: clamp(2.25rem, 4vw, 3rem);
+  line-height: 1.1;
+}
+
+@utility type-h1 {
+  @apply text-2xl font-semibold font-sans;
+}
+
+@utility type-h2 {
+  @apply text-xl font-semibold font-sans;
+}
+
+@utility type-h3 {
+  @apply text-lg font-semibold font-sans;
+}
+
+@utility type-body {
+  @apply text-base font-normal font-sans;
+}
+
+@utility type-body-sm {
+  @apply text-sm font-normal font-sans;
+}
+
+@utility type-body-strong {
+  @apply text-sm font-medium font-sans;
+}
+
+@utility type-prose {
+  font-family: var(--font-letterboxdBody);
+  font-weight: 400;
+  font-size: 1.2rem;
+  line-height: 1.7;
+}
+
+@utility type-caption {
+  @apply text-xs font-normal font-sans;
+}
+
+@utility type-label {
+  @apply text-xs font-medium font-sans uppercase tracking-wider;
+}
+
+/* Spacing primitives expose intent, not numbers. stack-* is flex-column + gap
+   (robust with wrapping/conditional children); cluster-* is the flex-row twin. */
+@utility stack-sm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+@utility stack-md {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+/* stack-lg takes the xl step (2rem) to match the space-y-8 it replaces. */
+@utility stack-lg {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+@utility cluster-sm {
+  display: flex;
+  gap: var(--space-sm);
+}
+
+@utility cluster-md {
+  display: flex;
+  gap: var(--space-md);
+}
+
+@utility pad-card {
+  padding: var(--space-md);
+}
+
+@utility pad-control {
+  padding: 0.75rem var(--space-md);
+}
+
+@utility section-gap {
+  margin-block-end: var(--space-lg);
 }
 
 @utility skip-link {
