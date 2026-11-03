@@ -1,6 +1,42 @@
 @import "tailwindcss";
 
-@config './tailwind.config.js';
+@theme {
+  --color-letterboxd-bg-primary: #14181c;
+  --color-letterboxd-bg-secondary: #2a2d2f;
+  --color-letterboxd-bg-tertiary: #2c3440;
+  --color-letterboxd-text-primary: #e0e0e0;
+  --color-letterboxd-text-secondary: #b8b8b8;
+  --color-letterboxd-text-muted: #a0a0a0;
+  --color-letterboxd-accent: #00ac1c;
+  --color-letterboxd-accent-hover: #009d1a;
+  --color-letterboxd-pro: #f5c518;
+  --color-letterboxd-border: #404040;
+  --color-letterboxd-border-light: #8a8a8a;
+  --color-letterboxd-link-hover: #40bcf4;
+  --color-letterboxd-error: #f87171;
+  --color-letterboxd-error-surface: #7f1d1d;
+  --color-letterboxd-success: #4ade80;
+  --color-letterboxd-success-surface: #14532d;
+  --color-letterboxd-warning: #facc15;
+  --color-letterboxd-warning-surface: #713f12;
+  --color-letterboxd-info: #7dd3fc;
+  --color-letterboxd-info-surface: #0c4a6e;
+
+  /* camelCase kept on purpose: it is the font-letterboxdBody class name. */
+  --font-letterboxdBody: "PT Serif", serif;
+  --font-sans: "Be Vietnam Pro", Roboto, Arial, sans-serif;
+
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+
+  --shadow-letterboxd: 0 4px 6px -1px rgba(0, 0, 0, 0.3),
+    0 2px 4px -1px rgba(0, 0, 0, 0.2);
+  --shadow-letterboxd-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3),
+    0 4px 6px -2px rgba(0, 0, 0, 0.2);
+
+  --animate-fade-in: fadeIn 0.3s ease-in-out;
+  --animate-slide-up: slideUp 0.3s ease-out;
+}
 
 @custom-variant hover-desktop (@media (hover: hover) and (min-width: 768px));
 
@@ -24,7 +60,7 @@
   /* Neutral, not accent: an accent outline on an accent-filled button would
      sit at 1:1 against its own background. Outline also survives overflow-hidden. */
   :focus-visible {
-    outline: 2px solid theme(colors.letterboxd.text-primary);
+    outline: 2px solid var(--color-letterboxd-text-primary);
     outline-offset: 2px;
   }
 }
@@ -192,7 +228,7 @@
    rows grow with the bar's width animation. */
 @utility film-strip-bar {
   position: relative;
-  background-color: theme(colors.letterboxd.bg-secondary);
+  background-color: var(--color-letterboxd-bg-secondary);
   &::before,
   &::after {
     content: "";
@@ -202,7 +238,7 @@
     pointer-events: none;
     background-image: repeating-linear-gradient(
       to right,
-      theme(colors.letterboxd.border) 0 0.3rem,
+      var(--color-letterboxd-border) 0 0.3rem,
       transparent 0.3rem 0.68rem
     );
   }
@@ -394,11 +430,15 @@
   }
 }
 
+/* translateY(10px): the tailwind.config.js keyframe used to override this one
+   by source order; that definition moved here when the JS config was deleted. */
 @keyframes slideUp {
   from {
-    transform: translateY(100%);
+    opacity: 0;
+    transform: translateY(10px);
   }
   to {
+    opacity: 1;
     transform: translateY(0);
   }
 }

@@ -1,8 +1,7 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
-import tailwindConfig from "../tailwind.config.js";
-import { COLOUR_UTILITY } from "../palette-utilities.mjs";
+import { COLOUR_UTILITY, readLetterboxdPalette } from "../palette-utilities.mjs";
 
 // axe cannot evaluate contrast under jsdom, so the palette is measured straight
 // from the tokens. Gates the palette, not its usage in components.
@@ -10,11 +9,8 @@ import { COLOUR_UTILITY } from "../palette-utilities.mjs";
 const AA_TEXT = 4.5;
 const AA_NON_TEXT = 3.0;
 
-const palette = (
-  tailwindConfig as {
-    theme: { extend: { colors: { letterboxd: Record<string, string> } } };
-  }
-).theme.extend.colors.letterboxd;
+const indexCssPath = join(dirname(fileURLToPath(import.meta.url)), "../index.css");
+const palette = readLetterboxdPalette(readFileSync(indexCssPath, "utf8"));
 
 const token = (name: string): string => {
   const value = palette[name];

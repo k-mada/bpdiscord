@@ -1,7 +1,7 @@
 # Letterboxd-Inspired Theme Documentation
 
-A dark Tailwind theme inspired by Letterboxd. Tokens live in `tailwind.config.js`;
-component utilities live in `index.css`.
+A dark Tailwind theme inspired by Letterboxd. Tokens live in the `@theme` block in
+`index.css`; component utilities live in the same file.
 
 **Conformance target: WCAG 2.2 Level AA.** Every foreground/background pairing below is
 gated by `__tests__/palette.contrast.test.ts`, which reads the tokens directly and fails
@@ -18,9 +18,9 @@ here instead: `error` fill 7.59:1, its `/85` hover 5.87:1, `accent` fill 6.92:1.
 
 ![The letterboxd palette: every token as a labelled swatch, and the three text tiers rendered on each background](./palette.svg)
 
-`palette.svg` is generated from `tailwind.config.js` and held by a file snapshot in
-`__tests__/palette.contrast.test.ts`, so it cannot drift from the tokens. After changing
-a colour, regenerate it with `yarn test -u` — the test fails until you do.
+`palette.svg` is generated from the `@theme` block in `index.css` and held by a file
+snapshot in `__tests__/palette.contrast.test.ts`, so it cannot drift from the tokens.
+After changing a colour, regenerate it with `yarn test -u` — the test fails until you do.
 
 ### Backgrounds
 
@@ -138,7 +138,8 @@ that never gets used. Safe to delete; left in place here to keep this change
 scoped to colour.
 
 Type scale runs `text-xs` (0.75rem) through `text-4xl` (2.25rem); each step carries a
-paired line-height in `tailwind.config.js`.
+paired line-height from Tailwind v4's default `text-*` scale (the `@theme` block in
+`index.css` overrides none of it).
 
 ## Component utilities
 
