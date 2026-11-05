@@ -239,7 +239,7 @@ export const ActorComboBox = ({
     <div ref={containerRef} className="relative w-full" onBlur={handleBlur}>
       <label
         htmlFor={inputId}
-        className="block text-sm text-letterboxd-text-secondary mb-2"
+        className="block type-body-sm text-letterboxd-text-secondary mb-2"
       >
         {label}
       </label>
@@ -290,7 +290,7 @@ export const ActorComboBox = ({
       >
         {statusMessage && (
           <div
-            className={`px-4 py-3 text-sm ${
+            className={`px-4 py-3 type-body-sm ${
               error
                 ? "text-letterboxd-error"
                 : "text-letterboxd-text-secondary"
@@ -369,7 +369,7 @@ const PathNodeCard = ({ step }: PathNodeCardProps) => {
           }}
         />
       </div>
-      <div className="mt-2 text-center text-xs text-letterboxd-text-primary leading-tight line-clamp-2 w-full">
+      <div className="mt-2 text-center type-caption text-letterboxd-text-primary leading-tight line-clamp-2 w-full">
         {name}
       </div>
       <div className="text-[10px] uppercase tracking-wide text-letterboxd-text-muted">
@@ -380,7 +380,7 @@ const PathNodeCard = ({ step }: PathNodeCardProps) => {
 };
 
 const PathArrow = () => (
-  <div className="flex items-center justify-center h-[165px] text-letterboxd-text-muted text-4xl shrink-0 px-2">
+  <div className="flex items-center justify-center h-[165px] text-letterboxd-text-muted text-[2.25rem] shrink-0 px-2">
     →
   </div>
 );
@@ -453,7 +453,7 @@ const ActorGraph = () => {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-letterboxd-text-primary mb-6">
+      <h1 className="type-h1-lg text-letterboxd-text-primary mb-6">
         Actor Graph
       </h1>
       <p className="text-letterboxd-text-secondary mb-6">
@@ -488,7 +488,7 @@ const ActorGraph = () => {
         <div>
           <h2 className="subheading">
             Path
-            <span className="ml-2 text-sm font-normal text-letterboxd-text-secondary">
+            <span className="ml-2 type-body-sm text-letterboxd-text-secondary">
               {pathData.degrees} {pathData.degrees === 1 ? "degree" : "degrees"}{" "}
               of separation
             </span>
