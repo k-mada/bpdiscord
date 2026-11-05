@@ -33,7 +33,7 @@ const CompareWithUser = ({
   return (
     <div className="space-y-4">
       <Card>
-        <h4 className="text-xl font-semibold text-letterboxd-text-primary mb-3">
+        <h4 className="type-h2 text-letterboxd-text-primary mb-3">
           Compare taste with…
         </h4>
         <div className="select-wrapper max-w-sm">
@@ -57,7 +57,7 @@ const CompareWithUser = ({
       </Card>
 
       {error && (
-        <Card role="alert" className="text-letterboxd-error text-sm">
+        <Card role="alert" className="text-letterboxd-error type-body-sm">
           {error}
         </Card>
       )}
@@ -65,7 +65,7 @@ const CompareWithUser = ({
       {loading && <TasteCompatibilitySkeleton />}
 
       {!loading && data && data.moviesInCommon.length === 0 && (
-        <Card className="text-letterboxd-text-muted text-sm text-center">
+        <Card className="text-letterboxd-text-muted type-body-sm text-center">
           No films in common with {selectedDisplayName || selected} yet.
         </Card>
       )}

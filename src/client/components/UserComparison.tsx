@@ -134,7 +134,7 @@ const UserComparison = () => {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-letterboxd-text-primary mb-2">
+      <h1 className="type-h1-lg text-letterboxd-text-primary mb-2">
         User Comparison
       </h1>
       <h3 className="subheading">
@@ -248,7 +248,7 @@ const UserComparison = () => {
 
           {/* Rating Legend */}
           <div className="mt-4 text-center">
-            <p className="text-xs text-letterboxd-text-muted">
+            <p className="type-caption text-letterboxd-text-muted">
               Hover over distribution bars to see detailed rating information
             </p>
           </div>
@@ -269,21 +269,21 @@ const UserComparison = () => {
               <label htmlFor="chkFilterNonRated">Hide non-rated movies</label>
             </div>
             <p className="text-letterboxd-text-secondary">
-              <span className="text-letterboxd-accent font-semibold">
+              <span className="text-letterboxd-accent type-strong">
                 {moviesInCommonData.count}
               </span>{" "}
               movies watched by both{" "}
-              <span className="text-letterboxd-text-primary font-medium">
+              <span className="text-letterboxd-text-primary type-strong">
                 {user1Data?.displayName || moviesInCommonData.user1}
               </span>{" "}
               and{" "}
-              <span className="text-letterboxd-text-primary font-medium">
+              <span className="text-letterboxd-text-primary type-strong">
                 {user2Data?.displayName || moviesInCommonData.user2}
               </span>
             </p>
             {filterNonRated && (
               <p className="text-letterboxd-text-secondary">
-                <span className="text-letterboxd-accent font-semibold">
+                <span className="text-letterboxd-accent type-strong">
                   (Only displaying movies that have been rated by both users)
                 </span>{" "}
               </p>
@@ -309,7 +309,7 @@ const UserComparison = () => {
                   return (
                     shouldShow && (
                       <tr key={`${movie.title}-${index}`}>
-                        <td className="py-3 px-4 text-letterboxd-text-primary font-medium">
+                        <td className="py-3 px-4 text-letterboxd-text-primary type-strong">
                           <a
                             href={`https://letterboxd.com/film/${movie.film_slug}`}
                             target="_blank"
