@@ -56,7 +56,7 @@ const AnchorFilm = ({ film, label, user1Name, user2Name }: AnchorFilmProps) => {
 
   return (
     <div className="flex flex-col items-center">
-      <div className="text-lg font-semibold text-letterboxd-text-primary mb-3 text-center">
+      <div className="type-h3 text-letterboxd-text-primary mb-3 text-center">
         {label}
       </div>
 
@@ -74,7 +74,7 @@ const AnchorFilm = ({ film, label, user1Name, user2Name }: AnchorFilmProps) => {
           />
         ) : (
           <div className="flex aspect-2/3 w-full items-center justify-center bg-letterboxd-bg-tertiary border rounded-md border-letterboxd-border-light p-2">
-            <div className="text-center text-xs text-letterboxd-text-primary">
+            <div className="text-center type-caption text-letterboxd-text-primary">
               {film.title}
               {film.year !== null && (
                 <div className="text-letterboxd-text-muted mt-1">
@@ -85,16 +85,16 @@ const AnchorFilm = ({ film, label, user1Name, user2Name }: AnchorFilmProps) => {
           </div>
         )}
       </a>
-      <div className="w-full mt-2 p-2 px-12 text-center border rounded-md  border-letterboxd-border-light bg-letterboxd-bg-secondary text-sm space-y-0.5">
+      <div className="w-full mt-2 p-2 px-12 text-center border rounded-md  border-letterboxd-border-light bg-letterboxd-bg-secondary type-body-sm space-y-0.5">
         <div>
           <span className="text-letterboxd-text-muted">{user1Name}:</span>{" "}
-          <span className="text-letterboxd-text-primary font-semibold tabular-nums">
+          <span className="text-letterboxd-text-primary type-body-strong tabular-nums">
             <StarRating rating={film.user1_rating} />
           </span>
         </div>
         <div>
           <span className="text-letterboxd-text-muted">{user2Name}:</span>{" "}
-          <span className="text-letterboxd-text-primary font-semibold tabular-nums">
+          <span className="text-letterboxd-text-primary type-body-strong tabular-nums">
             <StarRating rating={film.user2_rating} />
           </span>
         </div>
@@ -172,17 +172,17 @@ const TasteCompatibility = ({
     <Card className="mb-4">
       {/* Header row */}
       <div className="mb-4">
-        <h4 className="text-xl font-semibold text-letterboxd-text-primary flex items-center gap-2">
+        <h4 className="type-h2 text-letterboxd-text-primary flex items-center gap-2">
           🎯 Taste Compatibility
         </h4>
-        <div className="text-sm text-letterboxd-text-secondary mt-1">
+        <div className="type-body-sm text-letterboxd-text-secondary mt-1">
           {user1Data.displayName || user1Data.username} vs{" "}
           {user2Data.displayName || user2Data.username}
         </div>
       </div>
 
       {/* Zone labels */}
-      <div className="grid grid-cols-3 text-xs text-letterboxd-text-muted mb-1.5">
+      <div className="grid grid-cols-3 type-caption text-letterboxd-text-muted mb-1.5">
         <div className="text-left">Opposite</div>
         <div className="text-center">Independent</div>
         <div className="text-right">Aligned</div>
@@ -217,15 +217,15 @@ const TasteCompatibility = ({
 
       {/* Headline number + label */}
       <div className="mt-4 text-center">
-        <div className="text-3xl font-bold text-letterboxd-text-primary leading-none">
+        <div className="type-h1-lg text-letterboxd-text-primary leading-none">
           {pearson === null ? "—" : formatSignedPercent(pearson)}
         </div>
-        <div className="text-sm font-medium text-letterboxd-accent mt-1">
+        <div className="type-body-strong text-letterboxd-accent mt-1">
           {pearson === null
             ? "Not enough rating variation"
             : getPearsonLabel(pearson)}
         </div>
-        <div className="text-xs text-letterboxd-text-muted mt-2">
+        <div className="type-caption text-letterboxd-text-muted mt-2">
           {sampleSize} films in common
           {mad !== null && ` · ${mad.toFixed(2)}★ apart on average`}
         </div>
@@ -233,7 +233,7 @@ const TasteCompatibility = ({
 
       <div className="mt-4">
         <CollapsibleSection title="What does this mean?" defaultOpen={false}>
-          <p className="text-sm text-letterboxd-text-muted">
+          <p className="type-body-sm text-letterboxd-text-muted">
             {SCORE_EXPLANATION}
           </p>
         </CollapsibleSection>
@@ -271,7 +271,7 @@ const TasteCompatibility = ({
       )}
 
       {lowSample && (
-        <div className="text-xs text-letterboxd-warning mt-3 text-center">
+        <div className="type-caption text-letterboxd-warning mt-3 text-center">
           Small sample — interpret with caution.
         </div>
       )}

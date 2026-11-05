@@ -86,6 +86,10 @@
   @apply text-2xl font-semibold font-sans;
 }
 
+@utility type-h1-lg {
+  @apply text-3xl font-bold font-sans;
+}
+
 @utility type-h2 {
   @apply text-xl font-semibold font-sans;
 }

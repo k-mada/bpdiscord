@@ -252,6 +252,15 @@ is visually a no-op; screenshots or the e2e suite prove it.
   screen and a screenshot verifies it. Replace inline size/weight with
   `type-*`. Fold `subheading`, `section-title`, `table-heading-row` into the
   `type-*` set. Raise the type rule to error when the last group lands.
+  **Amended 2026-11-04 — canonicalize, not no-op:** the measured markup uses
+  ~20 inconsistent size+weight combos (a heading is `font-bold` on one page and
+  `font-semibold` on another), so the 10-role set cannot stay pixel-identical
+  without ~12 extra roles (the anti-goal). Decision: each size owns one canonical
+  weight and call sites snap to the nearest role, so Phase 3 is a deliberate
+  consistency pass, not a visual no-op. Added roles: `type-h1-lg` (`text-3xl`
+  bold) and `type-strong` (`text-base` medium). Bespoke heroes (responsive serif,
+  gold extralight) and decorative large glyphs stay out of the `type-*` set and
+  get per-page handling.
 - Phase 4 — Spacing (several PRs, **grouped by page/route** the same way):
   replace inline spacing with primitives. Raise the spacing rule to error
   when done.

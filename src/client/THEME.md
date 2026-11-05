@@ -150,9 +150,16 @@ both are at `warn` until each category's markup burn-down lands. These `@utility
 classes live in `index.css`. `type-*` carries size, line-height, weight, and family
 but **not** colour, so colour stays composable.
 
+Each size level owns **one** canonical weight. The markup it replaces was
+inconsistent (a `text-xl` heading was `font-bold` on one page and `font-semibold`
+on another), so converting a site to its role may normalise the weight — headings
+settle on semibold, body emphasis on medium. This is deliberate, not a no-op; it is
+the consistency the role layer exists to enforce.
+
 | Typography | Bundles | Replaces |
 | --- | --- | --- |
 | `type-display` | `clamp(2.25rem, 4vw, 3rem)`, bold, sans | `text-4xl/5xl font-bold` |
+| `type-h1-lg` | `text-3xl`, bold, sans | `text-3xl font-bold` |
 | `type-h1` | `text-2xl`, semibold, sans | `text-2xl font-semibold` |
 | `type-h2` | `text-xl`, semibold, sans | `text-xl font-semibold` |
 | `type-h3` | `text-lg`, semibold, sans | `text-lg font-semibold` |

@@ -19,8 +19,8 @@ const Row = ({ row }: { row: CompatibilityExtreme }) => (
     >
       {row.displayName || row.username}
     </a>
-    <span className="text-sm tabular-nums whitespace-nowrap">
-      <span className="text-letterboxd-text-primary font-semibold">
+    <span className="type-body-sm tabular-nums whitespace-nowrap">
+      <span className="text-letterboxd-text-primary type-body-strong">
         {formatSignedPercent(row.pearson)}
       </span>{" "}
       <span className="text-letterboxd-text-muted">
@@ -35,7 +35,7 @@ const CompatibilityExtremes = ({ username }: Props) => {
 
   if (loading) {
     return (
-      <Card className="text-letterboxd-text-muted text-sm">
+      <Card className="text-letterboxd-text-muted type-body-sm">
         Loading compatibility…
       </Card>
     );
@@ -49,7 +49,7 @@ const CompatibilityExtremes = ({ username }: Props) => {
 
   if (most.length === 0 && least.length === 0) {
     return (
-      <Card className="text-letterboxd-text-muted text-sm text-center">
+      <Card className="text-letterboxd-text-muted type-body-sm text-center">
         Not enough compatibility data yet.
       </Card>
     );
@@ -57,13 +57,13 @@ const CompatibilityExtremes = ({ username }: Props) => {
 
   return (
     <Card>
-      <h4 className="text-xl font-semibold text-letterboxd-text-primary mb-4 flex items-center gap-2">
+      <h4 className="type-h2 text-letterboxd-text-primary mb-4 flex items-center gap-2">
         🎯 Compatibility
       </h4>
 
       {most.length > 0 && (
         <section className="mb-4">
-          <h5 className="text-sm font-medium text-letterboxd-text-secondary mb-2">
+          <h5 className="type-body-strong text-letterboxd-text-secondary mb-2">
             People you are most compatible with
           </h5>
           <ul className="divide-y divide-letterboxd-border">
@@ -76,7 +76,7 @@ const CompatibilityExtremes = ({ username }: Props) => {
 
       {least.length > 0 && (
         <section>
-          <h5 className="text-sm font-medium text-letterboxd-text-secondary mb-2">
+          <h5 className="type-body-strong text-letterboxd-text-secondary mb-2">
             People you are least compatible with
           </h5>
           <ul className="divide-y divide-letterboxd-border">
