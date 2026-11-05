@@ -109,7 +109,7 @@ const ScoringReference = () => {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <h1 className="text-center text-2xl font-bold">Scoring Reference</h1>
+      <h1 className="text-center type-h1">Scoring Reference</h1>
       <div className="flex flex-col justify-center items-center mx-auto my-8">
         <label htmlFor="lstMetric" className="mr-8">
           Jump to a specific metric:
@@ -148,7 +148,7 @@ const ScoringReference = () => {
           />
           <label
             htmlFor="bordered-checkbox-1"
-            className="select-none w-full py-4 ms-2 text-sm font-medium text-heading"
+            className="select-none w-full py-4 ms-2 type-body-strong text-heading"
           >
             Show nominations only
           </label>
@@ -165,7 +165,7 @@ const ScoringReference = () => {
           />
           <label
             htmlFor="bordered-checkbox-2"
-            className="select-none w-full py-4 ms-2 text-sm font-medium text-heading"
+            className="select-none w-full py-4 ms-2 type-body-strong text-heading"
           >
             Show wins only
           </label>
@@ -201,7 +201,7 @@ const ScoringReference = () => {
                   <tr
                     key={metricName}
                     id={formatMetricName(metricName)}
-                    className="bg-letterboxd-bg-tertiary font-bold text-xl scroll-mt-20"
+                    className="bg-letterboxd-bg-tertiary type-h2 scroll-mt-20"
                   >
                     <td colSpan={2} className="py-4 px-2">
                       {metricName}

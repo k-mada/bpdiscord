@@ -7,7 +7,7 @@ const MostWatchedFilms = () => {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-letterboxd-text-primary mb-2">
+      <h1 className="type-h1-lg text-letterboxd-text-primary mb-2">
         The BPD 40 Club
       </h1>
       <h2 className="subheading">
@@ -44,7 +44,7 @@ const MostWatchedFilms = () => {
                   />
                 ) : (
                   <div className="w-full aspect-[2/3] rounded bg-letterboxd-bg-tertiary flex items-center justify-center p-2 text-center">
-                    <span className="text-sm font-bold text-letterboxd-text-primary">
+                    <span className="type-body-strong text-letterboxd-text-primary">
                       {film.title}
                     </span>
                   </div>
