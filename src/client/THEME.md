@@ -156,6 +156,10 @@ on another), so converting a site to its role may normalise the weight — headi
 settle on semibold, body emphasis on medium. This is deliberate, not a no-op; it is
 the consistency the role layer exists to enforce.
 
+The roles are for **text**. A decorative glyph sized like a number — an icon, a
+connector arrow — is not a text role; size it with an arbitrary value
+(`text-[2.25rem]`), which the named-size ban leaves alone on purpose.
+
 | Typography | Bundles | Replaces |
 | --- | --- | --- |
 | `type-display` | `clamp(2.25rem, 4vw, 3rem)`, bold, sans | `text-4xl/5xl font-bold` |
