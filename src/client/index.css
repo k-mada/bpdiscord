@@ -106,6 +106,10 @@
   @apply text-sm font-medium font-sans;
 }
 
+@utility type-strong {
+  @apply text-base font-medium font-sans;
+}
+
 @utility type-prose {
   font-family: var(--font-letterboxdBody);
   font-weight: 400;

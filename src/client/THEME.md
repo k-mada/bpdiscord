@@ -159,6 +159,7 @@ but **not** colour, so colour stays composable.
 | `type-body` | `text-base`, normal, sans | `text-base` |
 | `type-body-sm` | `text-sm`, normal, sans | `text-sm` |
 | `type-body-strong` | `text-sm`, medium, sans | `text-sm font-medium` |
+| `type-strong` | `text-base`, medium, sans | `font-medium` at base size (inline emphasis, links) |
 | `type-prose` | 1.2rem, normal, PT Serif | long-form reading |
 | `type-caption` | `text-xs`, normal, sans | `text-xs` |
 | `type-label` | `text-xs`, medium, uppercase, tracked, sans | table headers |
