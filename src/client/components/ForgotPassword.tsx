@@ -37,7 +37,7 @@ const ForgotPassword = () => {
   return (
     <div className="min-h-screen bg-letterboxd-bg-primary flex justify-center mt-20 px-4">
       <div className="w-full max-w-md">
-        <h2 className="text-2xl font-semibold text-letterboxd-text-primary mb-6 text-center">
+        <h2 className="type-h1 text-letterboxd-text-primary mb-6 text-center">
           Reset your password
         </h2>
         <p className="text-letterboxd-text-secondary text-center">
@@ -49,7 +49,7 @@ const ForgotPassword = () => {
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-letterboxd-text-secondary mb-2"
+                className="block type-body-strong text-letterboxd-text-secondary mb-2"
               >
                 Email Address
               </label>

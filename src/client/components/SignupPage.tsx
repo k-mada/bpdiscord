@@ -106,7 +106,7 @@ const SignupPage = () => {
     <div className="min-h-screen bg-letterboxd-bg-primary flex items-start mt-10 justify-center px-4">
       <div className="w-full max-w-md">
         <Card>
-          <h2 className="text-2xl font-semibold text-letterboxd-text-primary mb-6 text-center">
+          <h2 className="type-h1 text-letterboxd-text-primary mb-6 text-center">
             Create an account
           </h2>
 
@@ -114,7 +114,7 @@ const SignupPage = () => {
             <div>
               <label
                 htmlFor="name"
-                className="block text-sm font-medium text-letterboxd-text-secondary mb-2"
+                className="block type-body-strong text-letterboxd-text-secondary mb-2"
               >
                 Name
               </label>
@@ -134,7 +134,7 @@ const SignupPage = () => {
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-medium text-letterboxd-text-secondary mb-2"
+                className="block type-body-strong text-letterboxd-text-secondary mb-2"
               >
                 Email
               </label>
@@ -154,7 +154,7 @@ const SignupPage = () => {
             <div>
               <label
                 htmlFor="password"
-                className="block text-sm font-medium text-letterboxd-text-secondary mb-2"
+                className="block type-body-strong text-letterboxd-text-secondary mb-2"
               >
                 Password
               </label>
@@ -174,7 +174,7 @@ const SignupPage = () => {
             <div>
               <label
                 htmlFor="lbusername"
-                className="block text-sm font-medium text-letterboxd-text-secondary mb-2"
+                className="block type-body-strong text-letterboxd-text-secondary mb-2"
               >
                 Letterboxd.com username
               </label>
@@ -197,7 +197,7 @@ const SignupPage = () => {
               />
               <p
                 id="lbusername-help"
-                className="text-xs text-letterboxd-text-muted mt-1"
+                className="type-caption text-letterboxd-text-muted mt-1"
               >
                 Optional — link your Letterboxd account now or have an admin
                 assign it later. We'll fetch your data automatically.
@@ -206,7 +206,7 @@ const SignupPage = () => {
                 <p
                   id="lbusername-error"
                   role="alert"
-                  className="text-xs text-letterboxd-error mt-1"
+                  className="type-caption text-letterboxd-error mt-1"
                 >
                   {lbError}
                 </p>
@@ -225,7 +225,7 @@ const SignupPage = () => {
               Already have an account?{" "}
               <Link
                 to="/login"
-                className="text-letterboxd-accent hover:text-letterboxd-accent-hover font-medium transition-colors duration-200"
+                className="text-letterboxd-accent hover:text-letterboxd-accent-hover type-strong transition-colors duration-200"
               >
                 Login
               </Link>
