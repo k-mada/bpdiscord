@@ -47,7 +47,7 @@ const RatingDistributionHistogram = ({
 
   if (!distribution || distribution.length === 0) {
     return (
-      <span className="text-letterboxd-text-secondary text-xs">No data</span>
+      <span className="text-letterboxd-text-secondary type-caption">No data</span>
     );
   }
 
@@ -148,7 +148,7 @@ const RatingDistributionHistogram = ({
                   data-testid="histogram-tooltip"
                   className="absolute bottom-full left-1/2 z-50 -translate-x-1/2 pb-2"
                 >
-                  <div className="whitespace-nowrap rounded-sm border border-letterboxd-border-light bg-letterboxd-bg-tertiary px-2 py-1 text-xs text-letterboxd-text-primary shadow-letterboxd">
+                  <div className="whitespace-nowrap rounded-sm border border-letterboxd-border-light bg-letterboxd-bg-tertiary px-2 py-1 type-caption text-letterboxd-text-primary shadow-letterboxd">
                     {ratingLabel(rating)}: {count.toLocaleString()} (
                     {formatShare(count, totalCount)})
                   </div>

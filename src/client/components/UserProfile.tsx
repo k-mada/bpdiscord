@@ -46,7 +46,7 @@ const UserProfile = () => {
 
   if (loading) {
     return (
-      <Card className="text-letterboxd-text-muted text-sm">
+      <Card className="text-letterboxd-text-muted type-body-sm">
         Loading profile…
       </Card>
     );
@@ -67,7 +67,7 @@ const UserProfile = () => {
     <div className="space-y-8">
       <Card className="flex justify-start md:justify-between flex-col md:flex-row items-center">
         <div>
-          <h1 className="text-xl md:text-3xl font-bold text-letterboxd-text-primary">
+          <h1 className="type-h2 md:type-h1-lg text-letterboxd-text-primary">
             {displayName}
           </h1>
           <a
@@ -87,18 +87,18 @@ const UserProfile = () => {
 
         <div className="flex mt-4 md:mt-0 ml-0 md:ml-auto items-center">
           <div className="pr-10 border-r-2 border-letterboxd-border text-center">
-            <span className="block text-2xl text-letterboxd-text-primary">
+            <span className="block type-h1 text-letterboxd-text-primary">
               {profile.totalWatched.toLocaleString()}
             </span>
-            <span className="block text-letterboxd-text-muted text-md">
+            <span className="block text-letterboxd-text-muted type-body">
               watched
             </span>
           </div>
           <div className="pl-10 text-center">
-            <span className="block text-2xl text-letterboxd-text-primary">
+            <span className="block type-h1 text-letterboxd-text-primary">
               {profile.totalRatings.toLocaleString()}
             </span>
-            <span className="block text-letterboxd-text-muted text-md">
+            <span className="block text-letterboxd-text-muted type-body">
               rated
             </span>
           </div>

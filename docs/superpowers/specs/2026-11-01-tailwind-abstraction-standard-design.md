@@ -298,6 +298,13 @@ These were mine to settle. Flag any you want changed.
   the no-op.
 - Padding primitives: `pad-*`, not `inset-*`.
 - `stack-*`: flex-column + `gap`, not `space-y`.
-- Responsive type: `clamp()` inside the role, no `md:` variants in markup.
+- Responsive type: a role expresses its *own* fluid step with `clamp()` inside
+  the role (e.g. `type-display`), not a `md:` variant. **Amended 2026-11-04:** a
+  heading that steps between two *different* discrete roles at a breakpoint
+  (`text-xl md:text-3xl font-bold`) is role **composition**, not one role's own
+  step — write it `type-h2 md:type-h1-lg`. The lint bans raw `text-*`/`font-*`,
+  not variant-prefixed role classes, so this is allowed. Weight follows each
+  role's canonical weight, so the two steps may differ (semibold at `type-h2`,
+  bold at `type-h1-lg`); that is accepted under canonicalisation.
 
 Status: no open questions. Spec is ready for `writing-plans`.
