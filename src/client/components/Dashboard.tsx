@@ -32,10 +32,10 @@ const Dashboard = () => {
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <h1 className="text-4xl font-bold text-letterboxd-text-primary mb-4">
+        <h1 className="type-display text-letterboxd-text-primary mb-4">
           Welcome back, {getUserName()}!
         </h1>
-        <p className="text-letterboxd-text-secondary text-lg">
+        <p className="text-letterboxd-text-secondary type-body">
           Your Letterboxd data analysis dashboard
         </p>
       </div>
@@ -43,7 +43,7 @@ const Dashboard = () => {
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card className="hover:bg-letterboxd-bg-tertiary transition-colors">
-          <h2 className="text-xl font-semibold text-letterboxd-text-primary mb-2">
+          <h2 className="type-h2 text-letterboxd-text-primary mb-2">
             Profile
           </h2>
           <p className="text-letterboxd-text-secondary mb-4">
@@ -60,7 +60,7 @@ const Dashboard = () => {
 
         {isDevMode && (
           <Card className="hover:bg-letterboxd-bg-tertiary transition-colors">
-            <h2 className="text-xl font-semibold text-letterboxd-text-primary mb-2">
+            <h2 className="type-h2 text-letterboxd-text-primary mb-2">
               Data Fetcher
             </h2>
             <p className="text-letterboxd-text-secondary mb-4">
@@ -73,7 +73,7 @@ const Dashboard = () => {
         )}
 
         <Card className="hover:bg-letterboxd-bg-tertiary transition-colors">
-          <h2 className="text-xl font-semibold text-letterboxd-text-primary mb-2">
+          <h2 className="type-h2 text-letterboxd-text-primary mb-2">
             Compare Users
           </h2>
           <p className="text-letterboxd-text-secondary mb-4">
@@ -86,7 +86,7 @@ const Dashboard = () => {
 
         {isAdmin && isDevMode && (
           <Card className="hover:bg-letterboxd-bg-tertiary transition-colors">
-            <h2 className="text-xl font-semibold text-letterboxd-text-primary mb-2">
+            <h2 className="type-h2 text-letterboxd-text-primary mb-2">
               Refresh user film data
             </h2>
             <p className="text-letterboxd-text-secondary mb-4">
@@ -103,7 +103,7 @@ const Dashboard = () => {
 
         {isAdmin && (
           <Card className="hover:bg-letterboxd-bg-tertiary transition-colors">
-            <h2 className="text-xl font-semibold text-letterboxd-text-primary mb-2">
+            <h2 className="type-h2 text-letterboxd-text-primary mb-2">
               User management
             </h2>
             <p className="text-letterboxd-text-secondary mb-4">

@@ -23,7 +23,9 @@ const cardBase =
   "rounded-xl border border-letterboxd-border bg-letterboxd-bg-secondary p-4 shadow-sm";
 
 const MessageCard = ({ text }: { text: string }) => (
-  <div className={cn(cardBase, "text-sm italic text-letterboxd-text-secondary")}>
+  <div
+    className={cn(cardBase, "type-body-sm italic text-letterboxd-text-secondary")}
+  >
     {text}
   </div>
 );
@@ -43,16 +45,16 @@ const Card = ({
     )}
   >
     <div className="min-w-0">
-      <span className="block truncate font-bold text-letterboxd-text-primary transition-colors group-hover:text-letterboxd-link-hover">
+      <span className="block truncate type-strong text-letterboxd-text-primary transition-colors group-hover:text-letterboxd-link-hover">
         {film.title}
       </span>
-      <span className="block text-sm text-letterboxd-text-secondary">
+      <span className="block type-body-sm text-letterboxd-text-secondary">
         Ours {film.average_rating.toFixed(2)} · LB {film.lb_rating.toFixed(2)}
       </span>
     </div>
     <span
       className={cn(
-        "shrink-0 whitespace-nowrap text-2xl font-bold",
+        "shrink-0 whitespace-nowrap type-h1",
         tone === "over"
           ? "text-letterboxd-success"
           : "text-letterboxd-error",
