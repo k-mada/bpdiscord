@@ -207,6 +207,7 @@ Defined as `@utility` blocks in `index.css`.
 | `.section-title` | Uppercase tracked section header |
 | `.pro-badge` | Gold PRO badge |
 | `.data-table` / `.table-heading-row` | Table and header-row styling |
+| `.code-text` | Monospace `text-xs` for log tails and error dumps — a `type-*` role would force a sans family |
 
 ## Motion
 

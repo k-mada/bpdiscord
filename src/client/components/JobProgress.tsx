@@ -135,8 +135,8 @@ function BlockedBanner() {
       role="status"
       className="border-l-2 border-letterboxd-warning-surface/60 bg-letterboxd-warning-surface/20"
     >
-      <p className="text-sm text-letterboxd-warning">
-        <span className="font-semibold">
+      <p className="type-body-sm text-letterboxd-warning">
+        <span className="type-strong">
           Letterboxd is temporarily blocking requests from the server.
         </span>{" "}
         This usually clears in a few minutes — try again shortly.
@@ -160,7 +160,7 @@ function StepBadge({ status, step }: { status: PhaseRowStatus; step: number }) {
     <span
       aria-hidden
       className={
-        "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-sm font-semibold " +
+        "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border type-body-strong " +
         cls
       }
     >
@@ -180,7 +180,7 @@ function StepBody({
 }) {
   if (job.progress[phase] === undefined) {
     return (
-      <p className="mt-1 text-sm text-letterboxd-text-secondary">
+      <p className="mt-1 type-body-sm text-letterboxd-text-secondary">
         {status === "running" ? "Starting…" : "Waiting for previous step"}
       </p>
     );
@@ -189,7 +189,7 @@ function StepBody({
   if (phase === "user_scrape" && job.progress.user_scrape) {
     const p = job.progress.user_scrape;
     return (
-      <div className="mt-2 space-y-1 text-sm">
+      <div className="mt-2 space-y-1 type-body-sm">
         <ProgressBar
           processed={p.processed ?? 0}
           total={p.total ?? 0}
@@ -212,7 +212,7 @@ function StepBody({
   if (phase === "film_ratings" && job.progress.film_ratings) {
     const p = job.progress.film_ratings;
     return (
-      <div className="mt-2 space-y-1 text-sm">
+      <div className="mt-2 space-y-1 type-body-sm">
         <ProgressBar
           processed={p.processed ?? 0}
           total={p.total ?? 0}
@@ -229,7 +229,7 @@ function StepBody({
 
   if (phase === "missing_films" && job.progress.missing_films) {
     return (
-      <div className="mt-2 text-sm text-letterboxd-text-primary">
+      <div className="mt-2 type-body-sm text-letterboxd-text-primary">
         {job.progress.missing_films.count.toLocaleString()} missing slugs
       </div>
     );
@@ -256,7 +256,7 @@ function StepRow({
       <StepBadge status={status} step={step} />
       <div className="flex-1">
         <div className="flex items-center gap-2">
-          <h3 className="text-base font-semibold text-letterboxd-text-primary">
+          <h3 className="type-strong text-letterboxd-text-primary">
             {label}
             <span className="sr-only"> — {STEP_STATUS_LABEL[status]}</span>
           </h3>
@@ -283,7 +283,7 @@ function ErrorsPanel({ errors }: { errors: RefreshJob["errors"] }) {
         onClick={() => setOpen((v) => !v)}
         className="w-full text-left flex items-center justify-between"
       >
-        <span className="font-semibold text-letterboxd-error">
+        <span className="type-strong text-letterboxd-error">
           Errors ({errors.length})
         </span>
         <span className="text-letterboxd-text-secondary">
@@ -291,7 +291,7 @@ function ErrorsPanel({ errors }: { errors: RefreshJob["errors"] }) {
         </span>
       </button>
       {open && (
-        <ul className="mt-3 space-y-2 text-xs font-mono">
+        <ul className="mt-3 space-y-2 code-text">
           {errors.map((e, i) => (
             <li
               key={`${e.at}-${i}`}
@@ -330,19 +330,18 @@ const JobProgress = ({ job }: { job: RefreshJob }) => {
       <Card className="space-y-5">
         <div>
           <div className="flex items-baseline justify-between">
-            <h2 className="text-lg font-semibold text-letterboxd-text-primary">
+            <h2 className="type-h3 text-letterboxd-text-primary">
               Current job
             </h2>
             <span
               className={
-                "text-xs uppercase tracking-wide px-2 py-1 rounded-sm " +
-                badge.cls
+                "type-label px-2 py-1 rounded-sm " + badge.cls
               }
             >
               {badge.text}
             </span>
           </div>
-          <dl className="mt-3 grid grid-cols-2 gap-2 text-sm">
+          <dl className="mt-3 grid grid-cols-2 gap-2 type-body-sm">
             <dt className="text-letterboxd-text-secondary">Started</dt>
             <dd>{new Date(job.startedAt).toLocaleString()}</dd>
             <dt className="text-letterboxd-text-secondary">Finished</dt>
@@ -380,10 +379,10 @@ const JobProgress = ({ job }: { job: RefreshJob }) => {
 
       {job.logTail && (
         <Card>
-          <h2 className="text-lg font-semibold text-letterboxd-text-primary mb-2">
+          <h2 className="type-h3 text-letterboxd-text-primary mb-2">
             Log
           </h2>
-          <pre className="text-xs font-mono whitespace-pre-wrap max-h-64 overflow-y-auto bg-letterboxd-bg-primary p-3 rounded-sm">
+          <pre className="code-text whitespace-pre-wrap max-h-64 overflow-y-auto bg-letterboxd-bg-primary p-3 rounded-sm">
             {job.logTail}
           </pre>
         </Card>
