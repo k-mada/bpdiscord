@@ -38,16 +38,14 @@ const MovieList = ({
               <span>
                 <span aria-hidden="true">★&nbsp;</span>
                 <span className="sr-only">Average rating </span>
-                <span className="font-bold">
-                  {movie.average_rating.toFixed(2)}
-                </span>
+                <span>{movie.average_rating.toFixed(2)}</span>
               </span>
             )}
             {showCount && (
               <span>
                 <span aria-hidden="true">👀&nbsp;</span>
                 <span className="sr-only">Watched by </span>
-                <span className="font-bold">{movie.watch_count}</span>
+                <span>{movie.watch_count}</span>
               </span>
             )}
           </div>
@@ -56,7 +54,7 @@ const MovieList = ({
         return (
           <li
             key={movie.film_slug}
-            className="flex items-center gap-4 mb-8 max-md:justify-start before:[counter-increment:movie] before:content-[counter(movie)] before:min-w-12 before:min-h-12 before:border before:border-letterboxd-border before:flex before:items-center before:justify-center before:font-letterboxdBody before:text-2xl before:movie-counter-text before:rounded-full before:bg-letterboxd-bg-secondary"
+            className="flex items-center gap-4 mb-8 max-md:justify-start before:[counter-increment:movie] before:content-[counter(movie)] before:min-w-12 before:min-h-12 before:border before:border-letterboxd-border before:flex before:items-center before:justify-center before:font-letterboxdBody before:text-[1.5rem] before:movie-counter-text before:rounded-full before:bg-letterboxd-bg-secondary"
             style={
               animated ? { animationDelay: `${index * 0.2 + 0.5}s` } : undefined
             }
@@ -77,12 +75,12 @@ const MovieList = ({
                     <div className="w-full aspect-[2/3] bg-letterboxd-bg-secondary" />
                   )}
                 </Link>
-                <div className="pointer-events-none absolute inset-0 hidden items-end bg-gradient-to-b from-transparent to-letterboxd-bg-primary py-5 text-xl opacity-0 transition-opacity duration-500 ease-in-out group-hover:opacity-100 group-has-[:focus-visible]:opacity-100 hover-desktop:flex">
+                <div className="pointer-events-none absolute inset-0 hidden items-end bg-gradient-to-b from-transparent to-letterboxd-bg-primary py-5 type-h2 opacity-0 transition-opacity duration-500 ease-in-out group-hover:opacity-100 group-has-[:focus-visible]:opacity-100 hover-desktop:flex">
                   {statLine}
                 </div>
               </div>
               {(showRating || showCount) && (
-                <div className="py-2 text-xl text-left hover-desktop:hidden">
+                <div className="py-2 type-h2 text-left hover-desktop:hidden">
                   {statLine}
                 </div>
               )}
