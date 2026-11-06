@@ -157,8 +157,13 @@ settle on semibold, body emphasis on medium. This is deliberate, not a no-op; it
 the consistency the role layer exists to enforce.
 
 The roles are for **text**. A decorative glyph sized like a number — an icon, a
-connector arrow — is not a text role; size it with an arbitrary value
-(`text-[2.25rem]`), which the named-size ban leaves alone on purpose.
+connector arrow, a counter badge — is not a text role, so it gets its own named
+`@utility` whose definition `@apply`s the token size (`star-rating`, `path-arrow`,
+`movie-counter-badge`). **Never an inline arbitrary value** (`text-[2.25rem]`): it
+only slips past the named-size ban because the regex ignores arbitrary values, but
+a magic number in markup is the rawest primitive there is — the opposite of what
+the role layer abstracts. Keep the raw utility inside the `@utility` block in
+`index.css`; the markup names the class.
 
 | Typography | Bundles | Replaces |
 | --- | --- | --- |

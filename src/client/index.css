@@ -266,6 +266,16 @@
   @apply text-lg;
 }
 
+@utility path-arrow {
+  @apply text-4xl;
+}
+
+@utility movie-counter-badge {
+  &::before {
+    @apply text-2xl;
+  }
+}
+
 @utility rating-overlay-text {
   font:
     800 1rem "PT Serif",

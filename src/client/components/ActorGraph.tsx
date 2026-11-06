@@ -380,7 +380,7 @@ const PathNodeCard = ({ step }: PathNodeCardProps) => {
 };
 
 const PathArrow = () => (
-  <div className="flex items-center justify-center h-[165px] text-letterboxd-text-muted text-[2.25rem] shrink-0 px-2">
+  <div className="flex items-center justify-center h-[165px] text-letterboxd-text-muted path-arrow shrink-0 px-2">
     →
   </div>
 );
