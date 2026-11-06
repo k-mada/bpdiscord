@@ -276,6 +276,10 @@
   }
 }
 
+@utility code-text {
+  @apply text-xs font-mono;
+}
+
 @utility rating-overlay-text {
   font:
     800 1rem "PT Serif",
