@@ -61,7 +61,7 @@ const RosterView = () => {
 
       {!loading && !notFound && !error && roster && (
         <>
-          <h2 className="text-xl font-bold text-letterboxd-text-primary mb-1">
+          <h2 className="type-h2 text-letterboxd-text-primary mb-1">
             {roster.name}
           </h2>
           <p className="text-letterboxd-text-secondary mb-6">
@@ -98,10 +98,10 @@ const RosterView = () => {
                   </tr>
                 ))}
                 <tr className="border-t-2 border-letterboxd-border">
-                  <td className="font-bold text-xl" colSpan={2}>
+                  <td className="type-h2" colSpan={2}>
                     Total points
                   </td>
-                  <td className="font-bold text-xl tabular-nums">
+                  <td className="type-h2 tabular-nums">
                     {roster.totalPoints}
                   </td>
                 </tr>
