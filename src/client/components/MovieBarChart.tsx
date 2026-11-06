@@ -85,7 +85,7 @@ const MovieBarChart = ({
                   )}
                   style={barStyle}
                 >
-                  <span className="min-w-0 truncate font-bold text-letterboxd-text-primary transition-colors group-hover:text-letterboxd-link-hover">
+                  <span className="min-w-0 truncate type-strong text-letterboxd-text-primary transition-colors group-hover:text-letterboxd-link-hover">
                     {movie.title}
                   </span>
                   {value !== null && (

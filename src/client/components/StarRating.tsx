@@ -13,7 +13,7 @@ const StarRating = ({ rating }: { rating: number }) => {
         <span
           key={`full-${i}`}
           aria-hidden="true"
-          className="text-letterboxd-accent text-lg"
+          className="text-letterboxd-accent text-[1.125rem]"
         >
           ★
         </span>
@@ -23,7 +23,7 @@ const StarRating = ({ rating }: { rating: number }) => {
         <div
           key="half"
           aria-hidden="true"
-          className="relative inline-block text-lg"
+          className="relative inline-block text-[1.125rem]"
         >
           <span className="text-letterboxd-border">☆</span>
           <span
@@ -39,7 +39,7 @@ const StarRating = ({ rating }: { rating: number }) => {
         <span
           key={`empty-${i}`}
           aria-hidden="true"
-          className="text-letterboxd-border text-lg"
+          className="text-letterboxd-border text-[1.125rem]"
         >
           ☆
         </span>
