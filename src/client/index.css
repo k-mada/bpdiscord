@@ -262,6 +262,10 @@
   color: rgb(0 172 28 / var(--tw-bg-opacity, 1));
 }
 
+@utility star-rating {
+  @apply text-lg;
+}
+
 @utility rating-overlay-text {
   font:
     800 1rem "PT Serif",

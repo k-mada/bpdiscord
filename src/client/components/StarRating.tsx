@@ -5,7 +5,7 @@ const StarRating = ({ rating }: { rating: number }) => {
 
   return (
     <div
-      className="flex items-center"
+      className="star-rating flex items-center"
       role="img"
       aria-label={`${rating} out of 5 stars`}
     >
@@ -13,7 +13,7 @@ const StarRating = ({ rating }: { rating: number }) => {
         <span
           key={`full-${i}`}
           aria-hidden="true"
-          className="text-letterboxd-accent text-[1.125rem]"
+          className="text-letterboxd-accent"
         >
           ★
         </span>
@@ -23,7 +23,7 @@ const StarRating = ({ rating }: { rating: number }) => {
         <div
           key="half"
           aria-hidden="true"
-          className="relative inline-block text-[1.125rem]"
+          className="relative inline-block"
         >
           <span className="text-letterboxd-border">☆</span>
           <span
@@ -39,7 +39,7 @@ const StarRating = ({ rating }: { rating: number }) => {
         <span
           key={`empty-${i}`}
           aria-hidden="true"
-          className="text-letterboxd-border text-[1.125rem]"
+          className="text-letterboxd-border"
         >
           ☆
         </span>
