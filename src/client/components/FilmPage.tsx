@@ -13,10 +13,10 @@ const POSTER_WIDTH = 320;
 
 const StatTile = ({ label, value }: { label: string; value: string }) => (
   <div className="flex flex-row items-center">
-    <dd className="text-2xl text-letterboxd-text-primary tabular-nums font-bold">
+    <dd className="type-h1 text-letterboxd-text-primary tabular-nums">
       {value}
     </dd>
-    <dt className="ml-2 text-letterboxd-text-muted text-sm">{label}</dt>
+    <dt className="ml-2 text-letterboxd-text-muted type-body-sm">{label}</dt>
   </div>
 );
 
@@ -35,7 +35,7 @@ const RaterRow = ({ rater }: { rater: FilmRater }) => (
         </span>
       )}
       <StarRating rating={rater.rating} />
-      <span className="text-sm tabular-nums text-letterboxd-text-secondary">
+      <span className="type-body-sm tabular-nums text-letterboxd-text-secondary">
         {rater.rating.toFixed(1)}
       </span>
     </span>
@@ -62,7 +62,7 @@ const FilmPage = () => {
 
   if (loading) {
     return (
-      <Card className="text-letterboxd-text-muted text-sm" aria-busy="true">
+      <Card className="text-letterboxd-text-muted type-body-sm" aria-busy="true">
         Loading film…
       </Card>
     );
@@ -126,7 +126,7 @@ const FilmPage = () => {
                 className="w-full aspect-[2/3] object-cover rounded"
               />
             ) : (
-              <div className="flex w-full aspect-[2/3] items-center justify-center rounded bg-letterboxd-bg-tertiary text-sm text-letterboxd-text-muted">
+              <div className="flex w-full aspect-[2/3] items-center justify-center rounded bg-letterboxd-bg-tertiary type-body-sm text-letterboxd-text-muted">
                 No poster
               </div>
             )}
@@ -148,10 +148,10 @@ const FilmPage = () => {
           </dl>
         </div>
         <div className="w-half min-w-0 flex-1">
-          <h1 className="text-2xl md:text-4xl font-bold text-letterboxd-text-primary">
+          <h1 className="type-h1 md:type-display text-letterboxd-text-primary">
             {data.title}
           </h1>
-          <p className="letterboxd-text-secondary text-sm">
+          <p className="letterboxd-text-secondary type-body-sm">
             {data.releaseYear}
           </p>
 
