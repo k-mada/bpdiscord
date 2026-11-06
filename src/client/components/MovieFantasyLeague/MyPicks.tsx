@@ -45,7 +45,7 @@ const Slot = ({ index, film, disabled, onOpen, onClear }: SlotProps) => (
       </span>
     </button>
 
-    <span className="shrink-0 tabular-nums font-medium text-letterboxd-text-primary">
+    <span className="shrink-0 tabular-nums type-strong text-letterboxd-text-primary">
       ${priceOf(film)}
     </span>
 
@@ -58,7 +58,7 @@ const Slot = ({ index, film, disabled, onOpen, onClear }: SlotProps) => (
       onClick={() => onClear(index)}
       className="shrink-0 text-letterboxd-text-secondary disabled:invisible"
     >
-      <span aria-hidden="true" className="text-lg leading-none">
+      <span aria-hidden="true" className="icon-glyph">
         ✕
       </span>
     </Button>
@@ -274,7 +274,7 @@ const MyPicks = () => {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-letterboxd-text-primary mb-4">
+      <h1 className="type-h1 text-letterboxd-text-primary mb-4">
         Vulture Movies Fantasy League 2026-2027
       </h1>
       <p className="text-letterboxd-text-secondary mb-4">
@@ -282,7 +282,7 @@ const MyPicks = () => {
           Eligible movies
         </Link>
       </p>
-      <h1 className="text-xl font-bold text-letterboxd-text-primary mb-4">
+      <h1 className="type-h2 text-letterboxd-text-primary mb-4">
         My picks
       </h1>
 
@@ -310,7 +310,7 @@ const MyPicks = () => {
               <div className="flex flex-col gap-1 w-full sm:w-64">
                 <label
                   htmlFor="roster-select"
-                  className="text-sm font-medium text-letterboxd-text-secondary"
+                  className="type-body-strong text-letterboxd-text-secondary"
                 >
                   Roster
                 </label>
@@ -368,7 +368,7 @@ const MyPicks = () => {
           <div className="mb-4 flex flex-col gap-1">
             <label
               htmlFor="roster-name"
-              className="text-sm font-medium text-letterboxd-text-secondary"
+              className="type-body-strong text-letterboxd-text-secondary"
             >
               Roster name
             </label>
@@ -384,7 +384,7 @@ const MyPicks = () => {
             />
             <label
               htmlFor="roster-official"
-              className="mt-1 flex items-center gap-2 text-sm text-letterboxd-text-secondary"
+              className="mt-1 flex items-center gap-2 type-body-sm text-letterboxd-text-secondary"
             >
               <input
                 id="roster-official"
@@ -412,13 +412,13 @@ const MyPicks = () => {
           </ul>
 
           <div className="mt-6 flex items-baseline justify-between gap-4 border-t-2 border-letterboxd-border pt-4">
-            <span className="text-lg font-bold text-letterboxd-text-primary">
+            <span className="type-h3 text-letterboxd-text-primary">
               Your total spend
             </span>
             {/* The parenthetical carries the state, not the colour: red alone
                 fails 1.4.1 and says nothing to a screen reader. */}
             <span
-              className={`text-lg font-bold tabular-nums text-right ${
+              className={`type-h3 tabular-nums text-right ${
                 overBudget
                   ? "text-letterboxd-error"
                   : "text-letterboxd-text-primary"
@@ -432,7 +432,7 @@ const MyPicks = () => {
           <p
             id="roster-progress"
             aria-live="polite"
-            className="mt-2 text-sm text-letterboxd-text-secondary"
+            className="mt-2 type-body-sm text-letterboxd-text-secondary"
           >
             {filled.length} of {ROSTER_SIZE} movies selected
             {overBudget && `, $${totalSpend - BUDGET} over the $${BUDGET} budget`}

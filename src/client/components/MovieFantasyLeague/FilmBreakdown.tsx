@@ -64,7 +64,7 @@ const FilmBreakdown = () => {
         </Link>
       </p>
 
-      <h2 className="text-xl font-bold text-letterboxd-text-primary mb-2">
+      <h2 className="type-h2 text-letterboxd-text-primary mb-2">
         {film ? film.title : "Score breakdown"}
       </h2>
 
@@ -106,8 +106,8 @@ const FilmBreakdown = () => {
               </tr>
             ))}
             <tr className="border-t-2 border-letterboxd-border">
-              <td className="font-bold text-xl">Total points:</td>
-              <td className="font-bold text-xl">{totalPoints}</td>
+              <td className="type-h2">Total points:</td>
+              <td className="type-h2">{totalPoints}</td>
             </tr>
           </tbody>
         </table>

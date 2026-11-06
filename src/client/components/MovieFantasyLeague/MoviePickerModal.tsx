@@ -58,7 +58,7 @@ export function MoviePickerModal({
           <ul className="flex max-h-[60vh] flex-col gap-2 overflow-y-auto overflow-x-hidden [color-scheme:dark]">
             {byPrice.map((film) => {
               const price = (
-                <span className="shrink-0 tabular-nums font-medium">
+                <span className="shrink-0 tabular-nums type-strong">
                   ${film.price ?? 0}
                 </span>
               );
@@ -71,7 +71,7 @@ export function MoviePickerModal({
                     >
                       <span className="min-w-0 flex-1">
                         <span className="block truncate">{film.title}</span>{" "}
-                        <span className="block text-sm">already picked</span>
+                        <span className="block type-body-sm">already picked</span>
                       </span>{" "}
                       {price}
                     </div>
@@ -88,7 +88,7 @@ export function MoviePickerModal({
                           <span className="truncate">{film.title}</span>{" "}
                           <BoxOfficeDot releaseDate={film.releaseDate} />
                         </span>{" "}
-                        <span className="block text-sm text-letterboxd-text-secondary">
+                        <span className="block type-body-sm text-letterboxd-text-secondary">
                           {released(film)}
                         </span>
                       </span>{" "}
