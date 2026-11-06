@@ -58,8 +58,8 @@ const UserAdmin = () => {
     // (authorizeAdmin middleware), so this is a UX guard, not a security one.
     return (
       <Card className="border rounded-lg border-letterboxd-error-surface/60 bg-letterboxd-error-surface/20 text-letterboxd-text-primary">
-        <p className="font-semibold text-letterboxd-error">Access denied</p>
-        <p className="text-letterboxd-text-primary text-sm mt-1">
+        <p className="type-strong text-letterboxd-error">Access denied</p>
+        <p className="text-letterboxd-text-primary type-body-sm mt-1">
           This page is only available to admin accounts.
         </p>
         <Button
@@ -80,14 +80,17 @@ const UserAdmin = () => {
         <div>
           <Link
             to="/dashboard"
-            className={cn(buttonVariants({ variant: "ghost" }), "p-0 text-sm mb-2")}
+            className={cn(
+              buttonVariants({ variant: "ghost" }),
+              "p-0 type-body-sm mb-2",
+            )}
           >
             ← Dashboard
           </Link>
-          <h1 className="text-3xl font-bold text-letterboxd-text-primary">
+          <h1 className="type-h1-lg text-letterboxd-text-primary">
             User management
           </h1>
-          <p className="text-letterboxd-text-secondary text-sm mt-1">
+          <p className="text-letterboxd-text-secondary type-body-sm mt-1">
             Edit account details and link Letterboxd.com usernames to accounts.
           </p>
         </div>
@@ -113,37 +116,37 @@ const UserAdmin = () => {
                 </th>
                 <th
                   scope="col"
-                  className="py-3 px-4 text-letterboxd-text-secondary font-medium"
+                  className="py-3 px-4 text-letterboxd-text-secondary type-label"
                 >
                   Email
                 </th>
                 <th
                   scope="col"
-                  className="py-3 px-4 text-letterboxd-text-secondary font-medium"
+                  className="py-3 px-4 text-letterboxd-text-secondary type-label"
                 >
                   Name
                 </th>
                 <th
                   scope="col"
-                  className="py-3 px-4 text-letterboxd-text-secondary font-medium"
+                  className="py-3 px-4 text-letterboxd-text-secondary type-label"
                 >
                   Role
                 </th>
                 <th
                   scope="col"
-                  className="py-3 px-4 text-letterboxd-text-secondary font-medium"
+                  className="py-3 px-4 text-letterboxd-text-secondary type-label"
                 >
                   Letterboxd
                 </th>
                 <th
                   scope="col"
-                  className="py-3 px-4 text-letterboxd-text-secondary font-medium"
+                  className="py-3 px-4 text-letterboxd-text-secondary type-label"
                 >
                   Created
                 </th>
                 <th
                   scope="col"
-                  className="py-3 px-4 text-letterboxd-text-secondary font-medium"
+                  className="py-3 px-4 text-letterboxd-text-secondary type-label"
                 >
                   Actions
                 </th>
@@ -188,7 +191,7 @@ const UserAdmin = () => {
                       type="button"
                       variant="secondary"
                       onClick={() => setEditing(a)}
-                      className="text-sm"
+                      className="type-body-sm"
                     >
                       Edit
                     </Button>
@@ -324,7 +327,7 @@ const EditAccountModal = ({
           <div>
             <label
               htmlFor="edit-email"
-              className="block text-sm font-medium text-letterboxd-text-secondary mb-2"
+              className="block type-body-strong text-letterboxd-text-secondary mb-2"
             >
               Email
             </label>
@@ -337,7 +340,7 @@ const EditAccountModal = ({
               className="w-full"
             />
             {isSelf && email.trim() !== (account.email ?? "") && (
-              <p className="text-xs text-letterboxd-text-muted mt-1">
+              <p className="type-caption text-letterboxd-text-muted mt-1">
                 Changing your own email will sign you out — you'll need to log
                 in again after saving.
               </p>
@@ -347,7 +350,7 @@ const EditAccountModal = ({
           <div>
             <label
               htmlFor="edit-name"
-              className="block text-sm font-medium text-letterboxd-text-secondary mb-2"
+              className="block type-body-strong text-letterboxd-text-secondary mb-2"
             >
               Name
             </label>
@@ -364,7 +367,7 @@ const EditAccountModal = ({
           <div>
             <label
               htmlFor="edit-role"
-              className="block text-sm font-medium text-letterboxd-text-secondary mb-2"
+              className="block type-body-strong text-letterboxd-text-secondary mb-2"
             >
               Role
             </label>
@@ -385,7 +388,7 @@ const EditAccountModal = ({
             {isSelf && (
               <p
                 id="edit-role-help"
-                className="text-xs text-letterboxd-text-muted mt-1"
+                className="type-caption text-letterboxd-text-muted mt-1"
               >
                 You can't change your own role. Another admin must do it.
               </p>
@@ -395,7 +398,7 @@ const EditAccountModal = ({
           <div>
             <label
               htmlFor="edit-lbusername"
-              className="block text-sm font-medium text-letterboxd-text-secondary mb-2"
+              className="block type-body-strong text-letterboxd-text-secondary mb-2"
             >
               Letterboxd username
             </label>
@@ -417,7 +420,7 @@ const EditAccountModal = ({
                 </option>
               ))}
             </datalist>
-            <p className="text-xs text-letterboxd-text-muted mt-1">
+            <p className="type-caption text-letterboxd-text-muted mt-1">
               Leave blank to unlink. Suggestions are unclaimed Letterboxd
               usernames known to the database.
             </p>
@@ -432,7 +435,7 @@ const EditAccountModal = ({
                 variant="link"
                 onClick={() => setConfirmingDelete(true)}
                 disabled={submitting || isSelf}
-                className="text-sm text-letterboxd-error"
+                className="type-body-sm text-letterboxd-error"
                 title={
                   isSelf
                     ? "You cannot delete your own account here. Use the Supabase dashboard."
@@ -442,7 +445,7 @@ const EditAccountModal = ({
                 Delete account
               </Button>
             ) : (
-              <div className="flex items-center gap-2 text-sm">
+              <div className="flex items-center gap-2 type-body-sm">
                 <span className="text-letterboxd-text-primary">Sure?</span>
                 <Button
                   type="button"
