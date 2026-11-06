@@ -261,6 +261,17 @@ is visually a no-op; screenshots or the e2e suite prove it.
   bold) and `type-strong` (`text-base` medium). Bespoke heroes (responsive serif,
   gold extralight) and decorative large glyphs stay out of the `type-*` set and
   get per-page handling.
+
+  **Amended 2026-11-05 — decorative glyphs get a named class, not an arbitrary
+  value.** The first draft sized decorative glyphs with an inline arbitrary value
+  (`text-[2.25rem]`) because the named-size ban ignores arbitrary values. That was
+  wrong: a magic number in markup is the rawest possible primitive, the opposite of
+  the abstraction, and it passes lint only by gaming the regex. Correct handling: a
+  named `@utility` whose definition `@apply`s the token size (`star-rating`,
+  `path-arrow`, `movie-counter-badge`); the markup names the class, the raw utility
+  lives in `index.css`. The three merged arbitrary values were retrofitted. The same
+  rule covers off-scale text sizes (e.g. the recurring `text-[10px]` micro-label):
+  one shared named class, not a scattered magic number.
 - Phase 4 — Spacing (several PRs, **grouped by page/route** the same way):
   replace inline spacing with primitives. Raise the spacing rule to error
   when done.
