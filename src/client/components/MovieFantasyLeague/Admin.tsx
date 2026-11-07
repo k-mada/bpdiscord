@@ -213,8 +213,8 @@ const MFLAdmin = () => {
     // authorizeEditor on /api/mfl/admin/*.
     return (
       <Card className="border rounded-lg border-letterboxd-error-surface/60 bg-letterboxd-error-surface/20 text-letterboxd-text-primary">
-        <p className="font-semibold text-letterboxd-error">Access denied</p>
-        <p className="text-letterboxd-text-primary text-sm mt-1">
+        <p className="type-strong text-letterboxd-error">Access denied</p>
+        <p className="text-letterboxd-text-primary type-body-sm mt-1">
           This page is only available to editor and admin accounts.
         </p>
       </Card>
@@ -253,7 +253,7 @@ const MFLAdmin = () => {
           </div>
         </ModalBody>
       </Modal>
-      <h1 className="text-2xl font-bold text-letterboxd-text-primary mb-4">
+      <h1 className="type-h1 text-letterboxd-text-primary mb-4">
         MFL Admin
       </h1>
       {formStatus.type !== "idle" && (
@@ -268,9 +268,9 @@ const MFLAdmin = () => {
           onSubmit={handleSubmit}
           className="rounded-lg border-2 border-letterboxd-border p-4"
         >
-          <h2 className="text-xl text-letterboxd-text-primary mb-4">
+          <h2 className="type-h2 text-letterboxd-text-primary mb-4">
             Add new score for{" "}
-            <span className="font-bold letterboxd-text-accent">
+            <span className="letterboxd-text-accent">
               {movieTitle ?? "…"}
             </span>
             :
@@ -315,9 +315,9 @@ const MFLAdmin = () => {
         </form>
 
         <div className="rounded-lg border-2 border-letterboxd-border p-4">
-          <h2 className="text-xl text-letterboxd-text-primary mb-4">
+          <h2 className="type-h2 text-letterboxd-text-primary mb-4">
             Scores for{" "}
-            <span className="font-bold letterboxd-text-accent">
+            <span className="letterboxd-text-accent">
               {movieTitle ?? "…"}
             </span>
           </h2>
@@ -363,8 +363,8 @@ const MFLAdmin = () => {
                   );
                 })}
                 <tr className="border-t-2 border-letterboxd-border">
-                  <td className="font-bold text-xl">Total points:</td>
-                  <td className="font-bold text-xl">{totalPoints}</td>
+                  <td className="type-h2">Total points:</td>
+                  <td className="type-h2">{totalPoints}</td>
                 </tr>
               </tbody>
               </table>
