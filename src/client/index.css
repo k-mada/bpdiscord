@@ -280,6 +280,10 @@
   @apply text-xs font-mono;
 }
 
+@utility icon-glyph {
+  @apply text-lg leading-none;
+}
+
 @utility rating-overlay-text {
   font:
     800 1rem "PT Serif",
