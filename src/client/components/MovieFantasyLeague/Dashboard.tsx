@@ -78,7 +78,7 @@ const MovieFantasyLeague = () => {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-letterboxd-text-primary mb-4">
+      <h1 className="type-h1 text-letterboxd-text-primary mb-4">
         Vulture Movies Fantasy League 2026-2027
       </h1>
       <p className="text-letterboxd-text-secondary mb-4">
@@ -117,7 +117,7 @@ const MovieFantasyLeague = () => {
                 onClick={() => setActiveTab(value)}
                 onKeyDown={handleTabKeyDown}
                 className={cn(
-                  "flex-1 -mb-px border-b-2 py-2 text-center font-medium transition-colors",
+                  "flex-1 -mb-px border-b-2 py-2 text-center type-strong transition-colors",
                   activeTab === value
                     ? "border-letterboxd-accent text-letterboxd-text-primary"
                     : "border-transparent text-letterboxd-text-secondary",
@@ -154,12 +154,12 @@ const MovieFantasyLeague = () => {
           <div className="flex items-center gap-4 min-h-9 mb-4">
             <h2
               id="mfl-movies-heading"
-              className="text-xl font-bold text-letterboxd-text-primary"
+              className="type-h2 text-letterboxd-text-primary"
             >
               Eligible movies
             </h2>
             {!loading && !error && movies.length > 0 && (
-              <div className="flex flex-col gap-0.5 text-xs text-letterboxd-text-secondary">
+              <div className="flex flex-col gap-0.5 type-caption text-letterboxd-text-secondary">
                 <span className="flex items-center gap-1.5">
                   <span className="inline-block w-2 h-2 rounded-full bg-letterboxd-accent"></span>
                   Eligible for box office points
