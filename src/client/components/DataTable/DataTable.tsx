@@ -61,7 +61,7 @@ export function DataTable<T, HeaderCtx = unknown>({
   const sortGlyph = (active: boolean, direction: SortKey["sortDirection"]) => (
     <span
       aria-hidden="true"
-      className={`text-xs ${active ? "" : "text-letterboxd-text-muted"}`}
+      className={`type-caption ${active ? "" : "text-letterboxd-text-muted"}`}
     >
       {!active ? "⇅" : direction === "asc" ? "▲" : "▼"}
     </span>
@@ -99,14 +99,14 @@ export function DataTable<T, HeaderCtx = unknown>({
                 // same baseline as the row beneath them.
                 className={`${
                   stickyHeader ? "sticky top-0 z-1 " : ""
-                }align-bottom text-left py-3 px-4 text-letterboxd-text-secondary font-medium bg-letterboxd-bg-secondary`}
+                }align-bottom text-left py-3 px-4 text-letterboxd-text-secondary type-strong bg-letterboxd-bg-secondary`}
               >
                 {canSort ? (
                   <button
                     type="button"
                     onClick={() => handleSort(column.key as string)}
                     title={labelText}
-                    className="sort-control inline-flex max-w-40 items-end gap-1 border-0 bg-transparent p-0 text-left font-medium text-letterboxd-text-secondary hover:text-letterboxd-text-primary cursor-pointer"
+                    className="sort-control inline-flex max-w-40 items-end gap-1 border-0 bg-transparent p-0 text-left type-strong text-letterboxd-text-secondary hover:text-letterboxd-text-primary cursor-pointer"
                   >
                     <span className="line-clamp-2">{label}</span>
                     {sortGlyph(isActiveSort, sortKey.sortDirection)}

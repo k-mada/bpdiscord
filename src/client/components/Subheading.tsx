@@ -9,9 +9,9 @@ export const Subheading = () => {
     const randomHeading =
       SUBHEADINGS[Math.floor(Math.random() * SUBHEADINGS.length)] || "";
     if (randomHeading === "🫙") {
-      stJarSize("text-4xl rotate-12 inline-block ml-1");
+      stJarSize("jar-glyph rotate-12 inline-block ml-1");
     } else {
-      stJarSize("text-sm");
+      stJarSize("type-body-sm");
     }
     setRandomHeading(randomHeading);
   }, []);
