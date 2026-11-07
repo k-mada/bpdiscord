@@ -17,7 +17,7 @@ const PickCell = ({ pick, isWinner, isCorrectPick }: PickCellProps) => (
       }`}
     >
       <p
-        className="text-base md:text-lg font-semibold text-letterboxd-text-primary leading-snug mb-0 font-letterboxdBody"
+        className="type-award-cell text-letterboxd-text-primary mb-0"
       >
         {isCorrectPick && (
           <>
@@ -31,7 +31,7 @@ const PickCell = ({ pick, isWinner, isCorrectPick }: PickCellProps) => (
         {isWinner && <span className="sr-only">. Won this category</span>}
       </p>
       {pick.subtitle && (
-        <p className="text-[10px] md:text-xs text-letterboxd-text-muted">
+        <p className="type-micro md:type-caption text-letterboxd-text-muted">
           {pick.subtitle}
         </p>
       )}

@@ -75,12 +75,12 @@ const CreateEventForm = ({ token, onSuccess, onCancel }: CreateEventFormProps) =
       <Button
         variant="ghost"
         onClick={onCancel}
-        className="p-0 text-sm mb-4"
+        className="p-0 type-body-sm mb-4"
       >
         &larr; Back
       </Button>
       <h2
-        className="text-2xl font-bold text-letterboxd-text-primary mb-6 font-letterboxdBody"
+        className="type-award-heading text-letterboxd-text-primary mb-6"
       >
         Create Event
       </h2>
@@ -93,7 +93,7 @@ const CreateEventForm = ({ token, onSuccess, onCancel }: CreateEventFormProps) =
         <div>
           <label
             htmlFor={`${fieldId}-award-show`}
-            className="block text-sm text-letterboxd-text-secondary mb-1"
+            className="block type-body-sm text-letterboxd-text-secondary mb-1"
           >
             Award Show
           </label>
@@ -115,7 +115,7 @@ const CreateEventForm = ({ token, onSuccess, onCancel }: CreateEventFormProps) =
         <div>
           <label
             htmlFor={`${fieldId}-slug`}
-            className="block text-sm text-letterboxd-text-secondary mb-1"
+            className="block type-body-sm text-letterboxd-text-secondary mb-1"
           >
             Slug (URL-friendly)
           </label>
@@ -133,7 +133,7 @@ const CreateEventForm = ({ token, onSuccess, onCancel }: CreateEventFormProps) =
           <div>
             <label
               htmlFor={`${fieldId}-year`}
-              className="block text-sm text-letterboxd-text-secondary mb-1"
+              className="block type-body-sm text-letterboxd-text-secondary mb-1"
             >
               Year
             </label>
@@ -149,7 +149,7 @@ const CreateEventForm = ({ token, onSuccess, onCancel }: CreateEventFormProps) =
           <div>
             <label
               htmlFor={`${fieldId}-edition`}
-              className="block text-sm text-letterboxd-text-secondary mb-1"
+              className="block type-body-sm text-letterboxd-text-secondary mb-1"
             >
               Edition Number
             </label>
@@ -166,7 +166,7 @@ const CreateEventForm = ({ token, onSuccess, onCancel }: CreateEventFormProps) =
         <div>
           <label
             htmlFor={`${fieldId}-nominations-date`}
-            className="block text-sm text-letterboxd-text-secondary mb-1"
+            className="block type-body-sm text-letterboxd-text-secondary mb-1"
           >
             Nominations Date
           </label>
@@ -181,7 +181,7 @@ const CreateEventForm = ({ token, onSuccess, onCancel }: CreateEventFormProps) =
         <div>
           <label
             htmlFor={`${fieldId}-awards-date`}
-            className="block text-sm text-letterboxd-text-secondary mb-1"
+            className="block type-body-sm text-letterboxd-text-secondary mb-1"
           >
             Awards Date
           </label>

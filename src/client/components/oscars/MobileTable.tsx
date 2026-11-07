@@ -14,7 +14,7 @@ interface MobileTableProps {
 }
 
 const HEADER_CELL =
-  "px-2 py-2 text-center text-xs font-semibold uppercase tracking-wider text-letterboxd-pro";
+  "px-2 py-2 text-center type-label text-letterboxd-pro";
 
 const MobileTable = ({
   categories,

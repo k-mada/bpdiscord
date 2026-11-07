@@ -21,14 +21,14 @@ const NomineesModal = ({ category, nominees, onClose }: NomineesModalProps) => (
       <span className="font-letterboxdBody">{category}</span>
     </ModalHeader>
     <ModalBody className="pb-8">
-      <p className="text-[10px] uppercase tracking-widest text-letterboxd-text-muted mb-3">
+      <p className="type-micro uppercase tracking-widest text-letterboxd-text-muted mb-3">
         Nominees
       </p>
       <ul className="space-y-2">
         {nominees.map((nominee) => (
           <li
             key={nominee.title}
-            className="text-sm text-letterboxd-text-primary border-b border-letterboxd-border/30 pb-2 last:border-0"
+            className="type-body-sm text-letterboxd-text-primary border-b border-letterboxd-border/30 pb-2 last:border-0"
           >
             {nominee.title}
             {nominee.subtitle && (

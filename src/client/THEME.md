@@ -179,6 +179,21 @@ the role layer abstracts. Keep the raw utility inside the `@utility` block in
 | `type-prose` | 1.2rem, normal, PT Serif | long-form reading |
 | `type-caption` | `text-xs`, normal, sans | `text-xs` |
 | `type-label` | `text-xs`, medium, uppercase, tracked, sans | table headers |
+| `type-micro` | `0.625rem` (10px), normal, sans | sub-labels below caption (cell subtitles) |
+
+**Award-show family** — events and the Oscars page share one serif/gold visual
+language the sans ladder cannot express. These carry family + size + weight but
+**not** colour (the gold `text-letterboxd-pro` stays in markup, composable):
+
+| Typography | Bundles | Replaces |
+| --- | --- | --- |
+| `type-award-title` | PT Serif, `clamp(1.875rem, 4vw, 2.25rem)`, bold, tracking-tight | `text-3xl sm:text-4xl font-bold tracking-tight font-letterboxdBody` |
+| `type-award-heading` | PT Serif, `text-2xl`, bold | `text-2xl font-bold font-letterboxdBody` (admin headings) |
+| `type-award-cell` | PT Serif, `text-base`→`md:text-lg`, semibold, snug | nominee / pick / winner names |
+| `type-award-label` | `text-sm`, semibold, uppercase, tracked, sans | gold section + column headers |
+| `type-award-eyebrow` | `text-xs`, semibold, uppercase, `0.3em` tracked, sans | the gold page kicker |
+| `type-award-figure` | thin (200), `clamp(2.25rem, 5vw, 3rem)`, sans | big gold year/stat `text-4xl sm:text-5xl font-extralight` |
+| `type-award-figure-sm` | thin (200), `text-2xl`, sans | smaller gold figure `text-2xl font-extralight` |
 
 Spacing is a locked five-step scale (`--space-xs` 0.25 / `sm` 0.5 / `md` 1 /
 `lg` 1.5 / `xl` 2rem, in `@theme`) exposed through intent primitives:

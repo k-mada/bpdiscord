@@ -36,15 +36,15 @@ const OscarsPage = () => {
   return (
     <div className="oscars-page max-w-4xl mx-auto px-2 sm:px-4">
       <div className="mb-8 sm:mb-10 text-center">
-        <p className="uppercase tracking-[0.3em] text-letterboxd-pro text-xs font-semibold mb-3">
+        <p className="type-award-eyebrow text-letterboxd-pro mb-3">
           The Big Picture
         </p>
         <h1
-          className="text-3xl sm:text-4xl font-bold text-letterboxd-text-primary tracking-tight font-letterboxdBody"
+          className="type-award-title text-letterboxd-text-primary"
         >
           Oscar Predictions
         </h1>
-        <p className="text-4xl sm:text-5xl font-extralight text-letterboxd-pro mt-1">
+        <p className="type-award-figure text-letterboxd-pro mt-1">
           {oscarsData.year}
         </p>
 
@@ -55,8 +55,8 @@ const OscarsPage = () => {
               { label: "Amanda", wins: amandaWins },
             ].map(({ label, wins }) => (
               <div key={label} className="text-center">
-                <p className="text-2xl font-bold text-letterboxd-pro">{wins}</p>
-                <p className="text-xs uppercase tracking-wider text-letterboxd-text-muted mt-1">
+                <p className="type-h1 text-letterboxd-pro">{wins}</p>
+                <p className="type-label text-letterboxd-text-muted mt-1">
                   {label}
                 </p>
               </div>

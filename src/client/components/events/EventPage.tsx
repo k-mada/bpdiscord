@@ -63,17 +63,17 @@ const EventPage = () => {
   return (
     <div className="max-w-4xl mx-auto px-2 sm:px-4">
       <div className="mb-8 sm:mb-10 text-center">
-        <p className="uppercase tracking-[0.3em] text-letterboxd-pro text-xs font-semibold mb-3">
+        <p className="type-award-eyebrow text-letterboxd-pro mb-3">
           Awards Event
         </p>
         <h1
-          className="text-3xl sm:text-4xl font-bold text-letterboxd-text-primary tracking-tight font-letterboxdBody"
+          className="type-award-title text-letterboxd-text-primary"
         >
           {event.editionNumber
             ? `The ${event.editionNumber}${getOrdinalSuffix(event.editionNumber)} ${event.awardShowName}`
             : event.awardShowName}
         </h1>
-        <p className="text-4xl sm:text-5xl font-extralight text-letterboxd-pro mt-1">
+        <p className="type-award-figure text-letterboxd-pro mt-1">
           {event.year}
         </p>
       </div>

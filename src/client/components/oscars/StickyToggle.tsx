@@ -48,7 +48,7 @@ const StickyToggle = ({ viewMode, setViewMode }: ToggleProps) => {
               tabIndex={viewMode === value ? 0 : -1}
               onKeyDown={handleKeyDown}
               onClick={() => setViewMode(value)}
-              className={`px-4 sm:px-5 py-1.5 text-sm font-semibold transition-colors ${
+              className={`px-4 sm:px-5 py-1.5 type-body-strong transition-colors ${
                 viewMode === value
                   ? "bg-letterboxd-pro text-letterboxd-bg-primary"
                   : "bg-letterboxd-bg-secondary text-letterboxd-text-secondary hover:text-letterboxd-text-primary"
