@@ -110,12 +110,12 @@ const EventAdminPage = () => {
         <Button
           variant="ghost"
           onClick={() => setView("list")}
-          className="p-0 text-sm mb-4"
+          className="p-0 type-body-sm mb-4"
         >
           &larr; Back
         </Button>
         <h2
-          className="text-2xl font-bold text-letterboxd-text-primary mb-6 font-letterboxdBody"
+          className="type-award-heading text-letterboxd-text-primary mb-6"
         >
           Create Award Show
         </h2>
@@ -123,7 +123,7 @@ const EventAdminPage = () => {
           <div>
             <label
               htmlFor="award-show-name"
-              className="block text-sm text-letterboxd-text-secondary mb-1"
+              className="block type-body-sm text-letterboxd-text-secondary mb-1"
             >
               Name
             </label>
@@ -140,7 +140,7 @@ const EventAdminPage = () => {
           <div>
             <label
               htmlFor="award-show-slug"
-              className="block text-sm text-letterboxd-text-secondary mb-1"
+              className="block type-body-sm text-letterboxd-text-secondary mb-1"
             >
               Slug
             </label>
@@ -157,7 +157,7 @@ const EventAdminPage = () => {
           <div>
             <label
               htmlFor="award-show-description"
-              className="block text-sm text-letterboxd-text-secondary mb-1"
+              className="block type-body-sm text-letterboxd-text-secondary mb-1"
             >
               Description (optional)
             </label>
@@ -197,14 +197,14 @@ const EventAdminPage = () => {
     <div className="max-w-4xl mx-auto px-2 sm:px-4">
       <div className="mb-8 text-center">
         <h1
-          className="text-3xl font-bold text-letterboxd-text-primary font-letterboxdBody"
+          className="type-award-title text-letterboxd-text-primary"
         >
           Event Admin
         </h1>
       </div>
 
       {message && (
-        <div className="mb-4 p-3 bg-letterboxd-pro/20 text-letterboxd-pro text-sm rounded-sm">
+        <div className="mb-4 p-3 bg-letterboxd-pro/20 text-letterboxd-pro type-body-sm rounded-sm">
           {message}
         </div>
       )}
@@ -212,27 +212,27 @@ const EventAdminPage = () => {
       {/* Award Shows Section */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-letterboxd-text-secondary">
+          <h2 className="type-award-label text-letterboxd-text-secondary">
             Award Shows
           </h2>
           <Button
             variant="secondary"
             onClick={() => setView("create-award-show")}
-            className="text-sm"
+            className="type-body-sm"
           >
             New Award Show
           </Button>
         </div>
         {loading ? (
-          <p className="text-letterboxd-text-muted text-sm">Loading...</p>
+          <p className="text-letterboxd-text-muted type-body-sm">Loading...</p>
         ) : awardShows.length === 0 ? (
-          <p className="text-letterboxd-text-muted text-sm">No award shows yet.</p>
+          <p className="text-letterboxd-text-muted type-body-sm">No award shows yet.</p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {awardShows.map((show) => (
               <span
                 key={show.id}
-                className="px-3 py-1 bg-letterboxd-bg-secondary text-letterboxd-text-primary text-sm rounded-full border border-letterboxd-border/50"
+                className="px-3 py-1 bg-letterboxd-bg-secondary text-letterboxd-text-primary type-body-sm rounded-full border border-letterboxd-border/50"
               >
                 {show.name}
               </span>
@@ -243,10 +243,10 @@ const EventAdminPage = () => {
 
       {/* Events Section */}
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-letterboxd-text-secondary">
+        <h2 className="type-award-label text-letterboxd-text-secondary">
           Events
         </h2>
-        <Button onClick={() => setView("create")} className="text-sm">
+        <Button onClick={() => setView("create")} className="type-body-sm">
           New Event
         </Button>
       </div>
@@ -263,17 +263,17 @@ const EventAdminPage = () => {
               className="flex items-center justify-between p-4 bg-letterboxd-bg-secondary rounded-lg border border-letterboxd-border/50"
             >
               <div>
-                <p className="text-letterboxd-text-primary font-semibold">
+                <p className="text-letterboxd-text-primary type-strong">
                   {event.awardShowName}
                 </p>
-                <p className="text-xs text-letterboxd-text-muted">
+                <p className="type-caption text-letterboxd-text-muted">
                   {event.year} &middot; {event.status}
                 </p>
               </div>
               <Button
                 variant="secondary"
                 onClick={() => loadEvent(event.slug)}
-                className="text-sm"
+                className="type-body-sm"
               >
                 Manage
               </Button>

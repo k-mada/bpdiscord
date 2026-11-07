@@ -10,7 +10,7 @@ interface CategoryLabelProps {
 }
 
 const LABEL =
-  "text-sm font-semibold text-letterboxd-text-primary underline decoration-dotted " +
+  "type-body-strong text-letterboxd-text-primary underline decoration-dotted " +
   "decoration-letterboxd-text-muted/50 underline-offset-2 cursor-pointer " +
   "hover:text-letterboxd-pro transition-colors";
 

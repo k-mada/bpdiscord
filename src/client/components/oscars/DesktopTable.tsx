@@ -15,7 +15,7 @@ interface DesktopTableProps {
 }
 
 const HEADER_CELL =
-  "px-3 py-2 text-sm font-semibold uppercase tracking-wider text-letterboxd-pro";
+  "px-3 py-2 type-award-label text-letterboxd-pro";
 
 // Explicit roles, not a <table>: display:grid strips the implicit table
 // semantics of native table elements in Chrome and Firefox.

@@ -10,12 +10,12 @@ const WinnerCell = ({ cat }: { cat: OscarsCategory }) => (
         {cat.actual_winner.map((winner, i) => (
           <div key={i} className="inline-block px-2 py-1">
             <p
-              className="text-base md:text-lg font-semibold text-letterboxd-text-primary leading-snug mb-0 font-letterboxdBody"
+              className="type-award-cell text-letterboxd-text-primary mb-0"
             >
               {winner.title}
             </p>
             {winner.subtitle && (
-              <p className="text-[10px] md:text-xs text-letterboxd-text-muted">
+              <p className="type-micro md:type-caption text-letterboxd-text-muted">
                 {winner.subtitle}
               </p>
             )}
@@ -24,7 +24,7 @@ const WinnerCell = ({ cat }: { cat: OscarsCategory }) => (
       </div>
     ) : (
       <>
-        <span aria-hidden="true" className="text-letterboxd-text-muted text-xs">
+        <span aria-hidden="true" className="text-letterboxd-text-muted type-caption">
           &mdash;
         </span>
         <span className="sr-only">Not announced</span>

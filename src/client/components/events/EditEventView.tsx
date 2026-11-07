@@ -112,29 +112,29 @@ const EditEventView = ({
       <Button
         variant="ghost"
         onClick={onBack}
-        className="p-0 text-sm mb-4"
+        className="p-0 type-body-sm mb-4"
       >
         &larr; Back to events
       </Button>
 
       <div className="mb-6">
         <h2
-          className="text-2xl font-bold text-letterboxd-text-primary font-letterboxdBody"
+          className="type-award-heading text-letterboxd-text-primary"
         >
           {event.awardShowName} ({event.year})
         </h2>
-        <p className="text-xs text-letterboxd-text-muted mt-1">
+        <p className="type-caption text-letterboxd-text-muted mt-1">
           Status: {event.status} &middot; Slug: {event.slug}
         </p>
       </div>
 
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-letterboxd-pro">
+        <h3 className="type-award-label text-letterboxd-pro">
           Categories ({categories.length})
         </h3>
         <Button
           onClick={() => setShowAddCategory(!showAddCategory)}
-          className="text-sm"
+          className="type-body-sm"
         >
           {showAddCategory ? "Cancel" : "Add Category"}
         </Button>
@@ -157,7 +157,7 @@ const EditEventView = ({
             <option value="movie_first">Movie/Show First</option>
             <option value="person_first">Person First</option>
           </select>
-          <Button onClick={handleAddCategory} className="text-sm">
+          <Button onClick={handleAddCategory} className="type-body-sm">
             Save Category
           </Button>
         </div>
@@ -184,10 +184,10 @@ const EditEventView = ({
                 className="flex flex-1 items-center justify-between gap-2 text-left cursor-pointer"
               >
                 <span className="block">
-                  <span className="block text-letterboxd-text-primary font-semibold">
+                  <span className="block text-letterboxd-text-primary type-strong">
                     {cat.name}
                   </span>
-                  <span className="block text-xs text-letterboxd-text-muted">
+                  <span className="block type-caption text-letterboxd-text-muted">
                     {cat.nominees.length} nominees &middot; {cat.displayMode}
                   </span>
                 </span>
@@ -198,7 +198,7 @@ const EditEventView = ({
               <Button
                 variant="link"
                 onClick={() => handleDeleteCategory(cat.id)}
-                className="text-letterboxd-error text-xs"
+                className="text-letterboxd-error type-caption"
               >
                 Delete
               </Button>
@@ -216,7 +216,7 @@ const EditEventView = ({
                       className="flex items-center justify-between py-2 px-3 bg-letterboxd-bg-primary/50 rounded-sm"
                     >
                       <div>
-                        <p className="text-sm text-letterboxd-text-primary">
+                        <p className="type-body-sm text-letterboxd-text-primary">
                           {nominee.movieOrShowName}
                           {nominee.personName && (
                             <span className="text-letterboxd-text-muted">
@@ -226,7 +226,7 @@ const EditEventView = ({
                           )}
                         </p>
                         {nominee.isWinner && (
-                          <span className="text-xs text-letterboxd-pro font-semibold">
+                          <span className="type-caption text-letterboxd-pro">
                             Winner
                           </span>
                         )}
@@ -236,7 +236,7 @@ const EditEventView = ({
                           onClick={() =>
                             handleToggleWinner(nominee.id, nominee.isWinner)
                           }
-                          className={`text-xs px-2 py-1 rounded ${
+                          className={`type-caption px-2 py-1 rounded ${
                             nominee.isWinner
                               ? "bg-letterboxd-pro/20 text-letterboxd-pro"
                               : "bg-letterboxd-bg-tertiary text-letterboxd-text-muted hover:text-letterboxd-pro"
@@ -247,7 +247,7 @@ const EditEventView = ({
                         <Button
                           variant="link"
                           onClick={() => handleDeleteNominee(nominee.id)}
-                          className="text-letterboxd-error text-xs"
+                          className="text-letterboxd-error type-caption"
                         >
                           Delete
                         </Button>
@@ -275,7 +275,7 @@ const EditEventView = ({
                     <div className="flex gap-2">
                       <Button
                         onClick={() => handleAddNominee(cat.id)}
-                        className="text-sm"
+                        className="type-body-sm"
                       >
                         Add Nominee
                       </Button>
@@ -286,7 +286,7 @@ const EditEventView = ({
                           setNewNomineePerson("");
                           setNewNomineeMovie("");
                         }}
-                        className="text-sm"
+                        className="type-body-sm"
                       >
                         Cancel
                       </Button>
@@ -295,7 +295,7 @@ const EditEventView = ({
                 ) : (
                   <button
                     onClick={() => setShowAddNominee(cat.id)}
-                    className="mt-3 text-sm text-letterboxd-pro hover:text-letterboxd-pro/80"
+                    className="mt-3 type-body-sm text-letterboxd-pro hover:text-letterboxd-pro/80"
                   >
                     + Add Nominee
                   </button>

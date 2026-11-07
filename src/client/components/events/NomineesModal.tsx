@@ -23,7 +23,7 @@ const NomineesModal = ({ category, onClose }: NomineesModalProps) => (
       </span>
     </ModalHeader>
     <ModalBody className="pb-8">
-      <p className="text-[10px] uppercase tracking-widest text-letterboxd-text-muted mb-3">
+      <p className="type-micro uppercase tracking-widest text-letterboxd-text-muted mb-3">
         Nominees
       </p>
       <ul className="space-y-2">
@@ -35,7 +35,7 @@ const NomineesModal = ({ category, onClose }: NomineesModalProps) => (
           return (
             <li
               key={nominee.id}
-              className="text-sm text-letterboxd-text-primary border-b border-letterboxd-border/30 pb-2 last:border-0"
+              className="type-body-sm text-letterboxd-text-primary border-b border-letterboxd-border/30 pb-2 last:border-0"
             >
               {primary}
               {secondary && (
@@ -45,7 +45,7 @@ const NomineesModal = ({ category, onClose }: NomineesModalProps) => (
                 </span>
               )}
               {nominee.isWinner && (
-                <span className="ml-2 text-letterboxd-pro text-xs font-semibold">
+                <span className="ml-2 text-letterboxd-pro type-caption">
                   Winner
                 </span>
               )}

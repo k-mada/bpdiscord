@@ -77,7 +77,7 @@ const EventsListPage = () => {
     <div className="max-w-4xl mx-auto px-2 sm:px-4">
       <div className="mb-8 sm:mb-10 text-center">
         <h1
-          className="text-3xl sm:text-4xl font-bold text-letterboxd-text-primary tracking-tight font-letterboxdBody"
+          className="type-award-title text-letterboxd-text-primary"
         >
           Events
         </h1>
@@ -89,7 +89,7 @@ const EventsListPage = () => {
         <div className="space-y-8">
           {groups.map((group) => (
             <div key={group.name}>
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-letterboxd-pro mb-3">
+              <h2 className="type-award-label text-letterboxd-pro mb-3">
                 {group.name}
               </h2>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -99,11 +99,11 @@ const EventsListPage = () => {
                     to={`/events/${event.slug}`}
                     className="p-2 hover:bg-letterboxd-bg-tertiary transition-colors border border-letterboxd-border/50 rounded-lg"
                   >
-                    <span className="text-2xl font-extralight text-letterboxd-pro">
+                    <span className="type-award-figure-sm text-letterboxd-pro">
                       {event.year}
                     </span>
                     {event.awardsDate && (
-                      <p className="text-xs text-letterboxd-text-muted mt-2">
+                      <p className="type-caption text-letterboxd-text-muted mt-2">
                         {new Date(event.awardsDate).toLocaleDateString(
                           "en-US",
                           {

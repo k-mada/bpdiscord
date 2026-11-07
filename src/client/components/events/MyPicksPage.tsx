@@ -105,25 +105,25 @@ const MyPicksPage = () => {
         to={`/events/${slug}`}
         className={cn(
           buttonVariants({ variant: "ghost" }),
-          "p-0 text-sm mb-4 inline-block",
+          "p-0 type-body-sm mb-4 inline-block",
         )}
       >
         &larr; Back to event
       </Link>
 
       <div className="mb-8 text-center">
-        <p className="uppercase tracking-[0.3em] text-letterboxd-pro text-xs font-semibold mb-3">
+        <p className="type-award-eyebrow text-letterboxd-pro mb-3">
           My Picks
         </p>
         <h1
-          className="text-3xl font-bold text-letterboxd-text-primary tracking-tight font-letterboxdBody"
+          className="type-award-title text-letterboxd-text-primary"
         >
           {event.awardShowName}
         </h1>
-        <p className="text-2xl font-extralight text-letterboxd-pro mt-1">
+        <p className="type-award-figure-sm text-letterboxd-pro mt-1">
           {event.year}
         </p>
-        <p className="text-sm text-letterboxd-text-muted mt-3">
+        <p className="type-body-sm text-letterboxd-text-muted mt-3">
           {pickedCount} / {totalCategories} categories picked
         </p>
       </div>
@@ -166,7 +166,7 @@ const CategoryPickCard = ({
   return (
     <div className="bg-letterboxd-bg-secondary rounded-lg border border-letterboxd-border/50 overflow-hidden">
       <div className="px-4 py-3 border-b border-letterboxd-border/30">
-        <h3 className="text-sm font-semibold text-letterboxd-pro uppercase tracking-wider">
+        <h3 className="type-award-label text-letterboxd-pro">
           {category.name}
         </h3>
       </div>
@@ -187,17 +187,17 @@ const CategoryPickCard = ({
               } ${isSaving ? "opacity-50" : ""}`}
             >
               <p
-                className="text-sm font-semibold text-letterboxd-text-primary font-letterboxdBody"
+                className="type-award-cell text-letterboxd-text-primary"
               >
                 {primary}
                 {nominee.isWinner && (
-                  <span className="ml-2 text-letterboxd-pro text-xs">
+                  <span className="ml-2 text-letterboxd-pro type-caption">
                     Winner
                   </span>
                 )}
               </p>
               {secondary && (
-                <p className="text-xs text-letterboxd-text-muted mt-0.5">
+                <p className="type-caption text-letterboxd-text-muted mt-0.5">
                   {secondary}
                 </p>
               )}

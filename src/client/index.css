@@ -129,6 +129,60 @@
   @apply text-xs font-medium font-sans uppercase tracking-wider;
 }
 
+@utility type-micro {
+  @apply font-normal font-sans;
+  font-size: 0.625rem;
+  line-height: 0.875rem;
+}
+
+/* Award-show typography (events + the Oscars page). These two features share
+   one visual language the sans type-* ladder cannot express: a PT Serif hero,
+   gold eyebrows, and thin gold figures. Each role bundles family, size, and
+   weight (and the eyebrow's wide tracking); colour (gold text-letterboxd-pro)
+   stays in the markup so it composes. */
+@utility type-award-title {
+  font-family: var(--font-letterboxdBody);
+  font-weight: 700;
+  font-size: clamp(1.875rem, 4vw, 2.25rem);
+  line-height: 1.15;
+  letter-spacing: -0.025em;
+}
+
+@utility type-award-heading {
+  font-family: var(--font-letterboxdBody);
+  @apply text-2xl font-bold;
+}
+
+@utility type-award-cell {
+  font-family: var(--font-letterboxdBody);
+  @apply text-base font-semibold;
+  line-height: 1.375;
+  @media (width >= 48rem) {
+    font-size: 1.125rem;
+  }
+}
+
+@utility type-award-label {
+  @apply text-sm font-semibold font-sans uppercase tracking-wider;
+}
+
+@utility type-award-eyebrow {
+  @apply text-xs font-semibold font-sans uppercase;
+  letter-spacing: 0.3em;
+}
+
+@utility type-award-figure {
+  @apply font-sans;
+  font-weight: 200;
+  font-size: clamp(2.25rem, 5vw, 3rem);
+  line-height: 1;
+}
+
+@utility type-award-figure-sm {
+  @apply text-2xl font-sans;
+  font-weight: 200;
+}
+
 /* Spacing primitives expose intent, not numbers. stack-* is flex-column + gap
    (robust with wrapping/conditional children); cluster-* is the flex-row twin. */
 @utility stack-sm {
