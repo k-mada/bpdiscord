@@ -19,14 +19,14 @@ const AdminRefresh = () => {
         <div>
           <Link
             to="/dashboard"
-            className={cn(buttonVariants({ variant: "ghost" }), "p-0 text-sm mb-2")}
+            className={cn(buttonVariants({ variant: "ghost" }), "p-0 type-body-sm mb-2")}
           >
             ← Dashboard
           </Link>
-          <h1 className="text-3xl font-bold text-letterboxd-text-primary">
+          <h1 className="type-h1-lg text-letterboxd-text-primary">
             Refresh user film data
           </h1>
-          <p className="text-letterboxd-text-secondary text-sm mt-1">
+          <p className="text-letterboxd-text-secondary type-body-sm mt-1">
             Re-scrape every user's Letterboxd film grid, then refresh Letterboxd
             average ratings for any newly-seen films.
           </p>

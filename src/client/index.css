@@ -338,6 +338,10 @@
   @apply text-lg leading-none;
 }
 
+@utility jar-glyph {
+  @apply text-4xl;
+}
+
 @utility rating-overlay-text {
   font:
     800 1rem "PT Serif",

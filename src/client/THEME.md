@@ -224,6 +224,7 @@ Defined as `@utility` blocks in `index.css`.
 | `.data-table` / `.table-heading-row` | Table and header-row styling |
 | `.code-text` | Monospace `text-xs` for log tails and error dumps — a `type-*` role would force a sans family |
 | `.icon-glyph` | Sizes a decorative inline icon glyph (a `✕`, `✓`) at `text-lg` — not a text role |
+| `.jar-glyph` | Sizes the subheading easter-egg emoji (`🫙`) at `text-4xl` — a decorative glyph, not a text role |
 
 ## Motion
 

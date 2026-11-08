@@ -12,13 +12,13 @@ const NotFound = ({
 }: NotFoundProps) => {
   return (
     <Card className="text-center py-16">
-      <h2 className="text-3xl font-bold text-letterboxd-text-primary mb-3">
+      <h2 className="type-h1-lg text-letterboxd-text-primary mb-3">
         {title}
       </h2>
       <p className="text-letterboxd-text-secondary mb-6">{message}</p>
       <Link
         to="/"
-        className="text-letterboxd-accent hover:text-letterboxd-accent-hover font-medium"
+        className="text-letterboxd-accent hover:text-letterboxd-accent-hover type-strong"
       >
         ← Back to home
       </Link>

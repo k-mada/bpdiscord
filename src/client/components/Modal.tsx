@@ -190,7 +190,7 @@ const ModalHeader = ({
     >
       <h2
         id={title?.titleId}
-        className="text-lg sm:text-xl text-letterboxd-text-primary"
+        className="type-h3 sm:type-h2 text-letterboxd-text-primary"
       >
         {children}
       </h2>

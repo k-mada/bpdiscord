@@ -18,7 +18,7 @@ export function Notification({ status }: NotificationProps) {
     <div
       id={id}
       role={ROLE[status.type]}
-      className={`border rounded-lg p-4 text-sm ${TONE[status.type]}`}
+      className={`border rounded-lg p-4 type-body-sm ${TONE[status.type]}`}
     >
       {status.message}
     </div>

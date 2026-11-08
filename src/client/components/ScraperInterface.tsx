@@ -91,7 +91,7 @@ const ScraperInterface = () => {
   return (
     <div className="space-y-8">
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-letterboxd-text-primary mb-2">
+        <h2 className="type-h1-lg text-letterboxd-text-primary mb-2">
           Letterboxd Data Fetcher
         </h2>
         <p className="text-letterboxd-text-secondary">
@@ -104,7 +104,7 @@ const ScraperInterface = () => {
           <div>
             <label
               htmlFor="username"
-              className="block text-sm font-medium text-letterboxd-text-secondary mb-2"
+              className="block type-body-strong text-letterboxd-text-secondary mb-2"
             >
               Letterboxd Username
             </label>

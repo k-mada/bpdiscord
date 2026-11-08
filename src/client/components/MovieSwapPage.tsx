@@ -15,7 +15,7 @@ const MovieSwapPage = () => {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-letterboxd-text-primary mb-2">
+      <h1 className="type-h1-lg text-letterboxd-text-primary mb-2">
         Movie Swap
       </h1>
       <h3 className="subheading">

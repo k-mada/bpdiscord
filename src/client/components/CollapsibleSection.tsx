@@ -25,7 +25,7 @@ const CollapsibleSection = ({
           aria-controls={bodyId}
           className="flex w-full items-center justify-between text-left"
         >
-          <span className="text-letterboxd-text-primary font-semibold">
+          <span className="text-letterboxd-text-primary type-strong">
             {title}
           </span>
           <ChevronDownIcon

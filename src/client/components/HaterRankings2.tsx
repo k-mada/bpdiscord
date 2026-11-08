@@ -71,7 +71,7 @@ const HaterRankings2 = ({
           </aside>
         </ModalBody>
       </Modal>
-      <h1 className="text-3xl font-bold text-letterboxd-text-primary mb-2">
+      <h1 className="type-h1-lg text-letterboxd-text-primary mb-2">
         Hater Rankings
       </h1>
       <h3 className="subheading">
@@ -79,7 +79,7 @@ const HaterRankings2 = ({
       </h3>
       <button
         type="button"
-        className="text-xs mb-4 underline text-letterboxd-text-secondary hover:text-letterboxd-text-primary"
+        className="type-caption mb-4 underline text-letterboxd-text-secondary hover:text-letterboxd-text-primary"
         onClick={() => setIsOpen(true)}
       >
         How is this calculated?
@@ -106,7 +106,7 @@ const HaterRankings2 = ({
               <tbody>
                 {rankings.map((ranking, index) => (
                   <tr key={ranking.username}>
-                    <td className="px-6 py-1 whitespace-nowrap text-lg text-letterboxd-text-primary font-bold">
+                    <td className="px-6 py-1 whitespace-nowrap type-h3 text-letterboxd-text-primary">
                       {index + 1}
                     </td>
                     <td className="px-6 py-1 whitespace-nowrap">
@@ -115,7 +115,7 @@ const HaterRankings2 = ({
                           <TrophyIcon className="h-5 w-5 text-letterboxd-pro" />
                         )}
                         <span
-                          className={`font-medium text-xl ${
+                          className={`type-h2 ${
                             index === 0
                               ? "text-letterboxd-pro"
                               : "text-letterboxd-text-primary"
@@ -127,10 +127,10 @@ const HaterRankings2 = ({
                         </span>
                       </div>
                     </td>
-                    <td className="px-6 py-1 whitespace-nowrap text-sm text-letterboxd-text-secondary">
+                    <td className="px-6 py-1 whitespace-nowrap type-body-sm text-letterboxd-text-secondary">
                       {ranking.filmsRated}
                     </td>
-                    <td className="px-6 py-1 whitespace-nowrap text-sm text-letterboxd-text-primary">
+                    <td className="px-6 py-1 whitespace-nowrap type-body-sm text-letterboxd-text-primary">
                       <RatingDifferential
                         differential={ranking.adjustedDifferential}
                       />
@@ -144,7 +144,7 @@ const HaterRankings2 = ({
       </div>
 
       {rankings.length > 0 && (
-        <div className="text-center text-sm text-letterboxd-text-secondary">
+        <div className="text-center type-body-sm text-letterboxd-text-secondary">
           <p>
             Showing {rankings.length} user{rankings.length !== 1 ? "s" : ""}{" "}
             with ratings data

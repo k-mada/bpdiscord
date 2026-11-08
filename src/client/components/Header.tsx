@@ -48,7 +48,7 @@ const Header = () => {
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <Link
             to="/"
-            className="text-2xl text-left font-bold text-letterboxd-text-primary hover:text-letterboxd-accent transition-colors duration-200"
+            className="type-h1 text-left text-letterboxd-text-primary hover:text-letterboxd-accent transition-colors duration-200"
           >
             <span>The Big Picture Discord</span>
             <Subheading />
