@@ -218,7 +218,7 @@ const UserComparison = () => {
                   <tr>
                     <td>{user1Data.displayName || user1Data.username}</td>
                     <td>{getTotalRatings(user1Data).toLocaleString()}</td>
-                    <td className="py-3 px-4">
+                    <td>
                       <RatingDistributionHistogram
                         distribution={user1Data.ratings}
                       />
@@ -309,7 +309,7 @@ const UserComparison = () => {
                   return (
                     shouldShow && (
                       <tr key={`${movie.title}-${index}`}>
-                        <td className="py-3 px-4 text-letterboxd-text-primary type-strong">
+                        <td className="type-strong">
                           <a
                             href={`https://letterboxd.com/film/${movie.film_slug}`}
                             target="_blank"
@@ -317,7 +317,7 @@ const UserComparison = () => {
                             {movie.title}
                           </a>
                         </td>
-                        <td className="py-3 px-4 text-letterboxd-text-primary">
+                        <td>
                           {movie.user1_rating > 0 ? (
                             <StarRating rating={movie.user1_rating} />
                           ) : (
@@ -326,7 +326,7 @@ const UserComparison = () => {
                             </span>
                           )}
                         </td>
-                        <td className="py-3 px-4 text-letterboxd-text-primary">
+                        <td>
                           {movie.user2_rating > 0 ? (
                             <StarRating rating={movie.user2_rating} />
                           ) : (

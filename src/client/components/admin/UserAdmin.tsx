@@ -108,46 +108,28 @@ const UserAdmin = () => {
         </Card>
       ) : (
         <Card className="overflow-x-auto">
-          <table className="w-full text-left">
+          <table className="data-table text-left">
             <thead>
               <tr className="border-b border-letterboxd-border">
-                <th scope="col" className="py-3 px-4">
+                <th scope="col">
                   <span className="sr-only">Row number</span>
                 </th>
-                <th
-                  scope="col"
-                  className="py-3 px-4 text-letterboxd-text-secondary type-label"
-                >
+                <th scope="col" className="type-label">
                   Email
                 </th>
-                <th
-                  scope="col"
-                  className="py-3 px-4 text-letterboxd-text-secondary type-label"
-                >
+                <th scope="col" className="type-label">
                   Name
                 </th>
-                <th
-                  scope="col"
-                  className="py-3 px-4 text-letterboxd-text-secondary type-label"
-                >
+                <th scope="col" className="type-label">
                   Role
                 </th>
-                <th
-                  scope="col"
-                  className="py-3 px-4 text-letterboxd-text-secondary type-label"
-                >
+                <th scope="col" className="type-label">
                   Letterboxd
                 </th>
-                <th
-                  scope="col"
-                  className="py-3 px-4 text-letterboxd-text-secondary type-label"
-                >
+                <th scope="col" className="type-label">
                   Created
                 </th>
-                <th
-                  scope="col"
-                  className="py-3 px-4 text-letterboxd-text-secondary type-label"
-                >
+                <th scope="col" className="type-label">
                   Actions
                 </th>
               </tr>
@@ -155,19 +137,19 @@ const UserAdmin = () => {
             <tbody>
               {accounts.map((a, i) => (
                 <tr key={a.id} className="border-b border-letterboxd-border/50">
-                  <td className="py-3 px-4 text-letterboxd-text-secondary">
-                    {i + 1}
+                  <td>
+                    <span className="text-letterboxd-text-secondary">{i + 1}</span>
                   </td>
-                  <td className="py-3 px-4 text-letterboxd-text-primary">
+                  <td>
                     {a.email ?? "—"}
                   </td>
-                  <td className="py-3 px-4 text-letterboxd-text-primary">
+                  <td>
                     {a.name ?? "—"}
                   </td>
-                  <td className="py-3 px-4 text-letterboxd-text-primary capitalize">
+                  <td className="capitalize">
                     {a.role}
                   </td>
-                  <td className="py-3 px-4 text-letterboxd-text-primary">
+                  <td>
                     {a.lbusername ? (
                       <a
                         href={`https://letterboxd.com/${a.lbusername}`}
@@ -183,10 +165,10 @@ const UserAdmin = () => {
                       </span>
                     )}
                   </td>
-                  <td className="py-3 px-4 text-letterboxd-text-primary">
+                  <td>
                     {formatDate(a.createdAt)}
                   </td>
-                  <td className="py-3 px-4">
+                  <td>
                     <Button
                       type="button"
                       variant="secondary"
