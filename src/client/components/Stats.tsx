@@ -145,7 +145,7 @@ const Dashboard = () => {
         </select>
       </div>
 
-      <h2 className="subheading max-md:text-base">Our biggest deviations</h2>
+      <h2 className="subheading max-md:type-strong">Our biggest deviations</h2>
       <div className="mb-8">
         {deviationInitialLoad ? (
           <div className="flex justify-center">
@@ -186,7 +186,7 @@ const Dashboard = () => {
                   onClick={() => setActiveTab(value)}
                   onKeyDown={handleTabKeyDown}
                   className={cn(
-                    "flex-1 -mb-px border-b-2 py-2 text-center font-medium transition-colors",
+                    "flex-1 -mb-px border-b-2 py-2 text-center type-strong transition-colors",
                     activeTab === value
                       ? "border-letterboxd-accent text-letterboxd-text-primary"
                       : "border-transparent text-letterboxd-text-secondary",
@@ -214,7 +214,7 @@ const Dashboard = () => {
                 activeTab !== "rated" && "max-md:hidden",
               )}
             >
-              <h2 className="subheading max-md:text-base">{ratedHeading}</h2>
+              <h2 className="subheading max-md:type-strong">{ratedHeading}</h2>
               <MovieBarChart
                 movies={topRated}
                 showRating={true}
@@ -231,7 +231,7 @@ const Dashboard = () => {
                 activeTab !== "watched" && "max-md:hidden",
               )}
             >
-              <h2 className="subheading max-md:text-base">{watchedHeading}</h2>
+              <h2 className="subheading max-md:type-strong">{watchedHeading}</h2>
               <MovieBarChart
                 movies={topWatched}
                 showCount={true}
