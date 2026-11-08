@@ -109,9 +109,9 @@ describe("MFL admin score management", () => {
     renderPage();
     await selectFilm();
 
-    expect(screen.getAllByRole("button", { name: "Delete" })).toHaveLength(3);
+    expect(screen.getAllByRole("button", { name: /^Delete / })).toHaveLength(3);
     expect(
-      screen.queryByRole("button", { name: "Edit" }),
+      screen.queryByRole("button", { name: /^Edit / }),
     ).not.toBeInTheDocument();
   });
 
