@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import Spinner from "../Spinner";
 import { DataTable } from "../DataTable/DataTable";
@@ -17,6 +17,24 @@ const TABS = [
 ] as const;
 
 type TabValue = (typeof TABS)[number]["value"];
+
+const deriveNonOfficial = (
+  all: MFLLeaderboardEntry[],
+  official: MFLLeaderboardEntry[],
+): MFLLeaderboardEntry[] => {
+  const officialRosterIds = new Set(official.map((entry) => entry.rosterId));
+  let lastTotal: number | null = null;
+  let lastRank = 0;
+  return all
+    .filter((entry) => !officialRosterIds.has(entry.rosterId))
+    .map((entry, index) => {
+      if (entry.totalPoints !== lastTotal) {
+        lastRank = index + 1;
+        lastTotal = entry.totalPoints;
+      }
+      return { ...entry, rank: lastRank };
+    });
+};
 
 const StandingsPanel = ({
   value,
@@ -57,6 +75,11 @@ const MovieFantasyLeague = () => {
     loading: standingsLoading,
     error: standingsError,
   } = useMflLeaderboard();
+
+  const nonOfficial = useMemo(
+    () => deriveNonOfficial(all, official),
+    [all, official],
+  );
 
   const [activeTab, setActiveTab] = useState<TabValue>("official");
   const tablistRef = useRef<HTMLDivElement>(null);
@@ -144,7 +167,7 @@ const MovieFantasyLeague = () => {
               <StandingsPanel
                 value="sicko"
                 active={activeTab === "sicko"}
-                entries={all}
+                entries={nonOfficial}
               />
             </>
           )}
