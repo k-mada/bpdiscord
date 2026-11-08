@@ -356,8 +356,10 @@ const MFLAdmin = () => {
                     <tr key={score.scoringId}>
                       <td>{scoringMetric}</td>
                       <td>
-                        {score.pointsAwarded}
-                        <DeleteMetric scoringId={score.scoringId} />
+                        <div className="flex items-center justify-between gap-2">
+                          <span>{score.pointsAwarded}</span>
+                          <DeleteMetric scoringId={score.scoringId} />
+                        </div>
                       </td>
                     </tr>
                   );
