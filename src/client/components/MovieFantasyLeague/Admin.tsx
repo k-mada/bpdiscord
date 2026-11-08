@@ -270,7 +270,7 @@ const MFLAdmin = () => {
         >
           <h2 className="type-h2 text-letterboxd-text-primary mb-4">
             Add new score for{" "}
-            <span className="letterboxd-text-accent">
+            <span className="text-letterboxd-accent">
               {movieTitle ?? "…"}
             </span>
             :
@@ -317,7 +317,7 @@ const MFLAdmin = () => {
         <div className="rounded-lg border-2 border-letterboxd-border p-4">
           <h2 className="type-h2 text-letterboxd-text-primary mb-4">
             Scores for{" "}
-            <span className="letterboxd-text-accent">
+            <span className="text-letterboxd-accent">
               {movieTitle ?? "…"}
             </span>
           </h2>
