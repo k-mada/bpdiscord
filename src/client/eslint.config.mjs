@@ -100,8 +100,8 @@ export default tseslint.config(
         { args: "none", ignoreRestSiblings: true },
       ],
       "no-restricted-syntax": rawColour("error"),
-      // Warn until each category's burn-down lands (Phase 3 type, Phase 4 spacing).
-      "tailwind-ban/no-raw-typography": "warn",
+      // Typography burn-down is complete (Phase 3); spacing stays warn until Phase 4.
+      "tailwind-ban/no-raw-typography": "error",
       "tailwind-ban/no-raw-spacing": "warn",
     },
   },

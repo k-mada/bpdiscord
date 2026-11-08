@@ -20,6 +20,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 // Inline rather than the .btn-* utilities so tailwind-merge can resolve
 // conflicts when callers pass their own className.
 const baseClasses =
+  // eslint-disable-next-line tailwind-ban/no-raw-typography -- raw so tailwind-merge can resolve caller overrides
   "inline-flex items-center justify-center gap-2 rounded-lg font-medium " +
   "cursor-pointer transition-colors duration-200 " +
   "disabled:opacity-50 disabled:cursor-not-allowed";
@@ -37,6 +38,7 @@ const variantClasses: Record<ButtonVariant, string> = {
 };
 
 const sizeClasses: Record<ButtonSize, string> = {
+  // eslint-disable-next-line tailwind-ban/no-raw-typography -- raw so tailwind-merge can resolve caller overrides
   sm: "py-1 px-3 text-sm",
   md: "py-2 px-4",
   icon: "h-11 w-11 p-0",
