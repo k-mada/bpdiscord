@@ -201,12 +201,23 @@ Spacing is a locked five-step scale (`--space-xs` 0.25 / `sm` 0.5 / `md` 1 /
 | Spacing | Implements | Replaces |
 | --- | --- | --- |
 | `stack-sm` / `stack-md` / `stack-lg` | flex-column + gap `sm`/`md`/`xl` | `space-y-2/4/8` |
-| `cluster-sm` / `cluster-md` | flex-row + gap `sm`/`md` | `gap-2/4` |
+| `cluster-sm` / `cluster-md` | flex-row + gap `sm`/`md` | `gap-2/4` on a flex row |
+| `gutter-sm` / `gutter-md` / `gutter-lg` | `gap` only (`sm`/`md`/`lg`), no `display` | `gap-*` on a **grid** (or an already-flex element) |
 | `pad-card` | padding `md` | `p-4` |
 | `pad-control` | padding `0.75rem md` | `px-4 py-3` |
 | `section-gap` | `margin-block-end lg` | `mb-6` |
 
 Page-level vertical padding stays in `main-content`, not markup.
+
+Unlike the colour and `type-*` gates, `no-raw-spacing` stays at **`warn`
+on purpose**. Reach for a primitive when the spacing names a repeated
+**role** (a card, a control) or a real grid **gutter**. Do not rewrite an
+explicit `flex … gap-*` into `stack-*`/`cluster-*`: the flow reads more
+clearly written out in the markup, and the codebase favours it. A one-off
+nudge — `mt-1` under a heading, an off-scale `gap-3`, a `p-0` reset — has
+no reusable intent, so a named class would just alias a Tailwind number;
+leave those raw. The lint flags raw spacing as a prompt to ask "is there
+intent here?", not a rule to zero out.
 
 ## Component utilities
 

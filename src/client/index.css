@@ -214,6 +214,22 @@
   gap: var(--space-md);
 }
 
+/* Gutter is the gap between cells of an element that already lays out its own
+   children (a grid, or a flex row/column). cluster-* would force display:flex
+   and collapse grid tracks, so grids need this. Named gutter, not gap, because
+   a bare gap-* class would trip the no-raw-spacing lint. */
+@utility gutter-sm {
+  gap: var(--space-sm);
+}
+
+@utility gutter-md {
+  gap: var(--space-md);
+}
+
+@utility gutter-lg {
+  gap: var(--space-lg);
+}
+
 @utility pad-card {
   padding: var(--space-md);
 }
