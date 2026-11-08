@@ -27,7 +27,7 @@ const MostWatchedFilms = () => {
           No film has 40 watchers yet.
         </p>
       ) : (
-        <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 list-none p-0">
+        <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gutter-md list-none p-0">
           {films.map((film) => (
             <li key={film.film_slug} className="m-0">
               <Link

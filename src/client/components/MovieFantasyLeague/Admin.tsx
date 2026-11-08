@@ -263,10 +263,10 @@ const MFLAdmin = () => {
       )}
       <MovieSelector movies={movies} onMovieSelect={handleMovieSelect} />
 
-      <div className="mt-8 grid gap-6 md:grid-cols-2">
+      <div className="mt-8 grid gutter-lg md:grid-cols-2">
         <form
           onSubmit={handleSubmit}
-          className="rounded-lg border-2 border-letterboxd-border p-4"
+          className="rounded-lg border-2 border-letterboxd-border pad-card"
         >
           <h2 className="type-h2 text-letterboxd-text-primary mb-4">
             Add new score for{" "}
@@ -314,7 +314,7 @@ const MFLAdmin = () => {
           </Button>
         </form>
 
-        <div className="rounded-lg border-2 border-letterboxd-border p-4">
+        <div className="rounded-lg border-2 border-letterboxd-border pad-card">
           <h2 className="type-h2 text-letterboxd-text-primary mb-4">
             Scores for{" "}
             <span className="text-letterboxd-accent">

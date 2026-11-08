@@ -94,7 +94,7 @@ const MovieFantasyLeague = () => {
         </Link>
       </p>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gutter-lg items-start">
         <section aria-labelledby="mfl-standings-heading">
           <h2 id="mfl-standings-heading" className="sr-only">
             League standings

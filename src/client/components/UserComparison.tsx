@@ -141,7 +141,7 @@ const UserComparison = () => {
         Compare rating statistics between two Letterboxd users
       </h3>
       <Card className="mb-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gutter-lg">
           <div className="relative">
             <div className="select-wrapper">
               <label htmlFor={user1Id} className="sr-only">

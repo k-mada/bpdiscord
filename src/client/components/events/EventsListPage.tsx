@@ -92,7 +92,7 @@ const EventsListPage = () => {
               <h2 className="type-award-label text-letterboxd-pro mb-3">
                 {group.name}
               </h2>
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gutter-md sm:grid-cols-2">
                 {group.events.map((event) => (
                   <Link
                     key={event.id}

@@ -129,7 +129,7 @@ const CreateEventForm = ({ token, onSuccess, onCancel }: CreateEventFormProps) =
             required
           />
         </div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gutter-md">
           <div>
             <label
               htmlFor={`${fieldId}-year`}

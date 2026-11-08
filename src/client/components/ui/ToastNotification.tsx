@@ -22,7 +22,7 @@ export function ToastNotification({
           sit on a solid section, so a floating toast needs its own ground. */}
       <div className="absolute inset-0 rounded-lg bg-letterboxd-bg-primary" aria-hidden="true" />
       <div
-        className={`relative flex items-center gap-3 border rounded-lg p-4 type-body-sm ${TONE[tone]}`}
+        className={`relative flex items-center gap-3 border rounded-lg pad-card type-body-sm ${TONE[tone]}`}
         onMouseEnter={onPause}
         onMouseLeave={onResume}
         onFocus={onPause}

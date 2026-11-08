@@ -180,7 +180,7 @@ const CategoryPickCard = ({
               key={nominee.id}
               onClick={() => onPick(nominee.id)}
               disabled={isSaving}
-              className={`w-full text-left px-4 py-3 rounded-lg mb-1 last:mb-0 transition-colors ${
+              className={`w-full text-left pad-control rounded-lg mb-1 last:mb-0 transition-colors ${
                 isSelected
                   ? "bg-letterboxd-pro/15 ring-1 ring-letterboxd-pro"
                   : "hover:bg-letterboxd-bg-tertiary"

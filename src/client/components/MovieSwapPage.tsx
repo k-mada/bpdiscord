@@ -22,7 +22,7 @@ const MovieSwapPage = () => {
         Find films each user has rated that the other hasn't seen
       </h3>
       <Card className="mb-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gutter-lg">
           <div className="select-wrapper">
             {/* sr-only is position:absolute, so it cannot disturb the
              * wrapper's ::after arrow. Text matches the placeholder (2.5.3). */}

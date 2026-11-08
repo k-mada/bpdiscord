@@ -461,7 +461,7 @@ const ActorGraph = () => {
         been in.
       </p>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gutter-md mb-8">
         <ActorComboBox
           label="Actor 1"
           selected={actor1}
