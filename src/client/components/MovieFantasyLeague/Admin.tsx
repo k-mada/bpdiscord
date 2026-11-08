@@ -18,6 +18,12 @@ const getMetricById = (
   return scoringMetrics.find((metric) => metric.metricId === metricId);
 };
 
+// The cumulative gross metric ("gross domestic - every $1,000,000") climbs with
+// box office, so its award is edited in place; the fixed "cleared $X" awards are
+// binary and only ever added or deleted.
+const isEditableScore = (score: MFLMovieScore) =>
+  score.metricName === "gross" && score.category.toLowerCase().includes("every");
+
 const MFLAdmin = () => {
   const { token, user, loading: authLoading } = useAuth();
   const canEditScores = user?.role === "admin" || user?.role === "editor";
@@ -47,6 +53,9 @@ const MFLAdmin = () => {
   const [selectedScoringId, setSelectedScoringId] = useState<number>(0);
   const [formStatus, setFormStatus] = useState<Status>({ type: "idle" });
   const [deleteStatus, setDeleteStatus] = useState<Status>({ type: "idle" });
+  const [editingScoringId, setEditingScoringId] = useState<number | null>(null);
+  const [editPoints, setEditPoints] = useState(0);
+  const [editSaving, setEditSaving] = useState(false);
   const customizableMetricIds = [1, 10, 338];
 
   // Scores render in the dropdown's order, keyed by each metric's position in
@@ -182,6 +191,53 @@ const MFLAdmin = () => {
       setSelectedScoringId(0);
     } catch (error) {
       setDeleteStatus({ type: "error", message: failureMessage(error) });
+    }
+  };
+
+  const handleStartEdit = (score: MFLMovieScore) => {
+    setFormStatus({ type: "idle" });
+    setEditingScoringId(score.scoringId);
+    setEditPoints(score.pointsAwarded);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingScoringId(null);
+  };
+
+  const handleEditPointsChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+  ) => {
+    const raw = event.target.value;
+    if (raw === "") {
+      setEditPoints(0);
+      return;
+    }
+    const parsed = parseInt(raw, 10);
+    if (!Number.isNaN(parsed)) {
+      setEditPoints(parsed);
+    }
+  };
+
+  const handleSaveEdit = async (score: MFLMovieScore) => {
+    setEditSaving(true);
+    setFormStatus({ type: "idle" });
+    try {
+      await upsertMovieScore(
+        {
+          filmSlug: score.filmSlug,
+          pointsAwarded: editPoints,
+          metricId: score.metricId,
+          scoringId: score.scoringId,
+        },
+        token ?? "",
+      );
+      setEditingScoringId(null);
+      setFormStatus({ type: "success", message: "Score updated." });
+      await refreshScores(score.filmSlug);
+    } catch (error) {
+      setFormStatus({ type: "error", message: failureMessage(error) });
+    } finally {
+      setEditSaving(false);
     }
   };
 
@@ -362,15 +418,65 @@ const MFLAdmin = () => {
                   } else {
                     scoringMetric = `${score.metricName}  -${score.category} (${score.scoringCondition})`;
                   }
+                  const isEditing = editingScoringId === score.scoringId;
                   return (
                     <tr key={score.scoringId}>
                       <td>{scoringMetric}</td>
-                      <td>{score.pointsAwarded}</td>
+                      <td>
+                        {isEditing ? (
+                          <Input
+                            type="text"
+                            value={editPoints}
+                            aria-label={`Points for ${scoringMetric}`}
+                            onChange={handleEditPointsChange}
+                            className="w-24"
+                          />
+                        ) : (
+                          score.pointsAwarded
+                        )}
+                      </td>
                       <td className="text-right">
-                        <DeleteMetric
-                          scoringId={score.scoringId}
-                          label={scoringMetric}
-                        />
+                        <div className="flex items-center justify-end gap-2">
+                          {isEditing ? (
+                            <>
+                              <Button
+                                type="button"
+                                size="sm"
+                                loading={editSaving}
+                                onClick={() => handleSaveEdit(score)}
+                              >
+                                Save
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="secondary"
+                                size="sm"
+                                disabled={editSaving}
+                                onClick={handleCancelEdit}
+                              >
+                                Cancel
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              {isEditableScore(score) && (
+                                <Button
+                                  type="button"
+                                  variant="secondary"
+                                  size="sm"
+                                  aria-label={`Edit ${scoringMetric}`}
+                                  onClick={() => handleStartEdit(score)}
+                                >
+                                  Edit
+                                </Button>
+                              )}
+                              <DeleteMetric
+                                scoringId={score.scoringId}
+                                label={scoringMetric}
+                              />
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
