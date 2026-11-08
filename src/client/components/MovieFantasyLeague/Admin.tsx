@@ -185,12 +185,19 @@ const MFLAdmin = () => {
     }
   };
 
-  const DeleteMetric = ({ scoringId }: { scoringId: number }) => {
+  const DeleteMetric = ({
+    scoringId,
+    label,
+  }: {
+    scoringId: number;
+    label: string;
+  }) => {
     return (
       <Button
         type="button"
-        variant="link"
-        className="px-8"
+        variant="destructive"
+        size="sm"
+        aria-label={`Delete ${label}`}
         onClick={() => handleDeleteMetric(scoringId)}
       >
         Delete
@@ -339,6 +346,9 @@ const MFLAdmin = () => {
                 <tr>
                   <th>Scoring Metric</th>
                   <th>Points Awarded</th>
+                  <th>
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -355,18 +365,21 @@ const MFLAdmin = () => {
                   return (
                     <tr key={score.scoringId}>
                       <td>{scoringMetric}</td>
-                      <td>
-                        <div className="flex items-center justify-between gap-2">
-                          <span>{score.pointsAwarded}</span>
-                          <DeleteMetric scoringId={score.scoringId} />
-                        </div>
+                      <td>{score.pointsAwarded}</td>
+                      <td className="text-right">
+                        <DeleteMetric
+                          scoringId={score.scoringId}
+                          label={scoringMetric}
+                        />
                       </td>
                     </tr>
                   );
                 })}
                 <tr className="border-t-2 border-letterboxd-border">
                   <td className="type-h2">Total points:</td>
-                  <td className="type-h2">{totalPoints}</td>
+                  <td className="type-h2" colSpan={2}>
+                    {totalPoints}
+                  </td>
                 </tr>
               </tbody>
               </table>

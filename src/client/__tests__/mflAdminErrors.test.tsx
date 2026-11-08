@@ -64,10 +64,11 @@ function renderPage() {
 async function selectFilm() {
   const select = await screen.findByRole("combobox", { name: /select a movie/i });
   await userEvent.selectOptions(select, "anora");
-  await screen.findByRole("button", { name: "Delete" });
+  await screen.findByRole("button", { name: /^Delete / });
 }
 
-/** The dialog's own confirm button; the row button shares its label. */
+/** The dialog's own confirm button, named just "Delete"; the row button's
+ * accessible name carries the metric, so the two no longer collide. */
 async function confirmDelete() {
   const dialog = await screen.findByRole("dialog");
   await userEvent.click(within(dialog).getByRole("button", { name: "Delete" }));
@@ -104,7 +105,7 @@ describe("MFL admin surfaces write failures", () => {
 
     renderPage();
     await selectFilm();
-    await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+    await userEvent.click(screen.getByRole("button", { name: /^Delete / }));
     await confirmDelete();
 
     expect(
@@ -119,7 +120,7 @@ describe("MFL admin surfaces write failures", () => {
 
     renderPage();
     await selectFilm();
-    await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+    await userEvent.click(screen.getByRole("button", { name: /^Delete / }));
     await confirmDelete();
 
     expect(
@@ -136,7 +137,7 @@ describe("MFL admin surfaces write failures", () => {
 
     renderPage();
     await selectFilm();
-    await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+    await userEvent.click(screen.getByRole("button", { name: /^Delete / }));
     await confirmDelete();
 
     expect(
@@ -152,7 +153,7 @@ describe("MFL admin surfaces write failures", () => {
 
     renderPage();
     await selectFilm();
-    await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+    await userEvent.click(screen.getByRole("button", { name: /^Delete / }));
     await confirmDelete();
 
     await screen.findByText("nope");
@@ -167,7 +168,7 @@ describe("MFL admin surfaces write failures", () => {
 
     renderPage();
     await selectFilm();
-    await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+    await userEvent.click(screen.getByRole("button", { name: /^Delete / }));
     await confirmDelete();
 
     await waitFor(() =>
@@ -184,12 +185,12 @@ describe("MFL admin surfaces write failures", () => {
 
     renderPage();
     await selectFilm();
-    await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+    await userEvent.click(screen.getByRole("button", { name: /^Delete / }));
     await confirmDelete();
     await screen.findByText("stale failure");
 
     await userEvent.click(screen.getByRole("button", { name: "Cancel" }));
-    await userEvent.click(screen.getByRole("button", { name: "Delete" }));
+    await userEvent.click(screen.getByRole("button", { name: /^Delete / }));
 
     expect(screen.queryByText("stale failure")).not.toBeInTheDocument();
   });
