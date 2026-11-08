@@ -341,7 +341,7 @@ const JobProgress = ({ job }: { job: RefreshJob }) => {
               {badge.text}
             </span>
           </div>
-          <dl className="mt-3 grid grid-cols-2 gap-2 type-body-sm">
+          <dl className="mt-3 grid grid-cols-2 gutter-sm type-body-sm">
             <dt className="text-letterboxd-text-secondary">Started</dt>
             <dd>{new Date(job.startedAt).toLocaleString()}</dd>
             <dt className="text-letterboxd-text-secondary">Finished</dt>

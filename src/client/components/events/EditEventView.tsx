@@ -141,7 +141,7 @@ const EditEventView = ({
       </div>
 
       {showAddCategory && (
-        <div className="mb-4 p-4 bg-letterboxd-bg-secondary rounded-lg border border-letterboxd-border/50 space-y-3">
+        <div className="mb-4 pad-card bg-letterboxd-bg-secondary rounded-lg border border-letterboxd-border/50 space-y-3">
           <input
             type="text"
             value={newCatName}

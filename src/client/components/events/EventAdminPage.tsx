@@ -260,7 +260,7 @@ const EventAdminPage = () => {
           {events.map((event) => (
             <div
               key={event.id}
-              className="flex items-center justify-between p-4 bg-letterboxd-bg-secondary rounded-lg border border-letterboxd-border/50"
+              className="flex items-center justify-between pad-card bg-letterboxd-bg-secondary rounded-lg border border-letterboxd-border/50"
             >
               <div>
                 <p className="text-letterboxd-text-primary type-strong">

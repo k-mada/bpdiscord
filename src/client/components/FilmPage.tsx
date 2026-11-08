@@ -106,7 +106,7 @@ const FilmPage = () => {
   return (
     <div className="space-y-8">
       <Card className="flex flex-col md:flex-row items-center md:items-start gap-6">
-        <div className="w-half flex-grow-0 grid grid-cols-[7rem_1fr] items-start gap-4 sm:grid-cols-[9rem_1fr] md:block md:self-start md:sticky md:top-6">
+        <div className="w-half flex-grow-0 grid grid-cols-[7rem_1fr] items-start gutter-md sm:grid-cols-[9rem_1fr] md:block md:self-start md:sticky md:top-6">
           <a
             href={letterboxdUrl}
             target="_blank"
@@ -131,7 +131,7 @@ const FilmPage = () => {
               </div>
             )}
           </a>
-          <dl className="grid grid-rows-4 gap-4 md:mt-6">
+          <dl className="grid grid-rows-4 gutter-md md:mt-6">
             <StatTile
               label="watched"
               value={data.watchedCount.toLocaleString()}
