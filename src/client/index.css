@@ -256,8 +256,7 @@
 }
 
 @utility subheading {
-  @apply text-xl font-semibold text-letterboxd-text-primary mb-4 pb-2 border-b border-letterboxd-border;
-  font-family: "Be Vietnam Pro", sans-serif;
+  @apply type-h2 text-letterboxd-text-primary mb-4 pb-2 border-b border-letterboxd-border;
 }
 
 @utility data-table {
@@ -586,16 +585,12 @@
 }
 
 .movie-counter {
-  @apply flex items-center justify-start mb-4;
-  font-family: "PT Serif", serif;
+  @apply flex items-center justify-start mb-4 text-4xl;
+  font-family: var(--font-letterboxdBody);
 }
 
-.movie-counter h3 {
-  @apply text-3xl font-bold;
-
-  @media (768px >= width) {
-    font-size: 1.5rem;
-  }
+.movie-counter > span {
+  @apply font-bold;
 }
 
 .movie-counter-text {

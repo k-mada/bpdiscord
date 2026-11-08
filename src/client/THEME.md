@@ -218,8 +218,9 @@ Defined as `@utility` blocks in `index.css`.
 | `.btn-primary` | Accent fill, **black** label, rounded |
 | `.btn-secondary` | Secondary fill, primary text, decorative border |
 | `.input-field` | Field background, control border, primary text, muted placeholder |
-| `.subheading` | Large primary text with a decorative bottom rule |
+| `.subheading` | `type-h2` with a decorative bottom rule; pair with `max-md:type-strong` to shrink on mobile |
 | `.section-title` | Uppercase tracked section header |
+| `.movie-counter` | Serif `text-4xl` counter line; its value `> span` is bold |
 | `.pro-badge` | Gold PRO badge |
 | `.data-table` / `.table-heading-row` | Table and header-row styling |
 | `.code-text` | Monospace `text-xs` for log tails and error dumps — a `type-*` role would force a sans family |
