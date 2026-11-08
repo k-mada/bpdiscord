@@ -151,7 +151,7 @@ const FilmPage = () => {
           <h1 className="type-h1 md:type-display text-letterboxd-text-primary">
             {data.title}
           </h1>
-          <p className="letterboxd-text-secondary type-body-sm">
+          <p className="text-letterboxd-text-secondary type-body-sm">
             {data.releaseYear}
           </p>
 
