@@ -18,11 +18,26 @@ const getMetricById = (
   return scoringMetrics.find((metric) => metric.metricId === metricId);
 };
 
-// The cumulative gross metric ("gross domestic - every $1,000,000") climbs with
-// box office, so its award is edited in place; the fixed "cleared $X" awards are
-// binary and only ever added or deleted.
+// Gross "every $1M" climbs with box office and weeks-at-#1 climbs by weeks, so
+// both edit in place; the fixed "cleared $X" awards only ever add or delete.
 const isEditableScore = (score: MFLMovieScore) =>
-  score.metricName === "gross" && score.category.toLowerCase().includes("every");
+  (score.metricName === "gross" &&
+    score.category.toLowerCase().includes("every")) ||
+  isWeeksMetric(score.metricName);
+
+// Weeks-at-#1 stores points (weeks × pointValue) like any score; the dropdown is
+// just a view over that value, so add/edit/total never special-case it.
+const WEEKS_OPTIONS = Array.from({ length: 10 }, (_, i) => i + 1);
+const isWeeksMetric = (metricName: string) => metricName === "rank";
+const pointsToWeeks = (points: number, pointValue: number): string =>
+  pointValue > 0 &&
+  points > 0 &&
+  points % pointValue === 0 &&
+  points / pointValue <= 10
+    ? String(points / pointValue)
+    : "";
+const weeksToPoints = (weeks: string, pointValue: number): number =>
+  weeks === "" ? 0 : Number(weeks) * pointValue;
 
 const MFLAdmin = () => {
   const { token, user, loading: authLoading } = useAuth();
@@ -77,7 +92,8 @@ const MFLAdmin = () => {
   );
 
   const movieTitle = useMemo(
-    () => movies.find((movie) => movie.filmSlug === currentSelectedMovie)?.title,
+    () =>
+      movies.find((movie) => movie.filmSlug === currentSelectedMovie)?.title,
     [movies, currentSelectedMovie],
   );
 
@@ -86,7 +102,9 @@ const MFLAdmin = () => {
     const metric = getMetricById(scoringMetrics, metricId);
     if (metric) {
       setSelectedMetric(metric);
-      setInputPointsAwarded(metric.pointValue);
+      setInputPointsAwarded(
+        isWeeksMetric(metric.metricName) ? 0 : metric.pointValue,
+      );
       setDisableScoreInput(!customizableMetricIds.includes(metric.metricId));
     }
   };
@@ -316,9 +334,7 @@ const MFLAdmin = () => {
           </div>
         </ModalBody>
       </Modal>
-      <h1 className="type-h1 text-letterboxd-text-primary mb-4">
-        MFL Admin
-      </h1>
+      <h1 className="type-h1 text-letterboxd-text-primary mb-4">MFL Admin</h1>
       {formStatus.type !== "idle" && (
         <div className="mb-4">
           <Notification status={formStatus} />
@@ -326,173 +342,245 @@ const MFLAdmin = () => {
       )}
       <MovieSelector movies={movies} onMovieSelect={handleMovieSelect} />
 
-      <div className="mt-8 grid gutter-lg md:grid-cols-2">
-        <form
-          onSubmit={handleSubmit}
-          className="rounded-lg border-2 border-letterboxd-border pad-card"
-        >
-          <h2 className="type-h2 text-letterboxd-text-primary mb-4">
-            Add new score for{" "}
-            <span className="text-letterboxd-accent">
-              {movieTitle ?? "…"}
-            </span>
-            :
-          </h2>
-          <div className="my-8">
-            <label htmlFor="lst-metric" className="mr-8">
-              Scoring metric:
-            </label>
-            <select
-              id="lst-metric"
-              className="input-field w-1/2"
-              value={selectedMetric?.metricId || "-1"}
-              onChange={handleMetricSelect}
-            >
-              <option value="-1">select a scoring metric</option>
-              {scoringMetrics.map((metric) => {
-                return (
-                  <option key={metric.metricId} value={metric.metricId}>
-                    {metric.metricName} - {metric.category} -{" "}
-                    {metric.scoringCondition}
-                  </option>
-                );
-              })}
-            </select>
-          </div>
-          <div className="my-8">
-            <label htmlFor="txt-points-awarded" className="mr-8">
-              Points awarded:
-            </label>
-            <Input
-              type="text"
-              id="txt-points-awarded"
-              value={inputPointsAwarded}
-              disabled={disableScoreInput}
-              onChange={handlePointsAwardedChange}
-            />
-          </div>
-
-          <Button type="submit" disabled={!currentSelectedMovie}>
-            Add score
-          </Button>
-        </form>
-
-        <div className="rounded-lg border-2 border-letterboxd-border pad-card">
-          <h2 className="type-h2 text-letterboxd-text-primary mb-4">
-            Scores for{" "}
-            <span className="text-letterboxd-accent">
-              {movieTitle ?? "…"}
-            </span>
-          </h2>
-          {loading && <Spinner />}
-          {!loading && !currentSelectedMovie && (
-            <p className="text-letterboxd-text-secondary">
-              Select a movie to see its scores.
-            </p>
-          )}
-          {!loading && currentSelectedMovie && movieScore.length === 0 && (
-            <p className="text-letterboxd-text-secondary">
-              No scores yet for this movie.
-            </p>
-          )}
-          {!loading && movieScore.length > 0 && (
-            <div className="overflow-x-auto">
-              <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Scoring Metric</th>
-                  <th>Points Awarded</th>
-                  <th>
-                    <span className="sr-only">Actions</span>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {orderedMovieScore.map((score) => {
-                  let scoringMetric: string;
-                  if (
-                    score.metricName === "gross" ||
-                    score.metricName === "rank"
-                  ) {
-                    scoringMetric = `${score.metricName} ${score.category}`;
-                  } else {
-                    scoringMetric = `${score.metricName}  -${score.category} (${score.scoringCondition})`;
-                  }
-                  const isEditing = editingScoringId === score.scoringId;
+      {currentSelectedMovie && (
+        <div className="mt-8 grid gutter-lg md:grid-cols-2">
+          <form
+            onSubmit={handleSubmit}
+            className="rounded-lg border-2 border-letterboxd-border pad-card"
+          >
+            <h2 className="type-h2 text-letterboxd-text-primary mb-4">
+              Add new score for{" "}
+              <span className="text-letterboxd-accent">
+                {movieTitle ?? "…"}
+              </span>
+              :
+            </h2>
+            <div className="my-8">
+              <label htmlFor="lst-metric" className="mr-8">
+                Scoring metric:
+              </label>
+              <select
+                id="lst-metric"
+                className="input-field w-1/2"
+                value={selectedMetric?.metricId || "-1"}
+                onChange={handleMetricSelect}
+              >
+                <option value="-1">select a scoring metric</option>
+                {scoringMetrics.map((metric) => {
                   return (
-                    <tr key={score.scoringId}>
-                      <td>{scoringMetric}</td>
-                      <td>
-                        {isEditing ? (
-                          <Input
-                            type="text"
-                            value={editPoints}
-                            aria-label={`Points for ${scoringMetric}`}
-                            onChange={handleEditPointsChange}
-                            className="w-24"
-                          />
-                        ) : (
-                          score.pointsAwarded
-                        )}
-                      </td>
-                      <td className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {isEditing ? (
-                            <>
-                              <Button
-                                type="button"
-                                size="sm"
-                                loading={editSaving}
-                                onClick={() => handleSaveEdit(score)}
-                              >
-                                Save
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="secondary"
-                                size="sm"
-                                disabled={editSaving}
-                                onClick={handleCancelEdit}
-                              >
-                                Cancel
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              {isEditableScore(score) && (
-                                <Button
-                                  type="button"
-                                  variant="secondary"
-                                  size="sm"
-                                  aria-label={`Edit ${scoringMetric}`}
-                                  onClick={() => handleStartEdit(score)}
-                                >
-                                  Edit
-                                </Button>
-                              )}
-                              <DeleteMetric
-                                scoringId={score.scoringId}
-                                label={scoringMetric}
-                              />
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
+                    <option key={metric.metricId} value={metric.metricId}>
+                      {metric.metricName} - {metric.category} -{" "}
+                      {metric.scoringCondition}
+                    </option>
                   );
                 })}
-                <tr className="border-t-2 border-letterboxd-border">
-                  <td className="type-h2">Total points:</td>
-                  <td className="type-h2" colSpan={2}>
-                    {totalPoints}
-                  </td>
-                </tr>
-              </tbody>
-              </table>
+              </select>
             </div>
-          )}
+            {selectedMetric && isWeeksMetric(selectedMetric.metricName) ? (
+              <div className="my-8">
+                <label htmlFor="lst-weeks" className="mr-8">
+                  Number of weeks:
+                </label>
+                <select
+                  id="lst-weeks"
+                  className="input-field w-1/2"
+                  value={pointsToWeeks(
+                    inputPointsAwarded,
+                    selectedMetric.pointValue,
+                  )}
+                  onChange={(event) =>
+                    setInputPointsAwarded(
+                      weeksToPoints(
+                        event.target.value,
+                        selectedMetric.pointValue,
+                      ),
+                    )
+                  }
+                >
+                  <option value="">select weeks</option>
+                  {WEEKS_OPTIONS.map((weeks) => (
+                    <option key={weeks} value={weeks}>
+                      {weeks}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div className="my-8">
+                <label htmlFor="txt-points-awarded" className="mr-8">
+                  Points awarded:
+                </label>
+                <Input
+                  type="text"
+                  id="txt-points-awarded"
+                  value={inputPointsAwarded}
+                  disabled={disableScoreInput}
+                  onChange={handlePointsAwardedChange}
+                />
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              disabled={
+                !currentSelectedMovie ||
+                (!!selectedMetric &&
+                  isWeeksMetric(selectedMetric.metricName) &&
+                  inputPointsAwarded <= 0)
+              }
+            >
+              Add score
+            </Button>
+          </form>
+
+          <div className="rounded-lg border-2 border-letterboxd-border pad-card">
+            <h2 className="type-h2 text-letterboxd-text-primary mb-4">
+              Scores for{" "}
+              <span className="text-letterboxd-accent">
+                {movieTitle ?? "…"}
+              </span>
+            </h2>
+            {loading && <Spinner />}
+            {!loading && !currentSelectedMovie && (
+              <p className="text-letterboxd-text-secondary">
+                Select a movie to see its scores.
+              </p>
+            )}
+            {!loading && currentSelectedMovie && movieScore.length === 0 && (
+              <p className="text-letterboxd-text-secondary">
+                No scores yet for this movie.
+              </p>
+            )}
+            {!loading && movieScore.length > 0 && (
+              <div className="overflow-x-auto">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Scoring Metric</th>
+                      <th>Points Awarded</th>
+                      <th>
+                        <span className="sr-only">Actions</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orderedMovieScore.map((score) => {
+                      let scoringMetric: string;
+                      if (
+                        score.metricName === "gross" ||
+                        score.metricName === "rank"
+                      ) {
+                        scoringMetric = `${score.metricName} ${score.category}`;
+                      } else {
+                        scoringMetric = `${score.metricName}  -${score.category} (${score.scoringCondition})`;
+                      }
+                      const isEditing = editingScoringId === score.scoringId;
+                      const metricPointValue =
+                        getMetricById(scoringMetrics, score.metricId)
+                          ?.pointValue ?? 0;
+                      const editAsWeeks =
+                        isWeeksMetric(score.metricName) &&
+                        metricPointValue > 0;
+                      return (
+                        <tr key={score.scoringId}>
+                          <td>{scoringMetric}</td>
+                          <td>
+                            {isEditing && editAsWeeks ? (
+                              <select
+                                className="input-field w-24"
+                                aria-label={`Weeks for ${scoringMetric}`}
+                                value={pointsToWeeks(
+                                  editPoints,
+                                  metricPointValue,
+                                )}
+                                onChange={(event) =>
+                                  setEditPoints(
+                                    weeksToPoints(
+                                      event.target.value,
+                                      metricPointValue,
+                                    ),
+                                  )
+                                }
+                              >
+                                <option value="">select weeks</option>
+                                {WEEKS_OPTIONS.map((weeks) => (
+                                  <option key={weeks} value={weeks}>
+                                    {weeks}
+                                  </option>
+                                ))}
+                              </select>
+                            ) : isEditing ? (
+                              <Input
+                                type="text"
+                                value={editPoints}
+                                aria-label={`Points for ${scoringMetric}`}
+                                onChange={handleEditPointsChange}
+                                className="w-24"
+                              />
+                            ) : (
+                              score.pointsAwarded
+                            )}
+                          </td>
+                          <td className="text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              {isEditing ? (
+                                <>
+                                  <Button
+                                    type="button"
+                                    size="sm"
+                                    loading={editSaving}
+                                    disabled={editAsWeeks && editPoints <= 0}
+                                    onClick={() => handleSaveEdit(score)}
+                                  >
+                                    Save
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="secondary"
+                                    size="sm"
+                                    disabled={editSaving}
+                                    onClick={handleCancelEdit}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </>
+                              ) : (
+                                <>
+                                  {isEditableScore(score) && (
+                                    <Button
+                                      type="button"
+                                      variant="secondary"
+                                      size="sm"
+                                      aria-label={`Edit ${scoringMetric}`}
+                                      onClick={() => handleStartEdit(score)}
+                                    >
+                                      Edit
+                                    </Button>
+                                  )}
+                                  <DeleteMetric
+                                    scoringId={score.scoringId}
+                                    label={scoringMetric}
+                                  />
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    <tr className="border-t-2 border-letterboxd-border">
+                      <td className="type-h2">Total points:</td>
+                      <td className="type-h2" colSpan={2}>
+                        {totalPoints}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
