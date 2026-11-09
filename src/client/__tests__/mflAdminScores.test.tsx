@@ -54,6 +54,29 @@ const score = (
   scoringCondition: "win",
 });
 
+const rankMetric = (): MFLScoringMetric => ({
+  metricId: 50,
+  metric: "rank",
+  metricName: "rank",
+  category: "weeks-at-1",
+  scoringCondition: "at #1",
+  pointValue: 20,
+});
+
+const rankScore = (
+  scoringId: number,
+  pointsAwarded: number,
+): MFLMovieScore => ({
+  scoringId,
+  filmSlug: "anora",
+  metricId: 50,
+  pointsAwarded,
+  category: "weeks-at-1",
+  metric: "rank",
+  metricName: "rank",
+  scoringCondition: "at #1",
+});
+
 function renderPage() {
   return render(
     <AuthProvider>
@@ -204,5 +227,91 @@ describe("MFL admin score management", () => {
 
     await userEvent.type(points, "{selectall}25");
     expect(points.value).toBe("25");
+  });
+
+  it("adds a weeks-at-#1 score as weeks times point value via the dropdown", async () => {
+    vi.mocked(apiService.getMflScoringMetrics).mockResolvedValue({
+      data: [metric(2, "Best Picture"), rankMetric()],
+    });
+    vi.mocked(apiService.getMflMovieScore).mockResolvedValue({ data: [] });
+    vi.mocked(apiService.upsertMflMovieScore).mockResolvedValue({ data: {} });
+
+    renderPage();
+    const movieSelect = await screen.findByRole("combobox", {
+      name: /select a movie/i,
+    });
+    await userEvent.selectOptions(movieSelect, "anora");
+
+    const metricSelect = await screen.findByRole("combobox", {
+      name: /scoring metric/i,
+    });
+    await userEvent.selectOptions(metricSelect, "50");
+
+    await userEvent.selectOptions(
+      screen.getByRole("combobox", { name: /number of weeks/i }),
+      "2",
+    );
+    await userEvent.click(screen.getByRole("button", { name: /add score/i }));
+
+    expect(apiService.upsertMflMovieScore).toHaveBeenCalledWith(
+      { filmSlug: "anora", pointsAwarded: 40, metricId: 50 },
+      TOKEN,
+    );
+  });
+
+  it("disables Add score until a week is chosen for weeks-at-#1", async () => {
+    vi.mocked(apiService.getMflScoringMetrics).mockResolvedValue({
+      data: [rankMetric()],
+    });
+    vi.mocked(apiService.getMflMovieScore).mockResolvedValue({ data: [] });
+
+    renderPage();
+    const movieSelect = await screen.findByRole("combobox", {
+      name: /select a movie/i,
+    });
+    await userEvent.selectOptions(movieSelect, "anora");
+    const metricSelect = await screen.findByRole("combobox", {
+      name: /scoring metric/i,
+    });
+    await userEvent.selectOptions(metricSelect, "50");
+
+    const addButton = screen.getByRole("button", { name: /add score/i });
+    expect(addButton).toBeDisabled();
+
+    await userEvent.selectOptions(
+      screen.getByRole("combobox", { name: /number of weeks/i }),
+      "3",
+    );
+    expect(addButton).toBeEnabled();
+  });
+
+  it("edits a weeks-at-#1 score in weeks and saves weeks times point value", async () => {
+    vi.mocked(apiService.getMflScoringMetrics).mockResolvedValue({
+      data: [rankMetric()],
+    });
+    vi.mocked(apiService.getMflMovieScore).mockResolvedValue({
+      data: [rankScore(301, 40)],
+    });
+    vi.mocked(apiService.upsertMflMovieScore).mockResolvedValue({ data: {} });
+
+    renderPage();
+    await selectFilm();
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /edit rank weeks-at-1/i }),
+    );
+    const weeks = screen.getByRole("combobox", {
+      name: /weeks for rank weeks-at-1/i,
+    }) as HTMLSelectElement;
+    expect(weeks.value).toBe("2");
+
+    await userEvent.selectOptions(weeks, "3");
+    await userEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await screen.findByRole("button", { name: /edit rank weeks-at-1/i });
+    expect(apiService.upsertMflMovieScore).toHaveBeenCalledWith(
+      { filmSlug: "anora", pointsAwarded: 60, metricId: 50, scoringId: 301 },
+      TOKEN,
+    );
   });
 });
