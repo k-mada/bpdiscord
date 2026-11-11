@@ -90,7 +90,11 @@ const RosterView = () => {
               <tbody>
                 {roster.picks.map((pick) => (
                   <tr key={pick.filmSlug}>
-                    <td>{pick.title}</td>
+                    <td>
+                      <Link to={`/mfl/film/${pick.filmSlug}`}>
+                        {pick.title}
+                      </Link>
+                    </td>
                     <td className="tabular-nums">
                       {pick.price === null ? "—" : `$${pick.price}`}
                     </td>
