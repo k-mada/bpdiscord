@@ -2,13 +2,11 @@ import { render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { DataTable } from "../components/DataTable/DataTable";
 import { mflFilmSummaryColumns } from "../components/DataTable/columns";
-import MovieFantasyLeague from "../components/MovieFantasyLeague/Dashboard";
+import MflMovies from "../components/MovieFantasyLeague/Movies";
 import { useMflData } from "../hooks/useMflData";
-import { useMflLeaderboard } from "../hooks/useMflLeaderboard";
 import type { MFLCatalogueFilm, MFLScoringMetric } from "../types";
 
 vi.mock("../hooks/useMflData");
-vi.mock("../hooks/useMflLeaderboard");
 
 function film(over: Partial<MFLCatalogueFilm> = {}): MFLCatalogueFilm {
   return {
@@ -66,16 +64,10 @@ function renderPage(
     error: null,
     ...over,
   } as unknown as ReturnType<typeof useMflData>);
-  vi.mocked(useMflLeaderboard).mockReturnValue({
-    official: [],
-    all: [],
-    loading: false,
-    error: null,
-  });
 
   return render(
     <MemoryRouter>
-      <MovieFantasyLeague />
+      <MflMovies />
     </MemoryRouter>,
   );
 }
@@ -131,7 +123,7 @@ describe("MFL films table columns", () => {
   });
 });
 
-describe("MFL films page", () => {
+describe("MFL movies page", () => {
   afterEach(() => {
     vi.clearAllMocks();
   });

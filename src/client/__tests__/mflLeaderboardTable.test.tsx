@@ -132,6 +132,17 @@ describe("MFL standings section", () => {
     expect(screen.getByRole("tab", { name: "Sicko Mode" })).toBeInTheDocument();
   });
 
+  it("links to the movies page and drops the eligible movies section", () => {
+    renderPage({ official: [entry()], all: [entry()] });
+
+    expect(
+      screen.getByRole("link", { name: "Eligible movies" }),
+    ).toHaveAttribute("href", "/mfl/movies");
+    expect(
+      screen.queryByText(/Eligible for box office points/),
+    ).not.toBeInTheDocument();
+  });
+
   it("tells the member there are no standings rather than an empty table", () => {
     renderPage({ official: [], all: [] });
 
