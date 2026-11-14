@@ -129,6 +129,39 @@ describe("MFL films table columns", () => {
 
     expect(titleOrder()).toEqual(["Dear", "Cheap", "Unpriced"]);
   });
+
+  it("shows points per dollar to two decimals", () => {
+    renderTable([film({ totalPoints: 70, price: 40 })]);
+
+    expect(screen.getByText("1.75")).toBeInTheDocument();
+  });
+
+  it("renders points per dollar as a dash when the price is missing or zero", () => {
+    renderTable([
+      film({ title: "Free", filmSlug: "free", price: 0, totalPoints: 10 }),
+    ]);
+
+    expect(screen.getByText("—")).toBeInTheDocument();
+  });
+
+  it("sorts by points per dollar descending, unpriced last", () => {
+    render(
+      <MemoryRouter>
+        <DataTable
+          data={[
+            film({ title: "Pricey", filmSlug: "pricey", price: 50, totalPoints: 50 }),
+            film({ title: "Value", filmSlug: "value", price: 10, totalPoints: 50 }),
+            film({ title: "Unpriced", filmSlug: "unpriced", price: null, totalPoints: 50 }),
+          ]}
+          columns={mflFilmSummaryColumns}
+          enableSort
+          initialSort={{ key: "pointsPerDollar", direction: "desc" }}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(titleOrder()).toEqual(["Value", "Pricey", "Unpriced"]);
+  });
 });
 
 describe("MFL films page", () => {
@@ -158,7 +191,7 @@ describe("MFL films page", () => {
     expect(titleOrder()).toEqual(["High", "Mid", "Low"]);
   });
 
-  it("shows only the four summary columns, never one per category", () => {
+  it("shows only the fixed summary columns, never one per category", () => {
     // A season defines well over a hundred categories; a column each is why
     // this table was unusable.
     renderPage(
@@ -169,7 +202,7 @@ describe("MFL films page", () => {
     const headers = screen
       .getAllByRole("columnheader")
       .map((h) => h.textContent?.replace(/[⇅▲▼]/g, "").trim());
-    expect(headers).toEqual(["Film", "Released", "Price", "Points"]);
+    expect(headers).toEqual(["Film", "Released", "Price", "Points", "Points/$"]);
   });
 
   it("surfaces a fetch failure instead of an empty catalogue message", () => {
