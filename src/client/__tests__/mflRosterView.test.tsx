@@ -57,6 +57,20 @@ describe("MFL roster view", () => {
     expect(within(totalRow).getByText("55")).toBeInTheDocument();
   });
 
+  it("links each film title to its breakdown", async () => {
+    vi.mocked(apiService.getMflRosterView).mockResolvedValue({ data: VIEW });
+    renderView("7");
+
+    expect(await screen.findByRole("link", { name: "Anora" })).toHaveAttribute(
+      "href",
+      "/mfl/film/anora",
+    );
+    expect(screen.getByRole("link", { name: "Hamnet" })).toHaveAttribute(
+      "href",
+      "/mfl/film/hamnet",
+    );
+  });
+
   it("links the owner to their profile", async () => {
     vi.mocked(apiService.getMflRosterView).mockResolvedValue({ data: VIEW });
     renderView("7");
