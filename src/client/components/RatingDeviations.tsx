@@ -20,7 +20,7 @@ const COLUMN_LABEL = {
 const formatDeviation = (d: number) => `${d >= 0 ? "+" : ""}${d.toFixed(2)}`;
 
 const cardBase =
-  "rounded-xl border border-letterboxd-border bg-letterboxd-bg-secondary p-4 shadow-sm";
+  "rounded-xl border border-letterboxd-border bg-letterboxd-bg-secondary pad-card shadow-sm";
 
 const MessageCard = ({ text }: { text: string }) => (
   <div

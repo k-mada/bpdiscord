@@ -80,7 +80,7 @@ const CreateEventForm = ({ token, onSuccess, onCancel }: CreateEventFormProps) =
         &larr; Back
       </Button>
       <h2
-        className="type-award-heading text-letterboxd-text-primary mb-6"
+        className="type-award-heading text-letterboxd-text-primary section-gap"
       >
         Create Event
       </h2>
