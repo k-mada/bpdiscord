@@ -130,7 +130,10 @@ export const mflLeaderboardColumns: ColumnDef<MFLLeaderboardEntry>[] = [
   },
 ];
 
-/** The /mfl summary: four columns, no per-category breakdown. */
+export const mflPointsPerDollar = (film: MFLCatalogueFilm): number | null =>
+  film.price === null || film.price <= 0 ? null : film.totalPoints / film.price;
+
+/** The /mfl summary: no per-category breakdown. */
 export const mflFilmSummaryColumns: ColumnDef<MFLCatalogueFilm>[] = [
   {
     key: "title",
@@ -163,5 +166,16 @@ export const mflFilmSummaryColumns: ColumnDef<MFLCatalogueFilm>[] = [
     label: "Points",
     sortKey: "totalPoints",
     customSort: (a, b) => a.totalPoints - b.totalPoints,
+  },
+  {
+    key: "pointsPerDollar",
+    label: "Points/$",
+    sortKey: "pointsPerDollar",
+    customSort: (a, b) =>
+      compareNullable(mflPointsPerDollar(a), mflPointsPerDollar(b)),
+    renderColumn: (film) => {
+      const value = mflPointsPerDollar(film);
+      return value === null ? "—" : value.toFixed(2);
+    },
   },
 ];
