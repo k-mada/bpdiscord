@@ -106,6 +106,11 @@ export default tseslint.config(
     },
   },
   {
+    // Tests hold class strings as data (className-merge assertions), not markup.
+    files: ["__tests__/**", "e2e/**", "**/*.{test,spec}.{ts,tsx}"],
+    rules: { "tailwind-ban/no-raw-spacing": "off" },
+  },
+  {
     files: ["**/*.tsx"],
     ...jsxA11y.flatConfigs.recommended,
     rules: {
