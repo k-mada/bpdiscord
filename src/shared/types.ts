@@ -29,6 +29,7 @@ export interface FilmRater {
   displayName: string | null;
   rating: number;
   liked: boolean;
+  isDiscord: boolean;
 }
 
 // GET /api/films/:filmSlug — Discord-scoped unless includeNonDiscord is set.

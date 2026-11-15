@@ -17,6 +17,7 @@ export interface HaterRankingRow extends QueryRow {
   films_rated: string; // PostgreSQL returns bigint as string
   differential: string; // PostgreSQL returns numeric as string
   normalized: string; // PostgreSQL returns numeric as string
+  is_discord: boolean;
 }
 
 // Result from get_missing_films RPC
@@ -32,6 +33,7 @@ export interface CompatibilityExtremeRow extends QueryRow {
   pearson: number;
   sample_size: number;
   mad: number;
+  is_discord: boolean;
 }
 
 // Result from taste_compatibility(a, b). pearson/mad are nullable here (unlike

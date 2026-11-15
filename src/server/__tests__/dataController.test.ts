@@ -56,6 +56,14 @@ describe('dataController', () => {
       expect(activeUser?.displayName).toBe('Active Test User');
     });
 
+    it('dbGetAllUsernames flags each user as Discord or not', async () => {
+      const result = await dc.dbGetAllUsernames();
+
+      const byName = new Map(result.data!.map((u) => [u.username, u.isDiscord]));
+      expect(byName.get('test_user_active')).toBe(true);
+      expect(byName.get('test_user_non_discord')).toBe(false);
+    });
+
     it('dbGetUserRatings returns correct rating distribution', async () => {
       const result = await dc.dbGetUserRatings('test_user_active');
 
@@ -94,6 +102,22 @@ describe('dataController', () => {
       const activeIdx = result.data!.findIndex(r => r.username === 'test_user_active');
       const minimalIdx = result.data!.findIndex(r => r.username === 'test_user_minimal');
       expect(activeIdx).toBeLessThan(minimalIdx);
+    });
+
+    it('dbGetHaterRankings2 includes non-Discord users, flagged, in function order', async () => {
+      const result = await dc.dbGetHaterRankings2();
+
+      expect(result.success).toBe(true);
+      const nonDiscord = result.data!.find(
+        (r) => r.username === 'test_user_non_discord',
+      );
+      expect(nonDiscord?.isDiscord).toBe(false);
+      expect(
+        result.data!.find((r) => r.username === 'test_user_active')?.isDiscord,
+      ).toBe(true);
+
+      const diffs = result.data!.map((r) => r.adjustedDifferential);
+      expect(diffs).toEqual([...diffs].sort((a, b) => a - b));
     });
 
     it('dbGetHaterRankings includes rating distribution', async () => {
@@ -230,6 +254,17 @@ describe('dataController', () => {
         expectedResults.movieSwap.activeMinimalRecsForB,
       );
       expect(result.data!.recsForUserB[0].user_rating).toBe(4.0); // New Test Film
+    });
+
+    it('dbGetNonDiscordUsernames returns only known non-Discord users', async () => {
+      const result = await dc.dbGetNonDiscordUsernames([
+        'test_user_active',
+        'test_user_non_discord',
+        'nobody_here',
+      ]);
+
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual(['test_user_non_discord']);
     });
 
     it('dbGetMovieSwap sorts unrated (watched-only) films last via NULLS LAST', async () => {
@@ -370,6 +405,18 @@ describe('dataController', () => {
       expect(result.data!.ratings.map(r => r.username)).toContain(
         'test_user_non_discord',
       );
+    });
+
+    it('dbGetFilmDetail flags each rater as Discord or not', async () => {
+      const result = await dc.dbGetFilmDetail('test-film-popular', {
+        includeNonDiscord: true,
+      });
+
+      const byName = new Map(
+        result.data!.ratings.map((r) => [r.username, r.isDiscord]),
+      );
+      expect(byName.get('test_user_active')).toBe(true);
+      expect(byName.get('test_user_non_discord')).toBe(false);
     });
 
     it('dbGetFilmDetail counts a null rating as watched but not rated', async () => {
@@ -1445,5 +1492,45 @@ describe('dbGetRatingDeviationExtremes', () => {
     expect(data!.over).toHaveLength(0);
     expect(data!.under[0]!.film_slug).toBe('neg-b');
     expect(data!.under[0]!.deviation).toBeCloseTo(-1.5, 2);
+  });
+});
+
+describe('dbGetCompatibilityExtremes — Discord flag', () => {
+  const SLUGS = Array.from({ length: 10 }, (_, i) => `ce-f${i}`);
+
+  beforeAll(async () => {
+    await cleanDatabase();
+    await db.insert(users).values([
+      { lbusername: 'ce_me', isDiscord: true },
+      { lbusername: 'ce_twin', isDiscord: false },
+      { lbusername: 'ce_mirror', isDiscord: true },
+    ]);
+    const rating = (i: number) => (i % 5) + 1;
+    await db.insert(userFilms).values(
+      SLUGS.flatMap((filmSlug, i) => [
+        { lbusername: 'ce_me', filmSlug, rating: rating(i) },
+        { lbusername: 'ce_twin', filmSlug, rating: rating(i) },
+        { lbusername: 'ce_mirror', filmSlug, rating: 6 - rating(i) },
+      ]),
+    );
+  });
+
+  afterAll(async () => {
+    await resetDatabase();
+  });
+
+  it('flags non-Discord matches', async () => {
+    const result = await dc.dbGetCompatibilityExtremes('ce_me');
+
+    expect(result.success).toBe(true);
+    const byName = new Map(
+      result.data!.mostCompatible.map((r) => [r.username, r.isDiscord]),
+    );
+    expect(byName).toEqual(
+      new Map([
+        ['ce_twin', false],
+        ['ce_mirror', true],
+      ]),
+    );
   });
 });
