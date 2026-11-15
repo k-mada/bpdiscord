@@ -16,6 +16,12 @@ import type {
 } from "../types";
 import CollapsibleSection from "./CollapsibleSection";
 import StarRating from "./StarRating";
+import { posterAtWidth } from "../lib/poster";
+
+// Flex items size to their content, so without a fixed width a large poster
+// crop stretches its column. The skeleton shares it to keep the swap stable.
+const ANCHOR_WIDTH = "w-[120px] sm:w-[150px]";
+const ANCHOR_POSTER_WIDTH = 150;
 
 interface UserHeader {
   username: string;
@@ -48,14 +54,11 @@ interface AnchorFilmProps {
 }
 
 const AnchorFilm = ({ film, label, user1Name, user2Name }: AnchorFilmProps) => {
-  // Letterboxd CDN URL embeds the requested dimensions. Same trick MovieList
-  // uses — request a smaller asset for less bandwidth.
-  const posterUrl = film.poster?.replace("0-230-0-345", "0-150-0-225") ?? null;
   const href =
     film.letterboxd_url ?? `https://letterboxd.com/film/${film.film_slug}`;
 
   return (
-    <div className="flex flex-col items-center">
+    <div className={`flex flex-col items-center ${ANCHOR_WIDTH}`}>
       <div className="type-h3 text-letterboxd-text-primary mb-3 text-center">
         {label}
       </div>
@@ -66,9 +69,10 @@ const AnchorFilm = ({ film, label, user1Name, user2Name }: AnchorFilmProps) => {
         rel="noopener noreferrer"
         className="block w-full"
       >
-        {posterUrl ? (
+        {film.poster ? (
           <img
-            src={posterUrl}
+            src={posterAtWidth(film.poster, ANCHOR_POSTER_WIDTH)}
+            srcSet={`${posterAtWidth(film.poster, ANCHOR_POSTER_WIDTH)} 1x, ${posterAtWidth(film.poster, ANCHOR_POSTER_WIDTH * 2)} 2x`}
             alt={film.title}
             className="aspect-2/3 w-full rounded-md border border-letterboxd-border-light bg-letterboxd-bg-tertiary object-cover"
           />
@@ -85,16 +89,16 @@ const AnchorFilm = ({ film, label, user1Name, user2Name }: AnchorFilmProps) => {
           </div>
         )}
       </a>
-      <div className="w-full mt-2 p-2 px-12 text-center border rounded-md  border-letterboxd-border-light bg-letterboxd-bg-secondary type-body-sm space-y-0.5">
+      <div className="w-full mt-2 p-2 text-center border rounded-md border-letterboxd-border-light bg-letterboxd-bg-secondary type-body-sm space-y-0.5">
         <div>
           <span className="text-letterboxd-text-muted">{user1Name}:</span>{" "}
-          <span className="text-letterboxd-text-primary type-body-strong tabular-nums">
+          <span className="flex justify-center text-letterboxd-text-primary type-body-strong tabular-nums">
             <StarRating rating={film.user1_rating} />
           </span>
         </div>
         <div>
           <span className="text-letterboxd-text-muted">{user2Name}:</span>{" "}
-          <span className="text-letterboxd-text-primary type-body-strong tabular-nums">
+          <span className="flex justify-center text-letterboxd-text-primary type-body-strong tabular-nums">
             <StarRating rating={film.user2_rating} />
           </span>
         </div>
@@ -108,7 +112,7 @@ const SkeletonBlock = ({ className }: { className: string }) => (
 );
 
 const AnchorFilmSkeleton = () => (
-  <div className="flex flex-col items-center w-[120px] sm:w-[150px]">
+  <div className={`flex flex-col items-center ${ANCHOR_WIDTH}`}>
     <SkeletonBlock className="h-5 w-24 mb-3 rounded-sm" />
     <SkeletonBlock className="aspect-2/3 w-full rounded-md" />
     <SkeletonBlock className="h-12 w-full mt-2 rounded-md" />

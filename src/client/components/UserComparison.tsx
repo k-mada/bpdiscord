@@ -1,5 +1,6 @@
 import Card from "./Card";
-import { useId, useState, useEffect } from "react";
+import { useId, useState, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
 import RatingDistributionHistogram from "./RatingDistributionHistogram";
 import TasteCompatibility from "./TasteCompatibility";
 import { useComparison } from "../hooks/useComparison";
@@ -26,7 +27,13 @@ interface UserData {
 }
 
 const UserComparison = () => {
-  const { usernames, getUserComplete } = useComparison();
+  const {
+    usernames,
+    loading: usernamesLoading,
+    getUserComplete,
+  } = useComparison();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlHydrated = useRef(false);
   const [selectedUser1, setSelectedUser1] = useState<string>("");
   const [selectedUser2, setSelectedUser2] = useState<string>("");
   const user1Id = useId();
@@ -46,25 +53,65 @@ const UserComparison = () => {
   const displayError = error || moviesError;
   const isLoading = loading || loadingMovies;
 
+  // The URL only ever holds a complete pair; anything less clears both.
+  const writeUserParams = (user1: string, user2: string) => {
+    const complete = Boolean(user1 && user2) && user1 !== user2;
+    if (!complete && !searchParams.has("user1") && !searchParams.has("user2"))
+      return;
+
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (complete) {
+          next.set("user1", user1);
+          next.set("user2", user2);
+        } else {
+          next.delete("user1");
+          next.delete("user2");
+        }
+        return next;
+      },
+      { replace: true },
+    );
+  };
+
+  // Hydrate once, after the username list loads: a pair is only valid when
+  // both names are known and distinct. Anything else resets to the empty page.
+  useEffect(() => {
+    if (usernamesLoading || urlHydrated.current) return;
+    urlHydrated.current = true;
+
+    const user1 = searchParams.get("user1")?.toLowerCase() ?? "";
+    const user2 = searchParams.get("user2")?.toLowerCase() ?? "";
+    const known = new Set(usernames.map((u) => u.username));
+    const valid = known.has(user1) && known.has(user2) && user1 !== user2;
+
+    if (valid) {
+      setSelectedUser1(user1);
+      setSelectedUser2(user2);
+      writeUserParams(user1, user2);
+    } else if (searchParams.has("user1") || searchParams.has("user2")) {
+      writeUserParams("", "");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot hydration
+  }, [usernamesLoading, usernames]);
+
   const handleUser1Change = (username: string) => {
     setSelectedUser1(username);
-    if (!username) {
-      setUser1Data(null);
-    }
+    writeUserParams(username, selectedUser2);
   };
 
   const handleUser2Change = (username: string) => {
     setSelectedUser2(username);
-    if (!username) {
-      setUser2Data(null);
-    }
+    writeUserParams(selectedUser1, username);
   };
 
   // Load user data for both users when both are selected
   useEffect(() => {
     if (!selectedUser1 || !selectedUser2 || selectedUser1 === selectedUser2) {
-      if (!selectedUser1) setUser1Data(null);
-      if (!selectedUser2) setUser2Data(null);
+      setUser1Data(null);
+      setUser2Data(null);
+      setError(null);
       setLoading(false);
       return;
     }
