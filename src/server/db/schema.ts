@@ -26,7 +26,7 @@ export const users = pgTable('Users', {
   following: integer('following'),
   followers: integer('followers'),
   numberOfLists: integer('number_of_lists'),
-  isDiscord: boolean('is_discord'),
+  isDiscord: boolean('is_discord').notNull().default(true),
   displayName: text('display_name'),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow(),
 });

@@ -197,7 +197,7 @@ export async function dbUpsertLBFilmRatings(
 
 export async function dbGetAllUsernames(): Promise<{
   success: boolean;
-  data?: Array<{ username: string; displayName?: string }>;
+  data?: Array<{ username: string; displayName?: string; isDiscord: boolean }>;
   error?: string;
 }> {
   return dbOperation(async () => {
@@ -205,6 +205,7 @@ export async function dbGetAllUsernames(): Promise<{
       .selectDistinct({
         username: users.lbusername,
         displayName: users.displayName,
+        isDiscord: users.isDiscord,
       })
       .from(users)
       .orderBy(asc(users.lbusername));
@@ -212,6 +213,7 @@ export async function dbGetAllUsernames(): Promise<{
     return result.map((r) => ({
       username: r.username,
       displayName: r.displayName || r.username,
+      isDiscord: r.isDiscord,
     }));
   });
 }
@@ -270,15 +272,19 @@ export async function dbGetHaterRankings2(): Promise<{
     filmsRated: number;
     differential: number;
     adjustedDifferential: number;
+    isDiscord: boolean;
   }>;
   error?: string;
 }> {
   return dbOperation(async () => {
-    // Calls PostgreSQL function: get_hater_rankings()
-    // Compares user film ratings to the film's lb_rating from Films table
-    const result = await db.execute<HaterRankingRow>(
-      sql`SELECT * FROM get_hater_rankings()`,
-    );
+    // get_hater_rankings() compares user ratings to Films.lb_rating.
+    // ORDINALITY keeps the function's own ranking order through the join.
+    const result = await db.execute<HaterRankingRow>(sql`
+      SELECT h.*, u.is_discord
+      FROM get_hater_rankings() WITH ORDINALITY AS h
+      JOIN "Users" u ON u.lbusername = h.lbusername
+      ORDER BY h.ordinality
+    `);
 
     return result.map((row) => ({
       username: row.lbusername,
@@ -286,6 +292,7 @@ export async function dbGetHaterRankings2(): Promise<{
       filmsRated: toNumber(row.films_rated),
       differential: toNumber(row.differential),
       adjustedDifferential: toNumber(row.normalized),
+      isDiscord: row.is_discord,
     }));
   });
 }
@@ -1170,6 +1177,7 @@ export async function dbGetFilmDetail(
         displayName: r.displayName ?? null,
         rating: r.rating as number,
         liked: r.liked ?? false,
+        isDiscord: r.isDiscord === true,
       }))
       .sort(
         (a, b) =>
@@ -1195,6 +1203,24 @@ export async function dbGetFilmDetail(
         : null,
       ratings,
     };
+  });
+}
+
+// Users absent from the table are not returned — callers only refuse a
+// profile known to be non-Discord.
+export async function dbGetNonDiscordUsernames(usernames: string[]): Promise<{
+  success: boolean;
+  data?: string[];
+  error?: string;
+}> {
+  return dbOperation(async () => {
+    const rows = await db
+      .select({ username: users.lbusername })
+      .from(users)
+      .where(
+        and(inArray(users.lbusername, usernames), eq(users.isDiscord, false)),
+      );
+    return rows.map((r) => r.username);
   });
 }
 
@@ -1280,6 +1306,7 @@ export interface CompatibilityExtreme {
   pearson: number;
   sampleSize: number;
   mad: number;
+  isDiscord: boolean;
 }
 
 export async function dbGetCompatibilityExtremes(username: string): Promise<{
@@ -1292,8 +1319,11 @@ export async function dbGetCompatibilityExtremes(username: string): Promise<{
 }> {
   return dbOperation(async () => {
     const rows = await db.execute<CompatibilityExtremeRow>(sql`
-      SELECT bucket, username, display_name, pearson, sample_size, mad
-      FROM taste_compatibility_extremes(${username})
+      SELECT e.bucket, e.username, e.display_name, e.pearson, e.sample_size,
+             e.mad, COALESCE(u.is_discord, false) AS is_discord
+      FROM taste_compatibility_extremes(${username}) WITH ORDINALITY AS e
+      LEFT JOIN "Users" u ON u.lbusername = e.username
+      ORDER BY e.ordinality
     `);
 
     const toRow = (r: CompatibilityExtremeRow): CompatibilityExtreme => ({
@@ -1302,6 +1332,7 @@ export async function dbGetCompatibilityExtremes(username: string): Promise<{
       pearson: r.pearson,
       sampleSize: r.sample_size,
       mad: r.mad,
+      isDiscord: r.is_discord,
     });
 
     return {

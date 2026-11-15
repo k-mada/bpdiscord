@@ -7,6 +7,7 @@ import {
   dbGetUserProfile,
   dbGetMoviesInCommon,
   dbGetMovieSwap,
+  dbGetNonDiscordUsernames,
   dbGetCompatibilityExtremes,
   dbGetTasteCompatibility,
 } from "./dataController";
@@ -289,6 +290,25 @@ export async function getMovieSwap(req: Request, res: Response): Promise<void> {
     if (userA === userB) {
       const response: ApiResponse = {
         error: "Cannot compare a user with themselves",
+      };
+      res.status(400).json(response);
+      return;
+    }
+
+    const nonDiscord = await dbGetNonDiscordUsernames([
+      userA.toLowerCase(),
+      userB.toLowerCase(),
+    ]);
+    if (!nonDiscord.success) {
+      const response: ApiResponse = {
+        error: nonDiscord.error || "Failed to get movie swap",
+      };
+      res.status(500).json(response);
+      return;
+    }
+    if (nonDiscord.data!.length > 0) {
+      const response: ApiResponse = {
+        error: "Movie swap is only available between Discord members",
       };
       res.status(400).json(response);
       return;

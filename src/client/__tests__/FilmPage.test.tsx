@@ -26,8 +26,8 @@ const film: FilmDetail = {
   ratedCount: 2,
   averageRating: 4.25,
   ratings: [
-    { username: "alice", displayName: "Alice", rating: 4.5, liked: true },
-    { username: "bob", displayName: null, rating: 4.0, liked: false },
+    { username: "alice", displayName: "Alice", rating: 4.5, liked: true, isDiscord: true },
+    { username: "bob", displayName: null, rating: 4.0, liked: false, isDiscord: true },
   ],
 };
 
