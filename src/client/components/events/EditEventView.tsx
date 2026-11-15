@@ -117,7 +117,7 @@ const EditEventView = ({
         &larr; Back to events
       </Button>
 
-      <div className="mb-6">
+      <div className="section-gap">
         <h2
           className="type-award-heading text-letterboxd-text-primary"
         >

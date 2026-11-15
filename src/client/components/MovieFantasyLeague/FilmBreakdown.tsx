@@ -75,7 +75,7 @@ const FilmBreakdown = () => {
       )}
 
       {!busy && !error && film && (
-        <p className="text-letterboxd-text-secondary mb-6">
+        <p className="text-letterboxd-text-secondary section-gap">
           {film.releaseDate
             ? formatReleaseDate(film.releaseDate)
             : "Release date unknown"}

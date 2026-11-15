@@ -118,7 +118,7 @@ const Dashboard = () => {
 
       {/* Scopes only the release-year sections below (deviations + lists); the
           count and histogram above are all-time. */}
-      <div className="flex items-center gap-2 mb-6 justify-center">
+      <div className="flex items-center gap-2 section-gap justify-center">
         <label htmlFor="stats-year" className="body-text">
           Filter by release year:
         </label>

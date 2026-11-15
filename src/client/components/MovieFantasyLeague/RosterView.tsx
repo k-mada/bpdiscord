@@ -64,7 +64,7 @@ const RosterView = () => {
           <h2 className="type-h2 text-letterboxd-text-primary mb-1">
             {roster.name}
           </h2>
-          <p className="text-letterboxd-text-secondary mb-6">
+          <p className="text-letterboxd-text-secondary section-gap">
             by{" "}
             <Link
               to={`/user/${roster.lbusername}`}

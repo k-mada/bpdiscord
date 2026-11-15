@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { apiService } from "../services/api";
 import { ActorPath, ActorPathStep } from "../hooks/useActorGraph";
 import Spinner from "./Spinner";
+import { Notification } from "./ui/Notification";
 
 const TMDB_IMAGE_BASE = "https://image.tmdb.org/t/p/w185";
 
@@ -456,7 +457,7 @@ const ActorGraph = () => {
       <h1 className="type-h1-lg text-letterboxd-text-primary mb-6">
         Actor Graph
       </h1>
-      <p className="text-letterboxd-text-secondary mb-6">
+      <p className="text-letterboxd-text-secondary section-gap">
         Select two actors to see how they connect through the movies they've
         been in.
       </p>
@@ -479,9 +480,7 @@ const ActorGraph = () => {
       {loading && <Spinner />}
 
       {!loading && error && (
-        <div className="bg-letterboxd-bg-secondary border border-letterboxd-error/40 text-letterboxd-error rounded-lg px-4 py-3">
-          {error}
-        </div>
+        <Notification status={{ type: "error", message: error }} />
       )}
 
       {!loading && !error && pathData && pathData.path.length > 0 && (
@@ -503,10 +502,12 @@ const ActorGraph = () => {
         pathData.path.length === 0 &&
         actor1 &&
         actor2 && (
-          <div className="bg-letterboxd-bg-secondary border border-letterboxd-border text-letterboxd-text-secondary rounded-lg px-4 py-3">
-            A connection could not be found between {actor1.name} and{" "}
-            {actor2.name} within {pathData.maxDepth} degrees
-          </div>
+          <Notification
+            status={{
+              type: "info",
+              message: `A connection could not be found between ${actor1.name} and ${actor2.name} within ${pathData.maxDepth} degrees`,
+            }}
+          />
         )}
     </div>
   );
