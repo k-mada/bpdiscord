@@ -99,24 +99,19 @@ const UserComparison = () => {
   const handleUser1Change = (username: string) => {
     setSelectedUser1(username);
     writeUserParams(username, selectedUser2);
-    if (!username) {
-      setUser1Data(null);
-    }
   };
 
   const handleUser2Change = (username: string) => {
     setSelectedUser2(username);
     writeUserParams(selectedUser1, username);
-    if (!username) {
-      setUser2Data(null);
-    }
   };
 
   // Load user data for both users when both are selected
   useEffect(() => {
     if (!selectedUser1 || !selectedUser2 || selectedUser1 === selectedUser2) {
-      if (!selectedUser1) setUser1Data(null);
-      if (!selectedUser2) setUser2Data(null);
+      setUser1Data(null);
+      setUser2Data(null);
+      setError(null);
       setLoading(false);
       return;
     }

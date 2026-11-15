@@ -133,6 +133,23 @@ describe("UserComparison URL params", () => {
     expect(select2().value).toBe("bob");
   });
 
+  it.each([
+    ["deselected", ""],
+    ["changed to the other user", "bob"],
+  ])("hides every result when user 1 is %s", async (_label, value) => {
+    renderAt("?user1=alice&user2=bob");
+    expect(await screen.findByText("Rating Comparison")).toBeInTheDocument();
+    expect(await screen.findByText("Movies in Common")).toBeInTheDocument();
+    await waitFor(() => expect(select1()).toBeEnabled());
+
+    fireEvent.change(select1(), { target: { value } });
+
+    await waitFor(() =>
+      expect(screen.queryByText("Rating Comparison")).not.toBeInTheDocument(),
+    );
+    expect(screen.queryByText("Movies in Common")).not.toBeInTheDocument();
+  });
+
   it("clears both params when the same user is picked twice", async () => {
     renderAt("?user1=alice&user2=bob");
     await waitFor(() => expect(select1().value).toBe("alice"));
