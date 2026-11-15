@@ -112,18 +112,33 @@ describe("UserComparison URL params", () => {
     expect(apiService.getFilmUserComplete).not.toHaveBeenCalled();
   });
 
-  it("writes each selection to the URL", async () => {
+  it("writes the URL only once both users are selected", async () => {
     renderAt("");
     await waitForUsersLoaded();
 
     fireEvent.change(select1(), { target: { value: "alice" } });
-    expect(currentSearch).toBe("?user1=alice");
+    expect(currentSearch).toBe("");
 
     fireEvent.change(select2(), { target: { value: "carol" } });
     expect(currentSearch).toBe("?user1=alice&user2=carol");
+  });
 
+  it("clears both params when either user is deselected", async () => {
+    renderAt("?user1=alice&user2=bob");
+    await waitFor(() => expect(select1().value).toBe("alice"));
     await waitFor(() => expect(select1()).toBeEnabled());
+
     fireEvent.change(select1(), { target: { value: "" } });
-    expect(currentSearch).toBe("?user2=carol");
+    expect(currentSearch).toBe("");
+    expect(select2().value).toBe("bob");
+  });
+
+  it("clears both params when the same user is picked twice", async () => {
+    renderAt("?user1=alice&user2=bob");
+    await waitFor(() => expect(select1().value).toBe("alice"));
+    await waitFor(() => expect(select1()).toBeEnabled());
+
+    fireEvent.change(select2(), { target: { value: "alice" } });
+    expect(currentSearch).toBe("");
   });
 });

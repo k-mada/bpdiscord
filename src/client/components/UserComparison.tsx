@@ -53,14 +53,22 @@ const UserComparison = () => {
   const displayError = error || moviesError;
   const isLoading = loading || loadingMovies;
 
+  // The URL only ever holds a complete pair; anything less clears both.
   const writeUserParams = (user1: string, user2: string) => {
+    const complete = Boolean(user1 && user2) && user1 !== user2;
+    if (!complete && !searchParams.has("user1") && !searchParams.has("user2"))
+      return;
+
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev);
-        if (user1) next.set("user1", user1);
-        else next.delete("user1");
-        if (user2) next.set("user2", user2);
-        else next.delete("user2");
+        if (complete) {
+          next.set("user1", user1);
+          next.set("user2", user2);
+        } else {
+          next.delete("user1");
+          next.delete("user2");
+        }
         return next;
       },
       { replace: true },
