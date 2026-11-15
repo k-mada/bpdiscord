@@ -11,6 +11,7 @@ import UserComparison from "./components/UserComparison";
 import MovieSwapPage from "./components/MovieSwapPage";
 import MFLAdmin from "./components/MovieFantasyLeague/Admin";
 import MovieFantasyLeague from "./components/MovieFantasyLeague/Dashboard";
+import MflMovies from "./components/MovieFantasyLeague/Movies";
 import ScoringReference from "./components/MovieFantasyLeague/ScoringReference";
 import FilmBreakdown from "./components/MovieFantasyLeague/FilmBreakdown";
 import RosterView from "./components/MovieFantasyLeague/RosterView";
@@ -37,6 +38,7 @@ function App() {
         <Route path="/" element={<MainLayout />}>
           <Route index element={<Stats />} />
           <Route path="/mfl" element={<MovieFantasyLeague />} />
+          <Route path="/mfl/movies" element={<MflMovies />} />
           <Route path="/mfl/scoring-reference" element={<ScoringReference />} />
           <Route path="/mfl/film/:filmSlug" element={<FilmBreakdown />} />
           <Route path="/mfl/roster/:rosterId" element={<RosterView />} />

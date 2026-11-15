@@ -2,11 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import Spinner from "../Spinner";
 import { DataTable } from "../DataTable/DataTable";
-import {
-  mflFilmSummaryColumns,
-  mflLeaderboardColumns,
-} from "../DataTable/columns";
-import { useMflData } from "../../hooks/useMflData";
+import { mflLeaderboardColumns } from "../DataTable/columns";
 import { useMflLeaderboard } from "../../hooks/useMflLeaderboard";
 import { cn } from "../../lib/utils";
 import type { MFLLeaderboardEntry } from "../../types";
@@ -68,7 +64,6 @@ const StandingsPanel = ({
 );
 
 const MovieFantasyLeague = () => {
-  const { movies, loading, error } = useMflData();
   const {
     official,
     all,
@@ -109,6 +104,10 @@ const MovieFantasyLeague = () => {
           My picks
         </Link>
         {" · "}
+        <Link to="/mfl/movies" className="underline hover:no-underline">
+          Eligible movies
+        </Link>
+        {" · "}
         <Link
           to="/mfl/scoring-reference"
           className="underline hover:no-underline"
@@ -117,111 +116,60 @@ const MovieFantasyLeague = () => {
         </Link>
       </p>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gutter-lg items-start">
-        <section aria-labelledby="mfl-standings-heading">
-          <h2 id="mfl-standings-heading" className="sr-only">
-            League standings
-          </h2>
+      <section aria-labelledby="mfl-standings-heading">
+        <h2 id="mfl-standings-heading" className="sr-only">
+          League standings
+        </h2>
 
-          <div
-            ref={tablistRef}
-            role="tablist"
-            aria-label="League standings"
-            className="flex mb-4 border-b border-letterboxd-border"
-          >
-            {TABS.map(({ value, label }) => (
-              <button
-                key={value}
-                role="tab"
-                id={`standings-tab-${value}`}
-                aria-selected={activeTab === value}
-                aria-controls={`standings-panel-${value}`}
-                tabIndex={activeTab === value ? 0 : -1}
-                onClick={() => setActiveTab(value)}
-                onKeyDown={handleTabKeyDown}
-                className={cn(
-                  "flex-1 -mb-px border-b-2 py-2 text-center type-strong transition-colors",
-                  activeTab === value
-                    ? "border-letterboxd-accent text-letterboxd-text-primary"
-                    : "border-transparent text-letterboxd-text-secondary",
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {standingsLoading && <Spinner />}
-
-          {!standingsLoading && standingsError && (
-            <p className="text-letterboxd-text-secondary">{standingsError}</p>
-          )}
-
-          {!standingsLoading && !standingsError && (
-            <>
-              <StandingsPanel
-                value="official"
-                active={activeTab === "official"}
-                entries={official}
-              />
-              <StandingsPanel
-                value="sicko"
-                active={activeTab === "sicko"}
-                entries={nonOfficial}
-              />
-            </>
-          )}
-        </section>
-
-        <section aria-labelledby="mfl-movies-heading">
-          <div className="flex items-center gap-4 min-h-9 mb-4">
-            <h2
-              id="mfl-movies-heading"
-              className="type-h2 text-letterboxd-text-primary"
+        <div
+          ref={tablistRef}
+          role="tablist"
+          aria-label="League standings"
+          className="flex mb-4 border-b border-letterboxd-border"
+        >
+          {TABS.map(({ value, label }) => (
+            <button
+              key={value}
+              role="tab"
+              id={`standings-tab-${value}`}
+              aria-selected={activeTab === value}
+              aria-controls={`standings-panel-${value}`}
+              tabIndex={activeTab === value ? 0 : -1}
+              onClick={() => setActiveTab(value)}
+              onKeyDown={handleTabKeyDown}
+              className={cn(
+                "flex-1 -mb-px border-b-2 py-2 text-center type-strong transition-colors",
+                activeTab === value
+                  ? "border-letterboxd-accent text-letterboxd-text-primary"
+                  : "border-transparent text-letterboxd-text-secondary",
+              )}
             >
-              Eligible movies
-            </h2>
-            {!loading && !error && movies.length > 0 && (
-              <div className="flex flex-col gap-0.5 type-caption text-letterboxd-text-secondary">
-                <span className="flex items-center gap-1.5">
-                  <span className="inline-block w-2 h-2 rounded-full bg-letterboxd-accent"></span>
-                  Eligible for box office points
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="inline-block w-2 h-2 rounded-full bg-letterboxd-error-surface"></span>
-                  Not eligible for box office points
-                </span>
-              </div>
-            )}
-          </div>
+              {label}
+            </button>
+          ))}
+        </div>
 
-          {loading && <Spinner />}
+        {standingsLoading && <Spinner />}
 
-          {!loading && error && (
-            <p className="text-letterboxd-text-secondary">{error}</p>
-          )}
+        {!standingsLoading && standingsError && (
+          <p className="text-letterboxd-text-secondary">{standingsError}</p>
+        )}
 
-          {!loading && !error && movies.length === 0 && (
-            <p className="text-letterboxd-text-secondary">
-              No films in the catalogue yet.
-            </p>
-          )}
-
-          {!loading && !error && movies.length > 0 && (
-            <>
-              <div className="overflow-x-auto max-h-[50vh]">
-                <DataTable
-                  data={movies}
-                  columns={mflFilmSummaryColumns}
-                  enableSort
-                  initialSort={{ key: "totalPoints", direction: "desc" }}
-                  stickyHeader
-                />
-              </div>
-            </>
-          )}
-        </section>
-      </div>
+        {!standingsLoading && !standingsError && (
+          <>
+            <StandingsPanel
+              value="official"
+              active={activeTab === "official"}
+              entries={official}
+            />
+            <StandingsPanel
+              value="sicko"
+              active={activeTab === "sicko"}
+              entries={nonOfficial}
+            />
+          </>
+        )}
+      </section>
     </div>
   );
 };
