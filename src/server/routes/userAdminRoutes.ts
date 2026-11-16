@@ -13,6 +13,15 @@ router.use(authenticateToken, authorizeAdmin);
 
 router.get("/", UserAdminController.list);
 
+router.post("/profiles", UserAdminController.createProfile);
+
+router.put(
+  "/profiles/:lbusername",
+  ...validateLbusernameParam,
+  handleValidationErrors,
+  UserAdminController.updateProfile,
+);
+
 router.put(
   "/:id",
   ...validateUUIDParam,

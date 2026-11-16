@@ -1,11 +1,17 @@
 import { Request, Response } from "express";
-import { and, eq, ne, sql } from "drizzle-orm";
+import { and, eq, isNull, ne, sql } from "drizzle-orm";
 import { createSupabaseAdminClient } from "../config/database";
 import { db } from "../db";
-import { appUsers, users, userScrapeJobs } from "../db/schema";
+import { appUsers, mflRosters, users, userScrapeJobs } from "../db/schema";
+import { isUniqueViolation } from "../db/utils";
 import { LBUSERNAME_FORMAT, normalizeLbusername } from "../lib/lbusername";
-import { deleteUserCompletely } from "../lib/deleteUser";
+import { deleteProfileData, deleteUserCompletely } from "../lib/deleteUser";
 import { Role } from "../types";
+import { callWorker, getWorkerConfig } from "./jobHelpers";
+import {
+  dbInsertRunningScrapeJob,
+  dbMarkScrapeJobFailed,
+} from "./userScrapeJobController";
 
 const ROLES: readonly Role[] = ["member", "editor", "admin"];
 const isRole = (value: unknown): value is Role =>
@@ -15,7 +21,12 @@ const isRole = (value: unknown): value is Role =>
 // so we find out before accounts get silently truncated.
 const LIST_PAGE_SIZE = 1000;
 
+const LBUSERNAME_FORMAT_ERROR =
+  "Letterboxd.com usernames must be 2–15 characters; letters, numbers, hyphens, underscores only.";
+const PROFILE_NAME_MAX = 80;
+
 interface AccountView {
+  kind: "account";
   id: string;
   email: string | null;
   name: string | null;
@@ -39,8 +50,24 @@ type AppUsersRow = {
   updatedAt: Date;
 };
 
+/** A Letterboxd profile with no linked site account. */
+interface ProfileView {
+  kind: "profile";
+  lbusername: string;
+  name: string | null;
+  isDiscord: boolean;
+  createdAt: string | null;
+}
+
+interface ScrapeOutcome {
+  started: boolean;
+  jobId?: string;
+  error?: string;
+}
+
 function mergeAccount(authUser: AuthUserLike, appUserRow: AppUsersRow | null): AccountView {
   return {
+    kind: "account",
     id: authUser.id,
     email: authUser.email ?? null,
     name: (authUser.user_metadata?.name as string | undefined) ?? null,
@@ -61,14 +88,70 @@ function errorCode(e: unknown): string | undefined {
   return undefined;
 }
 
+function parseProfileName(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  return trimmed.length > 0 && trimmed.length <= PROFILE_NAME_MAX ? trimmed : null;
+}
+
+// Best-effort: the profile is already saved, so a failed handoff is reported
+// rather than rolled back. The admin can retry from /fetcher.
+async function startProfileScrape(
+  lbusername: string,
+  startedBy: string,
+): Promise<ScrapeOutcome> {
+  const config = getWorkerConfig();
+  if (!config) return { started: false, error: "Worker not configured" };
+
+  let jobId: string;
+  try {
+    const inserted = await dbInsertRunningScrapeJob(startedBy, lbusername);
+    if (!inserted.ok) {
+      return { started: true, jobId: inserted.conflictWithJobId };
+    }
+    jobId = inserted.jobId;
+  } catch (e) {
+    console.error("startProfileScrape: insert failed", e);
+    return { started: false, error: "Failed to create scrape job" };
+  }
+
+  try {
+    await callWorker(config, "/scrape-user", { job_id: jobId, lbusername });
+    return { started: true, jobId };
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e);
+    console.error(`startProfileScrape: worker handoff failed for ${jobId}: ${message}`);
+    try {
+      await dbMarkScrapeJobFailed(jobId, `worker handoff failed: ${message}`);
+    } catch (rollbackErr) {
+      console.error("startProfileScrape: rollback also failed", rollbackErr);
+    }
+    return { started: false, error: "Worker unreachable" };
+  }
+}
+
+class ProfileConflict extends Error {}
+class ProfileNotFound extends Error {}
+
 export class UserAdminController {
   static async list(_req: Request, res: Response): Promise<void> {
     try {
       const admin = createSupabaseAdminClient();
-      const [appUsersRows, { data: authData, error: listErr }] = await Promise.all([
-        db.select().from(appUsers),
-        admin.auth.admin.listUsers({ page: 1, perPage: LIST_PAGE_SIZE }),
-      ]);
+      const [appUsersRows, profileRows, { data: authData, error: listErr }] =
+        await Promise.all([
+          db.select().from(appUsers),
+          db
+            .select({
+              lbusername: users.lbusername,
+              name: users.displayName,
+              isDiscord: users.isDiscord,
+              createdAt: users.createdAt,
+            })
+            .from(users)
+            .leftJoin(appUsers, eq(appUsers.lbusername, users.lbusername))
+            .where(isNull(appUsers.id)),
+          admin.auth.admin.listUsers({ page: 1, perPage: LIST_PAGE_SIZE }),
+        ]);
 
       if (listErr) {
         console.error("auth.admin.listUsers failed:", listErr);
@@ -87,7 +170,7 @@ export class UserAdminController {
       const appUsersById = new Map(appUsersRows.map((r) => [r.id, r as AppUsersRow]));
       const authUsersById = new Map(authData.users.map((u) => [u.id, u as AuthUserLike]));
 
-      const merged: AccountView[] = [];
+      const merged: Array<AccountView | ProfileView> = [];
       for (const [id, authUser] of authUsersById) {
         const appRow = appUsersById.get(id);
         if (!appRow) {
@@ -106,7 +189,17 @@ export class UserAdminController {
         }
       }
 
-      // Sort by createdAt desc, nulls last (newest accounts first; synthesized
+      for (const p of profileRows) {
+        merged.push({
+          kind: "profile",
+          lbusername: p.lbusername,
+          name: p.name,
+          isDiscord: p.isDiscord,
+          createdAt: p.createdAt?.toISOString() ?? null,
+        });
+      }
+
+      // Sort by createdAt desc, nulls last (newest rows first; synthesized
       // rows with no createdAt end up at the bottom).
       merged.sort((a, b) => {
         if (a.createdAt === null && b.createdAt === null) return 0;
@@ -148,10 +241,7 @@ export class UserAdminController {
           // Empty/whitespace-only string → treat as unlink.
           lbusernameUpdate = null;
         } else if (!LBUSERNAME_FORMAT.test(normalized)) {
-          res.status(400).json({
-            error:
-              "Letterboxd.com usernames must be 2–15 characters; letters, numbers, hyphens, underscores only.",
-          });
+          res.status(400).json({ error: LBUSERNAME_FORMAT_ERROR });
           return;
         } else {
           lbusernameUpdate = normalized;
@@ -348,6 +438,198 @@ export class UserAdminController {
       });
     } catch (err) {
       console.error("Admin update error:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+
+  static async createProfile(req: Request, res: Response): Promise<void> {
+    try {
+      const { name: rawName, lbusername: rawLbusername } = req.body as {
+        name?: unknown;
+        lbusername?: unknown;
+      };
+
+      const name = parseProfileName(rawName);
+      if (name === null) {
+        res.status(400).json({
+          error: `Name is required (1–${PROFILE_NAME_MAX} characters).`,
+        });
+        return;
+      }
+      const lbusername = normalizeLbusername(rawLbusername);
+      if (lbusername === undefined || !LBUSERNAME_FORMAT.test(lbusername)) {
+        res.status(400).json({ error: LBUSERNAME_FORMAT_ERROR });
+        return;
+      }
+
+      // DO NOTHING, never DO UPDATE: an existing row (a Discord member above
+      // all) must not be flipped to non-Discord by this endpoint.
+      const inserted = await db
+        .insert(users)
+        .values({ lbusername, displayName: name, isDiscord: false })
+        .onConflictDoNothing({ target: users.lbusername })
+        .returning({ createdAt: users.createdAt });
+      if (inserted.length === 0) {
+        res.status(409).json({
+          error: "A Letterboxd profile with this username already exists.",
+        });
+        return;
+      }
+
+      const profile: ProfileView = {
+        kind: "profile",
+        lbusername,
+        name,
+        isDiscord: false,
+        createdAt: inserted[0]!.createdAt?.toISOString() ?? null,
+      };
+      const scrape = await startProfileScrape(lbusername, req.user!.id);
+
+      res.status(201).json({ data: { profile, scrape } });
+    } catch (err) {
+      console.error("Admin create-profile error:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+
+  /**
+   * Edit an unclaimed profile's name and/or Letterboxd username. A username
+   * change deletes the old profile's data and recreates it under the new key
+   * (then rescrapes) — a cascade rename would carry the old person's films over.
+   */
+  static async updateProfile(req: Request, res: Response): Promise<void> {
+    try {
+      const current = normalizeLbusername(req.params.lbusername)!;
+      const { name: rawName, lbusername: rawLbusername } = req.body as {
+        name?: unknown;
+        lbusername?: unknown;
+      };
+
+      if (rawName === undefined && rawLbusername === undefined) {
+        res.status(400).json({ error: "Nothing to update." });
+        return;
+      }
+
+      let name: string | undefined;
+      if (rawName !== undefined) {
+        const parsed = parseProfileName(rawName);
+        if (parsed === null) {
+          res.status(400).json({
+            error: `Name must be 1–${PROFILE_NAME_MAX} characters.`,
+          });
+          return;
+        }
+        name = parsed;
+      }
+
+      let next: string | undefined;
+      if (rawLbusername !== undefined) {
+        const normalized = normalizeLbusername(rawLbusername);
+        if (normalized === undefined || !LBUSERNAME_FORMAT.test(normalized)) {
+          res.status(400).json({ error: LBUSERNAME_FORMAT_ERROR });
+          return;
+        }
+        if (normalized !== current) next = normalized;
+      }
+
+      let profile: ProfileView;
+      try {
+        profile = await db.transaction(async (tx) => {
+          const [row] = await tx
+            .select({
+              displayName: users.displayName,
+              isDiscord: users.isDiscord,
+              createdAt: users.createdAt,
+            })
+            .from(users)
+            .where(eq(users.lbusername, current))
+            .for("update");
+          if (!row) throw new ProfileNotFound();
+
+          const claimed = await tx
+            .select({ id: appUsers.id })
+            .from(appUsers)
+            .where(eq(appUsers.lbusername, current))
+            .limit(1);
+          // A claimed profile belongs to an account; edit it through the account.
+          if (claimed.length > 0) throw new ProfileNotFound();
+
+          const displayName = name ?? row.displayName;
+
+          if (next === undefined) {
+            await tx
+              .update(users)
+              .set({ displayName, updatedAt: new Date() })
+              .where(eq(users.lbusername, current));
+            return {
+              kind: "profile" as const,
+              lbusername: current,
+              name: displayName,
+              isDiscord: row.isDiscord,
+              createdAt: row.createdAt?.toISOString() ?? null,
+            };
+          }
+
+          const taken = await tx
+            .select({ lbusername: users.lbusername })
+            .from(users)
+            .where(eq(users.lbusername, next))
+            .limit(1);
+          if (taken.length > 0) {
+            throw new ProfileConflict(
+              "A Letterboxd profile with this username already exists.",
+            );
+          }
+          const rosters = await tx
+            .select({ id: mflRosters.rosterId })
+            .from(mflRosters)
+            .where(eq(mflRosters.lbusername, current))
+            .limit(1);
+          if (rosters.length > 0) {
+            throw new ProfileConflict(
+              "This profile owns MFL rosters; changing its username would delete them.",
+            );
+          }
+
+          await deleteProfileData(tx, current);
+          const [created] = await tx
+            .insert(users)
+            .values({ lbusername: next, displayName, isDiscord: row.isDiscord })
+            .returning({ createdAt: users.createdAt });
+          return {
+            kind: "profile" as const,
+            lbusername: next,
+            name: displayName,
+            isDiscord: row.isDiscord,
+            createdAt: created!.createdAt?.toISOString() ?? null,
+          };
+        });
+      } catch (txErr) {
+        if (txErr instanceof ProfileNotFound) {
+          res.status(404).json({ error: "Profile not found." });
+          return;
+        }
+        if (txErr instanceof ProfileConflict) {
+          res.status(409).json({ error: txErr.message });
+          return;
+        }
+        if (isUniqueViolation(txErr, "Users_pkey")) {
+          res.status(409).json({
+            error: "A Letterboxd profile with this username already exists.",
+          });
+          return;
+        }
+        throw txErr;
+      }
+
+      const scrape =
+        next !== undefined
+          ? await startProfileScrape(next, req.user!.id)
+          : undefined;
+
+      res.status(200).json({ data: { profile, ...(scrape ? { scrape } : {}) } });
+    } catch (err) {
+      console.error("Admin update-profile error:", err);
       res.status(500).json({ error: "Internal server error" });
     }
   }

@@ -24,11 +24,58 @@ export interface DeleteUserOutcome {
   body: Record<string, unknown>;
 }
 
-interface DeletionCounts {
+export interface DeletionCounts {
   userFilms: number;
   userRatings: number;
   mflPicks: number;
   profile: number;
+}
+
+export type DbTx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/**
+ * Delete a Letterboxd profile and its movie data (UserFilms / UserRatings /
+ * MFL rosters and picks) inside the caller's transaction. Children are deleted
+ * explicitly, not via cascade, so the counts are exact.
+ */
+export async function deleteProfileData(
+  tx: DbTx,
+  lbusername: string,
+): Promise<DeletionCounts> {
+  const rosterIds = (
+    await tx
+      .select({ id: mflRosters.rosterId })
+      .from(mflRosters)
+      .where(eq(mflRosters.lbusername, lbusername))
+  ).map((r) => r.id);
+  const picks = rosterIds.length
+    ? await tx
+        .delete(mflUserPicks)
+        .where(inArray(mflUserPicks.rosterId, rosterIds))
+        .returning({ slug: mflUserPicks.filmSlug })
+    : [];
+  if (rosterIds.length) {
+    await tx.delete(mflRosters).where(inArray(mflRosters.rosterId, rosterIds));
+  }
+  const films = await tx
+    .delete(userFilms)
+    .where(eq(userFilms.lbusername, lbusername))
+    .returning({ slug: userFilms.filmSlug });
+  const ratings = await tx
+    .delete(userRatings)
+    .where(eq(userRatings.username, lbusername))
+    .returning({ rating: userRatings.rating });
+  const profile = await tx
+    .delete(users)
+    .where(eq(users.lbusername, lbusername))
+    .returning({ lbusername: users.lbusername });
+
+  return {
+    mflPicks: picks.length,
+    userFilms: films.length,
+    userRatings: ratings.length,
+    profile: profile.length,
+  };
 }
 
 function errorCode(e: unknown): string | undefined {
@@ -96,44 +143,10 @@ export async function deleteUserCompletely(
     };
   }
 
-  // Delete children explicitly (not via cascade) for exact counts, and so this
-  // works whether or not the migration is applied.
-  const counts: DeletionCounts = { userFilms: 0, userRatings: 0, mflPicks: 0, profile: 0 };
+  let counts: DeletionCounts = { userFilms: 0, userRatings: 0, mflPicks: 0, profile: 0 };
   if (lbusername !== null) {
-    await db.transaction(async (tx) => {
-      const rosterIds = (
-        await tx
-          .select({ id: mflRosters.rosterId })
-          .from(mflRosters)
-          .where(eq(mflRosters.lbusername, lbusername!))
-      ).map((r) => r.id);
-      const picks = rosterIds.length
-        ? await tx
-            .delete(mflUserPicks)
-            .where(inArray(mflUserPicks.rosterId, rosterIds))
-            .returning({ slug: mflUserPicks.filmSlug })
-        : [];
-      if (rosterIds.length) {
-        await tx.delete(mflRosters).where(inArray(mflRosters.rosterId, rosterIds));
-      }
-      const films = await tx
-        .delete(userFilms)
-        .where(eq(userFilms.lbusername, lbusername!))
-        .returning({ slug: userFilms.filmSlug });
-      const ratings = await tx
-        .delete(userRatings)
-        .where(eq(userRatings.username, lbusername!))
-        .returning({ rating: userRatings.rating });
-      const profile = await tx
-        .delete(users)
-        .where(eq(users.lbusername, lbusername!))
-        .returning({ lbusername: users.lbusername });
-
-      counts.mflPicks = picks.length;
-      counts.userFilms = films.length;
-      counts.userRatings = ratings.length;
-      counts.profile = profile.length;
-    });
+    const target = lbusername;
+    counts = await db.transaction((tx) => deleteProfileData(tx, target));
   }
 
   const profileDeleted = counts.profile > 0;

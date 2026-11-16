@@ -178,6 +178,27 @@ describe("UserAdmin — list states", () => {
     // Edit button per row
     expect(screen.getAllByRole("button", { name: "Edit" })).toHaveLength(3);
   });
+
+  it("leaves out profile rows the page cannot edit yet", async () => {
+    const profileRow = {
+      kind: "profile",
+      lbusername: "guest",
+      name: "Guest",
+      isDiscord: false,
+      createdAt: null,
+    } as unknown as AccountView;
+    vi.mocked(apiService.getAccounts).mockResolvedValue({
+      data: [...accounts, profileRow],
+    });
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText("admin@example.com")).toBeInTheDocument();
+    });
+    expect(screen.queryByText("Guest")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Edit" })).toHaveLength(3);
+  });
 });
 
 describe("UserAdmin — edit flow", () => {
