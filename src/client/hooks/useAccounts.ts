@@ -3,9 +3,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { apiService } from "../services/api";
 import { useAuth } from "../contexts/AuthContext";
 import type {
-  AccountView,
+  AdminUserRow,
   AccountUpdateRequest,
   AccountUpdateResponse,
+  ProfileCreateRequest,
+  ProfileMutationResponse,
+  ProfileUpdateRequest,
 } from "../types";
 
 /**
@@ -24,7 +27,7 @@ export const useAccounts = () => {
   const tokenRef = useRef(token);
   tokenRef.current = token;
 
-  const [data, setData] = useState<AccountView[]>([]);
+  const [data, setData] = useState<AdminUserRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,12 +42,7 @@ export const useAccounts = () => {
       setLoading(true);
       setError(null);
       const response = await apiService.getAccounts(token);
-      // Profile rows (no site account) are not rendered by this page yet.
-      setData(
-        (response.data ?? []).filter(
-          (row) => (row as { kind?: string }).kind !== "profile",
-        ),
-      );
+      setData(response.data ?? []);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load accounts");
     } finally {
@@ -70,7 +68,9 @@ export const useAccounts = () => {
       // not part of AccountView, so it's stripped before storing.
       const { requiresReauth: _ignored, ...row } = updated;
       void _ignored;
-      setData((prev) => prev.map((a) => (a.id === id ? row : a)));
+      setData((prev) =>
+        prev.map((a) => (a.kind === "account" && a.id === id ? row : a)),
+      );
       return updated;
     },
     [],
@@ -80,8 +80,60 @@ export const useAccounts = () => {
     const token = tokenRef.current;
     if (!token) throw new Error("Not authenticated");
     await apiService.deleteAccount(id, token);
-    setData((prev) => prev.filter((a) => a.id !== id));
+    setData((prev) => prev.filter((a) => a.kind !== "account" || a.id !== id));
   }, []);
 
-  return { data, loading, error, refetch, update, remove };
+  const createProfile = useCallback(
+    async (body: ProfileCreateRequest): Promise<ProfileMutationResponse> => {
+      const token = tokenRef.current;
+      if (!token) throw new Error("Not authenticated");
+      const response = await apiService.createProfile(body, token);
+      const result = response.data;
+      if (!result) throw new Error("Server did not return the new profile");
+      setData((prev) => [result.profile, ...prev]);
+      return result;
+    },
+    [],
+  );
+
+  const updateProfile = useCallback(
+    async (
+      lbusername: string,
+      patch: ProfileUpdateRequest,
+    ): Promise<ProfileMutationResponse> => {
+      const token = tokenRef.current;
+      if (!token) throw new Error("Not authenticated");
+      const response = await apiService.updateProfile(lbusername, patch, token);
+      const result = response.data;
+      if (!result) throw new Error("Server did not return the updated profile");
+      setData((prev) =>
+        prev.map((a) =>
+          a.kind === "profile" && a.lbusername === lbusername ? result.profile : a,
+        ),
+      );
+      return result;
+    },
+    [],
+  );
+
+  const removeProfile = useCallback(async (lbusername: string): Promise<void> => {
+    const token = tokenRef.current;
+    if (!token) throw new Error("Not authenticated");
+    await apiService.deleteProfile(lbusername, token);
+    setData((prev) =>
+      prev.filter((a) => a.kind !== "profile" || a.lbusername !== lbusername),
+    );
+  }, []);
+
+  return {
+    data,
+    loading,
+    error,
+    refetch,
+    update,
+    remove,
+    createProfile,
+    updateProfile,
+    removeProfile,
+  };
 };

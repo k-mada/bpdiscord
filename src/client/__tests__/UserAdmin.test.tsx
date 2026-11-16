@@ -7,7 +7,7 @@ import apiService from "../services/api";
 import { AuthProvider } from "../contexts/AuthContext";
 import { DialogProvider } from "../contexts/DialogContext";
 import { ToastProvider } from "../contexts/ToastContext";
-import type { AccountView, CurrentUser } from "../types";
+import type { AccountView, CurrentUser, ProfileView } from "../types";
 import { installFakeLocalStorage } from "./helpers/localStorage";
 import { futureJwt } from "./helpers/jwt";
 
@@ -37,6 +37,7 @@ const NON_ADMIN_USER: CurrentUser = {
 
 const accounts: AccountView[] = [
   {
+    kind: "account",
     id: "admin-id",
     email: "admin@example.com",
     name: "Admin",
@@ -46,6 +47,7 @@ const accounts: AccountView[] = [
     updatedAt: "2026-01-01T00:00:00.000Z",
   },
   {
+    kind: "account",
     id: "bob-id",
     email: "bob@example.com",
     name: "Bob",
@@ -55,6 +57,7 @@ const accounts: AccountView[] = [
     updatedAt: "2026-01-02T00:00:00.000Z",
   },
   {
+    kind: "account",
     id: "carol-id",
     email: "carol@example.com",
     name: "Carol",
@@ -179,26 +182,6 @@ describe("UserAdmin — list states", () => {
     expect(screen.getAllByRole("button", { name: "Edit" })).toHaveLength(3);
   });
 
-  it("leaves out profile rows the page cannot edit yet", async () => {
-    const profileRow = {
-      kind: "profile",
-      lbusername: "guest",
-      name: "Guest",
-      isDiscord: false,
-      createdAt: null,
-    } as unknown as AccountView;
-    vi.mocked(apiService.getAccounts).mockResolvedValue({
-      data: [...accounts, profileRow],
-    });
-
-    renderPage();
-
-    await waitFor(() => {
-      expect(screen.getByText("admin@example.com")).toBeInTheDocument();
-    });
-    expect(screen.queryByText("Guest")).not.toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Edit" })).toHaveLength(3);
-  });
 });
 
 describe("UserAdmin — edit flow", () => {
@@ -212,6 +195,7 @@ describe("UserAdmin — edit flow", () => {
   it("saves name + lbusername changes and patches the row in place", async () => {
     vi.mocked(apiService.updateAccount).mockResolvedValue({
       data: {
+        kind: "account",
         id: "bob-id",
         email: "bob@example.com",
         name: "Bobby",
@@ -269,6 +253,7 @@ describe("UserAdmin — edit flow", () => {
   it("changes a user's role and sends it in the patch", async () => {
     vi.mocked(apiService.updateAccount).mockResolvedValue({
       data: {
+        kind: "account",
         id: "bob-id",
         email: "bob@example.com",
         name: "Bob",
@@ -343,6 +328,7 @@ describe("UserAdmin — edit flow", () => {
   it("unlinks a Letterboxd username by clearing the field", async () => {
     vi.mocked(apiService.updateAccount).mockResolvedValue({
       data: {
+        kind: "account",
         id: "carol-id",
         email: "carol@example.com",
         name: "Carol",
@@ -535,5 +521,212 @@ describe("UserAdmin — delete flow", () => {
     expect(
       screen.getByRole("button", { name: "Delete account" }),
     ).toBeDisabled();
+  });
+});
+
+describe("UserAdmin — non-discord profiles", () => {
+  const guest: ProfileView = {
+    kind: "profile",
+    lbusername: "guest-lb",
+    name: "Guest",
+    isDiscord: false,
+    createdAt: "2026-01-04T00:00:00.000Z",
+  };
+  const lurker: ProfileView = {
+    kind: "profile",
+    lbusername: "lurker-lb",
+    name: "Lurker",
+    isDiscord: true,
+    createdAt: "2026-01-05T00:00:00.000Z",
+  };
+
+  beforeEach(() => {
+    vi.mocked(apiService.getAccounts).mockResolvedValue({
+      data: [...accounts, guest, lurker],
+    });
+    vi.mocked(apiService.getFilmUsers).mockResolvedValue({
+      data: [...allLetterboxdUsers, { username: "guest-lb" }],
+    });
+  });
+
+  const rowFor = async (name: string) =>
+    (await screen.findByText(name)).closest("tr")!;
+
+  it("shows N/A for email and role, a star for non-discord, a label for unregistered members", async () => {
+    renderPage();
+
+    const guestRow = await rowFor("Guest");
+    expect(within(guestRow).getAllByText("N/A")).toHaveLength(2);
+    expect(within(guestRow).getByText("(not a Discord member)")).toBeInTheDocument();
+
+    const lurkerRow = await rowFor("Lurker");
+    expect(within(lurkerRow).getByText("(unregistered)")).toBeInTheDocument();
+    expect(within(lurkerRow).queryByText("(not a Discord member)")).not.toBeInTheDocument();
+
+    const bobRow = await rowFor("Bob");
+    expect(within(bobRow).queryByText("N/A")).not.toBeInTheDocument();
+  });
+
+  it("adds a person from the modal and lists the new row", async () => {
+    vi.mocked(apiService.createProfile).mockResolvedValue({
+      data: {
+        profile: { ...guest, lbusername: "newbie", name: "Newbie" },
+        scrape: { started: true, jobId: "job-1" },
+      },
+    });
+    renderPage();
+    await rowFor("Guest");
+
+    await userEvent.click(screen.getByRole("button", { name: "Add non-discord person" }));
+    const dialog = screen.getByRole("dialog");
+    await userEvent.type(within(dialog).getByLabelText("Name"), "  Newbie ");
+    await userEvent.type(within(dialog).getByLabelText("Letterboxd username"), "NewBie");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Add" }));
+
+    await waitFor(() =>
+      expect(apiService.createProfile).toHaveBeenCalledWith(
+        { name: "Newbie", lbusername: "newbie" },
+        TOKEN,
+      ),
+    );
+    expect(await screen.findByText("Newbie")).toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("being scraped");
+  });
+
+  it("warns when the profile saved but the scrape did not start", async () => {
+    vi.mocked(apiService.createProfile).mockResolvedValue({
+      data: {
+        profile: { ...guest, lbusername: "newbie", name: "Newbie" },
+        scrape: { started: false, error: "Worker unreachable" },
+      },
+    });
+    renderPage();
+    await rowFor("Guest");
+
+    await userEvent.click(screen.getByRole("button", { name: "Add non-discord person" }));
+    const dialog = screen.getByRole("dialog");
+    await userEvent.type(within(dialog).getByLabelText("Name"), "Newbie");
+    await userEvent.type(within(dialog).getByLabelText("Letterboxd username"), "newbie");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Add" }));
+
+    // An error toast persists, so its text lives in the toast and its live region.
+    expect(
+      await screen.findAllByText(/scrape did not start \(Worker unreachable\)/),
+    ).not.toHaveLength(0);
+  });
+
+  it("blocks a malformed username before calling the API", async () => {
+    renderPage();
+    await rowFor("Guest");
+
+    await userEvent.click(screen.getByRole("button", { name: "Add non-discord person" }));
+    const dialog = screen.getByRole("dialog");
+    await userEvent.type(within(dialog).getByLabelText("Name"), "Newbie");
+    const lbInput = within(dialog).getByLabelText("Letterboxd username");
+    await userEvent.type(lbInput, "has space");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Add" }));
+
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent("2–15 characters");
+    expect(lbInput).toHaveAttribute("aria-invalid", "true");
+    expect(apiService.createProfile).not.toHaveBeenCalled();
+  });
+
+  it("keeps the modal open with the server error on a duplicate", async () => {
+    vi.mocked(apiService.createProfile).mockRejectedValue(
+      new Error("A Letterboxd profile with this username already exists."),
+    );
+    renderPage();
+    await rowFor("Guest");
+
+    await userEvent.click(screen.getByRole("button", { name: "Add non-discord person" }));
+    const dialog = screen.getByRole("dialog");
+    await userEvent.type(within(dialog).getByLabelText("Name"), "Dupe");
+    await userEvent.type(within(dialog).getByLabelText("Letterboxd username"), "carol-lb");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Add" }));
+
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent("already exists");
+  });
+
+  it("edits a profile's name and patches the row", async () => {
+    vi.mocked(apiService.updateProfile).mockResolvedValue({
+      data: { profile: { ...guest, name: "Guest Star" } },
+    });
+    renderPage();
+
+    await userEvent.click(within(await rowFor("Guest")).getByRole("button", { name: "Edit" }));
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByText("Edit profile")).toBeInTheDocument();
+    const nameInput = within(dialog).getByLabelText("Name");
+    await userEvent.clear(nameInput);
+    await userEvent.type(nameInput, "Guest Star");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Save" }));
+
+    await waitFor(() =>
+      expect(apiService.updateProfile).toHaveBeenCalledWith(
+        "guest-lb",
+        { name: "Guest Star" },
+        TOKEN,
+      ),
+    );
+    expect(await screen.findByText("Guest Star")).toBeInTheDocument();
+  });
+
+  it("warns before a username change and sends only the new username", async () => {
+    vi.mocked(apiService.updateProfile).mockResolvedValue({
+      data: {
+        profile: { ...guest, lbusername: "guest-two" },
+        scrape: { started: true, jobId: "job-2" },
+      },
+    });
+    renderPage();
+
+    await userEvent.click(within(await rowFor("Guest")).getByRole("button", { name: "Edit" }));
+    const dialog = screen.getByRole("dialog");
+    const lbInput = within(dialog).getByLabelText("Letterboxd username");
+    await userEvent.clear(lbInput);
+    await userEvent.type(lbInput, "guest-two");
+
+    expect(lbInput).toHaveAccessibleDescription(/deletes this profile's ratings/);
+
+    await userEvent.click(within(dialog).getByRole("button", { name: "Save" }));
+    await waitFor(() =>
+      expect(apiService.updateProfile).toHaveBeenCalledWith(
+        "guest-lb",
+        { lbusername: "guest-two" },
+        TOKEN,
+      ),
+    );
+    expect(await screen.findByRole("link", { name: "guest-two" })).toBeInTheDocument();
+  });
+
+  it("deletes a profile by its username after confirmation", async () => {
+    vi.mocked(apiService.deleteProfile).mockResolvedValue({ data: {} });
+    renderPage();
+
+    await userEvent.click(within(await rowFor("Lurker")).getByRole("button", { name: "Edit" }));
+    const dialog = screen.getByRole("dialog");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Delete profile" }));
+    expect(within(dialog).getByText(/leave the Stats page/)).toBeInTheDocument();
+    await userEvent.click(within(dialog).getByRole("button", { name: "Yes, delete" }));
+
+    await waitFor(() =>
+      expect(apiService.deleteProfile).toHaveBeenCalledWith("lurker-lb", TOKEN),
+    );
+    await waitFor(() => expect(screen.queryByText("Lurker")).not.toBeInTheDocument());
+    expect(screen.getByRole("status")).toHaveTextContent("Profile deleted.");
+  });
+
+  it("still offers an unclaimed profile's username when linking an account", async () => {
+    renderPage();
+
+    await userEvent.click(within(await rowFor("Bob")).getByRole("button", { name: "Edit" }));
+
+    await waitFor(() => {
+      const values = Array.from(
+        document.getElementById("unclaimed-lb-usernames")!.querySelectorAll("option"),
+      ).map((o) => o.value);
+      expect(values).toContain("guest-lb");
+    });
   });
 });

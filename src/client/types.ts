@@ -320,6 +320,7 @@ export type AccountRole = "member" | "editor" | "admin";
 // GET /api/admin/users — auth.users joined with app_users by id. Canonical
 // mapping lives in userAdminController.mergeAccount.
 export interface AccountView {
+  kind: "account";
   id: string;
   email: string | null;
   name: string | null;
@@ -327,6 +328,41 @@ export interface AccountView {
   lbusername: string | null;
   createdAt: string | null;
   updatedAt: string | null;
+}
+
+// GET /api/admin/users also returns every Users row no account claims.
+export interface ProfileView {
+  kind: "profile";
+  lbusername: string;
+  name: string | null;
+  isDiscord: boolean;
+  createdAt: string | null;
+}
+
+export type AdminUserRow = AccountView | ProfileView;
+
+export interface ProfileCreateRequest {
+  name: string;
+  lbusername: string;
+}
+
+// Omit a field to leave it unchanged. A new lbusername drops the profile's
+// data and rescrapes under the new key.
+export interface ProfileUpdateRequest {
+  name?: string;
+  lbusername?: string;
+}
+
+// The worker handoff is best-effort; a failed one keeps the saved profile.
+export interface ProfileScrapeOutcome {
+  started: boolean;
+  jobId?: string;
+  error?: string;
+}
+
+export interface ProfileMutationResponse {
+  profile: ProfileView;
+  scrape?: ProfileScrapeOutcome;
 }
 
 // PUT /api/admin/users/:id — omit a field to leave it unchanged;
