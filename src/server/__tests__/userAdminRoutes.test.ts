@@ -13,7 +13,9 @@ describe("userAdminRoutes wiring", () => {
       "DELETE /:id",
       "DELETE /by-lbusername/:lbusername",
       "GET /",
+      "POST /profiles",
       "PUT /:id",
+      "PUT /profiles/:lbusername",
     ]);
   });
 

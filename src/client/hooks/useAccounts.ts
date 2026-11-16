@@ -39,7 +39,12 @@ export const useAccounts = () => {
       setLoading(true);
       setError(null);
       const response = await apiService.getAccounts(token);
-      setData(response.data ?? []);
+      // Profile rows (no site account) are not rendered by this page yet.
+      setData(
+        (response.data ?? []).filter(
+          (row) => (row as { kind?: string }).kind !== "profile",
+        ),
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load accounts");
     } finally {
