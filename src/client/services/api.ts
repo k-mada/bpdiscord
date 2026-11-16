@@ -23,9 +23,12 @@ import {
   EventUserPick,
   RefreshJob,
   UserScrapeJob,
-  AccountView,
+  AdminUserRow,
   AccountUpdateRequest,
   AccountUpdateResponse,
+  ProfileCreateRequest,
+  ProfileMutationResponse,
+  ProfileUpdateRequest,
   CompatibilityExtremesData,
   CurrentUser,
   MoviesInCommonData,
@@ -650,8 +653,8 @@ class ApiService {
     });
   }
 
-  async getAccounts(token: string): Promise<ApiResponse<AccountView[]>> {
-    return this.request<AccountView[]>("/admin/users", {
+  async getAccounts(token: string): Promise<ApiResponse<AdminUserRow[]>> {
+    return this.request<AdminUserRow[]>("/admin/users", {
       method: "GET",
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -677,6 +680,42 @@ class ApiService {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
+  }
+
+  async createProfile(
+    body: ProfileCreateRequest,
+    token: string,
+  ): Promise<ApiResponse<ProfileMutationResponse>> {
+    return this.request<ProfileMutationResponse>("/admin/users/profiles", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: JSON.stringify(body),
+    });
+  }
+
+  async updateProfile(
+    lbusername: string,
+    patch: ProfileUpdateRequest,
+    token: string,
+  ): Promise<ApiResponse<ProfileMutationResponse>> {
+    return this.request<ProfileMutationResponse>(
+      `/admin/users/profiles/${encodeURIComponent(lbusername)}`,
+      {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}` },
+        body: JSON.stringify(patch),
+      },
+    );
+  }
+
+  async deleteProfile(lbusername: string, token: string): Promise<ApiResponse<unknown>> {
+    return this.request<unknown>(
+      `/admin/users/profiles/${encodeURIComponent(lbusername)}`,
+      {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      },
+    );
   }
 }
 

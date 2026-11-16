@@ -22,6 +22,13 @@ router.put(
   UserAdminController.updateProfile,
 );
 
+router.delete(
+  "/profiles/:lbusername",
+  ...validateLbusernameParam,
+  handleValidationErrors,
+  UserAdminController.removeProfile,
+);
+
 router.put(
   "/:id",
   ...validateUUIDParam,

@@ -11,7 +11,16 @@ import { Button, buttonVariants } from "../ui/Button";
 import { Modal, ModalBody, ModalHeader } from "../Modal";
 import { cn } from "../../lib/utils";
 import Spinner from "../Spinner";
-import type { AccountRole, AccountUpdateRequest, AccountView } from "../../types";
+import NonDiscordMark from "../NonDiscordMark";
+import { AddProfileModal, EditProfileModal } from "./ProfileModals";
+import type {
+  AccountRole,
+  AccountUpdateRequest,
+  AccountView,
+  AdminUserRow,
+  ProfileScrapeOutcome,
+  ProfileView,
+} from "../../types";
 
 const ROLE_OPTIONS: { value: AccountRole; label: string }[] = [
   { value: "member", label: "Member" },
@@ -23,6 +32,17 @@ import { Notification } from "../ui/Notification";
 // UX-only pre-check. Server is the source of truth — keep in sync with
 // src/server/lib/lbusername.ts.
 const LBUSERNAME_FORMAT = /^[a-z0-9_-]{2,15}$/;
+
+const rowKey = (row: AdminUserRow): string =>
+  row.kind === "account" ? row.id : `profile:${row.lbusername}`;
+
+const scrapeToast = (who: string, scrape: ProfileScrapeOutcome | undefined) =>
+  scrape?.started === false
+    ? {
+        tone: "error" as const,
+        message: `Saved ${who}, but the scrape did not start (${scrape.error ?? "unknown error"}). Run it from the Fetcher page.`,
+      }
+    : { tone: "success" as const, message: `Saved ${who}. Their ratings are being scraped.` };
 
 const formatDate = (iso: string | null): string => {
   if (!iso) return "—";
@@ -38,10 +58,21 @@ const UserAdmin = () => {
   const { user, loading: authLoading, logout } = useAuth();
   const { show: showToast } = useToast();
   const [editing, setEditing] = useState<AccountView | null>(null);
+  const [editingProfile, setEditingProfile] = useState<ProfileView | null>(null);
+  const [adding, setAdding] = useState(false);
 
   const isAdmin = user?.role === "admin";
 
-  const { data: accounts, loading, error, update, remove } = useAccounts();
+  const {
+    data: accounts,
+    loading,
+    error,
+    update,
+    remove,
+    createProfile,
+    updateProfile,
+    removeProfile,
+  } = useAccounts();
 
   // Wait for /me to resolve before judging the gate — otherwise an admin sees
   // a flash of "Access denied" while the identity round-trip is in flight.
@@ -96,6 +127,12 @@ const UserAdmin = () => {
         </div>
       </div>
 
+      <div>
+        <Button type="button" onClick={() => setAdding(true)}>
+          Add non-discord person
+        </Button>
+      </div>
+
       {error && <Notification status={{ type: "error", message: error }} />}
 
       {loading ? (
@@ -136,18 +173,26 @@ const UserAdmin = () => {
             </thead>
             <tbody>
               {accounts.map((a, i) => (
-                <tr key={a.id} className="border-b border-letterboxd-border/50">
+                <tr key={rowKey(a)} className="border-b border-letterboxd-border/50">
                   <td>
                     <span className="text-letterboxd-text-secondary">{i + 1}</span>
                   </td>
                   <td>
-                    {a.email ?? "—"}
+                    {a.kind === "account" ? (a.email ?? "—") : "N/A"}
                   </td>
                   <td>
                     {a.name ?? "—"}
+                    {a.kind === "profile" &&
+                      (a.isDiscord ? (
+                        <span className="ml-1 type-caption text-letterboxd-text-muted">
+                          (unregistered)
+                        </span>
+                      ) : (
+                        <NonDiscordMark />
+                      ))}
                   </td>
-                  <td className="capitalize">
-                    {a.role}
+                  <td className={a.kind === "account" ? "capitalize" : undefined}>
+                    {a.kind === "account" ? a.role : "N/A"}
                   </td>
                   <td>
                     {a.lbusername ? (
@@ -172,7 +217,9 @@ const UserAdmin = () => {
                     <Button
                       type="button"
                       variant="secondary"
-                      onClick={() => setEditing(a)}
+                      onClick={() =>
+                        a.kind === "account" ? setEditing(a) : setEditingProfile(a)
+                      }
                       className="type-body-sm"
                     >
                       Edit
@@ -208,13 +255,45 @@ const UserAdmin = () => {
           }}
         />
       )}
+
+      {adding && (
+        <AddProfileModal
+          onClose={() => setAdding(false)}
+          onCreate={async (body) => {
+            const result = await createProfile(body);
+            setAdding(false);
+            showToast(scrapeToast(result.profile.name ?? body.lbusername, result.scrape));
+          }}
+        />
+      )}
+
+      {editingProfile && (
+        <EditProfileModal
+          profile={editingProfile}
+          onClose={() => setEditingProfile(null)}
+          onSave={async (patch) => {
+            const result = await updateProfile(editingProfile.lbusername, patch);
+            setEditingProfile(null);
+            if (result.scrape) {
+              showToast(
+                scrapeToast(result.profile.name ?? result.profile.lbusername, result.scrape),
+              );
+            }
+          }}
+          onDelete={async () => {
+            await removeProfile(editingProfile.lbusername);
+            setEditingProfile(null);
+            showToast({ tone: "success", message: "Profile deleted." });
+          }}
+        />
+      )}
     </div>
   );
 };
 
 interface EditAccountModalProps {
   account: AccountView;
-  accounts: AccountView[];
+  accounts: AdminUserRow[];
   isSelf: boolean;
   onClose: () => void;
   onSave: (patch: AccountUpdateRequest) => Promise<void>;

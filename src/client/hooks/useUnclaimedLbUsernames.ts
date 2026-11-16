@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { apiService } from "../services/api";
-import type { AccountView } from "../types";
+import type { AdminUserRow } from "../types";
 
 /**
  * Derives the set of Letterboxd usernames not yet linked to any app account,
@@ -14,7 +14,7 @@ import type { AccountView } from "../types";
  * choice in the modal's dropdown.
  */
 export const useUnclaimedLbUsernames = (
-  accounts: AccountView[],
+  accounts: AdminUserRow[],
   currentLbusername: string | null = null,
 ) => {
   const [allLbusernames, setAllLbusernames] = useState<string[]>([]);
@@ -48,8 +48,10 @@ export const useUnclaimedLbUsernames = (
   }, []);
 
   const unclaimed = useMemo(() => {
+    // Profile rows have an lbusername but no account, so they stay claimable.
     const claimed = new Set(
       accounts
+        .filter((a) => a.kind === "account")
         .map((a) => a.lbusername)
         .filter((u): u is string => typeof u === "string" && u.length > 0),
     );
