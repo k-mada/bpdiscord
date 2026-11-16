@@ -218,6 +218,19 @@ describe('UserAdminController.updateProfile', () => {
     });
   });
 
+  it('treats the same username in another case as no username change', async () => {
+    const { req, res, statusCalls } = adminReq({
+      params: { lbusername: 'GUEST' },
+      body: { name: 'Renamed', lbusername: 'Guest' },
+    });
+    await UserAdminController.updateProfile(req, res);
+
+    expect(statusCalls).toEqual([200]);
+    expect(await usersRow('guest')).toMatchObject({ displayName: 'Renamed' });
+    expect(await db.select().from(userFilms)).toHaveLength(1);
+    expect(callWorker).not.toHaveBeenCalled();
+  });
+
   it('changes the username by dropping the old data and rescraping the new key', async () => {
     const { req, res, statusCalls } = adminReq({
       params: { lbusername: 'guest' },
