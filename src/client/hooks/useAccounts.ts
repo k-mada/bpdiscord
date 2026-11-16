@@ -71,6 +71,16 @@ export const useAccounts = () => {
       setData((prev) =>
         prev.map((a) => (a.kind === "account" && a.id === id ? row : a)),
       );
+      // A link change moves a username between an account and a profile row;
+      // reload so no stale profile row is left to edit or delete.
+      if (patch.lbusername !== undefined) {
+        try {
+          const fresh = await apiService.getAccounts(token);
+          if (fresh.data) setData(fresh.data);
+        } catch {
+          // The patched list stays; a page reload recovers.
+        }
+      }
       return updated;
     },
     [],

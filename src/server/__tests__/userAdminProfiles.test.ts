@@ -329,3 +329,45 @@ describe('UserAdminController.updateProfile', () => {
     expect(statusCalls).toEqual([400]);
   });
 });
+
+describe('UserAdminController.removeProfile', () => {
+  beforeEach(async () => {
+    await db.insert(users).values({ lbusername: 'guest', isDiscord: false });
+    await db.insert(userFilms).values({ lbusername: 'guest', filmSlug: 'heat', rating: 4 });
+  });
+
+  it('deletes an unclaimed profile and its films', async () => {
+    const { req, res, statusCalls, jsonCalls } = adminReq({ params: { lbusername: 'Guest' } });
+    await UserAdminController.removeProfile(req, res);
+
+    expect(statusCalls).toEqual([200]);
+    expect(jsonCalls[0]).toMatchObject({
+      data: { lbusername: 'guest', deleted: true, counts: { profile: 1, userFilms: 1 } },
+    });
+    expect(await usersRow('guest')).toBeUndefined();
+    expect(await db.select().from(userFilms)).toHaveLength(0);
+  });
+
+  it('refuses a claimed profile with 404 and never touches the account', async () => {
+    const sdk = { auth: { admin: { deleteUser: vi.fn() } } };
+    vi.mocked(createSupabaseAdminClient).mockReturnValue(sdk as never);
+    await seedAuthUser(ACCOUNT_ID, 'profiles-test-3@example.test');
+    await db.insert(users).values({ lbusername: 'claimed', isDiscord: true });
+    await db.insert(appUsers).values({ id: ACCOUNT_ID, lbusername: 'claimed' });
+
+    const { req, res, statusCalls } = adminReq({ params: { lbusername: 'claimed' } });
+    await UserAdminController.removeProfile(req, res);
+
+    expect(statusCalls).toEqual([404]);
+    expect(await usersRow('claimed')).toBeDefined();
+    expect(await db.select().from(appUsers)).toHaveLength(1);
+    expect(sdk.auth.admin.deleteUser).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 for an unknown profile', async () => {
+    const { req, res, statusCalls } = adminReq({ params: { lbusername: 'nobody' } });
+    await UserAdminController.removeProfile(req, res);
+
+    expect(statusCalls).toEqual([404]);
+  });
+});

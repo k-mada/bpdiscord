@@ -12,6 +12,7 @@ describe("userAdminRoutes wiring", () => {
     expect(routes.map((r) => `${r.method} ${r.path}`).sort()).toEqual([
       "DELETE /:id",
       "DELETE /by-lbusername/:lbusername",
+      "DELETE /profiles/:lbusername",
       "GET /",
       "POST /profiles",
       "PUT /:id",

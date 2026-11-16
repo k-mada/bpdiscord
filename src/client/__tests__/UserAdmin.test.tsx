@@ -192,19 +192,22 @@ describe("UserAdmin — edit flow", () => {
     });
   });
 
-  it("saves name + lbusername changes and patches the row in place", async () => {
-    vi.mocked(apiService.updateAccount).mockResolvedValue({
-      data: {
-        kind: "account",
-        id: "bob-id",
-        email: "bob@example.com",
-        name: "Bobby",
-        role: "member",
-        lbusername: "unclaimed-1",
-        createdAt: "2026-01-02T00:00:00.000Z",
-        updatedAt: "2026-01-04T00:00:00.000Z",
-      },
-    });
+  it("saves name + lbusername changes and shows the updated row", async () => {
+    const updatedBob: AccountView = {
+      kind: "account",
+      id: "bob-id",
+      email: "bob@example.com",
+      name: "Bobby",
+      role: "member",
+      lbusername: "unclaimed-1",
+      createdAt: "2026-01-02T00:00:00.000Z",
+      updatedAt: "2026-01-04T00:00:00.000Z",
+    };
+    vi.mocked(apiService.updateAccount).mockResolvedValue({ data: updatedBob });
+    // A link change reloads the list, which the server now returns updated.
+    vi.mocked(apiService.getAccounts)
+      .mockResolvedValueOnce({ data: accounts })
+      .mockResolvedValueOnce({ data: [accounts[0]!, updatedBob, accounts[2]!] });
 
     renderPage();
     await waitFor(() =>
@@ -237,7 +240,7 @@ describe("UserAdmin — edit flow", () => {
       );
     });
 
-    // Local list reflects the patch (the modal closed + row updated).
+    // The modal closed and the row shows the update.
     await waitFor(() => {
       expect(screen.queryByText("Edit account")).not.toBeInTheDocument();
       const newBobRow = screen
@@ -715,6 +718,26 @@ describe("UserAdmin — non-discord profiles", () => {
     );
     await waitFor(() => expect(screen.queryByText("Lurker")).not.toBeInTheDocument());
     expect(screen.getByRole("status")).toHaveTextContent("Profile deleted.");
+  });
+
+  it("reloads the list after linking an account so the claimed profile row disappears", async () => {
+    vi.mocked(apiService.updateAccount).mockResolvedValue({
+      data: { ...accounts[1]!, lbusername: "guest-lb" } as AccountView,
+    });
+    renderPage();
+
+    await userEvent.click(within(await rowFor("Bob")).getByRole("button", { name: "Edit" }));
+    vi.mocked(apiService.getAccounts).mockResolvedValue({
+      data: [accounts[0]!, { ...accounts[1]!, lbusername: "guest-lb" }, accounts[2]!, lurker],
+    });
+    const dialog = screen.getByRole("dialog");
+    await userEvent.type(within(dialog).getByLabelText("Letterboxd username"), "guest-lb");
+    await userEvent.click(within(dialog).getByRole("button", { name: "Save" }));
+
+    await waitFor(() => expect(screen.queryByText("Guest")).not.toBeInTheDocument());
+    expect(screen.getByRole("link", { name: "guest-lb" }).closest("tr")).toHaveTextContent(
+      "bob@example.com",
+    );
   });
 
   it("still offers an unclaimed profile's username when linking an account", async () => {

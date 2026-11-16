@@ -634,6 +634,40 @@ export class UserAdminController {
     }
   }
 
+  /**
+   * Delete an unclaimed profile and its data. Unlike DELETE /by-lbusername,
+   * a profile an account owns is a 404 here, never a login-account delete.
+   */
+  static async removeProfile(req: Request, res: Response): Promise<void> {
+    try {
+      const lbusername = normalizeLbusername(req.params.lbusername)!;
+      const counts = await db.transaction(async (tx) => {
+        const [row] = await tx
+          .select({ lbusername: users.lbusername })
+          .from(users)
+          .where(eq(users.lbusername, lbusername))
+          .for("update");
+        if (!row) return null;
+        const claimed = await tx
+          .select({ id: appUsers.id })
+          .from(appUsers)
+          .where(eq(appUsers.lbusername, lbusername))
+          .limit(1);
+        if (claimed.length > 0) return null;
+        return deleteProfileData(tx, lbusername);
+      });
+
+      if (counts === null) {
+        res.status(404).json({ error: "Profile not found." });
+        return;
+      }
+      res.status(200).json({ data: { lbusername, deleted: true, counts } });
+    } catch (err) {
+      console.error("Admin delete-profile error:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  }
+
   static async remove(req: Request, res: Response): Promise<void> {
     try {
       const outcome = await deleteUserCompletely({

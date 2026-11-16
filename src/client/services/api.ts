@@ -710,7 +710,7 @@ class ApiService {
 
   async deleteProfile(lbusername: string, token: string): Promise<ApiResponse<unknown>> {
     return this.request<unknown>(
-      `/admin/users/by-lbusername/${encodeURIComponent(lbusername)}`,
+      `/admin/users/profiles/${encodeURIComponent(lbusername)}`,
       {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
