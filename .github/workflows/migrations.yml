@@ -22,11 +22,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 3.1.0
       - name: Link project
-        run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
+        run: supabase link "$SUPABASE_PROJECT_REF"
       - name: Show pending migrations
-        run: supabase migration list --linked
+        run: supabase migration list --remote
 
   migrate:
     needs: plan
@@ -45,10 +45,12 @@ jobs:
 
       - uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 3.1.0
 
       - name: Link project
-        run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
+        run: supabase link "$SUPABASE_PROJECT_REF"
 
+      # v3 prompts before changing a hosted database and aborts without a TTY;
+      # the Production environment approval above is the confirmation.
       - name: Apply migrations
-        run: supabase db push --linked
+        run: supabase db push --remote --yes

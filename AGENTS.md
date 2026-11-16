@@ -189,7 +189,7 @@ Layout notes:
 
 Local: `supabase start`, `supabase status`, `supabase db reset`, `supabase migration new <name>`.
 
-Production: a push to `main` touching `supabase/migrations/**` triggers `.github/workflows/migrations.yml` — a `plan` job (`supabase migration list --linked`) followed by a manual-approval `migrate` job gated on the `production` GitHub environment. **That environment must have required reviewers configured** in repo Settings → Environments, otherwise the gate is a silent no-op.
+Production: a push to `main` touching `supabase/migrations/**` triggers `.github/workflows/migrations.yml` — a `plan` job (`supabase migration list --remote`) followed by a manual-approval `migrate` job (`supabase db push --remote --yes` — CLI v3 refuses to write a hosted database without a TTY unless `--yes` is passed, so the environment approval is the confirmation) gated on the `production` GitHub environment. The CLI version is pinned in the workflow; bump it deliberately, since `latest` is what broke the push when v3 added that prompt. **That environment must have required reviewers configured** in repo Settings → Environments, otherwise the gate is a silent no-op.
 
 Required repo secrets: `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_REF`.
 
