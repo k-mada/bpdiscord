@@ -4,6 +4,7 @@ import { TrophyIcon } from "@heroicons/react/24/solid";
 import Spinner from "./Spinner";
 import { Modal, ModalHeader, ModalBody } from "./Modal";
 import RatingDifferential from "./RatingDifferential";
+import NonDiscordMark from "./NonDiscordMark";
 import { Button } from "./ui/Button";
 import { useHaterRankings2 } from "../hooks/useHaterRankings";
 
@@ -124,6 +125,7 @@ const HaterRankings2 = ({
                           <a href={`/user/${ranking.username}`}>
                             {ranking.displayName || ranking.username}
                           </a>
+                          {!ranking.isDiscord && <NonDiscordMark />}
                         </span>
                       </div>
                     </td>
@@ -149,6 +151,11 @@ const HaterRankings2 = ({
             Showing {rankings.length} user{rankings.length !== 1 ? "s" : ""}{" "}
             with ratings data
           </p>
+          {rankings.some((r) => !r.isDiscord) && (
+            <p className="mt-1">
+              <span aria-hidden="true">⭐</span> Not a Discord member
+            </p>
+          )}
         </div>
       )}
     </div>
