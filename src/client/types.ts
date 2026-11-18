@@ -42,6 +42,7 @@ export interface HaterRanking2 {
   filmsRated: number;
   differential: number;
   adjustedDifferential: number;
+  isDiscord: boolean;
 }
 
 export interface UserComparisonData {
