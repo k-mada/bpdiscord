@@ -1,6 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 
-import HaterRankings2 from "../components/HaterRankings2";
+import HaterRankings from "../components/HaterRankings";
 import { DialogProvider } from "../contexts/DialogContext";
 import { useHaterRankings2 } from "../hooks/useHaterRankings";
 import type { HaterRanking2 } from "../types";
@@ -26,7 +26,7 @@ function renderWith(rankings: HaterRanking2[]) {
   } as unknown as ReturnType<typeof useHaterRankings2>);
   return render(
     <DialogProvider>
-      <HaterRankings2 />
+      <HaterRankings />
     </DialogProvider>,
   );
 }
@@ -34,7 +34,7 @@ function renderWith(rankings: HaterRanking2[]) {
 const rowOf = (name: string) =>
   screen.getByRole("link", { name }).closest("tr")!;
 
-describe("HaterRankings2 — non-Discord marker", () => {
+describe("HaterRankings — non-Discord marker", () => {
   it("stars a non-Discord user and leaves Discord members unmarked", () => {
     renderWith([
       row({ username: "member", displayName: "Member" }),
