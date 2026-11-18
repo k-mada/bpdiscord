@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 
@@ -425,6 +425,71 @@ describe("MFL my picks", () => {
 
     expect(apiService.deleteMflRoster).toHaveBeenCalledWith(7, TOKEN);
     expect(await screen.findByText("Roster deleted.")).toBeInTheDocument();
+  });
+
+  it("never offers the previous roster's films for saving when a switch fails to load", async () => {
+    setRosters([
+      { rosterId: 7, name: "Alpha" },
+      { rosterId: 8, name: "Beta" },
+    ]);
+    vi.mocked(apiService.getMflRosterPicks)
+      .mockResolvedValueOnce({
+        data: Array.from({ length: 8 }, (_, i) => ({
+          filmSlug: `film-${i}`,
+          title: `Film ${i}`,
+          releaseDate: null,
+          price: 10,
+        })),
+      })
+      .mockRejectedValue(new ApiError("Could not load picks.", 500));
+    renderPage();
+
+    expect(await screen.findByText("8 of 8 movies selected")).toBeInTheDocument();
+    await userEvent.selectOptions(screen.getByLabelText("Roster"), "8");
+
+    expect(
+      await screen.findByText("Something went wrong. Please try again."),
+    ).toBeInTheDocument();
+    expect(screen.getByText("0 of 8 movies selected")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Save picks/ })).toBeDisabled();
+    for (const slot of slotButtons()) expect(slot).toBeDisabled();
+
+    // Back to a roster that loaded once: its old load must not vouch for the
+    // empty slots now on screen.
+    await userEvent.selectOptions(screen.getByLabelText("Roster"), "7");
+    await waitFor(() =>
+      expect(apiService.getMflRosterPicks).toHaveBeenCalledTimes(3),
+    );
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+    for (const slot of slotButtons()) expect(slot).toBeDisabled();
+    expect(apiService.updateMflRoster).not.toHaveBeenCalled();
+  });
+
+  it("stays locked when a switch aborts the previous roster's still-loading picks", async () => {
+    setRosters([
+      { rosterId: 7, name: "Alpha" },
+      { rosterId: 8, name: "Beta" },
+    ]);
+    const pending = new Map<number, (value: { data: MFLPick[] }) => void>();
+    vi.mocked(apiService.getMflRosterPicks).mockImplementation(
+      (rosterId, _token, signal) =>
+        new Promise((resolve, reject) => {
+          pending.set(rosterId, resolve);
+          signal?.addEventListener("abort", () =>
+            reject(new DOMException("aborted", "AbortError")),
+          );
+        }),
+    );
+    renderPage();
+
+    await waitFor(() => expect(pending.has(7)).toBe(true));
+    await userEvent.selectOptions(screen.getByLabelText("Roster"), "8");
+    // Let the aborted request settle; its cleanup must not unlock the form.
+    await act(() => new Promise((resolve) => setTimeout(resolve, 0)));
+
+    for (const slot of slotButtons()) expect(slot).toBeDisabled();
+    pending.get(8)!({ data: [] });
+    await waitFor(() => expect(slotButton(1)).toBeEnabled());
   });
 
   // Every price comes from the catalogue; without it the roster renders each

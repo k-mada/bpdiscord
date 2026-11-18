@@ -79,6 +79,9 @@ const MyPicks = () => {
   const [name, setName] = useState(EMPTY);
   const [isOfficial, setIsOfficial] = useState(false);
   const [slots, setSlots] = useState<string[]>(emptySlots);
+  // The roster the slots were loaded for. Until it matches selectedId the slots
+  // are not that roster's picks, so saving them would overwrite it.
+  const [slotsRosterId, setSlotsRosterId] = useState<number | null>(null);
   const [editing, setEditing] = useState<number | null>(null);
   const [rostersLoading, setRostersLoading] = useState(true);
   const [picksLoading, setPicksLoading] = useState(false);
@@ -88,6 +91,7 @@ const MyPicks = () => {
 
   const isLinked = Boolean(user?.lbusername);
   const isCreate = selectedId === null;
+  const slotsReady = isCreate || slotsRosterId === selectedId;
 
   useEffect(() => {
     // Judging isLinked before /me resolves would flash the create form at a
@@ -139,11 +143,12 @@ const MyPicks = () => {
         );
         const saved = (response.data ?? []).map((pick) => pick.filmSlug);
         setSlots(Array.from({ length: ROSTER_SIZE }, (_, i) => saved[i] ?? EMPTY));
+        setSlotsRosterId(rosterId);
       } catch (error) {
         if (error instanceof Error && error.name === "AbortError") return;
         setStatus({ type: "error", message: failureMessage(error) });
       } finally {
-        setPicksLoading(false);
+        if (!controller.signal.aborted) setPicksLoading(false);
       }
     }
 
@@ -172,8 +177,8 @@ const MyPicks = () => {
   const complete = filled.length === ROSTER_SIZE;
   const trimmedName = name.trim();
   const nameValid = trimmedName.length > 0 && trimmedName.length <= MAX_NAME_LENGTH;
-  const canSubmit =
-    complete && !overBudget && nameValid && !saving && !picksLoading;
+  const locked = saving || picksLoading || !slotsReady;
+  const canSubmit = complete && !overBudget && nameValid && !locked;
 
   const handlePick = (filmSlug: string) => {
     const index = editing;
@@ -205,6 +210,8 @@ const MyPicks = () => {
     setSelectedId(id);
     setName(roster?.name ?? EMPTY);
     setIsOfficial(roster?.isOfficial ?? false);
+    setSlots(emptySlots());
+    setSlotsRosterId(null);
   };
 
   async function refreshRosters(authToken: string): Promise<MFLRoster[]> {
@@ -257,7 +264,8 @@ const MyPicks = () => {
       setSelectedId(next?.rosterId ?? null);
       setName(next?.name ?? EMPTY);
       setIsOfficial(next?.isOfficial ?? false);
-      if (!next) setSlots(emptySlots());
+      setSlots(emptySlots());
+      setSlotsRosterId(null);
       setStatus({ type: "success", message: "Roster deleted." });
     } catch (error) {
       setStatus({ type: "error", message: failureMessage(error) });
@@ -377,7 +385,7 @@ const MyPicks = () => {
               type="text"
               value={name}
               maxLength={MAX_NAME_LENGTH}
-              disabled={saving || picksLoading}
+              disabled={locked}
               placeholder="My Movie Picks"
               onChange={(e) => setName(e.target.value)}
               className="w-full sm:w-80"
@@ -390,7 +398,7 @@ const MyPicks = () => {
                 id="roster-official"
                 type="checkbox"
                 checked={isOfficial}
-                disabled={saving || picksLoading}
+                disabled={locked}
                 onChange={(e) => setIsOfficial(e.target.checked)}
                 className="w-4 h-4 rounded-xs border border-letterboxd-border-light bg-letterboxd-bg-secondary"
               />
@@ -404,7 +412,7 @@ const MyPicks = () => {
                 key={index}
                 index={index}
                 film={bySlug.get(slug)}
-                disabled={saving || picksLoading}
+                disabled={locked}
                 onOpen={setEditing}
                 onClear={handleClear}
               />
