@@ -16,7 +16,7 @@ import ScoringReference from "./components/MovieFantasyLeague/ScoringReference";
 import FilmBreakdown from "./components/MovieFantasyLeague/FilmBreakdown";
 import RosterView from "./components/MovieFantasyLeague/RosterView";
 import MyPicks from "./components/MovieFantasyLeague/MyPicks";
-import HaterRankings2 from "./components/HaterRankings2";
+import HaterRankings from "./components/HaterRankings";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Stats from "./components/Stats";
 import MostWatchedFilms from "./components/MostWatchedFilms";
@@ -62,7 +62,7 @@ function App() {
           <Route path="/movie-swap" element={<MovieSwapPage />} />
           <Route
             path="/hater-rankings"
-            element={<HaterRankings2 isPublic={true} />}
+            element={<HaterRankings isPublic={true} />}
           />
           <Route path="/stats" element={<Stats />} />
           <Route path="/bpd-40-club" element={<MostWatchedFilms />} />

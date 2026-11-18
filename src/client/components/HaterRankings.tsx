@@ -13,7 +13,7 @@ interface HaterRankingsProps {
   isPublic?: boolean;
 }
 
-const HaterRankings2 = ({
+const HaterRankings = ({
   onBackToProfile,
   isPublic = false,
 }: HaterRankingsProps) => {
@@ -164,4 +164,4 @@ const HaterRankings2 = ({
   return rankingsContent;
 };
 
-export default HaterRankings2;
+export default HaterRankings;
