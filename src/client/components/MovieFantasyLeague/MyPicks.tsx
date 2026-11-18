@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useReducer } from "react";
 import { Link } from "react-router-dom";
 import Spinner from "../Spinner";
 import { Button } from "../ui/Button";
 import { Input } from "../ui/Input";
-import { Notification, Status } from "../ui/Notification";
+import { Notification } from "../ui/Notification";
 import { MoviePickerModal } from "./MoviePickerModal";
 import { useMflData } from "../../hooks/useMflData";
 import { useAuth } from "../../contexts/AuthContext";
@@ -11,17 +11,20 @@ import apiService from "../../services/api";
 import { failureMessage } from "../../lib/failureMessage";
 import { NO_LBUSERNAME_MESSAGE } from "../../../shared/utilities";
 import { MFLCatalogueFilm, MFLRoster } from "../../types";
+import {
+  EMPTY,
+  ROSTER_SIZE,
+  initialMyPicksState,
+  myPicksReducer,
+} from "./myPicksReducer";
 
 // Vulture's rules, mirrored here only. The server validates data integrity, not
 // roster size or spend, so a rule change there does not need a deploy here.
-const ROSTER_SIZE = 8;
 const BUDGET = 100;
 const MAX_NAME_LENGTH = 80;
-const EMPTY = "";
 const NEW = "new";
 
 const priceOf = (film: MFLCatalogueFilm | undefined) => film?.price ?? 0;
-const emptySlots = () => Array<string>(ROSTER_SIZE).fill(EMPTY);
 
 interface SlotProps {
   index: number;
@@ -73,32 +76,19 @@ const MyPicks = () => {
     error: catalogueError,
   } = useMflData();
 
-  const [rosters, setRosters] = useState<MFLRoster[]>([]);
-  // null means the create-a-new-roster form; a number selects an existing one.
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [name, setName] = useState(EMPTY);
-  const [isOfficial, setIsOfficial] = useState(false);
-  const [slots, setSlots] = useState<string[]>(emptySlots);
-  // The roster the slots were loaded for. Until it matches selectedId the slots
-  // are not that roster's picks, so saving them would overwrite it.
-  const [slotsRosterId, setSlotsRosterId] = useState<number | null>(null);
-  const [editing, setEditing] = useState<number | null>(null);
-  const [rostersLoading, setRostersLoading] = useState(true);
-  const [picksLoading, setPicksLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [confirmingDelete, setConfirmingDelete] = useState(false);
-  const [status, setStatus] = useState<Status>({ type: "idle" });
+  const [state, dispatch] = useReducer(myPicksReducer, initialMyPicksState);
+  const { rosters, selectedId, name, isOfficial, slots, editing, phase, status } =
+    state;
 
   const isLinked = Boolean(user?.lbusername);
   const isCreate = selectedId === null;
-  const slotsReady = isCreate || slotsRosterId === selectedId;
 
   useEffect(() => {
     // Judging isLinked before /me resolves would flash the create form at a
     // member who already has rosters.
     if (authLoading) return;
     if (!token || !isLinked) {
-      setRostersLoading(false);
+      dispatch({ type: "rostersUnavailable" });
       return;
     }
     const controller = new AbortController();
@@ -109,16 +99,10 @@ const MyPicks = () => {
           authToken,
           controller.signal,
         );
-        const loaded = response.data ?? [];
-        setRosters(loaded);
-        setSelectedId(loaded[0]?.rosterId ?? null);
-        setName(loaded[0]?.name ?? EMPTY);
-        setIsOfficial(loaded[0]?.isOfficial ?? false);
+        dispatch({ type: "rostersLoaded", rosters: response.data ?? [] });
       } catch (error) {
         if (error instanceof Error && error.name === "AbortError") return;
-        setStatus({ type: "error", message: failureMessage(error) });
-      } finally {
-        setRostersLoading(false);
+        dispatch({ type: "rostersFailed", message: failureMessage(error) });
       }
     }
 
@@ -126,29 +110,31 @@ const MyPicks = () => {
     return () => controller.abort();
   }, [authLoading, token, isLinked]);
 
-  // Fetch only. The selected roster's name and the empty-form reset are set by
-  // whoever changes the selection (below), so this depends on selectedId alone
-  // and never refetches just because the roster list was refreshed after a save.
+  // Keys on selectedId alone, so refreshing the roster list after a save does
+  // not refetch. The reducer resets the form whenever the selection changes.
   useEffect(() => {
     if (!token || selectedId === null) return;
 
     const controller = new AbortController();
     async function loadPicks(authToken: string, rosterId: number) {
-      setPicksLoading(true);
       try {
         const response = await apiService.getMflRosterPicks(
           rosterId,
           authToken,
           controller.signal,
         );
-        const saved = (response.data ?? []).map((pick) => pick.filmSlug);
-        setSlots(Array.from({ length: ROSTER_SIZE }, (_, i) => saved[i] ?? EMPTY));
-        setSlotsRosterId(rosterId);
+        dispatch({
+          type: "picksLoaded",
+          rosterId,
+          filmSlugs: (response.data ?? []).map((pick) => pick.filmSlug),
+        });
       } catch (error) {
         if (error instanceof Error && error.name === "AbortError") return;
-        setStatus({ type: "error", message: failureMessage(error) });
-      } finally {
-        if (!controller.signal.aborted) setPicksLoading(false);
+        dispatch({
+          type: "picksFailed",
+          rosterId,
+          message: failureMessage(error),
+        });
       }
     }
 
@@ -177,54 +163,25 @@ const MyPicks = () => {
   const complete = filled.length === ROSTER_SIZE;
   const trimmedName = name.trim();
   const nameValid = trimmedName.length > 0 && trimmedName.length <= MAX_NAME_LENGTH;
-  const locked = saving || picksLoading || !slotsReady;
+  const saving = phase.kind === "saving";
+  const locked = phase.kind !== "ready";
+  const canDelete = phase.kind === "ready" || phase.kind === "picksFailed";
   const canSubmit = complete && !overBudget && nameValid && !locked;
 
-  const handlePick = (filmSlug: string) => {
-    const index = editing;
-    if (index === null) return;
-    setStatus({ type: "idle" });
-    setSlots((prev) => prev.map((cur, i) => (i === index ? filmSlug : cur)));
-    setEditing(null);
-  };
+  const chooseRoster = (value: string) =>
+    dispatch({
+      type: "rosterSelected",
+      rosterId: value === NEW ? null : Number(value),
+    });
 
-  const handleClear = (index: number) => {
-    setStatus({ type: "idle" });
-    setSlots((prev) => prev.map((cur, i) => (i === index ? EMPTY : cur)));
-  };
-
-  // Switching selection is an event, so it sets the form state here rather than
-  // in an effect. The picks effect keys on selectedId and does the fetch.
-  const chooseRoster = (value: string) => {
-    setConfirmingDelete(false);
-    setStatus({ type: "idle" });
-    if (value === NEW) {
-      setSelectedId(null);
-      setName(EMPTY);
-      setIsOfficial(false);
-      setSlots(emptySlots());
-      return;
-    }
-    const id = Number(value);
-    const roster = rosters.find((r) => r.rosterId === id);
-    setSelectedId(id);
-    setName(roster?.name ?? EMPTY);
-    setIsOfficial(roster?.isOfficial ?? false);
-    setSlots(emptySlots());
-    setSlotsRosterId(null);
-  };
-
-  async function refreshRosters(authToken: string): Promise<MFLRoster[]> {
+  async function fetchRosters(authToken: string): Promise<MFLRoster[]> {
     const response = await apiService.getMflRosters(authToken);
-    const loaded = response.data ?? [];
-    setRosters(loaded);
-    return loaded;
+    return response.data ?? [];
   }
 
   const handleSubmit = async () => {
     if (!token || !canSubmit) return;
-    setStatus({ type: "idle" });
-    setSaving(true);
+    dispatch({ type: "mutationStarted" });
     try {
       if (isCreate) {
         const response = await apiService.createMflRoster(
@@ -233,48 +190,37 @@ const MyPicks = () => {
           isOfficial,
           token,
         );
-        await refreshRosters(token);
-        setSelectedId(response.data?.rosterId ?? null);
-        setStatus({ type: "success", message: "Roster created." });
+        dispatch({
+          type: "created",
+          rosters: await fetchRosters(token),
+          rosterId: response.data?.rosterId ?? null,
+        });
       } else {
         await apiService.updateMflRoster(
           selectedId,
           { name: trimmedName, filmSlugs: filled, isOfficial },
           token,
         );
-        await refreshRosters(token);
-        setStatus({ type: "success", message: "Picks saved." });
+        dispatch({ type: "updated", rosters: await fetchRosters(token) });
       }
     } catch (error) {
-      setStatus({ type: "error", message: failureMessage(error) });
-    } finally {
-      setSaving(false);
+      dispatch({ type: "mutationFailed", message: failureMessage(error) });
     }
   };
 
   const handleDelete = async () => {
-    if (!token || selectedId === null) return;
-    setStatus({ type: "idle" });
-    setSaving(true);
+    if (!token || selectedId === null || !canDelete) return;
+    dispatch({ type: "mutationStarted" });
     try {
       await apiService.deleteMflRoster(selectedId, token);
-      const remaining = await refreshRosters(token);
-      const next = remaining[0] ?? null;
-      setConfirmingDelete(false);
-      setSelectedId(next?.rosterId ?? null);
-      setName(next?.name ?? EMPTY);
-      setIsOfficial(next?.isOfficial ?? false);
-      setSlots(emptySlots());
-      setSlotsRosterId(null);
-      setStatus({ type: "success", message: "Roster deleted." });
+      dispatch({ type: "deleted", rosters: await fetchRosters(token) });
     } catch (error) {
-      setStatus({ type: "error", message: failureMessage(error) });
-    } finally {
-      setSaving(false);
+      dispatch({ type: "mutationFailed", message: failureMessage(error) });
     }
   };
 
-  const busy = authLoading || rostersLoading || catalogueLoading;
+  const busy =
+    authLoading || phase.kind === "loadingRosters" || catalogueLoading;
 
   // Every price on this page comes from the catalogue. Without it the roster
   // would render with each film at $0 and a total that is simply wrong.
@@ -341,12 +287,12 @@ const MyPicks = () => {
               </div>
 
               {!isCreate &&
-                (confirmingDelete ? (
+                (state.confirmingDelete ? (
                   <div className="flex items-center gap-2">
                     <Button
                       type="button"
                       variant="destructive"
-                      disabled={saving}
+                      disabled={!canDelete}
                       onClick={handleDelete}
                     >
                       Confirm delete
@@ -355,7 +301,7 @@ const MyPicks = () => {
                       type="button"
                       variant="ghost"
                       disabled={saving}
-                      onClick={() => setConfirmingDelete(false)}
+                      onClick={() => dispatch({ type: "deleteCancelled" })}
                     >
                       Cancel
                     </Button>
@@ -364,8 +310,8 @@ const MyPicks = () => {
                   <Button
                     type="button"
                     variant="ghost"
-                    disabled={saving}
-                    onClick={() => setConfirmingDelete(true)}
+                    disabled={!canDelete}
+                    onClick={() => dispatch({ type: "deleteRequested" })}
                   >
                     Delete roster
                   </Button>
@@ -387,7 +333,9 @@ const MyPicks = () => {
               maxLength={MAX_NAME_LENGTH}
               disabled={locked}
               placeholder="My Movie Picks"
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) =>
+                dispatch({ type: "nameChanged", name: e.target.value })
+              }
               className="w-full sm:w-80"
             />
             <label
@@ -399,7 +347,12 @@ const MyPicks = () => {
                 type="checkbox"
                 checked={isOfficial}
                 disabled={locked}
-                onChange={(e) => setIsOfficial(e.target.checked)}
+                onChange={(e) =>
+                  dispatch({
+                    type: "officialChanged",
+                    isOfficial: e.target.checked,
+                  })
+                }
                 className="w-4 h-4 rounded-xs border border-letterboxd-border-light bg-letterboxd-bg-secondary"
               />
               Make this my official roster
@@ -413,8 +366,8 @@ const MyPicks = () => {
                 index={index}
                 film={bySlug.get(slug)}
                 disabled={locked}
-                onOpen={setEditing}
-                onClear={handleClear}
+                onOpen={(index) => dispatch({ type: "pickerOpened", index })}
+                onClear={(index) => dispatch({ type: "slotCleared", index })}
               />
             ))}
           </ul>
@@ -467,8 +420,8 @@ const MyPicks = () => {
                   [...pickedSlugs].filter((slug) => slug !== slots[editing]),
                 )
               }
-              onPick={handlePick}
-              onClose={() => setEditing(null)}
+              onPick={(filmSlug) => dispatch({ type: "slotPicked", filmSlug })}
+              onClose={() => dispatch({ type: "pickerClosed" })}
             />
           )}
         </div>
