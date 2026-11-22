@@ -369,6 +369,7 @@ describe("MFL my picks", () => {
     renderPage();
 
     const box = await screen.findByLabelText("Make this my official roster");
+    await waitFor(() => expect(box).toBeEnabled());
     expect(box).not.toBeChecked();
 
     await userEvent.click(box);
@@ -417,9 +418,11 @@ describe("MFL my picks", () => {
     vi.mocked(apiService.deleteMflRoster).mockResolvedValue({ message: "ok" });
     renderPage();
 
-    await userEvent.click(
-      await screen.findByRole("button", { name: "Delete roster" }),
-    );
+    const deleteButton = await screen.findByRole("button", {
+      name: "Delete roster",
+    });
+    await waitFor(() => expect(deleteButton).toBeEnabled());
+    await userEvent.click(deleteButton);
     // A guard step so a stray click can't wipe a roster.
     await userEvent.click(screen.getByRole("button", { name: "Confirm delete" }));
 
