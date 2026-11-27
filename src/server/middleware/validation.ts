@@ -56,9 +56,11 @@ export const validateIntParam = (name: string): ValidationChain[] => [
 
 // Deliberately permissive — a stricter charset would 400 on legitimate
 // Letterboxd slugs, and a real miss is better served by the 404.
+export const FILM_SLUG_PATTERN = /^[A-Za-z0-9._-]{1,200}$/;
+
 export const validateFilmSlug: ValidationChain[] = [
   param('filmSlug')
-    .matches(/^[A-Za-z0-9._-]{1,200}$/)
+    .matches(FILM_SLUG_PATTERN)
     .withMessage('Invalid film slug format'),
   query('includeNonDiscord')
     .optional()
