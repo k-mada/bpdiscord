@@ -6,6 +6,7 @@ import {
   escapeHtml,
   renderMetaHtml,
 } from "../embeds/renderMetaHtml";
+import { EMBED_PALETTE } from "../embeds/palette";
 
 const PAGE_URL = "https://example.test/film/heat";
 
@@ -82,7 +83,7 @@ describe("embed colours mirror the client palette tokens", () => {
   const token = (name: string) =>
     css.match(new RegExp(`--color-${name}:\\s*(#[0-9a-fA-F]{3,8});`))?.[1];
 
-  it.each([["letterboxd-accent", EMBED_THEME_COLOR]])("%s", (name, value) => {
+  it.each(Object.entries(EMBED_PALETTE))("%s", (name, value) => {
     expect(token(name)?.toLowerCase()).toBe(value.toLowerCase());
   });
 });

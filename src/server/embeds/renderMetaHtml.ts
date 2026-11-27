@@ -1,3 +1,5 @@
+import { EMBED_PALETTE } from "./palette";
+
 export interface PageMeta {
   title: string;
   card: "summary" | "summary_large_image";
@@ -10,8 +12,8 @@ export interface PageMeta {
   imageHeight?: number;
 }
 
-/** Mirrors `--color-letterboxd-accent` in src/client/index.css; Discord tints the embed bar with it. */
-export const EMBED_THEME_COLOR = "#00ac1c";
+/** Discord tints the embed's side bar with `theme-color`. */
+export const EMBED_THEME_COLOR = EMBED_PALETTE["letterboxd-accent"];
 
 export function escapeHtml(value: string): string {
   return value
