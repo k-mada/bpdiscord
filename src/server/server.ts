@@ -18,6 +18,7 @@ import eventRoutes from "./routes/eventRoutes";
 import graphRoutes from "./routes/graphRoutes";
 import adminRoutes from "./routes/adminRoutes";
 import scrapeUserRoutes from "./routes/scrapeUserRoutes";
+import embedRoutes from "./routes/embedRoutes";
 import { globalErrorHandler } from "./middleware/errorHandler";
 import { ApiResponse } from "../shared/types";
 
@@ -129,6 +130,8 @@ app.use("/api/events", eventRoutes);
 app.use("/api/actor-graph", graphRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/scrape-user", scrapeUserRoutes);
+// Page paths: only link-preview bots get here, routed by user agent in vercel.json.
+app.use(embedRoutes);
 
 // Error handling middleware
 app.use(globalErrorHandler);

@@ -28,6 +28,17 @@
     },
     {
       "src": "/(.*)",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": ".*(Discordbot|Slackbot|Twitterbot|facebookexternalhit|TelegramBot|WhatsApp/|LinkedInBot|Mastodon|Bluesky|Embedly).*"
+        }
+      ],
+      "dest": "/src/server/server.ts"
+    },
+    {
+      "src": "/(.*)",
       "dest": "/src/client/index.html"
     }
   ],
