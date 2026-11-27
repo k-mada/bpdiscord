@@ -29,5 +29,3 @@ export function defaultPageMeta({ origin }: EmbedContext): PageMeta {
     card: "summary",
   };
 }
-
-export const embedPages: EmbedPage[] = [];

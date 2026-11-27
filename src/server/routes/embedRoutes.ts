@@ -1,11 +1,7 @@
 import { Request, Response, Router } from "express";
 import rateLimit from "express-rate-limit";
-import {
-  EmbedContext,
-  EmbedPage,
-  defaultPageMeta,
-  embedPages,
-} from "../embeds/registry";
+import { EmbedContext, EmbedPage, defaultPageMeta } from "../embeds/registry";
+import { embedPages } from "../embeds/pages";
 import { PageMeta, renderMetaHtml } from "../embeds/renderMetaHtml";
 
 // Only link-preview bots reach this router (vercel.json routes them by UA), and
