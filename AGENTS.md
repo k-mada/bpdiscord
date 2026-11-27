@@ -109,6 +109,17 @@ In-process request coalescing dedupes concurrent same-id ingestions within a sin
 2. **Write path** — refresh jobs are async, delegated to moviemaestro. The Node server is a thin orchestrator.
 3. **TMDB cache-through** — `/api/actor-graph` is the one exception. Writes on cache miss, but only to TMDB-backed tables, and bounded per request.
 
+## Link-preview embeds
+
+The client is a static SPA, and chat-app unfurlers (Discordbot, Slackbot, iMessage, …) don't run JS, so they'd only ever see `index.html`'s defaults. A `vercel.json` route matches link-preview bot user agents (exact-case tokens, no `(?i)`) and sends **page** paths to the Express function instead of the static build; everyone else still gets the SPA from the CDN.
+
+- `routes/embedRoutes.ts`, mounted after the `/api` routers, renders a meta-only HTML page (`embeds/renderMetaHtml.ts`). Unknown `/api` paths are excluded so they keep their JSON 404.
+- To give a page its own card, add an entry to `embedPages` in `embeds/registry.ts`: an Express path matching the client route plus a resolver returning `PageMeta`. No `vercel.json` change. A `null` or throwing resolver falls back to the site defaults — a bot always gets a valid card, never a 404/500.
+- **`Cache-Control: private, no-store` is load-bearing.** People and bots request the same URL; a CDN-cached bot page would serve a blank meta-only document to a person.
+- `PageMeta` fields left out emit **no tag** (an empty tag still renders a line in Discord). Image URLs must be absolute; the origin comes from the request host, so a preview deploy points at itself.
+- The rate limit is generous on purpose: Discord's fetchers share a handful of IPs.
+- Colours the server renders mirror `letterboxd-*` token values as constants; `__tests__/embedsRenderMetaHtml.test.ts` fails if one drifts from `src/client/index.css`.
+
 ## Authentication — non-obvious bits
 
 - **Role lives in `app_metadata.role`**, not `user_metadata`. `user_metadata` is end-user-writable through the anon-key SDK (`supabase.auth.updateUser({ data })`), so a role kept there is a self-promotion vector; `app_metadata` is service-role-write-only. Read it **only** through `resolveRole` (`src/server/middleware/auth.ts`) — it reads `app_metadata.role` and nothing else; `user_metadata.role` is never consulted. Absent means non-admin. Signup doesn't write a role (the anon client can't touch `app_metadata`); an admin grants one via the admin SDK, and `yarn backfill:roles` seeded existing accounts. Reads are fresh because `supabase.auth.getUser(token)` revalidates against GoTrue, so a role change takes effect on the next request, not on JWT refresh.
