@@ -35,7 +35,7 @@ function pageHandler(page: EmbedPage) {
     const context = requestContext(req);
     let meta: PageMeta | null = null;
     try {
-      meta = await page.resolve(req.params as Record<string, string>, context);
+      meta = await page.resolve(req.params, context);
     } catch (error) {
       console.error(`Embed resolver failed for ${page.path}:`, error);
     }
@@ -53,7 +53,8 @@ export function createEmbedRouter(pages: EmbedPage[]): Router {
     router.get(page.path, embedLimiter, pageHandler(page));
   }
   // Unknown /api paths must keep their JSON 404, not get a 200 HTML card.
-  router.get(/^\/(?!api(?:\/|$))/, embedLimiter, defaultEmbed);
+  // Case-insensitive like Express's own mounts, which also serve /API/...
+  router.get(/^\/(?!api(?:\/|$))/i, embedLimiter, defaultEmbed);
   return router;
 }
 

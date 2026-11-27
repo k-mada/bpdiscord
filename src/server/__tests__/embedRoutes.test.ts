@@ -78,13 +78,14 @@ describe("embed router", () => {
   });
 
   it("falls back to the site defaults when the resolver throws", async () => {
-    vi.spyOn(console, "error").mockImplementation(() => {});
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     vi.mocked(filmPage.resolve).mockRejectedValue(new Error("db down"));
 
     const res = await fetch(`${baseUrl}/film/heat`);
 
     expect(res.status).toBe(200);
     expect(ogTitle(await res.text())).toBe(SITE_TITLE);
+    errSpy.mockRestore();
   });
 
   it("serves the site defaults, with the logo, for pages without a resolver", async () => {
@@ -95,7 +96,7 @@ describe("embed router", () => {
     expect(filmPage.resolve).not.toHaveBeenCalled();
   });
 
-  it.each(["/api", "/api/nope"])("leaves %s to the JSON 404", async (path) => {
+  it.each(["/api", "/api/nope", "/API/nope"])("leaves %s to the JSON 404", async (path) => {
     const res = await fetch(`${baseUrl}${path}`);
 
     expect(res.status).toBe(404);
@@ -121,7 +122,7 @@ describe("embed router wiring", () => {
       routes.map((r) => [r.method, String(r.path), r.middleware]),
     ).toEqual([
       ["GET", "/film/:filmSlug", ["<anonymous>", "embedPage"]],
-      ["GET", String(/^\/(?!api(?:\/|$))/), ["<anonymous>", "defaultEmbed"]],
+      ["GET", String(/^\/(?!api(?:\/|$))/i), ["<anonymous>", "defaultEmbed"]],
     ]);
   });
 });
